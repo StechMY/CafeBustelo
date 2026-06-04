@@ -1,0 +1,26 @@
+<?php
+
+return [
+    'dashboard' => 'Dasbor',
+    'products' => 'Produk',
+    'team' => 'Tim',
+    'wallet' => 'Dompet',
+    'recharge' => 'Isi Saldo',
+    'withdraw' => 'Tarik Dana',
+    'bonus_code' => 'Bonus',
+    'salary' => 'Gaji',
+    'profile' => 'Profil',
+    'home' => 'Beranda',
+    'menu' => 'Menu',
+    'close_menu' => 'Tutup Menu',
+    'finance' => 'Keuangan',
+    'account' => 'Akun',
+    'platform' => 'Platform',
+    'contact' => 'Kontak',
+    'check_in' => 'Check-in',
+    'main' => 'Utama',
+    'rewards' => 'Hadiah',
+    'support' => 'Bantuan',
+    'login' => 'Masuk',
+    'register' => 'Daftar',
+];

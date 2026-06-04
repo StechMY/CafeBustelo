@@ -1,0 +1,43 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
+
+class DashboardMarquee extends Model
+{
+    protected $fillable = [
+        'title',
+        'message',
+        'type',
+        'is_enabled',
+        'sort_order',
+        'starts_at',
+        'ends_at',
+    ];
+
+    protected function casts(): array
+    {
+        return [
+            'is_enabled' => 'boolean',
+            'sort_order' => 'integer',
+            'starts_at' => 'datetime',
+            'ends_at' => 'datetime',
+        ];
+    }
+
+    public function scopeVisible(Builder $query): Builder
+    {
+        return $query
+            ->where('is_enabled', true)
+            ->where(function (Builder $query): void {
+                $query->whereNull('starts_at')
+                    ->orWhere('starts_at', '<=', now());
+            })
+            ->where(function (Builder $query): void {
+                $query->whereNull('ends_at')
+                    ->orWhere('ends_at', '>=', now());
+            });
+    }
+}

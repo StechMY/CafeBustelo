@@ -1,0 +1,51 @@
+@import 'tailwindcss';
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+@source "../**/*.blade.php";
+@source "../**/*.js";
+@source "../**/*.vue";
+
+@theme {
+    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+        'Segoe UI Symbol', 'Noto Color Emoji';
+}
+
+@keyframes dashboard-marquee-scroll {
+    0% {
+        transform: translateX(100%);
+    }
+
+    100% {
+        transform: translateX(-100%);
+    }
+}
+
+.dashboard-marquee {
+    min-width: 100%;
+    animation: dashboard-marquee-scroll 28s linear infinite;
+}
+
+.dashboard-marquee:hover {
+    animation-play-state: paused;
+}
+
+.dashboard-slide-pagination .swiper-pagination-bullet {
+    background: white;
+    opacity: .65;
+}
+
+.dashboard-slide-pagination .swiper-pagination-bullet-active {
+    background: #ffd900;
+    opacity: 1;
+}
+
+.dashboard-swal-popup {
+    border-radius: 1.5rem !important;
+    padding: 1rem !important;
+}
+
+.dashboard-swal-title {
+    color: #003b7a !important;
+    font-weight: 900 !important;
+}

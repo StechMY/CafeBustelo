@@ -1,0 +1,53 @@
+<?php
+
+namespace App\Filament\Resources\SalaryClaimWindows\Schemas;
+
+use Filament\Infolists\Components\IconEntry;
+use Filament\Infolists\Components\TextEntry;
+use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Schema;
+
+class SalaryClaimWindowInfolist
+{
+    public static function configure(Schema $schema): Schema
+    {
+        return $schema
+            ->components([
+                Section::make('Claim Window')
+                    ->schema([
+                        Grid::make(3)
+                            ->schema([
+                                TextEntry::make('type')
+                                    ->badge()
+                                    ->color('info'),
+
+                                IconEntry::make('is_enabled')
+                                    ->boolean(),
+
+                                TextEntry::make('day_of_week')
+                                    ->placeholder('-'),
+
+                                TextEntry::make('day_of_month')
+                                    ->placeholder('-'),
+
+                                TextEntry::make('month')
+                                    ->placeholder('-'),
+
+                                TextEntry::make('day')
+                                    ->placeholder('-'),
+
+                                TextEntry::make('start_time'),
+
+                                TextEntry::make('end_time'),
+                            ]),
+                    ]),
+
+                Section::make('Description')
+                    ->schema([
+                        TextEntry::make('description')
+                            ->placeholder('-'),
+                    ]),
+            ]);
+    }
+}

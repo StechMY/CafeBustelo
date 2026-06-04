@@ -1,0 +1,26 @@
+<?php
+
+return [
+    'check_in' => 'Check-in',
+    'daily_reward' => 'Hadiah Harian',
+    'hero_desc' => 'Klaim hadiah check-in VIP harian Anda. Jumlahnya berdasarkan level VIP Anda saat ini.',
+    'today_reward' => 'Hadiah Hari Ini',
+    'claim_now' => 'Klaim Sekarang',
+    'claimed_today' => 'Sudah Diklaim Hari Ini',
+    'claimed_at' => 'Diklaim Pada',
+    'summary' => 'Ringkasan',
+    'this_month' => 'Bulan Ini',
+    'total_claimed' => 'Total Diklaim',
+    'vip_reward_table' => 'Tabel Hadiah VIP',
+    'per_day' => 'Per Hari',
+    'history' => 'Riwayat Check-in',
+    'no_records' => 'Belum ada catatan check-in',
+    'no_records_desc' => 'Catatan check-in harian Anda akan muncul di sini.',
+    'claim_success' => 'Hadiah check-in berhasil diklaim.',
+    'claim_failed' => 'Tidak dapat mengklaim hadiah check-in. Silakan coba lagi.',
+    'already_claimed' => 'Anda sudah check-in hari ini.',
+    'account_not_active' => 'Akun Anda tidak aktif.',
+    'disabled' => 'Fungsi check-in Anda sedang dinonaktifkan.',
+    'no_vip_level' => 'Tidak ada level VIP yang tersedia.',
+    'no_amount' => 'Hadiah check-in belum dikonfigurasi untuk level Anda.',
+];
