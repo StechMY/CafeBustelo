@@ -10,6 +10,11 @@ class ListRechargeRequests extends ListRecords
 {
     protected static string $resource = RechargeRequestResource::class;
 
+    protected function getTablePollingInterval(): ?string
+    {
+        return '10s';
+    }
+
     protected function getHeaderActions(): array
     {
         return [

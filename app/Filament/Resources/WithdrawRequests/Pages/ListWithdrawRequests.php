@@ -9,6 +9,11 @@ class ListWithdrawRequests extends ListRecords
 {
     protected static string $resource = WithdrawRequestResource::class;
 
+    protected function getTablePollingInterval(): ?string
+    {
+        return '10s';
+    }
+
     protected function getHeaderActions(): array
     {
         return [];
