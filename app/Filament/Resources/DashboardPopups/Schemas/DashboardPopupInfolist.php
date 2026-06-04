@@ -43,7 +43,7 @@ class DashboardPopupInfolist
                                     ->url(fn ($record): ?string => $record->button_url, true)
                                     ->placeholder('-'),
                             ]),
-                    ]),
+                    ])->columnSpanFull(),
             ]);
     }
 }

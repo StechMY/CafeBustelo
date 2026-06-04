@@ -45,7 +45,7 @@ class DashboardSlideInfolist
                                 TextEntry::make('updated_at')
                                     ->dateTime(),
                             ]),
-                    ]),
+                    ])->columnSpanFull(),
             ]);
     }
 }

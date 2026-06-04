@@ -35,7 +35,7 @@ class DashboardMarqueeInfolist
                                 TextEntry::make('updated_at')
                                     ->dateTime(),
                             ]),
-                    ]),
+                    ])->columnSpanFull(),
             ]);
     }
 }
