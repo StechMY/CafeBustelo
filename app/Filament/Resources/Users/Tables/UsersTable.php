@@ -30,6 +30,7 @@ use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Textarea;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
+use Filament\Tables\Enums\FiltersLayout;
 
 class UsersTable
 {
@@ -216,7 +217,7 @@ class UsersTable
                     ->options([
                         'active' => 'Active',
                         'inactive' => 'Inactive',
-                        'suspended' => 'Suspended',
+                        // 'suspended' => 'Suspended',
                     ]),
 
                 SelectFilter::make('is_virtual')
@@ -224,20 +225,6 @@ class UsersTable
                     ->options([
                         1 => 'Virtual',
                         0 => 'Real',
-                    ]),
-
-                SelectFilter::make('order_status')
-                    ->label('Order Status')
-                    ->options([
-                        1 => 'Can Buy',
-                        0 => 'Cannot Buy',
-                    ]),
-
-                SelectFilter::make('withdraw_status')
-                    ->label('Withdraw Status')
-                    ->options([
-                        1 => 'Can Withdraw',
-                        0 => 'Cannot Withdraw',
                     ]),
 
                 Filter::make('ip_address')
@@ -263,7 +250,7 @@ class UsersTable
                                 });
                         });
                     }),
-            ])
+            ], layout: FiltersLayout::AboveContent)
             ->recordActions([
                 ViewAction::make(),
 
