@@ -46,7 +46,7 @@
             </a>
 
             <div class="flex items-center gap-2 text-xs font-black sm:gap-3 sm:text-sm">
-                @include('partials.language-switcher')
+                {{-- @include('partials.language-switcher') --}}
                 <a
                    href="{{ route('contact.index') }}"
                    class="hidden rounded-full px-4 py-2 text-white/85 transition hover:bg-white/10 hover:text-white sm:inline-flex">
