@@ -4,6 +4,14 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" href="/fav.png" type="image/png">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="{{ __('app.brand_name') }}">
+    <meta property="og:title" content="Café Bustelo® Coffee: Experience Sabor Latino">
+    <meta property="og:description"
+          content="Our espresso style coffee invites you to enjoy the moment and celebrate Hispanic culture—with delicious experiences that are even better when shared.">
+    <meta property="og:image" content="{{ url('/logo.jpg') }}">
+    <meta property="og:url" content="{{ url()->current() }}">
     <title>@yield('title', config('app.name'))</title>
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
