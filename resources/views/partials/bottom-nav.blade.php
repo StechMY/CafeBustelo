@@ -3,7 +3,8 @@
         ['label' => __('navigation.home'), 'route' => 'dashboard', 'icon' => 'home'],
         ['label' => __('navigation.contact'), 'route' => 'contact.index', 'icon' => 'contact'],
         ['label' => __('navigation.products'), 'route' => 'products.index', 'icon' => 'products'],
-        ['label' => __('navigation.check_in'), 'route' => 'check-in.index', 'icon' => 'check-in'],
+        // ['label' => __('navigation.check_in'), 'route' => 'check-in.index', 'icon' => 'check-in'],
+        ['label' => __('navigation.team'), 'route' => 'my-team.index', 'icon' => 'team'],
         ['label' => __('navigation.profile'), 'route' => 'profile.index', 'icon' => 'profile'],
     ];
 @endphp
