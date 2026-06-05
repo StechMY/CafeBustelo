@@ -6,8 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="icon" href="/fav.png" type="image/png">
     <meta property="og:type" content="website">
-    <meta property="og:site_name" content="Caf𝑒B𝔲stelo">
-    <meta property="og:title" content="Caf𝑒 B𝔲stelo® Coffee: Taste the Latin vibe.">
+    <meta property="og:site_name" content="Caf𝑒Bustelᴏ">
+    <meta property="og:title" content="Caf𝑒 Bustelᴏ® Coffee: Taste the Latin vibe.">
     <meta property="og:description"
           content="Sip, savor, and celebrate Hispanic culture together. Our espresso-style coffee is crafted to bring people together, creating delicious moments that are even better when shared.">
     <meta property="og:image" content="{{ url('/logo.jpg') }}">

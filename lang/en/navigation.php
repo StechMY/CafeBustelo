@@ -25,4 +25,5 @@ return [
     'support' => 'Support',
     'login' => 'Login',
     'register' => 'Register',
+    'calculator' => 'Calculator',
 ];

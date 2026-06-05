@@ -12,6 +12,7 @@ use App\Filament\Resources\Users\RelationManagers\LoginLogsRelationManager;
 use App\Filament\Resources\Users\RelationManagers\ReferralsRelationManager;
 use App\Filament\Resources\Users\RelationManagers\WalletTransactionsRelationManager;
 use App\Filament\Resources\Users\RelationManagers\CheckInRecordsRelationManager;
+use App\Filament\Resources\Users\RelationManagers\SvipPurchasesRelationManager;
 use App\Filament\Resources\Users\Schemas\UserForm;
 use App\Filament\Resources\Users\Schemas\UserInfolist;
 use App\Filament\Resources\Users\Tables\UsersTable;
@@ -66,6 +67,7 @@ class UserResource extends Resource
             WalletTransactionsRelationManager::class,
             EarnedCommissionsRelationManager::class,
             CheckInRecordsRelationManager::class,
+            SvipPurchasesRelationManager::class,
         ];
     }
 

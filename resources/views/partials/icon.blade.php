@@ -42,9 +42,13 @@
             '<path d="M10 13a5 5 0 0 0 7.1 0l2-2a5 5 0 0 0-7.1-7.1l-1.1 1.1"/><path d="M14 11a5 5 0 0 0-7.1 0l-2 2a5 5 0 0 0 7.1 7.1l1.1-1.1"/>',
         'check-in' => '<path d="M20 6 9 17l-5-5"/><path d="M21 12a9 9 0 1 1-3-6.7"/>',
 
-        'speaker' => '<path d="M4 9v6h4l5 4V5L8 9H4Z"/><path d="M16 8.5a4 4 0 0 1 0 7"/><path d="M18.5 6a7 7 0 0 1 0 12"/>',
+        'speaker' =>
+            '<path d="M4 9v6h4l5 4V5L8 9H4Z"/><path d="M16 8.5a4 4 0 0 1 0 7"/><path d="M18.5 6a7 7 0 0 1 0 12"/>',
 
         'profile' => '<path d="M20 21a8 8 0 0 0-16 0"/><circle cx="12" cy="7" r="4"/>',
+        
+        'calculator' =>
+            '<path d="M7 2h10a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Z"/><path d="M8 6h8"/><path d="M8 10h2"/><path d="M12 10h2"/><path d="M16 10h0"/><path d="M8 14h2"/><path d="M12 14h2"/><path d="M16 14h0"/><path d="M8 18h2"/><path d="M12 18h2"/><path d="M16 18h0"/>',
     ];
 
     $svg = $icons[$name] ?? $icons['home'];

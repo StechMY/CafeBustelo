@@ -60,9 +60,11 @@ return [
         'salary_weekly' => '每周薪资',
         'salary_monthly' => '每月薪资',
         'salary_annual' => '年度薪资',
+        'svip_purchase' => 'SVIP 购买',
     ],
 
     'bonus_code' => '奖励码',
 
     'check_in' => '签到奖励',
+    'svip_purchase' => 'SVIP 购买',
 ];

@@ -5,6 +5,7 @@
 @section('content')
     @php
         $now = now();
+        $inviteUrl = url('/register?ref=' . $user->referral_code);
     @endphp
 
     <section class="overflow-hidden bg-[#ffd900]">
@@ -26,21 +27,38 @@
                         {{ __('dashboard.hero_description') }}
                     </p>
 
-                    <div class="mt-5 grid grid-cols-3 gap-2 sm:mt-7 sm:flex sm:flex-wrap sm:gap-3">
-                        <a href="{{ route('products.index') }}"
+                    <div
+                         x-data="{ inviteOpen: false }"
+                         class="mt-5 grid grid-cols-2 gap-2 sm:mt-7 sm:flex sm:flex-wrap sm:gap-3">
+                        <a
+                           href="{{ route('products.index') }}"
                            class="rounded-full bg-[#e4003a] px-3 py-3 text-center text-[11px] font-black uppercase text-white shadow-lg hover:bg-[#c90032] sm:px-6 sm:text-sm">
                             {{ __('dashboard.buy_product') }}
                         </a>
 
-                        <a href="{{ route('recharge.index') }}"
+                        <a
+                           href="{{ route('recharge.index') }}"
                            class="rounded-full bg-[#003b7a] px-3 py-3 text-center text-[11px] font-black uppercase text-white shadow-lg hover:bg-[#002b59] sm:px-6 sm:text-sm">
                             {{ __('dashboard.recharge') }}
                         </a>
 
-                        <a href="{{ route('withdraw.index') }}"
+                        <a
+                           href="{{ route('withdraw.index') }}"
                            class="rounded-full bg-white px-3 py-3 text-center text-[11px] font-black uppercase text-[#003b7a] shadow-lg hover:bg-white/80 sm:px-6 sm:text-sm">
                             {{ __('dashboard.withdraw') }}
                         </a>
+
+                        <button
+                                type="button"
+                                class="rounded-full bg-[#2148ff] px-3 py-3 text-center text-[11px] font-black uppercase text-white shadow-lg hover:bg-[#1837d9] sm:px-6 sm:text-sm"
+                                @click="inviteOpen = true">
+                            {{ __('dashboard.invite_team') }}
+                        </button>
+
+                        @include('dashboard.partials.invite-modal', [
+                            'user' => $user,
+                            'inviteUrl' => $inviteUrl,
+                        ])
                     </div>
                 </div>
 
@@ -344,40 +362,7 @@
             </div>
 
             <div class="space-y-5 lg:space-y-6">
-                <div
-                     x-data="{
-                         copied: false,
-                         copy() {
-                             navigator.clipboard.writeText('{{ url('/register?ref=' . $user->referral_code) }}');
-                             this.copied = true;
-                             setTimeout(() => this.copied = false, 1800);
-                         }
-                     }"
-                     class="rounded-[1.5rem] bg-[#2148ff] p-5 text-white shadow-xl sm:rounded-[2rem] sm:p-6">
-                    <h2 class="text-xl font-black uppercase sm:text-2xl">
-                        {{ __('dashboard.invite_team') }}
-                    </h2>
-
-                    <p class="mt-2 text-sm font-bold text-white/75">
-                        {{ __('dashboard.invite_team_desc') }}
-                    </p>
-
-                    <div class="mt-5 rounded-2xl bg-white/15 p-4">
-                        <div class="text-xs font-black uppercase text-white/70">
-                            {{ __('dashboard.your_referral_code') }}
-                        </div>
-
-                        <div class="mt-1 break-all text-2xl font-black sm:text-3xl">
-                            {{ $user->referral_code }}
-                        </div>
-                    </div>
-
-                    <button
-                            type="button"
-                            class="mt-4 w-full rounded-2xl bg-[#ffd900] px-5 py-3 text-sm font-black uppercase text-[#003b7a]"
-                            @click="copy()"
-                            x-text="copied ? '{{ __('dashboard.copied') }}' : '{{ __('dashboard.copy_invite_link') }}'"></button>
-                </div>
+                
 
                 <div class="rounded-[1.5rem] bg-white p-5 shadow-xl ring-1 ring-black/5 sm:rounded-[2rem] sm:p-6">
                     <h2 class="text-xl font-black uppercase text-[#003b7a] sm:text-2xl">
@@ -429,6 +414,7 @@
             </div>
         </div>
     </section>
+    @include('dashboard.partials.check-in-popup')
 @endsection
 
 @push('scripts')

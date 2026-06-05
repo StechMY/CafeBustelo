@@ -2,16 +2,19 @@
 
 use App\Http\Controllers\Auth\CustomerAuthController;
 use App\Http\Controllers\BonusCodeController;
+use App\Http\Controllers\CalculatorController;
 use App\Http\Controllers\CheckInController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\DailyIncomeClaimController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HumanGateController;
 use App\Http\Controllers\LocaleController;
+use App\Http\Controllers\MyTeamController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RechargeController;
 use App\Http\Controllers\SalaryController;
+use App\Http\Controllers\SvipController;
 use App\Http\Controllers\TeamController;
 use App\Http\Controllers\WalletController;
 use App\Http\Controllers\WithdrawController;
@@ -79,8 +82,15 @@ Route::middleware('auth')->group(function (): void {
     Route::get('/withdraw/{withdrawRequest}', [WithdrawController::class, 'show'])
         ->name('withdraw.show');
 
-    Route::get('/team', TeamController::class)
-        ->name('team.index');
+    // Route::get('/team', TeamController::class)
+    //     ->name('team.index');
+
+    Route::get('/my-team', [MyTeamController::class, 'index'])
+        ->name('my-team.index');
+
+    Route::get('/my-team/{level}', [MyTeamController::class, 'level'])
+        ->whereIn('level', ['b', 'c', 'd'])
+        ->name('my-team.level');
 
     Route::get('/wallet', [WalletController::class, 'index'])
         ->name('wallet.index');
@@ -116,6 +126,12 @@ Route::middleware('auth')->group(function (): void {
 
     Route::post('/check-in/claim', [CheckInController::class, 'claim'])
         ->name('check-in.claim');
+
+    Route::post('/svip/{package}/purchase', [SvipController::class, 'purchase'])
+        ->name('svip.purchase');
+
+    Route::get('/calculator', CalculatorController::class)
+        ->name('calculator.index');
 
     Route::post('/logout', [CustomerAuthController::class, 'logout'])
         ->name('logout');

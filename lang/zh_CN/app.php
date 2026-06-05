@@ -1,7 +1,7 @@
 <?php
 
 return [
-    'brand_name' => 'Caf𝑒B𝔲stelo',
+    'brand_name' => 'Caf𝑒Bustelᴏ',
 
     'dashboard' => '首页',
     'products' => '产品',
@@ -67,4 +67,9 @@ return [
     'active_member' => '活跃会员',
     'inactive_account' => '未激活账户',
     'language' => '语言',
+    'more' => '更多',
+    'later' => '稍后',
+    'account_status_short' => '状态',
+    'active_member_short' => '活跃',
+    'inactive_account_short' => '未激活',
 ];

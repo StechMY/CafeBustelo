@@ -13,8 +13,9 @@
             ['label' => __('navigation.bonus_code'), 'route' => 'bonus-codes.index', 'icon' => 'bonus'],
             ['label' => __('navigation.salary'), 'route' => 'salary.index', 'icon' => 'salary'],
             ['label' => __('navigation.check_in'), 'route' => 'check-in.index', 'icon' => 'check-in'],
-            ['label' => __('navigation.team'), 'route' => 'team.index', 'icon' => 'team'],
+            ['label' => __('navigation.team'), 'route' => 'my-team.index', 'icon' => 'team'],
             ['label' => __('navigation.contact'), 'route' => 'contact.index', 'icon' => 'contact'],
+            ['label' => __('navigation.calculator'), 'route' => 'calculator.index', 'icon' => 'calculator'],
         ];
 
         $earningStats = [
@@ -50,17 +51,32 @@
                         {{ __('profile.member_profile') }}
                     </div>
 
-                   <h1 class="mt-4 text-4xl font-black uppercase leading-[0.9] tracking-tight text-[#003b7a] sm:text-6xl lg:text-7xl">
-    {{ __('profile.profile') }}
-</h1>
+                    <h1
+                        class="mt-4 text-4xl font-black uppercase leading-[0.9] tracking-tight text-[#003b7a] sm:text-6xl lg:text-7xl">
+                        {{ __('profile.profile') }}
+                    </h1>
 
                     <p class="mt-5 max-w-2xl text-sm font-bold leading-relaxed text-[#003b7a]/75 sm:text-base">
                         {{ __('profile.earning_overview_desc') }}
                     </p>
                 </div>
 
-                <div class="rounded-[2rem] border-4 border-[#003b7a] bg-white p-4 shadow-[10px_10px_0_#003b7a] sm:p-6">
-                    <div class="flex items-center gap-4">
+                <div
+                     class="relative overflow-hidden rounded-[2rem] border-4 border-[#003b7a] bg-white p-4 shadow-[10px_10px_0_#003b7a] sm:p-6">
+                    @php
+                        $vipLevelNo = (int) ($currentVipLevel?->level ?? 1);
+                        $vipLevelLogo = asset('lvl/lvl-' . $vipLevelNo . '.png');
+                    @endphp
+
+                    <div
+                         class="absolute right-4 top-4 z-10 grid h-16 w-16 place-items-center overflow-hidden rounded-2xl bg-[#fff8c7] p-1.5 shadow-lg ring-2 ring-[#ffd900] sm:right-5 sm:top-5 sm:h-20 sm:w-20">
+                        <img
+                             src="{{ $vipLevelLogo }}"
+                             alt="LV{{ $vipLevelNo }}"
+                             class="h-full w-full rounded-xl object-contain"
+                             onerror="this.closest('div').style.display='none'">
+                    </div>
+                    <div class="flex items-center gap-4 pr-16 sm:pr-24">
                         <form
                               id="avatar-upload-form"
                               method="POST"
@@ -106,9 +122,10 @@
                                 {{ __('profile.current_vip') }}
                             </div>
 
-                            <h2 class="mt-2 break-words text-2xl font-black uppercase leading-none text-[#003b7a] sm:text-4xl">
-    {{ $user->username }}
-</h2>
+                            <h2
+                                class="mt-2 break-words text-2xl font-black uppercase leading-none text-[#003b7a] sm:text-4xl">
+                                {{ $user->username }}
+                            </h2>
 
                             <div class="mt-3 flex flex-wrap gap-2">
                                 <span
@@ -323,6 +340,88 @@
                 </div>
 
                 <aside class="space-y-6">
+                    @if ($svipPackage)
+                        <div class="rounded-[2rem] bg-[#111827] p-5 text-white shadow-xl sm:p-6">
+                            <div class="flex items-start justify-between gap-4">
+                                <div class="min-w-0">
+                                    <div
+                                         class="inline-flex rounded-full bg-[#ffd900] px-3 py-1.5 text-[10px] font-black uppercase tracking-wide text-[#003b7a]">
+                                        {{ __('svip.svip') }}
+                                    </div>
+
+                                    <h2 class="mt-3 text-xl font-black uppercase sm:text-2xl">
+                                        {{ __('svip.auto_claim_title') }}
+                                    </h2>
+
+                                    <p class="mt-2 text-sm font-bold leading-relaxed text-white/65">
+                                        {{ __('svip.auto_claim_desc') }}
+                                    </p>
+                                </div>
+
+                                <div
+                                     class="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-white/10 text-[#ffd900]">
+                                    @include('partials.icon', [
+                                        'name' => 'salary',
+                                        'class' => 'h-6 w-6',
+                                    ])
+                                </div>
+                            </div>
+
+                            <div class="mt-4 grid grid-cols-2 gap-3">
+                                <div class="rounded-2xl bg-white/10 p-4">
+                                    <div class="text-[10px] font-black uppercase text-white/50">
+                                        {{ __('svip.price') }}
+                                    </div>
+
+                                    <div class="mt-1 break-words text-2xl font-black text-[#ffd900]">
+                                        {{ $currency }} {{ number_format((float) $svipPackage->price, 2) }}
+                                    </div>
+                                </div>
+
+                                <div class="rounded-2xl bg-white/10 p-4">
+                                    <div class="text-[10px] font-black uppercase text-white/50">
+                                        {{ __('svip.duration') }}
+                                    </div>
+
+                                    <div class="mt-1 text-lg font-black text-white">
+                                        @if ($svipPackage->duration_days)
+                                            {{ $svipPackage->duration_days }} {{ __('svip.days') }}
+                                        @else
+                                            {{ __('svip.lifetime') }}
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
+
+                            @if ($activeSvipPurchase)
+                                <div class="mt-4 rounded-2xl bg-green-500/15 p-4 text-sm font-black text-green-200">
+                                    {{ __('svip.active') }}
+
+                                    @if ($activeSvipPurchase->expires_at)
+                                        <div class="mt-1 text-xs text-green-100/80">
+                                            {{ __('svip.expires_at') }}:
+                                            {{ $activeSvipPurchase->expires_at->format('d M Y, h:i A') }}
+                                        </div>
+                                    @else
+                                        <div class="mt-1 text-xs text-green-100/80">
+                                            {{ __('svip.lifetime') }}
+                                        </div>
+                                    @endif
+                                </div>
+                            @else
+                                <form method="POST" action="{{ route('svip.purchase', $svipPackage) }}"
+                                      class="js-svip-purchase-form mt-4">
+                                    @csrf
+
+                                    <button
+                                            type="submit"
+                                            class="w-full rounded-2xl bg-[#ffd900] px-5 py-3 text-sm font-black uppercase text-[#003b7a] shadow-lg transition hover:-translate-y-0.5 hover:shadow-xl">
+                                        {{ __('svip.purchase_now') }}
+                                    </button>
+                                </form>
+                            @endif
+                        </div>
+                    @endif
                     <div class="rounded-[2rem] bg-white p-5 shadow-xl ring-1 ring-black/5 sm:p-6">
                         <h2 class="text-xl font-black uppercase text-[#003b7a] sm:text-2xl">
                             {{ __('profile.account_overview') }}
@@ -487,6 +586,43 @@
 
                 fallbackCopy();
             }
+
+            document.addEventListener('DOMContentLoaded', function() {
+                document.querySelectorAll('.js-svip-purchase-form').forEach(function(form) {
+                    form.addEventListener('submit', async function(event) {
+                        if (typeof Swal === 'undefined') {
+                            return;
+                        }
+
+                        event.preventDefault();
+
+                        const result = await Swal.fire({
+                            icon: 'question',
+                            title: @json(__('svip.confirm_title')),
+                            text: @json(__('svip.confirm_desc')),
+                            showCancelButton: true,
+                            confirmButtonText: @json(__('svip.purchase_now')),
+                            cancelButtonText: @json(__('app.cancel')),
+                            confirmButtonColor: '#e4003a',
+                            cancelButtonColor: '#6b7280',
+                            reverseButtons: true,
+                        });
+
+                        if (result.isConfirmed) {
+                            Swal.fire({
+                                title: @json(__('app.loading')),
+                                allowOutsideClick: false,
+                                allowEscapeKey: false,
+                                didOpen: function() {
+                                    Swal.showLoading();
+                                },
+                            });
+
+                            form.submit();
+                        }
+                    });
+                });
+            });
         </script>
     @endpush
 @endsection

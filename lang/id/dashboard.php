@@ -59,4 +59,6 @@ return [
     'featured_news_desc' => 'Ketuk slide untuk melihat detail pengumuman lengkap.',
     'tap_for_details' => 'Ketuk untuk detail',
     'open' => 'Buka',
+    'scan_to_register' => 'Pindai untuk Daftar',
+    'invite_link' => 'Tautan Undangan',
 ];

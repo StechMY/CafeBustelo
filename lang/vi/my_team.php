@@ -1,0 +1,45 @@
+<?php
+
+return [
+    'my_team' => 'Đội của tôi',
+    'team_center' => 'Trung tâm đội nhóm',
+    'hero_desc' => 'Xem hoa hồng đội nhóm, số lượng B/C/D, hiệu suất nạp tiền và thống kê phát triển đội nhóm.',
+    'invite_code' => 'Mã mời',
+    'invite_link' => 'Liên kết mời',
+
+    'total_team_commission' => 'Tổng hoa hồng đội nhóm',
+    'valid_users' => 'Người dùng hợp lệ',
+    'team_accumulated_recharge' => 'Tổng nạp tích lũy đội nhóm',
+
+    'commission_rate' => 'Hoa hồng',
+    'total_people' => 'Tổng số người',
+    'valid_people' => 'Người hợp lệ',
+    'check_detail' => 'Xem chi tiết',
+    'view' => 'Xem',
+
+    'team_statistics' => 'Thống kê đội nhóm',
+    'team_statistics_desc' => 'Theo dõi thành viên mới và hiệu suất nạp tiền theo ngày, theo tháng.',
+    'today_joined' => 'Tham gia hôm nay',
+    'yesterday_joined' => 'Tham gia hôm qua',
+    'today_recharge' => 'Nạp hôm nay',
+    'yesterday_recharge' => 'Nạp hôm qua',
+    'this_month_recharge' => 'Nạp tháng này',
+    'last_month_recharge' => 'Nạp tháng trước',
+    'people' => 'người',
+
+    'team' => 'Đội',
+    'level_detail' => 'Đội :level',
+    'level_detail_desc' => 'Xem ID tuyến dưới, 5 số cuối điện thoại, trạng thái tài khoản và sản phẩm cao nhất.',
+    'downline_list' => 'Danh sách tuyến dưới',
+    'downline_list_desc' => 'Số điện thoại được ẩn một phần để bảo vệ quyền riêng tư.',
+    'all_status' => 'Tất cả trạng thái',
+    'user_id' => 'ID người dùng',
+    'phone_last_5' => '5 số cuối điện thoại',
+    'status' => 'Trạng thái',
+    'highest_product' => 'Sản phẩm cao nhất',
+    'joined_at' => 'Ngày tham gia',
+    'no_downline' => 'Không có tuyến dưới',
+    'no_downline_desc' => 'Chưa có người dùng nào ở cấp này.',
+    'invitation' => 'Lời mời',
+    'invite_team' => 'Mời đội nhóm',
+];

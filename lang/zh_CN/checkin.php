@@ -4,6 +4,7 @@ return [
     'check_in' => '每日签到',
     'daily_reward' => '每日奖励',
     'hero_desc' => '领取你的每日 VIP 签到奖励，金额根据当前 VIP 等级计算。',
+    'popup_desc' => '完成今日签到，领取你的 VIP 每日奖励。',
     'today_reward' => '今日奖励',
     'claim_now' => '立即领取',
     'claimed_today' => '今日已领取',

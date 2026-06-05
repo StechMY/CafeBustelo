@@ -1,0 +1,45 @@
+<?php
+
+return [
+    'my_team' => '我的团队',
+    'team_center' => '团队中心',
+    'hero_desc' => '查看你的团队佣金、B/C/D 人数、团队充值表现和团队增长数据。',
+    'invite_code' => '邀请码',
+    'invite_link' => '邀请链接',
+
+    'total_team_commission' => '团队总佣金',
+    'valid_users' => '有效用户',
+    'team_accumulated_recharge' => '团队累计充值',
+
+    'commission_rate' => '佣金比例',
+    'total_people' => '总人数',
+    'valid_people' => '有效人数',
+    'check_detail' => '查看详情',
+    'view' => '查看',
+
+    'team_statistics' => '团队统计',
+    'team_statistics_desc' => '查看今日、昨日和月份的团队新增与充值表现。',
+    'today_joined' => '今日加入',
+    'yesterday_joined' => '昨日加入',
+    'today_recharge' => '今日充值',
+    'yesterday_recharge' => '昨日充值',
+    'this_month_recharge' => '本月总充值',
+    'last_month_recharge' => '上月总充值',
+    'people' => '人',
+
+    'team' => '团队',
+    'level_detail' => ':level 团队',
+    'level_detail_desc' => '查看下线用户 ID、电话后 5 位、账户状态和最高产品。',
+    'downline_list' => '下线列表',
+    'downline_list_desc' => '电话号码已部分隐藏，以保护用户隐私。',
+    'all_status' => '全部状态',
+    'user_id' => '用户 ID',
+    'phone_last_5' => '电话后 5 位',
+    'status' => '状态',
+    'highest_product' => '最高产品',
+    'joined_at' => '加入时间',
+    'no_downline' => '暂无下线',
+    'no_downline_desc' => '该层级目前还没有用户。',
+    'invitation' => '邀请',
+'invite_team' => '邀请团队',
+];

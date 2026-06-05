@@ -50,7 +50,9 @@ return [
         'salary_weekly' => 'Gaji Mingguan',
         'salary_monthly' => 'Gaji Bulanan',
         'salary_annual' => 'Gaji Tahunan',
+        'svip_purchase' => 'Pembelian SVIP',
     ],
     'bonus_code' => 'Kode Bonus',
     'check_in' => 'Hadiah Check-in',
+    'svip_purchase' => 'Pembelian SVIP',
 ];

@@ -125,8 +125,25 @@ return [
 
     'currency' => env('APP_CURRENCY', 'RM'),
     'supported_locales' => [
-        'en' => 'English',
-        'zh_CN' => '中文',
-        'id' => 'Indonesia',
+        'en' => [
+            'label' => 'English',
+            'short' => 'EN',
+            'flag' => '/flags/us.svg',
+        ],
+        'zh_CN' => [
+            'label' => '中文',
+            'short' => '中文',
+            'flag' => '/flags/cn.svg',
+        ],
+        'id' => [
+            'label' => 'Indonesia',
+            'short' => 'ID',
+            'flag' => '/flags/id.svg',
+        ],
+        'vi' => [
+            'label' => 'Tiếng Việt',
+            'short' => 'VI',
+            'flag' => '/flags/vn.svg',
+        ],
     ],
 ];

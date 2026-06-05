@@ -25,4 +25,5 @@ return [
     'support' => '客服',
     'login' => '登录',
     'register' => '注册',
+    'calculator' => '计算器',
 ];

@@ -3,8 +3,9 @@
         ['label' => __('navigation.dashboard'), 'route' => 'dashboard', 'icon' => 'home'],
         ['label' => __('navigation.products'), 'route' => 'products.index', 'icon' => 'products'],
         ['label' => __('navigation.wallet'), 'route' => 'wallet.index', 'icon' => 'wallet'],
-        ['label' => __('navigation.check_in'), 'route' => 'check-in.index', 'icon' => 'check-in'],
+        // ['label' => __('navigation.check_in'), 'route' => 'check-in.index', 'icon' => 'check-in'],
         ['label' => __('navigation.contact'), 'route' => 'contact.index', 'icon' => 'contact'],
+        ['label' => __('navigation.team'), 'route' => 'my-team.index', 'icon' => 'team'],
         ['label' => __('navigation.profile'), 'route' => 'profile.index', 'icon' => 'profile'],
     ];
 
@@ -44,7 +45,7 @@
                         'name' => $item['icon'],
                         'class' => 'h-4 w-4',
                     ])
-                    <span>{{ $item['label'] }}</span>
+                    <span class="whitespace-nowrap">{{ $item['label'] }}</span>
                 </a>
             @endforeach
         </nav>
@@ -52,16 +53,18 @@
         <div class="hidden shrink-0 items-center gap-3 lg:flex">
 
             @include('partials.language-switcher')
-            <div class="rounded-full bg-white/10 px-4 py-2">
-                <div class="text-[10px] font-black uppercase tracking-wide text-white/50">
-                    {{ __('app.account_status') }}
-                </div>
+            <div class="flex items-center gap-2 rounded-full bg-white/10 px-4 py-2">
                 @php
-                    $statusColor = $user->status === 'active' ? 'text-[#00c853]' : 'text-[#e53935]';
+                    $isActive = $user->status === 'active';
                 @endphp
-                <div class="text-xs font-black uppercase {{ $statusColor }}">
-                    {{ $user->status === 'active' ? __('app.active_member') : __('app.inactive_account') }}
-                </div>
+
+                <span
+                      class="h-2.5 w-2.5 rounded-full {{ $isActive ? 'bg-[#00c853]' : 'bg-[#e53935]' }}"
+                      aria-hidden="true"></span>
+
+                <span class="text-xs font-black uppercase text-white">
+                    {{ $isActive ? __('app.active_member_short') : __('app.inactive_account_short') }}
+                </span>
             </div>
 
             <form method="POST" action="{{ route('logout') }}">

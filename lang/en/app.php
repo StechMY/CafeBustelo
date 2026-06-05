@@ -1,7 +1,7 @@
 <?php
 
 return [
-    'brand_name' => 'Caf𝑒B𝔲stelo',
+    'brand_name' => 'CafꫀBustelᴏ',
 
     'dashboard' => 'Dashboard',
     'products' => 'Products',
@@ -68,4 +68,9 @@ return [
     'active_member' => 'Active Member',
     'inactive_account' => 'Inactive Account',
     'language' => 'Language',
+    'more' => 'More',
+    'later' => 'Later',
+    'account_status_short' => 'Status',
+    'active_member_short' => 'Active',
+    'inactive_account_short' => 'Inactive',
 ];

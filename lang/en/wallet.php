@@ -60,8 +60,10 @@ return [
         'salary_weekly' => 'Weekly Salary',
         'salary_monthly' => 'Monthly Salary',
         'salary_annual' => 'Annual Salary',
+        'svip_purchase' => 'SVIP Purchase',
     ],
 
     'bonus_code' => 'Bonus Code',
     'check_in' => 'Check-in Reward',
+    'svip_purchase' => 'SVIP Purchase',
 ];

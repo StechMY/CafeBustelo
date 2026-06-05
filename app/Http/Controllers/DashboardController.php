@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\CheckInRecord;
 use App\Models\CommissionRecord;
 use App\Models\DailyIncomeClaim;
 use App\Models\DashboardMarquee;
@@ -86,6 +87,14 @@ class DashboardController extends Controller
             }
         }
 
+        $todayCheckInRecord = CheckInRecord::query()
+            ->where('user_id', $user->id)
+            ->whereDate('claim_date', today())
+            ->first();
+
+        $shouldShowCheckInPopup = $user->status === 'active'
+            && !$todayCheckInRecord && $user->check_in_status;
+
         return view('dashboard.index', [
             'user' => $user,
 
@@ -107,6 +116,9 @@ class DashboardController extends Controller
             'dashboardMarquees' => $dashboardMarquees,
             'dashboardPopup' => $dashboardPopup,
             'showDashboardPopup' => $showDashboardPopup,
+            'todayCheckInRecord' => $todayCheckInRecord,
+            'shouldShowCheckInPopup' => $shouldShowCheckInPopup,
+            'currentVipLevel' => $user->currentVipLevel(),
         ]);
     }
 }

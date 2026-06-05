@@ -7,6 +7,7 @@ use App\Models\CommissionRecord;
 use App\Models\DailyIncomeClaim;
 use App\Models\RechargeRequest;
 use App\Models\SalaryClaim;
+use App\Models\SvipPackage;
 use App\Models\VipLevel;
 use App\Models\Wallet;
 use App\Models\WalletTransaction;
@@ -104,9 +105,17 @@ class ProfileController extends Controller
 
         $nextVipLevel = VipLevel::query()
             ->where('status', 'active')
-            ->when($currentVipLevel, fn ($query) => $query->where('level', '>', $currentVipLevel->level))
+            ->when($currentVipLevel, fn($query) => $query->where('level', '>', $currentVipLevel->level))
             ->orderBy('level')
             ->first();
+
+        $svipPackage = SvipPackage::query()
+            ->active()
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->first();
+
+        $activeSvipPurchase = $user->activeSvipPurchase()->first();
 
         return view('profile.index', [
             'user' => $user,
@@ -114,6 +123,8 @@ class ProfileController extends Controller
             'currentVipLevel' => $currentVipLevel,
             'nextVipLevel' => $nextVipLevel,
             'activeTeamSize' => $activeTeamSize,
+            'svipPackage' => $svipPackage,
+            'activeSvipPurchase' => $activeSvipPurchase,
         ]);
     }
 

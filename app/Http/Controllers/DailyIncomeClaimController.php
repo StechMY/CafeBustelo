@@ -16,10 +16,14 @@ class DailyIncomeClaimController extends Controller
         UserProduct $userProduct,
         DailyIncomeClaimService $dailyIncomeClaimService,
     ): RedirectResponse {
-        abort_unless($userProduct->user_id === $request->user()->id, 403);
+        abort_unless((int) $userProduct->user_id === (int) $request->user()->id, 403);
 
         try {
-            $dailyIncomeClaimService->claim($request->user(), $userProduct);
+            $dailyIncomeClaimService->claim(
+                user: $request->user(),
+                userProduct: $userProduct,
+                source: 'manual_claim',
+            );
 
             return back()->with('success', __('daily_income.claim_success'));
         } catch (RuntimeException $exception) {

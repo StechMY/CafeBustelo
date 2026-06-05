@@ -1,0 +1,45 @@
+<?php
+
+return [
+    'my_team' => 'Tim Saya',
+    'team_center' => 'Pusat Tim',
+    'hero_desc' => 'Lihat komisi tim, jumlah anggota B/C/D, performa isi ulang, dan statistik perkembangan tim.',
+    'invite_code' => 'Kode Undangan',
+    'invite_link' => 'Tautan Undangan',
+
+    'total_team_commission' => 'Total Komisi Tim',
+    'valid_users' => 'Pengguna Sah',
+    'team_accumulated_recharge' => 'Total Isi Ulang Tim',
+
+    'commission_rate' => 'Komisi',
+    'total_people' => 'Jumlah Orang',
+    'valid_people' => 'Pengguna Sah',
+    'check_detail' => 'Lihat Detail',
+    'view' => 'Lihat',
+
+    'team_statistics' => 'Statistik Tim',
+    'team_statistics_desc' => 'Pantau anggota baru dan performa isi ulang harian serta bulanan.',
+    'today_joined' => 'Bergabung Hari Ini',
+    'yesterday_joined' => 'Bergabung Kemarin',
+    'today_recharge' => 'Isi Ulang Hari Ini',
+    'yesterday_recharge' => 'Isi Ulang Kemarin',
+    'this_month_recharge' => 'Isi Ulang Bulan Ini',
+    'last_month_recharge' => 'Isi Ulang Bulan Lalu',
+    'people' => 'orang',
+
+    'team' => 'Tim',
+    'level_detail' => 'Tim :level',
+    'level_detail_desc' => 'Lihat ID downline, 5 digit terakhir nomor telepon, status akun, dan produk tertinggi.',
+    'downline_list' => 'Daftar Downline',
+    'downline_list_desc' => 'Nomor telepon disembunyikan sebagian untuk privasi.',
+    'all_status' => 'Semua Status',
+    'user_id' => 'ID Pengguna',
+    'phone_last_5' => '5 Digit Terakhir',
+    'status' => 'Status',
+    'highest_product' => 'Produk Tertinggi',
+    'joined_at' => 'Tanggal Bergabung',
+    'no_downline' => 'Tidak ada downline',
+    'no_downline_desc' => 'Belum ada pengguna di level ini.',
+    'invitation' => 'Undangan',
+    'invite_team' => 'Undang Tim',
+];

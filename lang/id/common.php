@@ -1,7 +1,7 @@
 <?php
 
 return [
-    'brand_name' => 'Caf𝑒 B𝔲stelo',
+    'brand_name' => 'Caf𝑒 Bustelᴏ',
     'member_club' => 'Klub Anggota',
     'vip_club' => 'Klub VIP',
     'member_panel' => 'Panel Anggota',

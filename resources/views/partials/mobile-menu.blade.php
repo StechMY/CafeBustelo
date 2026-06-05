@@ -19,7 +19,7 @@
         [
             'label' => __('navigation.rewards'),
             'items' => [
-                ['label' => __('navigation.team'), 'route' => 'team.index', 'icon' => 'team'],
+                ['label' => __('navigation.team'), 'route' => 'my-team.index', 'icon' => 'team'],
                 ['label' => __('navigation.salary'), 'route' => 'salary.index', 'icon' => 'salary'],
                 ['label' => __('navigation.bonus_code'), 'route' => 'bonus-codes.index', 'icon' => 'bonus'],
             ],

@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Collection as SupportCollection;
@@ -142,6 +143,23 @@ class User extends Authenticatable
     public function salaryClaims(): HasMany
     {
         return $this->hasMany(SalaryClaim::class);
+    }
+
+    public function svipPurchases(): HasMany
+    {
+        return $this->hasMany(SvipPurchase::class);
+    }
+
+    public function activeSvipPurchase(): HasOne
+    {
+        return $this->hasOne(SvipPurchase::class)
+            ->active()
+            ->latestOfMany();
+    }
+
+    public function isSvipActive(): bool
+    {
+        return $this->activeSvipPurchase()->exists();
     }
 
     public function isActive(): bool

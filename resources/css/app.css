@@ -49,3 +49,11 @@
     color: #003b7a !important;
     font-weight: 900 !important;
 }
+
+.invite-modal-scroll {
+    scrollbar-width: none;
+}
+
+.invite-modal-scroll::-webkit-scrollbar {
+    display: none;
+}

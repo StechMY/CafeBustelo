@@ -17,9 +17,12 @@ class DailyIncomeClaimService
         private readonly CommissionService $commissionService,
     ) {}
 
-    public function claim(User $user, UserProduct $userProduct): DailyIncomeClaim
-    {
-        return DB::transaction(function () use ($user, $userProduct): DailyIncomeClaim {
+    public function claim(
+        User $user,
+        UserProduct $userProduct,
+        string $source = 'manual_claim',
+    ): DailyIncomeClaim {
+        return DB::transaction(function () use ($user, $userProduct, $source): DailyIncomeClaim {
             $lockedUserProduct = UserProduct::query()
                 ->whereKey($userProduct->id)
                 ->lockForUpdate()
@@ -45,10 +48,22 @@ class DailyIncomeClaimService
                 throw new RuntimeException(__('daily_income.product_expired'));
             }
 
+            if (! $lockedUserProduct->next_claim_at) {
+                throw new RuntimeException(__('daily_income.not_claimable_yet'));
+            }
+
             if ($now->lt($lockedUserProduct->next_claim_at)) {
                 throw new RuntimeException(__('daily_income.not_claimable_yet'));
             }
-            if ($this->claimWindowExpired($lockedUserProduct->next_claim_at, $now)) {
+
+            /**
+             * Manual user claim should respect claim window.
+             * SVIP auto claim should NOT miss because system may run later.
+             */
+            if (
+                $source !== 'svip_auto_claim'
+                && $this->claimWindowExpired($lockedUserProduct->next_claim_at, $now)
+            ) {
                 $lockedUserProduct->forceFill([
                     'missed_days' => $lockedUserProduct->missed_days + 1,
                     'next_claim_at' => $lockedUserProduct->next_claim_at->copy()->addDay(),
@@ -57,6 +72,11 @@ class DailyIncomeClaimService
                 throw new RuntimeException(__('daily_income.claim_window_expired'));
             }
 
+            /**
+             * For SVIP auto claim:
+             * If product has overdue claim dates, auto claim the current next_claim_at one by one.
+             * The command will call this repeatedly in later runs until caught up.
+             */
             $claimDayNo = $lockedUserProduct->claimed_days + $lockedUserProduct->missed_days + 1;
 
             if ($claimDayNo > $lockedUserProduct->duration_days_snapshot) {
@@ -90,7 +110,8 @@ class DailyIncomeClaimService
                 'claimable_at' => $lockedUserProduct->next_claim_at,
                 'claimed_at' => $now,
                 'meta' => [
-                    'source' => 'manual_claim',
+                    'source' => $source,
+                    'is_svip_auto_claim' => $source === 'svip_auto_claim',
                 ],
             ]);
 
@@ -100,11 +121,15 @@ class DailyIncomeClaimService
                 transactionType: 'daily_income',
                 amount: $lockedUserProduct->daily_income_snapshot,
                 reference: $claim,
-                remarks: 'Daily income claim',
+                remarks: $source === 'svip_auto_claim'
+                    ? 'SVIP auto daily income claim'
+                    : 'Daily income claim',
                 meta: [
                     'user_product_id' => $lockedUserProduct->id,
                     'product_id' => $lockedUserProduct->product_id,
                     'claim_day_no' => $claimDayNo,
+                    'source' => $source,
+                    'is_svip_auto_claim' => $source === 'svip_auto_claim',
                 ],
             );
 
@@ -113,11 +138,15 @@ class DailyIncomeClaimService
                 'next_claim_at' => $lockedUserProduct->next_claim_at->copy()->addDay(),
             ])->save();
 
+            $lockedUserProduct->refresh();
+
             if (
-                ($lockedUserProduct->claimed_days + $lockedUserProduct->missed_days) >= $lockedUserProduct->duration_days_snapshot
+                ($lockedUserProduct->claimed_days + $lockedUserProduct->missed_days)
+                >= $lockedUserProduct->duration_days_snapshot
             ) {
                 $lockedUserProduct->forceFill([
                     'status' => 'expired',
+                    'next_claim_at' => null,
                 ])->save();
 
                 $this->deactivateUserIfNoActiveProducts($user);
@@ -135,7 +164,7 @@ class DailyIncomeClaimService
 
     private function claimWindowExpired(Carbon $claimableAt, Carbon $now): bool
     {
-        return $now->startOfDay()->greaterThan($claimableAt->copy()->startOfDay());
+        return $now->copy()->startOfDay()->greaterThan($claimableAt->copy()->startOfDay());
     }
 
     private function deactivateUserIfNoActiveProducts(User $user): void

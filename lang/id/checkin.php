@@ -4,6 +4,7 @@ return [
     'check_in' => 'Check-in',
     'daily_reward' => 'Hadiah Harian',
     'hero_desc' => 'Klaim hadiah check-in VIP harian Anda. Jumlahnya berdasarkan level VIP Anda saat ini.',
+    'popup_desc' => 'Check-in hari ini dan klaim bonus VIP harian Anda.',
     'today_reward' => 'Hadiah Hari Ini',
     'claim_now' => 'Klaim Sekarang',
     'claimed_today' => 'Sudah Diklaim Hari Ini',

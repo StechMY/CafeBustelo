@@ -3,6 +3,7 @@
 return [
     'check_in' => 'Check-in',
     'daily_reward' => 'Daily Reward',
+    'popup_desc' => 'Check in today and claim your daily VIP bonus.',
     'hero_desc' => 'Claim your daily VIP check-in reward. The amount is based on your current VIP level.',
     'today_reward' => 'Today Reward',
     'claim_now' => 'Claim Now',

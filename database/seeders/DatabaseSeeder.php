@@ -21,6 +21,7 @@ class DatabaseSeeder extends Seeder
             CommissionLevelSeeder::class,
             SalaryClaimWindowSeeder::class,
             VipLevelSeeder::class,
+            SvipPackageSeeder::class,
         ]);
     }
 }

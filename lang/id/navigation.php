@@ -23,4 +23,5 @@ return [
     'support' => 'Bantuan',
     'login' => 'Masuk',
     'register' => 'Daftar',
+    'calculator' => 'Kalkulator',
 ];

@@ -11,3 +11,8 @@ use Illuminate\Support\Facades\Schedule;
 Schedule::command('products:sync-status')
     ->dailyAt('00:01')
     ->withoutOverlapping();
+
+Schedule::command('svip:auto-claim-daily-income')
+    ->everyFiveMinutes()
+    ->withoutOverlapping()
+    ->runInBackground();

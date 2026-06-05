@@ -1,0 +1,45 @@
+<?php
+
+return [
+    'my_team' => 'My Team',
+    'team_center' => 'Team Center',
+    'hero_desc' => 'View your team commission, B/C/D members, recharge performance, and team growth statistics.',
+    'invite_code' => 'Invite Code',
+    'invite_link' => 'Invite Link',
+
+    'total_team_commission' => 'Total Team Commission',
+    'valid_users' => 'Valid Users',
+    'team_accumulated_recharge' => 'Team Accumulated Recharge',
+
+    'commission_rate' => 'Commission',
+    'total_people' => 'Total People',
+    'valid_people' => 'Valid People',
+    'check_detail' => 'Check Detail',
+    'view' => 'View',
+
+    'team_statistics' => 'Team Statistics',
+    'team_statistics_desc' => 'Track new members and recharge performance by day and month.',
+    'today_joined' => 'Joined Today',
+    'yesterday_joined' => 'Joined Yesterday',
+    'today_recharge' => 'Today Recharge',
+    'yesterday_recharge' => 'Yesterday Recharge',
+    'this_month_recharge' => 'This Month Recharge',
+    'last_month_recharge' => 'Last Month Recharge',
+    'people' => 'people',
+
+    'team' => 'Team',
+    'level_detail' => ':level Team',
+    'level_detail_desc' => 'View downline user ID, phone last 5 digits, account status, and highest product.',
+    'downline_list' => 'Downline List',
+    'downline_list_desc' => 'Phone numbers are partially hidden for privacy.',
+    'all_status' => 'All Status',
+    'user_id' => 'User ID',
+    'phone_last_5' => 'Phone Last 5',
+    'status' => 'Status',
+    'highest_product' => 'Highest Product',
+    'joined_at' => 'Joined At',
+    'no_downline' => 'No downline found',
+    'no_downline_desc' => 'There are no users in this level yet.',
+    'invitation' => 'Invitation',
+    'invite_team' => 'Invite Team',
+];
