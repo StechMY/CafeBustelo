@@ -69,7 +69,7 @@
                     @endphp
 
                     <div
-                         class="absolute right-4 top-4 z-10 grid h-16 w-16 place-items-center overflow-hidden rounded-2xl bg-[#fff8c7] p-1.5 shadow-lg ring-2 ring-[#ffd900] sm:right-5 sm:top-5 sm:h-20 sm:w-20">
+                         class="absolute right-4 top-4 z-10 grid h-19 w-19 place-items-center overflow-hidden rounded-2xl bg-[#fff8c7] p-1.5 shadow-lg ring-2 ring-[#ffd900] sm:right-5 sm:top-5 sm:h-30 sm:w-30">
                         <img
                              src="{{ $vipLevelLogo }}"
                              alt="LV{{ $vipLevelNo }}"
