@@ -1,7 +1,7 @@
 <?php
 
 return [
-    'brand_name' => 'CafeBustelo',
+    'brand_name' => 'Caf𝑒B𝔲stelo',
 
     'dashboard' => 'Dashboard',
     'products' => 'Products',

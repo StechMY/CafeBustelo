@@ -1,7 +1,7 @@
 <?php
 
 return [
-    'brand_name' => 'CafeBustelo',
+    'brand_name' => 'Caf𝑒B𝔲stelo',
 
     'dashboard' => '首页',
     'products' => '产品',
