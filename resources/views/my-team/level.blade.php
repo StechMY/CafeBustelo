@@ -97,7 +97,7 @@
                                     </div>
 
                                     <div class="font-black text-[#003b7a]">
-                                        #{{ $downline->id }}
+                                        #{{ $downline->username }}
                                     </div>
                                 </div>
 
