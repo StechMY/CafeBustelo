@@ -1,4 +1,6 @@
 @php
+    $variant = $variant ?? 'desktop';
+
     $supportedLocales = config('app.supported_locales', [
         'en' => [
             'label' => 'English',
@@ -24,29 +26,41 @@
 
     $currentLocale = app()->getLocale();
     $currentLanguage = $supportedLocales[$currentLocale] ?? $supportedLocales['en'];
+
+    $isMobile = $variant === 'mobile';
 @endphp
 
 <div
     x-data="{ open: false }"
-    class="relative inline-flex"
+    class="relative {{ $isMobile ? 'block w-full' : 'inline-flex' }}"
     @click.outside="open = false"
 >
     <button
         type="button"
-        class="inline-flex h-10 items-center gap-2 rounded-full bg-white/10 px-3 text-xs font-black uppercase text-white ring-1 ring-white/10 transition hover:bg-white/15"
+        class="{{ $isMobile ? 'flex h-12 w-full justify-between rounded-2xl px-4' : 'inline-flex h-10 rounded-full px-3' }}
+               items-center gap-2 bg-white/10 text-xs font-black uppercase text-white ring-1 ring-white/10 transition hover:bg-white/15"
         @click="open = ! open"
     >
-        @if (! empty($currentLanguage['flag']))
-            <img
-                src="{{ asset(ltrim($currentLanguage['flag'], '/')) }}"
-                alt="{{ $currentLanguage['short'] ?? $currentLocale }}"
-                class="h-4 w-5 rounded-sm object-cover"
-            >
-        @endif
+        <span class="flex min-w-0 items-center gap-2">
+            @if (! empty($currentLanguage['flag']))
+                <img
+                    src="{{ asset(ltrim($currentLanguage['flag'], '/')) }}"
+                    alt="{{ $currentLanguage['short'] ?? $currentLocale }}"
+                    class="h-4 w-5 shrink-0 rounded-sm object-cover"
+                >
+            @endif
 
-        <span>{{ $currentLanguage['short'] ?? $currentLocale }}</span>
+            <span class="truncate">
+                {{ $isMobile ? ($currentLanguage['label'] ?? $currentLocale) : ($currentLanguage['short'] ?? $currentLocale) }}
+            </span>
+        </span>
 
-        <svg class="h-3 w-3 opacity-70" viewBox="0 0 20 20" fill="currentColor">
+        <svg
+            class="h-3 w-3 shrink-0 opacity-70 transition"
+            :class="{ 'rotate-180': open }"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+        >
             <path
                 fill-rule="evenodd"
                 d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.17l3.71-3.94a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06Z"
@@ -59,7 +73,10 @@
         x-show="open"
         x-cloak
         x-transition
-        class="absolute right-0 top-12 z-50 w-48 overflow-hidden rounded-2xl bg-white py-2 text-[#003b7a] shadow-2xl ring-1 ring-black/5"
+        class="{{ $isMobile
+            ? 'relative mt-2 w-full rounded-2xl'
+            : 'absolute right-0 top-12 z-50 w-48 rounded-2xl'
+        }} overflow-hidden bg-white py-2 text-[#003b7a] shadow-2xl ring-1 ring-black/5"
     >
         @foreach ($supportedLocales as $locale => $language)
             @php
@@ -82,7 +99,7 @@
                             <img
                                 src="{{ asset(ltrim($flag, '/')) }}"
                                 alt="{{ $short }}"
-                                class="h-4 w-5 rounded-sm object-cover"
+                                class="h-4 w-5 shrink-0 rounded-sm object-cover"
                             >
                         @endif
 

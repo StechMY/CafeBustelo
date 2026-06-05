@@ -176,7 +176,7 @@
                     {{ __('app.language') }}
                 </div>
 
-                @include('partials.language-switcher')
+                @include('partials.language-switcher', ['variant' => 'mobile'])
             </div>
             <form method="POST" action="{{ route('logout') }}" class="mt-6">
                 @csrf
