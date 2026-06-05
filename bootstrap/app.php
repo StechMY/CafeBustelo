@@ -24,6 +24,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             SetLocale::class,
         ]);
+        $middleware->alias(['human.only' => App\Http\Middleware\HumanOnly::class]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

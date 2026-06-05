@@ -6,6 +6,7 @@ use App\Http\Controllers\CheckInController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\DailyIncomeClaimController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\HumanGateController;
 use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProfileController;
@@ -18,7 +19,16 @@ use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', '/dashboard');
 
-Route::middleware('guest')->group(function (): void {
+
+Route::get('/human-gate', [HumanGateController::class, 'show'])
+    ->name('human.gate')
+    ->middleware(['web', 'throttle:60,1']);
+
+Route::post('/human-gate/verify', [HumanGateController::class, 'verify'])
+    ->name('human.gate.verify')
+    ->middleware(['web', 'throttle:30,1']);
+
+Route::middleware(['guest', 'web', 'human.only'])->group(function (): void {
     Route::get('/login', [CustomerAuthController::class, 'showLogin'])
         ->name('login');
 
@@ -100,7 +110,7 @@ Route::middleware('auth')->group(function (): void {
 
     Route::delete('/profile/avatar', [ProfileController::class, 'deleteAvatar'])
         ->name('profile.avatar.delete');
-        
+
     Route::get('/check-in', [CheckInController::class, 'index'])
         ->name('check-in.index');
 
@@ -113,5 +123,7 @@ Route::middleware('auth')->group(function (): void {
 Route::post('/locale', LocaleController::class)
     ->name('locale.update');
 
-Route::get('/contact', ContactController::class)
-    ->name('contact.index');
+Route::middleware(['web', 'human.only'])->group(function (): void {
+    Route::get('/contact', ContactController::class)
+        ->name('contact.index');
+});
