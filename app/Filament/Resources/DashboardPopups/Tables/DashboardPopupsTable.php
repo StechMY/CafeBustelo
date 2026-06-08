@@ -20,11 +20,13 @@ class DashboardPopupsTable
         return $table
             ->columns([
                 ImageColumn::make('image_path')
+                    ->label(__('filament.image_path'))
                     ->disk('do_spaces')
                     ->height(60)
                     ->width(100),
 
                 TextColumn::make('title')
+                    ->label(__('filament.title'))
                     ->searchable()
                     ->weight('bold'),
 
@@ -38,12 +40,15 @@ class DashboardPopupsTable
                     }),
 
                 IconColumn::make('show_every_visit')
+                    ->label(__('filament.show_every_visit'))
                     ->boolean(),
 
                 TextColumn::make('sort_order')
+                    ->label(__('filament.sort_order'))
                     ->sortable(),
 
                 TextColumn::make('updated_at')
+                    ->label(__('filament.updated_at'))
                     ->dateTime()
                     ->sortable(),
             ])

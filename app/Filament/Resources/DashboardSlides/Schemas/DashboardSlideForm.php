@@ -20,10 +20,12 @@ class DashboardSlideForm
                 Section::make(__('filament.slide_content'))
                     ->schema([
                         TextInput::make('title')
+                            ->label(__('filament.title'))
                             ->required()
                             ->maxLength(255),
 
                         Textarea::make('description')
+                            ->label(__('filament.description'))
                             ->rows(4)
                             ->columnSpanFull(),
 
@@ -39,10 +41,12 @@ class DashboardSlideForm
                         Grid::make(2)
                             ->schema([
                                 TextInput::make('button_text')
+                                    ->label(__('filament.button_text'))
                                     ->maxLength(100)
                                     ->placeholder(__('filament.learn_more')),
 
                                 TextInput::make('button_url')
+                                    ->label(__('filament.button_url'))
                                     ->url()
                                     ->maxLength(2048)
                                     ->placeholder('https://example.com'),
@@ -54,16 +58,20 @@ class DashboardSlideForm
                         Grid::make(2)
                             ->schema([
                                 Toggle::make('is_enabled')
+                                    ->label(__('filament.is_enabled'))
                                     ->default(true),
 
                                 TextInput::make('sort_order')
+                                    ->label(__('filament.sort_order'))
                                     ->numeric()
                                     ->default(0),
 
                                 DateTimePicker::make('starts_at')
+                                    ->label(__('filament.starts_at'))
                                     ->seconds(false),
 
                                 DateTimePicker::make('ends_at')
+                                    ->label(__('filament.ends_at'))
                                     ->seconds(false),
                             ]),
                     ]),

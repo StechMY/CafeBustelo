@@ -18,14 +18,17 @@ class DashboardMarqueesTable
         return $table
             ->columns([
                 TextColumn::make('title')
+                    ->label(__('filament.title'))
                     ->searchable()
                     ->placeholder('-'),
 
                 TextColumn::make('message')
+                    ->label(__('filament.message'))
                     ->limit(60)
                     ->searchable(),
 
                 TextColumn::make('type')
+                    ->label(__('filament.type'))
                     ->badge()
                     ->color(fn (?string $state): string => match ($state) {
                         'success' => 'success',
@@ -44,9 +47,11 @@ class DashboardMarqueesTable
                     }),
 
                 TextColumn::make('sort_order')
+                    ->label(__('filament.sort_order'))
                     ->sortable(),
 
                 TextColumn::make('updated_at')
+                    ->label(__('filament.updated_at'))
                     ->dateTime()
                     ->sortable(),
             ])

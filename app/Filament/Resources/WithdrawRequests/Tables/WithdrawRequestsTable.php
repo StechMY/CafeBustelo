@@ -59,6 +59,7 @@ class WithdrawRequestsTable
                     ->toggleable(),
 
                 TextColumn::make('status')
+                    ->label(__('filament.status'))
                     ->badge()
                     ->color(fn(?string $state): string => match ($state) {
                         'pending' => 'warning',
@@ -69,15 +70,18 @@ class WithdrawRequestsTable
                     ->sortable(),
 
                 TextColumn::make('bank_name')
+                    ->label(__('filament.bank_name'))
                     ->searchable()
                     ->placeholder('-'),
 
                 TextColumn::make('bank_account_name')
+                    ->label(__('filament.bank_account_name'))
                     ->searchable()
                     ->copyable()
                     ->placeholder('-'),
 
                 TextColumn::make('bank_account_no')
+                    ->label(__('filament.bank_account_no'))
                     ->searchable()
                     ->copyable()
                     ->placeholder('-'),
@@ -92,6 +96,7 @@ class WithdrawRequestsTable
                     ->placeholder('-'),
 
                 TextColumn::make('reviewed_at')
+                    ->label(__('filament.reviewed_at'))
                     ->dateTime()
                     ->sortable()
                     ->placeholder('-'),

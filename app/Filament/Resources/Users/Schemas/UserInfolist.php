@@ -231,12 +231,15 @@ class UserInfolist
                         Grid::make(3)
                             ->schema([
                                 TextEntry::make('created_at')
+                                    ->label(__('filament.created_at'))
                                     ->dateTime(),
 
                                 TextEntry::make('updated_at')
+                                    ->label(__('filament.updated_at'))
                                     ->dateTime(),
 
                                 TextEntry::make('activated_at')
+                                    ->label(__('filament.activated_at'))
                                     ->dateTime()
                                     ->placeholder('-'),
                             ]),

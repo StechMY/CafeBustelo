@@ -41,6 +41,7 @@ class BonusCodesTable
                     ->toggleable(),
 
                 TextColumn::make('type')
+                    ->label(__('filament.type'))
                     ->badge()
                     ->color(fn (?string $state): string => match ($state) {
                         'admin' => 'warning',
@@ -52,10 +53,12 @@ class BonusCodesTable
                     ->sortable(),
 
                 TextColumn::make('amount')
+                    ->label(__('filament.amount'))
                     ->prefix(config('app.currency')." ")
                     ->sortable(),
 
                 TextColumn::make('status')
+                    ->label(__('filament.status'))
                     ->badge()
                     ->color(fn (?string $state): string => match ($state) {
                         'unused' => 'warning',
@@ -78,17 +81,20 @@ class BonusCodesTable
                     ->toggleable(),
 
                 TextColumn::make('used_at')
+                    ->label(__('filament.used_at'))
                     ->dateTime()
                     ->sortable()
                     ->placeholder('-'),
 
                 TextColumn::make('expires_at')
+                    ->label(__('filament.expires_at'))
                     ->dateTime()
                     ->sortable()
                     ->placeholder('-')
                     ->toggleable(),
 
                 TextColumn::make('created_at')
+                    ->label(__('filament.created_at'))
                     ->dateTime()
                     ->sortable()
                     ->toggleable(),

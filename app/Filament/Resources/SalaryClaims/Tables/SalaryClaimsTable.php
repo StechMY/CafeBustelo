@@ -26,6 +26,7 @@ class SalaryClaimsTable
                     ->toggleable(),
 
                 TextColumn::make('type')
+                    ->label(__('filament.type'))
                     ->badge()
                     ->color(fn (?string $state): string => match ($state) {
                         'weekly' => 'info',
@@ -36,6 +37,7 @@ class SalaryClaimsTable
                     ->sortable(),
 
                 TextColumn::make('period_key')
+                    ->label(__('filament.period_key'))
                     ->sortable()
                     ->searchable(),
 
@@ -47,23 +49,28 @@ class SalaryClaimsTable
                     ->sortable(),
 
                 TextColumn::make('salary_amount')
+                    ->label(__('filament.salary_amount'))
                     ->prefix(config('app.currency')." ")
                     ->sortable(),
 
                 TextColumn::make('team_subsidy_amount')
+                    ->label(__('filament.team_subsidy_amount'))
                     ->prefix(config('app.currency')." ")
                     ->sortable(),
 
                 TextColumn::make('total_amount')
+                    ->label(__('filament.total_amount'))
                     ->prefix(config('app.currency')." ")
                     ->sortable()
                     ->weight('bold'),
 
                 TextColumn::make('claimed_at')
+                    ->label(__('filament.claimed_at'))
                     ->dateTime()
                     ->sortable(),
 
                 TextColumn::make('created_at')
+                    ->label(__('filament.created_at'))
                     ->dateTime()
                     ->sortable()
                     ->toggleable(),

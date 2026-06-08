@@ -51,6 +51,7 @@ class WithdrawRequestInfolist
                                     ->prefix(config('app.currency')." "),
 
                                 TextEntry::make('status')
+                                    ->label(__('filament.status'))
                                     ->badge()
                                     ->color(fn(?string $state): string => match ($state) {
                                         'pending' => 'warning',
@@ -92,10 +93,12 @@ class WithdrawRequestInfolist
                                     ->placeholder('-'),
 
                                 TextEntry::make('reviewed_at')
+                                    ->label(__('filament.reviewed_at'))
                                     ->dateTime()
                                     ->placeholder('-'),
 
                                 TextEntry::make('admin_remark')
+                                    ->label(__('filament.admin_remark'))
                                     ->placeholder('-'),
                             ]),
                     ]),

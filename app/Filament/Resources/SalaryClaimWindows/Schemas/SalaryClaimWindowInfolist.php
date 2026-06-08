@@ -19,33 +19,42 @@ class SalaryClaimWindowInfolist
                         Grid::make(3)
                             ->schema([
                                 TextEntry::make('type')
+                                    ->label(__('filament.type'))
                                     ->badge()
                                     ->color('info'),
 
                                 IconEntry::make('is_enabled')
+                                    ->label(__('filament.is_enabled'))
                                     ->boolean(),
 
                                 TextEntry::make('day_of_week')
+                                    ->label(__('filament.day_of_week'))
                                     ->placeholder('-'),
 
                                 TextEntry::make('day_of_month')
+                                    ->label(__('filament.day_of_month'))
                                     ->placeholder('-'),
 
                                 TextEntry::make('month')
+                                    ->label(__('filament.month'))
                                     ->placeholder('-'),
 
                                 TextEntry::make('day')
+                                    ->label(__('filament.day'))
                                     ->placeholder('-'),
 
-                                TextEntry::make('start_time'),
+                                TextEntry::make('start_time')
+                                    ->label(__('filament.start_time')),
 
-                                TextEntry::make('end_time'),
+                                TextEntry::make('end_time')
+                                    ->label(__('filament.end_time')),
                             ]),
                     ]),
 
                 Section::make(__('filament.description'))
                     ->schema([
                         TextEntry::make('description')
+                            ->label(__('filament.description'))
                             ->placeholder('-'),
                     ]),
             ]);

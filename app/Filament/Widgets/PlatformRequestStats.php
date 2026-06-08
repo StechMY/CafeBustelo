@@ -14,7 +14,10 @@ class PlatformRequestStats extends StatsOverviewWidget
 {
     use InteractsWithPageFilters;
 
-    protected ?string $heading = 'Request Overview';
+    protected function getHeading(): string
+    {
+        return __('filament.request_overview');
+    }
 
     protected static ?int $sort = 2;
 
@@ -63,23 +66,23 @@ class PlatformRequestStats extends StatsOverviewWidget
             ->count();
 
         return [
-            Stat::make('Pending Recharge Requests', number_format($pendingRechargeCount))
+            Stat::make(__('filament.pending_recharge_requests'), number_format($pendingRechargeCount))
                 ->description(PlatformDashboardQuery::money($pendingRechargeAmount))
                 ->descriptionIcon('heroicon-m-clock')
                 ->color('warning'),
 
-            Stat::make('Pending Withdraw Requests', number_format($pendingWithdrawCount))
+            Stat::make(__('filament.pending_withdraw_requests'), number_format($pendingWithdrawCount))
                 ->description(PlatformDashboardQuery::money($pendingWithdrawAmount))
                 ->descriptionIcon('heroicon-m-clock')
                 ->color('warning'),
 
-            Stat::make('Rejected Recharge Requests', number_format($rejectedRechargeCount))
-                ->description('Rejected deposits in selected range')
+            Stat::make(__('filament.rejected_recharge_requests'), number_format($rejectedRechargeCount))
+                ->description(__('filament.rejected_deposits_in_selected_range'))
                 ->descriptionIcon('heroicon-m-x-circle')
                 ->color('danger'),
 
-            Stat::make('Rejected Withdraw Requests', number_format($rejectedWithdrawCount))
-                ->description('Rejected withdrawals in selected range')
+            Stat::make(__('filament.rejected_withdraw_requests'), number_format($rejectedWithdrawCount))
+                ->description(__('filament.rejected_withdrawals_in_selected_range'))
                 ->descriptionIcon('heroicon-m-x-circle')
                 ->color('danger'),
         ];

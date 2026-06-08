@@ -32,6 +32,7 @@ class BonusCodeInfolist
                                     ->prefix(config('app.currency')." "),
 
                                 TextEntry::make('type')
+                                    ->label(__('filament.type'))
                                     ->badge()
                                     ->color(fn (?string $state): string => match ($state) {
                                         'admin' => 'warning',
@@ -42,6 +43,7 @@ class BonusCodeInfolist
                                     }),
 
                                 TextEntry::make('status')
+                                    ->label(__('filament.status'))
                                     ->badge()
                                     ->color(fn (?string $state): string => match ($state) {
                                         'unused' => 'warning',
@@ -83,6 +85,7 @@ class BonusCodeInfolist
                 Section::make(__('filament.remark'))
                     ->schema([
                         TextEntry::make('remark')
+                            ->label(__('filament.remark'))
                             ->placeholder('-'),
                     ]),
 
@@ -90,6 +93,7 @@ class BonusCodeInfolist
                     ->collapsed()
                     ->schema([
                         KeyValueEntry::make('meta')
+                            ->label(__('filament.meta'))
                             ->placeholder('-'),
                     ]),
             ]);

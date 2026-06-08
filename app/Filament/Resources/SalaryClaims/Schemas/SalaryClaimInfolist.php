@@ -28,6 +28,7 @@ class SalaryClaimInfolist
                                     ->placeholder('-'),
 
                                 TextEntry::make('type')
+                                    ->label(__('filament.type'))
                                     ->badge()
                                     ->color(fn (?string $state): string => match ($state) {
                                         'weekly' => 'info',
@@ -36,27 +37,34 @@ class SalaryClaimInfolist
                                         default => 'gray',
                                     }),
 
-                                TextEntry::make('period_key'),
+                                TextEntry::make('period_key')
+                                    ->label(__('filament.period_key')),
 
                                 TextEntry::make('vip_level_snapshot')
                                     ->label(__('filament.vip_snapshot'))
                                     ->formatStateUsing(fn ($state): string => __('filament.lv') . $state),
 
                                 TextEntry::make('claimed_at')
+                                    ->label(__('filament.claimed_at'))
                                     ->dateTime(),
 
                                 TextEntry::make('accumulated_recharge_snapshot')
+                                    ->label(__('filament.accumulated_recharge_snapshot'))
                                     ->prefix(config('app.currency')." "),
 
-                                TextEntry::make('active_team_size_snapshot'),
+                                TextEntry::make('active_team_size_snapshot')
+                                    ->label(__('filament.active_team_size_snapshot')),
 
                                 TextEntry::make('salary_amount')
+                                    ->label(__('filament.salary_amount'))
                                     ->prefix(config('app.currency')." "),
 
                                 TextEntry::make('team_subsidy_amount')
+                                    ->label(__('filament.team_subsidy_amount'))
                                     ->prefix(config('app.currency')." "),
 
                                 TextEntry::make('total_amount')
+                                    ->label(__('filament.total_amount'))
                                     ->prefix(config('app.currency')." ")
                                     ->weight('bold'),
                             ]),
@@ -67,9 +75,11 @@ class SalaryClaimInfolist
                         Grid::make(2)
                             ->schema([
                                 TextEntry::make('ip_address')
+                                    ->label(__('filament.ip_address'))
                                     ->placeholder('-'),
 
                                 TextEntry::make('user_agent')
+                                    ->label(__('filament.user_agent'))
                                     ->placeholder('-'),
                             ]),
                     ]),
@@ -78,6 +88,7 @@ class SalaryClaimInfolist
                     ->collapsed()
                     ->schema([
                         KeyValueEntry::make('meta')
+                            ->label(__('filament.meta'))
                             ->placeholder('-'),
                     ]),
             ]);

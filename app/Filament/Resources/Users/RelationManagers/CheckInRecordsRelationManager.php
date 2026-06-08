@@ -27,6 +27,7 @@ class CheckInRecordsRelationManager extends RelationManager
         return $table
             ->columns([
                 TextColumn::make('claim_date')
+                    ->label(__('filament.claim_date'))
                     ->date()
                     ->sortable(),
 
@@ -38,18 +39,22 @@ class CheckInRecordsRelationManager extends RelationManager
                     ->sortable(),
 
                 TextColumn::make('amount')
+                    ->label(__('filament.amount'))
                     ->money('MYR')
                     ->sortable(),
 
                 TextColumn::make('claimed_at')
+                    ->label(__('filament.claimed_at'))
                     ->dateTime()
                     ->sortable(),
 
                 TextColumn::make('ip_address')
+                    ->label(__('filament.ip_address'))
                     ->placeholder('-')
                     ->toggleable(),
 
                 TextColumn::make('created_at')
+                    ->label(__('filament.created_at'))
                     ->dateTime()
                     ->sortable()
                     ->toggleable(),

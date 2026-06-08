@@ -20,11 +20,13 @@ class AdminUsersTable
         return $table
             ->columns([
                 TextColumn::make('name')
+                    ->label(__('filament.name'))
                     ->searchable()
                     ->sortable()
                     ->weight('bold'),
 
                 TextColumn::make('username')
+                    ->label(__('filament.username'))
                     ->searchable()
                     ->sortable(),
 
@@ -67,17 +69,20 @@ class AdminUsersTable
                     }),
 
                 TextColumn::make('last_login_ip')
+                    ->label(__('filament.last_login_ip'))
                     ->placeholder('-')
                     ->searchable()
                     ->toggleable(),
 
                 TextColumn::make('last_login_at')
+                    ->label(__('filament.last_login_at'))
                     ->dateTime()
                     ->sortable()
                     ->placeholder('-')
                     ->toggleable(),
 
                 TextColumn::make('created_at')
+                    ->label(__('filament.created_at'))
                     ->dateTime()
                     ->sortable()
                     ->toggleable(),

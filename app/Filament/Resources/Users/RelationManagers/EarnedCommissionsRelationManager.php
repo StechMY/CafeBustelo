@@ -54,10 +54,12 @@ class EarnedCommissionsRelationManager extends RelationManager
                     ->formatStateUsing(fn ($state): string => number_format((float) $state, 2) . '%'),
 
                 TextColumn::make('amount')
+                    ->label(__('filament.amount'))
                     ->prefix(config('app.currency')." ")
                     ->sortable(),
 
                 TextColumn::make('status')
+                    ->label(__('filament.status'))
                     ->badge()
                     ->color(fn (?string $state): string => match ($state) {
                         'paid' => 'success',
@@ -66,6 +68,7 @@ class EarnedCommissionsRelationManager extends RelationManager
                     }),
 
                 TextColumn::make('created_at')
+                    ->label(__('filament.created_at'))
                     ->dateTime()
                     ->sortable(),
             ])

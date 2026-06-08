@@ -41,6 +41,7 @@ class WalletTransactionsRelationManager extends RelationManager
                     ->searchable(),
 
                 TextColumn::make('direction')
+                    ->label(__('filament.direction'))
                     ->badge()
                     ->color(fn (?string $state): string => match ($state) {
                         'credit' => 'success',
@@ -49,6 +50,7 @@ class WalletTransactionsRelationManager extends RelationManager
                     }),
 
                 TextColumn::make('amount')
+                    ->label(__('filament.amount'))
                     ->prefix(config('app.currency')." ")
                     ->sortable(),
 
@@ -61,10 +63,12 @@ class WalletTransactionsRelationManager extends RelationManager
                     ->prefix(config('app.currency')." "),
 
                 TextColumn::make('remarks')
+                    ->label(__('filament.remarks'))
                     ->limit(50)
                     ->placeholder('-'),
 
                 TextColumn::make('created_at')
+                    ->label(__('filament.created_at'))
                     ->dateTime()
                     ->sortable(),
             ])

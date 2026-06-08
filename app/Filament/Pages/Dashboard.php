@@ -17,7 +17,10 @@ class Dashboard extends BaseDashboard
 {
     use HasFiltersForm;
 
-    protected static ?string $title = 'Admin Dashboard';
+    public function getTitle(): string
+    {
+        return __('filament.admin_dashboard');
+    }
 
     protected bool $persistsFiltersInSession = true;
 
@@ -25,25 +28,25 @@ class Dashboard extends BaseDashboard
     {
         return $schema
             ->components([
-                Section::make('Dashboard Filters')
-                    ->description('Filter dashboard statistics by date range and virtual users.')
+                Section::make(__('filament.dashboard_filters'))
+                    ->description(__('filament.filter_dashboard_statistics_by_date_range_and_virtual_users'))
                     ->schema([
                         DatePicker::make('startDate')
-                            ->label('Start Date')
+                            ->label(__('filament.start_date'))
                             ->default(now()->startOfMonth())
                             ->native(false),
 
                         DatePicker::make('endDate')
-                            ->label('End Date')
+                            ->label(__('filament.end_date'))
                             ->default(now())
                             ->native(false),
 
                         Select::make('virtualMode')
-                            ->label('Virtual Users')
+                            ->label(__('filament.virtual_users'))
                             ->options([
-                                'exclude_virtual' => 'Exclude virtual users',
-                                'include_all' => 'Include all users',
-                                'only_virtual' => 'Only virtual users',
+                                'exclude_virtual' => __('filament.exclude_virtual_users'),
+                                'include_all' => __('filament.include_all_users'),
+                                'only_virtual' => __('filament.only_virtual_users'),
                             ])
                             ->default('exclude_virtual')
                             ->selectablePlaceholder(false),

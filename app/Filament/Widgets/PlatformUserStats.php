@@ -15,7 +15,10 @@ class PlatformUserStats extends StatsOverviewWidget
 {
     use InteractsWithPageFilters;
 
-    protected ?string $heading = 'User & Platform Overview';
+    protected function getHeading(): string
+    {
+        return __('filament.user_platform_overview');
+    }
 
     protected static ?int $sort = 3;
 
@@ -68,43 +71,43 @@ class PlatformUserStats extends StatsOverviewWidget
             ->sum('balance');
 
         return [
-            Stat::make('New Users', number_format($newUsers))
-                ->description('Registered in selected range')
+            Stat::make(__('filament.new_users'), number_format($newUsers))
+                ->description(__('filament.registered_in_selected_range'))
                 ->descriptionIcon('heroicon-m-user-plus')
                 ->color('info'),
 
-            Stat::make('Active Users', number_format($activeUsers))
-                ->description('Currently active account status')
+            Stat::make(__('filament.active_users'), number_format($activeUsers))
+                ->description(__('filament.currently_active_account_status'))
                 ->descriptionIcon('heroicon-m-check-circle')
                 ->color('success'),
 
-            Stat::make('Inactive Users', number_format($inactiveUsers))
-                ->description('Currently inactive account status')
+            Stat::make(__('filament.inactive_users'), number_format($inactiveUsers))
+                ->description(__('filament.currently_inactive_account_status'))
                 ->descriptionIcon('heroicon-m-no-symbol')
                 ->color('gray'),
 
-            Stat::make('Virtual Users', number_format($virtualUsers))
-                ->description('Total marked virtual users')
+            Stat::make(__('filament.virtual_users'), number_format($virtualUsers))
+                ->description(__('filament.total_marked_virtual_users'))
                 ->descriptionIcon('heroicon-m-cpu-chip')
                 ->color('gray'),
 
-            Stat::make('Active User Products', number_format($activeUserProducts))
-                ->description('Currently active product orders')
+            Stat::make(__('filament.active_user_products'), number_format($activeUserProducts))
+                ->description(__('filament.currently_active_product_orders'))
                 ->descriptionIcon('heroicon-m-bolt')
                 ->color('success'),
 
-            Stat::make('Expired User Products', number_format($expiredUserProducts))
-                ->description('Expired in selected range')
+            Stat::make(__('filament.expired_user_products'), number_format($expiredUserProducts))
+                ->description(__('filament.expired_in_selected_range'))
                 ->descriptionIcon('heroicon-m-archive-box-x-mark')
                 ->color('danger'),
 
-            Stat::make('Recharge Wallet Balance', PlatformDashboardQuery::money($rechargeWalletBalance))
-                ->description('Total unused recharge balance')
+            Stat::make(__('filament.recharge_wallet_balance'), PlatformDashboardQuery::money($rechargeWalletBalance))
+                ->description(__('filament.total_unused_recharge_balance'))
                 ->descriptionIcon('heroicon-m-wallet')
                 ->color('info'),
 
-            Stat::make('Withdrawable Wallet Balance', PlatformDashboardQuery::money($withdrawableWalletBalance))
-                ->description('Total user claimable balance')
+            Stat::make(__('filament.withdrawable_wallet_balance'), PlatformDashboardQuery::money($withdrawableWalletBalance))
+                ->description(__('filament.total_user_claimable_balance'))
                 ->descriptionIcon('heroicon-m-banknotes')
                 ->color('warning'),
         ];

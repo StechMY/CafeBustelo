@@ -36,10 +36,12 @@ class RechargeRequestsTable
                     ->placeholder('-'),
 
                 TextColumn::make('amount')
+                    ->label(__('filament.amount'))
                     ->prefix(config('app.currency')." ")
                     ->sortable(),
 
                 TextColumn::make('status')
+                    ->label(__('filament.status'))
                     ->badge()
                     ->color(fn(?string $state): string => match ($state) {
                         'pending' => 'warning',
@@ -50,14 +52,17 @@ class RechargeRequestsTable
                     ->sortable(),
 
                 TextColumn::make('reference_no')
+                    ->label(__('filament.reference_no'))
                     ->searchable()
                     ->copyable()
                     ->placeholder('-'),
 
                 ImageColumn::make('receipt_path')->disk('do_spaces')->url(fn ($record): ?string => $record?->receipt_url)
+                    ->label(__('filament.receipt_path'))
                     ->openUrlInNewTab(),
 
                 TextColumn::make('created_at')
+                    ->label(__('filament.created_at'))
                     ->dateTime()
                     ->sortable()
                     ->placeholder('-'),
@@ -67,6 +72,7 @@ class RechargeRequestsTable
                     ->placeholder('-'),
 
                 TextColumn::make('reviewed_at')
+                    ->label(__('filament.reviewed_at'))
                     ->dateTime()
                     ->sortable()
                     ->placeholder('-'),

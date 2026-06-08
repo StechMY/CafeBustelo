@@ -22,15 +22,18 @@ class AdminUserForm
                         Grid::make(2)
                             ->schema([
                                 TextInput::make('name')
+                                    ->label(__('filament.name'))
                                     ->required()
                                     ->maxLength(255),
 
                                 TextInput::make('username')
+                                    ->label(__('filament.username'))
                                     ->required()
                                     ->maxLength(255)
                                     ->unique(AdminUser::class, 'username', ignoreRecord: true),
 
                                 Select::make('status')
+                                    ->label(__('filament.status'))
                                     ->required()
                                     ->default('active')
                                     ->options([
@@ -64,6 +67,7 @@ class AdminUserForm
                         Grid::make(2)
                             ->schema([
                                 TextInput::make('password')
+                                    ->label(__('filament.password'))
                                     ->password()
                                     ->revealable()
                                     ->dehydrated(fn($state): bool => filled($state))
@@ -71,6 +75,7 @@ class AdminUserForm
                                     ->maxLength(255),
 
                                 TextInput::make('password_confirmation')
+                                    ->label(__('filament.password_confirmation'))
                                     ->password()
                                     ->revealable()
                                     ->same('password')

@@ -17,11 +17,13 @@ class SalaryClaimWindowsTable
         return $table
             ->columns([
                 TextColumn::make('type')
+                    ->label(__('filament.type'))
                     ->badge()
                     ->color('info')
                     ->sortable(),
 
                 IconColumn::make('is_enabled')
+                    ->label(__('filament.is_enabled'))
                     ->boolean()
                     ->sortable(),
 
@@ -40,21 +42,27 @@ class SalaryClaimWindowsTable
                     ->placeholder('-'),
 
                 TextColumn::make('day_of_month')
+                    ->label(__('filament.day_of_month'))
                     ->placeholder('-'),
 
                 TextColumn::make('month')
+                    ->label(__('filament.month'))
                     ->placeholder('-'),
 
                 TextColumn::make('day')
+                    ->label(__('filament.day'))
                     ->placeholder('-'),
 
                 TextColumn::make('start_time')
+                    ->label(__('filament.start_time'))
                     ->time('H:i'),
 
                 TextColumn::make('end_time')
+                    ->label(__('filament.end_time'))
                     ->time('H:i'),
 
                 TextColumn::make('updated_at')
+                    ->label(__('filament.updated_at'))
                     ->dateTime()
                     ->sortable()
                     ->toggleable(),

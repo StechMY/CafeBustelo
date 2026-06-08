@@ -31,10 +31,12 @@ class SvipPurchasesRelationManager extends RelationManager
                     ->placeholder('-'),
 
                 TextColumn::make('amount')
+                    ->label(__('filament.amount'))
                     ->money('MYR')
                     ->sortable(),
 
                 TextColumn::make('status')
+                    ->label(__('filament.status'))
                     ->badge()
                     ->color(fn (?string $state): string => match ($state) {
                         'active' => 'success',
@@ -44,15 +46,18 @@ class SvipPurchasesRelationManager extends RelationManager
                     }),
 
                 TextColumn::make('started_at')
+                    ->label(__('filament.started_at'))
                     ->dateTime()
                     ->sortable(),
 
                 TextColumn::make('expires_at')
+                    ->label(__('filament.expires_at'))
                     ->dateTime()
                     ->placeholder(__('filament.lifetime'))
                     ->sortable(),
 
                 TextColumn::make('created_at')
+                    ->label(__('filament.created_at'))
                     ->dateTime()
                     ->sortable(),
             ])

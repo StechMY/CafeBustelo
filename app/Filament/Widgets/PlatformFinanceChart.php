@@ -15,7 +15,10 @@ class PlatformFinanceChart extends ChartWidget
 {
     use InteractsWithPageFilters;
 
-    protected ?string $heading = 'Approved Recharge vs Withdraw';
+    public function getHeading(): string
+    {
+        return __('filament.approved_recharge_vs_withdraw');
+    }
 
     protected static ?int $sort = 4;
 
@@ -65,15 +68,15 @@ class PlatformFinanceChart extends ChartWidget
         return [
             'datasets' => [
                 [
-                    'label' => 'Approved Recharge',
+                    'label' => __('filament.approved_recharge'),
                     'data' => $rechargeData,
                 ],
                 [
-                    'label' => 'Approved Withdraw',
+                    'label' => __('filament.approved_withdraw'),
                     'data' => $withdrawData,
                 ],
                 [
-                    'label' => 'Net',
+                    'label' => __('filament.net'),
                     'data' => $netData,
                 ],
             ],

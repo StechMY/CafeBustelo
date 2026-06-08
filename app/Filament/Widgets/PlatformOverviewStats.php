@@ -19,7 +19,10 @@ class PlatformOverviewStats extends StatsOverviewWidget
 {
     use InteractsWithPageFilters;
 
-    protected ?string $heading = 'Finance Overview';
+    protected function getHeading(): string
+    {
+        return __('filament.finance_overview');
+    }
 
     protected static ?int $sort = 1;
 
@@ -72,43 +75,43 @@ class PlatformOverviewStats extends StatsOverviewWidget
             ->sum('total_amount');
 
         return [
-            Stat::make('Approved Recharge', PlatformDashboardQuery::money($approvedRecharge))
-                ->description('Approved deposits in selected range')
+            Stat::make(__('filament.approved_recharge'), PlatformDashboardQuery::money($approvedRecharge))
+                ->description(__('filament.approved_deposits_in_selected_range'))
                 ->descriptionIcon('heroicon-m-arrow-down-tray')
                 ->color('success'),
 
-            Stat::make('Approved Withdraw', PlatformDashboardQuery::money($approvedWithdraw))
-                ->description('Approved withdrawals in selected range')
+            Stat::make(__('filament.approved_withdraw'), PlatformDashboardQuery::money($approvedWithdraw))
+                ->description(__('filament.approved_withdrawals_in_selected_range'))
                 ->descriptionIcon('heroicon-m-arrow-up-tray')
                 ->color('danger'),
 
-            Stat::make('Revenue / Cash Gap', PlatformDashboardQuery::money($netRevenue))
-                ->description('Approved recharge - approved withdraw')
+            Stat::make(__('filament.revenue_cash_gap'), PlatformDashboardQuery::money($netRevenue))
+                ->description(__('filament.approved_recharge_minus_approved_withdraw'))
                 ->descriptionIcon($netRevenue >= 0 ? 'heroicon-m-arrow-trending-up' : 'heroicon-m-arrow-trending-down')
                 ->color($netRevenue >= 0 ? 'success' : 'danger'),
 
-            Stat::make('Product Purchase Volume', PlatformDashboardQuery::money($productPurchaseAmount))
-                ->description('Recharge wallet spent on products')
+            Stat::make(__('filament.product_purchase_volume'), PlatformDashboardQuery::money($productPurchaseAmount))
+                ->description(__('filament.recharge_wallet_spent_on_products'))
                 ->descriptionIcon('heroicon-m-shopping-bag')
                 ->color('info'),
 
-            Stat::make('Daily Income Paid', PlatformDashboardQuery::money($dailyIncomePaid))
-                ->description('User daily income claims')
+            Stat::make(__('filament.daily_income_paid'), PlatformDashboardQuery::money($dailyIncomePaid))
+                ->description(__('filament.user_daily_income_claims'))
                 ->descriptionIcon('heroicon-m-banknotes')
                 ->color('warning'),
 
-            Stat::make('Commissions Paid', PlatformDashboardQuery::money($commissionsPaid))
-                ->description('B/C/D commission payouts')
+            Stat::make(__('filament.commissions_paid'), PlatformDashboardQuery::money($commissionsPaid))
+                ->description(__('filament.b_c_d_commission_payouts'))
                 ->descriptionIcon('heroicon-m-users')
                 ->color('warning'),
 
-            Stat::make('Bonus Paid', PlatformDashboardQuery::money($bonusPaid))
-                ->description('Invite + upgrade bonus claims')
+            Stat::make(__('filament.bonus_paid'), PlatformDashboardQuery::money($bonusPaid))
+                ->description(__('filament.invite_upgrade_bonus_claims'))
                 ->descriptionIcon('heroicon-m-gift')
                 ->color('gray'),
 
-            Stat::make('Salary + Subsidy Paid', PlatformDashboardQuery::money($salaryPaid))
-                ->description('Weekly / monthly salary claims')
+            Stat::make(__('filament.salary_subsidy_paid'), PlatformDashboardQuery::money($salaryPaid))
+                ->description(__('filament.weekly_monthly_salary_claims'))
                 ->descriptionIcon('heroicon-m-calendar-days')
                 ->color('gray'),
         ];

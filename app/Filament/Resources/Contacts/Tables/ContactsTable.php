@@ -18,11 +18,13 @@ class ContactsTable
         return $table
             ->columns([
                 TextColumn::make('name')
+                    ->label(__('filament.name'))
                     ->searchable()
                     ->sortable()
                     ->weight('bold'),
 
                 TextColumn::make('type')
+                    ->label(__('filament.type'))
                     ->badge()
                     ->color(fn (?string $state): string => match ($state) {
                         'whatsapp' => 'success',
@@ -34,6 +36,7 @@ class ContactsTable
                     ->sortable(),
 
                 TextColumn::make('link')
+                    ->label(__('filament.link'))
                     ->limit(40)
                     ->copyable()
                     ->searchable()
@@ -56,9 +59,11 @@ class ContactsTable
                     }),
 
                 TextColumn::make('sort_order')
+                    ->label(__('filament.sort_order'))
                     ->sortable(),
 
                 TextColumn::make('updated_at')
+                    ->label(__('filament.updated_at'))
                     ->dateTime()
                     ->sortable()
                     ->toggleable(),

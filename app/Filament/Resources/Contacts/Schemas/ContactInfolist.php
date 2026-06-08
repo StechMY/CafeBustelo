@@ -18,9 +18,11 @@ class ContactInfolist
                         Grid::make(3)
                             ->schema([
                                 TextEntry::make('name')
+                                    ->label(__('filament.name'))
                                     ->weight('bold'),
 
                                 TextEntry::make('type')
+                                    ->label(__('filament.type'))
                                     ->badge()
                                     ->color(fn (?string $state): string => match ($state) {
                                         'whatsapp' => 'success',
@@ -31,20 +33,25 @@ class ContactInfolist
                                     }),
 
                                 TextEntry::make('status')
+                                    ->label(__('filament.status'))
                                     ->badge()
                                     ->color(fn (?string $state): string => $state === 'active' ? 'success' : 'gray'),
 
                                 TextEntry::make('link')
+                                    ->label(__('filament.link'))
                                     ->copyable()
                                     ->url(fn ($record): string => $record->link, true)
                                     ->columnSpanFull(),
 
-                                TextEntry::make('sort_order'),
+                                TextEntry::make('sort_order')
+                                    ->label(__('filament.sort_order')),
 
                                 TextEntry::make('created_at')
+                                    ->label(__('filament.created_at'))
                                     ->dateTime(),
 
                                 TextEntry::make('updated_at')
+                                    ->label(__('filament.updated_at'))
                                     ->dateTime(),
                             ]),
                     ]),
@@ -52,6 +59,7 @@ class ContactInfolist
                 Section::make(__('filament.description'))
                     ->schema([
                         TextEntry::make('description')
+                            ->label(__('filament.description'))
                             ->placeholder('-'),
                     ]),
             ]);

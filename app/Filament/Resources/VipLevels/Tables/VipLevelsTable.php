@@ -22,10 +22,12 @@ class VipLevelsTable
                     ->weight('bold'),
 
                 TextColumn::make('name')
+                    ->label(__('filament.name'))
                     ->searchable()
                     ->weight('bold'),
 
                 TextColumn::make('position_name')
+                    ->label(__('filament.position_name'))
                     ->searchable()
                     ->placeholder('-'),
 
@@ -64,6 +66,7 @@ class VipLevelsTable
                     ->sortable(),
 
                 TextColumn::make('status')
+                    ->label(__('filament.status'))
                     ->badge()
                     ->color(fn (?string $state): string => $state === 'active' ? 'success' : 'gray')
                     ->sortable(),

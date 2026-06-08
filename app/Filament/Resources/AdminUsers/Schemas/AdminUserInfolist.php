@@ -18,11 +18,14 @@ class AdminUserInfolist
                         Grid::make(3)
                             ->schema([
                                 TextEntry::make('name')
+                                    ->label(__('filament.name'))
                                     ->weight('bold'),
 
-                                TextEntry::make('username'),
+                                TextEntry::make('username')
+                                    ->label(__('filament.username')),
 
                                 TextEntry::make('status')
+                                    ->label(__('filament.status'))
                                     ->badge()
                                     ->color(fn (?string $state): string => $state === 'active' ? 'success' : 'gray'),
 
@@ -32,16 +35,20 @@ class AdminUserInfolist
                                     ->separator(','),
 
                                 TextEntry::make('last_login_ip')
+                                    ->label(__('filament.last_login_ip'))
                                     ->placeholder('-'),
 
                                 TextEntry::make('last_login_at')
+                                    ->label(__('filament.last_login_at'))
                                     ->dateTime()
                                     ->placeholder('-'),
 
                                 TextEntry::make('created_at')
+                                    ->label(__('filament.created_at'))
                                     ->dateTime(),
 
                                 TextEntry::make('updated_at')
+                                    ->label(__('filament.updated_at'))
                                     ->dateTime(),
                             ]),
                     ]),

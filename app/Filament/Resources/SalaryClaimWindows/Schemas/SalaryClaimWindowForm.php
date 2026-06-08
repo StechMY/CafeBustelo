@@ -23,6 +23,7 @@ class SalaryClaimWindowForm
                         Grid::make(2)
                             ->schema([
                                 Select::make('type')
+                                    ->label(__('filament.type'))
                                     ->required()
                                     ->unique(ignoreRecord: true)
                                     ->options([

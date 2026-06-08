@@ -23,6 +23,7 @@ class CommissionLevelInfolist
                                     ->weight('bold'),
 
                                 TextEntry::make('name')
+                                    ->label(__('filament.name'))
                                     ->weight('bold'),
 
                                 TextEntry::make('rate_percent')
@@ -30,11 +31,14 @@ class CommissionLevelInfolist
                                     ->formatStateUsing(fn ($state): string => number_format((float) $state, 2) . '%'),
 
                                 IconEntry::make('is_active')
+                                    ->label(__('filament.is_active'))
                                     ->boolean(),
 
-                                TextEntry::make('sort_order'),
+                                TextEntry::make('sort_order')
+                                    ->label(__('filament.sort_order')),
 
                                 TextEntry::make('created_at')
+                                    ->label(__('filament.created_at'))
                                     ->dateTime(),
                             ]),
                     ]),
@@ -42,6 +46,7 @@ class CommissionLevelInfolist
                 Section::make(__('filament.description'))
                     ->schema([
                         TextEntry::make('description')
+                            ->label(__('filament.description'))
                             ->placeholder('-'),
                     ]),
             ]);

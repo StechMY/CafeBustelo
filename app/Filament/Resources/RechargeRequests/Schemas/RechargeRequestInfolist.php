@@ -33,11 +33,12 @@ class RechargeRequestInfolist
 
                                 TextEntry::make('amount')
                                     ->label(__('filament.amount'))
-                                    ->prefix(config('app.currency')." "),
+                                    ->prefix(config('app.currency') . " "),
 
                                 TextEntry::make('status')
+                                    ->label(__('filament.status'))
                                     ->badge()
-                                    ->color(fn (?string $state): string => match ($state) {
+                                    ->color(fn(?string $state): string => match ($state) {
                                         'pending' => 'warning',
                                         'approved' => 'success',
                                         'rejected' => 'danger',
@@ -45,6 +46,7 @@ class RechargeRequestInfolist
                                     }),
 
                                 TextEntry::make('created_at')
+                                    ->label(__('filament.created_at'))
                                     ->dateTime()
                                     ->placeholder('-'),
                             ]),
@@ -55,22 +57,28 @@ class RechargeRequestInfolist
                         Grid::make(2)
                             ->schema([
                                 TextEntry::make('bank_name')
+                                    ->label(__('filament.bank_name'))
                                     ->placeholder('-'),
 
                                 TextEntry::make('reference_no')
+                                    ->label(__('filament.reference_no'))
                                     ->copyable()
                                     ->placeholder('-'),
                             ]),
                     ]),
 
                 Section::make(__('filament.receipt'))
+                    ->columnSpanFull()
                     ->schema([
                         ImageEntry::make('receipt_path')
                             ->label(__('filament.receipt_preview'))
-                            ->disk(fn ($record): string => $record->receipt_disk ?: 'do_spaces')
-                            ->height(300)
-                            ->visible(fn ($record): bool => $record->receipt_path && ! str_ends_with(strtolower($record->receipt_path), '.pdf')),
-
+                            ->disk(fn($record): string => $record->receipt_disk ?: 'do_spaces')
+                            ->height(360)
+                            ->extraAttributes([
+                                'class' => 'w-full overflow-hidden rounded-xl bg-gray-50',
+                            ])
+                            ->visible(fn($record): bool => filled($record->receipt_path)
+                                && !str_ends_with(strtolower($record->receipt_path), '.pdf')),
                     ]),
 
                 Section::make(__('filament.review'))
@@ -82,10 +90,12 @@ class RechargeRequestInfolist
                                     ->placeholder('-'),
 
                                 TextEntry::make('reviewed_at')
+                                    ->label(__('filament.reviewed_at'))
                                     ->dateTime()
                                     ->placeholder('-'),
 
                                 TextEntry::make('admin_remark')
+                                    ->label(__('filament.admin_remark'))
                                     ->placeholder('-'),
                             ]),
                     ]),

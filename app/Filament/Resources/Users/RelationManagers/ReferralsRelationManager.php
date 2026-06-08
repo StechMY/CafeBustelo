@@ -29,18 +29,22 @@ class ReferralsRelationManager extends RelationManager
         return $table
             ->columns([
                 TextColumn::make('username')
+                    ->label(__('filament.username'))
                     ->searchable()
                     ->sortable()
                     ->weight('bold'),
 
                 TextColumn::make('name')
+                    ->label(__('filament.name'))
                     ->searchable(),
 
                 TextColumn::make('phone')
+                    ->label(__('filament.phone'))
                     ->searchable()
                     ->placeholder('-'),
 
                 TextColumn::make('status')
+                    ->label(__('filament.status'))
                     ->badge()
                     ->color(fn (?string $state): string => match ($state) {
                         'active' => 'success',
@@ -50,9 +54,11 @@ class ReferralsRelationManager extends RelationManager
                     }),
 
                 IconColumn::make('is_virtual')
+                    ->label(__('filament.is_virtual'))
                     ->boolean(),
 
                 TextColumn::make('created_at')
+                    ->label(__('filament.created_at'))
                     ->dateTime()
                     ->sortable(),
             ])

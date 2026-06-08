@@ -23,6 +23,7 @@ class CommissionLevelsTable
                     ->weight('bold'),
 
                 TextColumn::make('name')
+                    ->label(__('filament.name'))
                     ->searchable()
                     ->weight('bold'),
 
@@ -41,10 +42,12 @@ class CommissionLevelsTable
                     }),
 
                 TextColumn::make('sort_order')
+                    ->label(__('filament.sort_order'))
                     ->sortable()
                     ->toggleable(),
 
                 TextColumn::make('updated_at')
+                    ->label(__('filament.updated_at'))
                     ->dateTime()
                     ->sortable()
                     ->toggleable(),

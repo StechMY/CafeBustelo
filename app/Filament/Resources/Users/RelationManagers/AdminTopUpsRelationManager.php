@@ -32,6 +32,7 @@ class AdminTopUpsRelationManager extends RelationManager
                     ->placeholder('-'),
 
                 TextColumn::make('wallet_type')
+                    ->label(__('filament.wallet_type'))
                     ->badge()
                     ->color(fn (?string $state): string => match ($state) {
                         'recharge' => 'info',
@@ -40,6 +41,7 @@ class AdminTopUpsRelationManager extends RelationManager
                     }),
 
                 TextColumn::make('amount')
+                    ->label(__('filament.amount'))
                     ->prefix(config('app.currency')." ")
                     ->sortable(),
 
@@ -48,10 +50,12 @@ class AdminTopUpsRelationManager extends RelationManager
                     ->boolean(),
 
                 TextColumn::make('remarks')
+                    ->label(__('filament.remarks'))
                     ->limit(50)
                     ->placeholder('-'),
 
                 TextColumn::make('created_at')
+                    ->label(__('filament.created_at'))
                     ->dateTime()
                     ->sortable(),
             ])
