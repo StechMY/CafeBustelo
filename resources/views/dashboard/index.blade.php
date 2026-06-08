@@ -9,7 +9,7 @@
     @endphp
 
     <section class="overflow-hidden bg-[#ffd900]">
-        <div class="mx-auto max-w-7xl px-3 py-5 sm:px-6 sm:py-8 lg:px-8">
+        <div class="mx-auto max-w-7xl px-3 py-3 sm:px-6 sm:py-8 lg:px-8">
             <div class="grid gap-5 lg:grid-cols-[1.45fr_0.85fr] lg:items-center">
                 <div>
                     <div
@@ -18,11 +18,12 @@
                     </div>
 
                     <h1
-                        class="max-w-3xl text-4xl font-black uppercase leading-[0.9] tracking-tight text-[#003b7a] sm:text-6xl lg:text-7xl">
+                        class="max-w-3xl text-3xl font-black uppercase leading-[0.9] tracking-tight text-[#003b7a] sm:text-6xl lg:text-7xl">
                         {{ __('dashboard.hero_title') }}
                     </h1>
 
-                    <p class="mt-3 max-w-2xl text-sm font-bold leading-relaxed text-[#003b7a]/80 sm:mt-5 sm:text-base">
+                    <p
+                       class="mt-2 max-w-2xl overflow-hidden text-xs font-bold leading-relaxed text-[#003b7a]/80 sm:mt-5 sm:text-base">
                         {{ __('dashboard.welcome_user', ['name' => $user->name]) }}
                         {{ __('dashboard.hero_description') }}
                     </p>
@@ -63,7 +64,7 @@
                 </div>
 
                 <div
-                     class="rounded-[1.5rem] border-4 border-[#003b7a] bg-white p-4 shadow-[7px_7px_0_#003b7a] sm:rounded-[2rem] sm:p-6 sm:shadow-[10px_10px_0_#003b7a]">
+                     class="hidden rounded-[1.5rem] border-4 border-[#003b7a] bg-white p-4 shadow-[7px_7px_0_#003b7a] sm:block sm:rounded-[2rem] sm:p-6 sm:shadow-[10px_10px_0_#003b7a]">
                     <div class="flex items-start justify-between gap-3">
                         <div class="min-w-0">
                             <div class="text-xs font-black uppercase text-[#e4003a] sm:text-sm">
@@ -153,16 +154,16 @@
     @endif
     <section class="mx-auto max-w-7xl px-3 py-5 sm:px-6 sm:py-8 lg:px-8">
         <div class="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
-            <div class="rounded-[1.35rem] bg-[#003b7a] p-4 text-white shadow-lg sm:rounded-[2rem] sm:p-6">
+            <div class="rounded-[1.15rem] bg-[#003b7a] p-3 text-white shadow-lg sm:rounded-[2rem] sm:p-6">
                 <div class="text-[10px] font-black uppercase text-white/70 sm:text-sm">
                     {{ __('dashboard.recharge_wallet') }}
                 </div>
 
-                <div class="mt-2 break-words text-2xl font-black leading-none sm:mt-3 sm:text-4xl">
+                <div class="mt-2 break-words text-xl font-black leading-none sm:mt-3 sm:text-4xl">
                     {{ config('app.currency') }} {{ number_format((float) $wallets['recharge'], 2) }}
                 </div>
 
-                <div class="mt-3 text-[10px] font-bold text-white/70 sm:mt-4 sm:text-xs">
+                <div class="mt-3 hidden text-[10px] font-bold text-white/70 sm:mt-4 sm:block sm:text-xs">
                     {{ __('dashboard.recharge_wallet_desc') }}
                 </div>
             </div>
@@ -176,7 +177,7 @@
                     {{ config('app.currency') }} {{ number_format((float) $wallets['withdrawable'], 2) }}
                 </div>
 
-                <div class="mt-3 text-[10px] font-bold text-white/70 sm:mt-4 sm:text-xs">
+                <div class="mt-3 hidden text-[10px] font-bold text-white/70 sm:mt-4 sm:block sm:text-xs">
                     {{ __('dashboard.withdrawable_wallet_desc') }}
                 </div>
             </div>
@@ -211,7 +212,7 @@
         </div>
         @include('dashboard.partials.marketing-widgets')
         <div class="mt-5 grid gap-5 lg:mt-8 lg:grid-cols-3 lg:gap-6">
-            <div class="rounded-[1.5rem] bg-white p-4 shadow-xl ring-1 ring-black/5 sm:rounded-[2rem] sm:p-6 lg:col-span-2">
+            <div class="rounded-[1.5rem] bg-white p-4 shadow-xl ring-1 ring-black/5 sm:rounded-[2rem] sm:p-6 lg:col-span-2 overflow-auto">
                 <div class="flex items-center justify-between gap-4">
                     <div class="min-w-0">
                         <h2 class="text-xl font-black uppercase text-[#003b7a] sm:text-2xl">
@@ -230,7 +231,8 @@
                 </div>
 
                 @if ($activeProducts->isNotEmpty())
-                    <div class="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:gap-5">
+                    <div
+                         class="mt-4 flex snap-x snap-mandatory gap-3 overflow-x-auto overscroll-x-contain pb-3 [-webkit-overflow-scrolling:touch] sm:grid sm:grid-cols-2 sm:gap-4 sm:overflow-visible sm:pb-0 lg:gap-5">
                         @foreach ($activeProducts as $userProduct)
                             @php
                                 $nextClaimAt = $userProduct->next_claim_at;
@@ -253,7 +255,7 @@
                             @endphp
 
                             <article
-                                     class="rounded-[1.25rem] border border-[#003b7a]/10 bg-[#fff8c7] p-4 shadow-sm sm:rounded-[1.5rem] sm:p-5">
+                                     class="w-[82vw] shrink-0 snap-start rounded-[1.25rem] border border-[#003b7a]/10 bg-[#fff8c7] p-3 shadow-sm sm:w-auto sm:shrink sm:rounded-[1.5rem] sm:p-5">
                                 <div class="flex items-start justify-between gap-3">
                                     <div class="min-w-0">
                                         <div class="truncate text-base font-black leading-tight text-[#003b7a] sm:text-lg">
@@ -279,8 +281,8 @@
                                     </div>
                                 </div>
 
-                                <div class="mt-4 grid grid-cols-2 gap-2">
-                                    <div class="rounded-2xl bg-white p-3">
+                                <div class="mt-3 grid grid-cols-2 gap-2">
+                                    <div class="rounded-2xl bg-white p-2.5 sm:p-3">
                                         <div class="text-[10px] font-black uppercase text-[#003b7a]/60">
                                             {{ __('dashboard.price') }}
                                         </div>
@@ -291,7 +293,7 @@
                                         </div>
                                     </div>
 
-                                    <div class="rounded-2xl bg-white p-3">
+                                    <div class="rounded-2xl bg-white p-2.5 sm:p-3">
                                         <div class="text-[10px] font-black uppercase text-[#003b7a]/60">
                                             {{ __('dashboard.daily') }}
                                         </div>
@@ -303,7 +305,7 @@
                                     </div>
                                 </div>
 
-                                <div class="mt-3 rounded-2xl bg-white p-3">
+                                <div class="mt-2 rounded-2xl bg-white p-2.5 sm:p-3">
                                     <div class="text-[10px] font-black uppercase text-[#003b7a]/60">
                                         {{ __('dashboard.next_claim') }}
                                     </div>
@@ -324,7 +326,7 @@
 
                                         <button
                                                 type="submit"
-                                                class="w-full rounded-2xl bg-[#e4003a] px-4 py-3 text-xs font-black uppercase text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-[#c90032] sm:text-sm">
+                                                class="w-full rounded-2xl bg-[#e4003a] px-4 py-2.5 text-xs font-black uppercase text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-[#c90032] sm:text-sm">
                                             {{ __('dashboard.claim_daily_income') }}
                                         </button>
                                     </form>
@@ -362,9 +364,10 @@
             </div>
 
             <div class="space-y-5 lg:space-y-6">
-                
 
-                <div class="rounded-[1.5rem] bg-white p-5 shadow-xl ring-1 ring-black/5 sm:rounded-[2rem] sm:p-6">
+                {{-- Desktop Quick Stats --}}
+                <div
+                     class="hidden rounded-[1.5rem] bg-white p-5 shadow-xl ring-1 ring-black/5 sm:rounded-[2rem] sm:p-6 lg:block">
                     <h2 class="text-xl font-black uppercase text-[#003b7a] sm:text-2xl">
                         {{ __('dashboard.quick_stats') }}
                     </h2>
@@ -402,7 +405,48 @@
                     </div>
                 </div>
 
-                <div class="rounded-[1.5rem] bg-[#e4003a] p-5 text-white shadow-xl sm:rounded-[2rem] sm:p-6">
+                {{-- Mobile Quick Stats --}}
+                <details class="rounded-[1.25rem] bg-white p-4 shadow-lg ring-1 ring-black/5 lg:hidden">
+                    <summary class="cursor-pointer select-none text-sm font-black uppercase text-[#003b7a]">
+                        {{ __('dashboard.quick_stats') }}
+                    </summary>
+
+                    <div class="mt-4 space-y-2">
+                        <div class="flex items-center justify-between gap-3 rounded-2xl bg-[#fff8c7] p-3">
+                            <span class="text-xs font-black uppercase text-[#003b7a]/70">
+                                {{ __('dashboard.active_products') }}
+                            </span>
+
+                            <span class="text-lg font-black text-[#003b7a]">
+                                {{ $stats['active_product_count'] }}
+                            </span>
+                        </div>
+
+                        <div class="flex items-center justify-between gap-3 rounded-2xl bg-[#fff8c7] p-3">
+                            <span class="text-xs font-black uppercase text-[#003b7a]/70">
+                                {{ __('dashboard.direct_team') }}
+                            </span>
+
+                            <span class="text-lg font-black text-[#003b7a]">
+                                {{ $stats['direct_team_count'] }}
+                            </span>
+                        </div>
+
+                        <div class="flex items-center justify-between gap-3 rounded-2xl bg-[#fff8c7] p-3">
+                            <span class="text-xs font-black uppercase text-[#003b7a]/70">
+                                {{ __('dashboard.total_income') }}
+                            </span>
+
+                            <span class="text-right text-base font-black text-[#003b7a]">
+                                {{ config('app.currency') }} {{ number_format((float) $stats['total_daily_income'], 2) }}
+                            </span>
+                        </div>
+                    </div>
+                </details>
+
+                {{-- Desktop Reminder Only --}}
+                <div
+                     class="hidden rounded-[1.5rem] bg-[#e4003a] p-5 text-white shadow-xl sm:rounded-[2rem] sm:p-6 lg:block">
                     <h2 class="text-xl font-black uppercase sm:text-2xl">
                         {{ __('dashboard.account_reminder') }}
                     </h2>
