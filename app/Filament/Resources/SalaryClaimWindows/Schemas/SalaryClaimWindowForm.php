@@ -18,7 +18,7 @@ class SalaryClaimWindowForm
     {
         return $schema
             ->components([
-                Section::make('Claim Window')
+                Section::make(__('filament.claim_window'))
                     ->schema([
                         Grid::make(2)
                             ->schema([
@@ -26,34 +26,34 @@ class SalaryClaimWindowForm
                                     ->required()
                                     ->unique(ignoreRecord: true)
                                     ->options([
-                                        SalaryClaimWindow::TYPE_WEEKLY => 'Weekly',
-                                        SalaryClaimWindow::TYPE_MONTHLY => 'Monthly',
-                                        SalaryClaimWindow::TYPE_ANNUAL => 'Annual',
+                                        SalaryClaimWindow::TYPE_WEEKLY => __('filament.weekly'),
+                                        SalaryClaimWindow::TYPE_MONTHLY => __('filament.monthly'),
+                                        SalaryClaimWindow::TYPE_ANNUAL => __('filament.annual'),
                                     ])
                                     ->native(false)
                                     ->live(),
 
                                 Toggle::make('is_enabled')
-                                    ->label('Enabled')
+                                    ->label(__('filament.enabled'))
                                     ->default(true),
 
                                 Select::make('day_of_week')
-                                    ->label('Day of Week')
+                                    ->label(__('filament.day_of_week'))
                                     ->options([
-                                        0 => 'Sunday',
-                                        1 => 'Monday',
-                                        2 => 'Tuesday',
-                                        3 => 'Wednesday',
-                                        4 => 'Thursday',
-                                        5 => 'Friday',
-                                        6 => 'Saturday',
+                                        0 => __('filament.sunday'),
+                                        1 => __('filament.monday'),
+                                        2 => __('filament.tuesday'),
+                                        3 => __('filament.wednesday'),
+                                        4 => __('filament.thursday'),
+                                        5 => __('filament.friday'),
+                                        6 => __('filament.saturday'),
                                     ])
                                     ->native(false)
                                     ->required(fn ($get): bool => $get('type') === SalaryClaimWindow::TYPE_WEEKLY)
                                     ->visible(fn ($get): bool => $get('type') === SalaryClaimWindow::TYPE_WEEKLY),
 
                                 TextInput::make('day_of_month')
-                                    ->label('Day of Month')
+                                    ->label(__('filament.day_of_month'))
                                     ->numeric()
                                     ->minValue(1)
                                     ->maxValue(31)
@@ -61,27 +61,27 @@ class SalaryClaimWindowForm
                                     ->visible(fn ($get): bool => $get('type') === SalaryClaimWindow::TYPE_MONTHLY),
 
                                 Select::make('month')
-                                    ->label('Month')
+                                    ->label(__('filament.month'))
                                     ->options([
-                                        1 => 'January',
-                                        2 => 'February',
-                                        3 => 'March',
-                                        4 => 'April',
-                                        5 => 'May',
-                                        6 => 'June',
-                                        7 => 'July',
-                                        8 => 'August',
-                                        9 => 'September',
-                                        10 => 'October',
-                                        11 => 'November',
-                                        12 => 'December',
+                                        1 => __('filament.january'),
+                                        2 => __('filament.february'),
+                                        3 => __('filament.march'),
+                                        4 => __('filament.april'),
+                                        5 => __('filament.may'),
+                                        6 => __('filament.june'),
+                                        7 => __('filament.july'),
+                                        8 => __('filament.august'),
+                                        9 => __('filament.september'),
+                                        10 => __('filament.october'),
+                                        11 => __('filament.november'),
+                                        12 => __('filament.december'),
                                     ])
                                     ->native(false)
                                     ->required(fn ($get): bool => $get('type') === SalaryClaimWindow::TYPE_ANNUAL)
                                     ->visible(fn ($get): bool => $get('type') === SalaryClaimWindow::TYPE_ANNUAL),
 
                                 TextInput::make('day')
-                                    ->label('Day')
+                                    ->label(__('filament.day'))
                                     ->numeric()
                                     ->minValue(1)
                                     ->maxValue(31)
@@ -89,19 +89,19 @@ class SalaryClaimWindowForm
                                     ->visible(fn ($get): bool => $get('type') === SalaryClaimWindow::TYPE_ANNUAL),
 
                                 TimePicker::make('start_time')
-                                    ->label('Start Time')
+                                    ->label(__('filament.start_time'))
                                     ->seconds(false)
                                     ->required()
                                     ->default('00:00'),
 
                                 TimePicker::make('end_time')
-                                    ->label('End Time')
+                                    ->label(__('filament.end_time'))
                                     ->seconds(false)
                                     ->required()
                                     ->default('23:59'),
 
                                 Textarea::make('description')
-                                    ->label('Description')
+                                    ->label(__('filament.description'))
                                     ->rows(3)
                                     ->columnSpanFull(),
                             ]),

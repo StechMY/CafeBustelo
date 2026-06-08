@@ -26,34 +26,34 @@ class WithdrawRequestsTable
         return $table
             ->columns([
                 TextColumn::make('user.username')
-                    ->label('Username')
+                    ->label(__('filament.username'))
                     ->searchable()
                     ->sortable()
                     ->weight('bold'),
 
                 TextColumn::make('user.phone')
-                    ->label('Phone')
+                    ->label(__('filament.phone'))
                     ->searchable()
                     ->placeholder('-'),
 
                 TextColumn::make('amount')
-                    ->label('Amount')
+                    ->label(__('filament.amount'))
                     ->prefix(config('app.currency')." ")
                     ->sortable(),
 
                 TextColumn::make('fee_amount')
-                    ->label('Fee')
+                    ->label(__('filament.fee'))
                     ->prefix(config('app.currency')." ")
                     ->toggleable(),
 
                 TextColumn::make('net_amount')
-                    ->label('Net')
+                    ->label(__('filament.net'))
                     ->prefix(config('app.currency')." ")
                     ->sortable(),
 
                 TextColumn::make('vip_level_snapshot')
-                    ->label('VIP')
-                    ->formatStateUsing(fn($state): string => 'LV' . $state)
+                    ->label(__('filament.vip'))
+                    ->formatStateUsing(fn($state): string => __('filament.lv') . $state)
                     ->badge()
                     ->color('info')
                     ->toggleable(),
@@ -83,12 +83,12 @@ class WithdrawRequestsTable
                     ->placeholder('-'),
 
                 TextColumn::make('created_at')
-                    ->label('Submitted At')
+                    ->label(__('filament.submitted_at'))
                     ->dateTime()
                     ->sortable(),
 
                 TextColumn::make('reviewer.username')
-                    ->label('Reviewer')
+                    ->label(__('filament.reviewer'))
                     ->placeholder('-'),
 
                 TextColumn::make('reviewed_at')
@@ -100,22 +100,22 @@ class WithdrawRequestsTable
             ->filters([
                 SelectFilter::make('status')
                     ->options([
-                        'pending' => 'Pending',
-                        'approved' => 'Approved',
-                        'rejected' => 'Rejected',
+                        'pending' => __('filament.pending'),
+                        'approved' => __('filament.approved'),
+                        'rejected' => __('filament.rejected'),
                     ]),
             ])
             ->recordActions([
                 ViewAction::make(),
 
                 Action::make('approve')
-                    ->label('Approve')
+                    ->label(__('filament.approve'))
                     ->icon('heroicon-o-check-circle')
                     ->color('success')
                     ->visible(fn(WithdrawRequest $record): bool => $record->status === 'pending')
                     ->form([
                         Textarea::make('admin_remark')
-                            ->label('Admin Remark')
+                            ->label(__('filament.admin_remark'))
                             ->rows(3),
                     ])
                     ->requiresConfirmation()
@@ -128,14 +128,14 @@ class WithdrawRequestsTable
                             );
 
                             Notification::make()
-                                ->title('Withdraw approved')
+                                ->title(__('filament.withdraw_approved'))
                                 ->success()
                                 ->send();
                         } catch (Throwable $exception) {
                             report($exception);
 
                             Notification::make()
-                                ->title('Approve failed')
+                                ->title(__('filament.approve_failed'))
                                 ->body($exception->getMessage())
                                 ->danger()
                                 ->send();
@@ -143,13 +143,13 @@ class WithdrawRequestsTable
                     }),
 
                 Action::make('reject')
-                    ->label('Reject')
+                    ->label(__('filament.reject'))
                     ->icon('heroicon-o-x-circle')
                     ->color('danger')
                     ->visible(fn(WithdrawRequest $record): bool => $record->status === 'pending')
                     ->form([
                         Textarea::make('admin_remark')
-                            ->label('Reject Reason')
+                            ->label(__('filament.reject_reason'))
                             ->required()
                             ->rows(3),
                     ])
@@ -163,14 +163,14 @@ class WithdrawRequestsTable
                             );
 
                             Notification::make()
-                                ->title('Withdraw rejected')
+                                ->title(__('filament.withdraw_rejected'))
                                 ->success()
                                 ->send();
                         } catch (Throwable $exception) {
                             report($exception);
 
                             Notification::make()
-                                ->title('Reject failed')
+                                ->title(__('filament.reject_failed'))
                                 ->body($exception->getMessage())
                                 ->danger()
                                 ->send();

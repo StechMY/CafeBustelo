@@ -13,41 +13,41 @@ class WithdrawRequestInfolist
     {
         return $schema
             ->components([
-                Section::make('Request')
+                Section::make(__('filament.request'))
                     ->schema([
                         Grid::make(3)
                             ->schema([
                                 TextEntry::make('user.username')
-                                    ->label('Username')
+                                    ->label(__('filament.username'))
                                     ->weight('bold')
                                     ->copyable(),
 
                                 TextEntry::make('user.name')
-                                    ->label('Name'),
+                                    ->label(__('filament.name')),
 
                                 TextEntry::make('user.phone')
-                                    ->label('Phone')
+                                    ->label(__('filament.phone'))
                                     ->copyable()
                                     ->placeholder('-'),
 
                                 TextEntry::make('amount')
-                                    ->label('Amount')
+                                    ->label(__('filament.amount'))
                                     ->prefix(config('app.currency')." "),
 
                                 TextEntry::make('fee_amount')
-                                    ->label('Fee')
+                                    ->label(__('filament.fee'))
                                     ->prefix(config('app.currency')." "),
 
                                 TextEntry::make('net_amount')
-                                    ->label('Net Amount')
+                                    ->label(__('filament.net_amount'))
                                     ->prefix(config('app.currency')." "),
 
                                 TextEntry::make('vip_level_snapshot')
-                                    ->label('VIP Snapshot')
-                                    ->formatStateUsing(fn($state): string => 'LV' . $state),
+                                    ->label(__('filament.vip_snapshot'))
+                                    ->formatStateUsing(fn($state): string => __('filament.lv') . $state),
 
                                 TextEntry::make('min_withdraw_amount_snapshot')
-                                    ->label('Min Withdraw Snapshot')
+                                    ->label(__('filament.min_withdraw_snapshot'))
                                     ->prefix(config('app.currency')." "),
 
                                 TextEntry::make('status')
@@ -60,35 +60,35 @@ class WithdrawRequestInfolist
                                     }),
 
                                 TextEntry::make('created_at')
-                                    ->label('Submitted At')
+                                    ->label(__('filament.submitted_at'))
                                     ->dateTime(),
                             ]),
                     ]),
 
-                Section::make('Bank Detail')
+                Section::make(__('filament.bank_detail'))
                     ->schema([
                         Grid::make(3)
                             ->schema([
                                 TextEntry::make('bank_name')
-                                    ->label('Bank Name')
+                                    ->label(__('filament.bank_name'))
                                     ->copyable(),
 
                                 TextEntry::make('bank_account_name')
-                                    ->label('Account Name')
+                                    ->label(__('filament.account_name'))
                                     ->copyable(),
 
                                 TextEntry::make('bank_account_no')
-                                    ->label('Account No')
+                                    ->label(__('filament.account_no'))
                                     ->copyable(),
                             ]),
                     ]),
 
-                Section::make('Review')
+                Section::make(__('filament.review'))
                     ->schema([
                         Grid::make(3)
                             ->schema([
                                 TextEntry::make('reviewer.username')
-                                    ->label('Reviewed By')
+                                    ->label(__('filament.reviewed_by'))
                                     ->placeholder('-'),
 
                                 TextEntry::make('reviewed_at')

@@ -13,13 +13,13 @@ class VipLevelInfolist
     {
         return $schema
             ->components([
-                Section::make('VIP Level')
+                Section::make(__('filament.vip_level'))
                     ->schema([
                         Grid::make(3)
                             ->schema([
                                 TextEntry::make('level')
-                                    ->label('Level')
-                                    ->formatStateUsing(fn ($state): string => 'LV' . $state)
+                                    ->label(__('filament.level'))
+                                    ->formatStateUsing(fn($state): string => __('filament.lv') . $state)
                                     ->weight('bold'),
 
                                 TextEntry::make('name'),
@@ -29,36 +29,38 @@ class VipLevelInfolist
 
                                 TextEntry::make('status')
                                     ->badge()
-                                    ->color(fn (?string $state): string => $state === 'active' ? 'success' : 'gray'),
+                                    ->color(fn(?string $state): string => $state === 'active' ? 'success' : 'gray'),
 
                                 TextEntry::make('required_accumulated_recharge')
-                                    ->prefix(config('app.currency')." "),
+                                    ->prefix(config('app.currency') . " "),
 
                                 TextEntry::make('required_active_team_size'),
                             ]),
                     ]),
 
-                Section::make('Benefits')
+                Section::make(__('filament.benefits'))
                     ->schema([
                         Grid::make(3)
                             ->schema([
                                 TextEntry::make('daily_check_in_amount')
-                                    ->prefix(config('app.currency')." "),
+                                    ->prefix(config('app.currency') . " "),
 
                                 TextEntry::make('weekly_salary')
-                                    ->prefix(config('app.currency')." "),
+                                    ->prefix(config('app.currency') . " "),
 
                                 TextEntry::make('monthly_salary')
-                                    ->prefix(config('app.currency')." "),
+                                    ->prefix(config('app.currency') . " "),
 
                                 TextEntry::make('team_subsidy')
-                                    ->prefix(config('app.currency')." "),
+                                    ->prefix(config('app.currency') . " "),
 
                                 TextEntry::make('annual_salary')
-                                    ->prefix(config('app.currency')." "),
+                                    ->prefix(config('app.currency') . " "),
 
                                 TextEntry::make('min_withdraw_amount')
-                                    ->prefix(config('app.currency')." "),
+                                    ->prefix(config('app.currency') . " "),
+
+                                TextEntry::make('withdraw_fee_percent'),
                             ]),
                     ]),
             ]);

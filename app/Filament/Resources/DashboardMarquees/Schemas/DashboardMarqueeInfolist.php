@@ -14,7 +14,7 @@ class DashboardMarqueeInfolist
     {
         return $schema
             ->components([
-                Section::make('Marquee')
+                Section::make(__('filament.marquee'))
                     ->schema([
                         Grid::make(2)
                             ->schema([

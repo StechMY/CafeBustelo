@@ -26,22 +26,22 @@ class ViewUser extends ViewRecord
             EditAction::make(),
 
             Action::make('topUp')
-                ->label('Top Up')
+                ->label(__('filament.top_up'))
                 ->icon('heroicon-o-plus-circle')
                 ->color('success')
                 ->form([
                     Select::make('wallet_type')
-                        ->label('Wallet')
+                        ->label(__('filament.wallet'))
                         ->required()
                         ->default(Wallet::TYPE_RECHARGE)
                         ->options([
-                            Wallet::TYPE_RECHARGE => 'Recharge Wallet',
-                            Wallet::TYPE_WITHDRAWABLE => 'Withdrawable Wallet',
+                            Wallet::TYPE_RECHARGE => __('filament.recharge_wallet'),
+                            Wallet::TYPE_WITHDRAWABLE => __('filament.withdrawable_wallet'),
                         ])
                         ->native(false),
 
                     TextInput::make('amount')
-                        ->label('Amount')
+                        ->label(__('filament.amount'))
                         ->prefix(config('app.currency'))
                         ->required()
                         ->numeric()
@@ -49,10 +49,10 @@ class ViewUser extends ViewRecord
                         ->step('0.01'),
 
                     Checkbox::make('counts_as_recharge')
-                        ->label('Count as accumulated recharge'),
+                        ->label(__('filament.count_as_accumulated_recharge')),
 
                     TextInput::make('remarks')
-                        ->label('Remarks')
+                        ->label(__('filament.remarks'))
                         ->maxLength(255),
                 ])
                 ->requiresConfirmation()
@@ -68,14 +68,14 @@ class ViewUser extends ViewRecord
                         );
 
                         Notification::make()
-                            ->title('Top-up completed')
+                            ->title(__('filament.top_up_completed'))
                             ->success()
                             ->send();
                     } catch (Throwable $exception) {
                         report($exception);
 
                         Notification::make()
-                            ->title('Top-up failed')
+                            ->title(__('filament.top_up_failed'))
                             ->body($exception->getMessage())
                             ->danger()
                             ->send();
@@ -83,11 +83,11 @@ class ViewUser extends ViewRecord
                 }),
 
             Action::make('viewTeam')
-                ->label('Team')
+                ->label(__('filament.team'))
                 ->icon('heroicon-o-users')
-                ->modalHeading(fn(User $record): string => 'Team of ' . $record->username)
+                ->modalHeading(fn(User $record): string => __('filament.team_of') . $record->username)
                 ->modalSubmitAction(false)
-                ->modalCancelActionLabel('Close')
+                ->modalCancelActionLabel(__('filament.close'))
                 ->modalContent(fn(User $record) => view('filament.resources.users.components.team-tree', [
                     'record' => $record,
                     'downlineUsers' => $record->allDownlineUsers(),

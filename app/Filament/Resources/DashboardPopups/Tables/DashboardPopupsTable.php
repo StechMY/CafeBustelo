@@ -29,10 +29,10 @@ class DashboardPopupsTable
                     ->weight('bold'),
 
                 ToggleColumn::make('is_enabled')
-                    ->label('Enabled')
+                    ->label(__('filament.enabled'))
                     ->afterStateUpdated(function (): void {
                         Notification::make()
-                            ->title('Popup status updated')
+                            ->title(__('filament.popup_status_updated'))
                             ->success()
                             ->send();
                     }),

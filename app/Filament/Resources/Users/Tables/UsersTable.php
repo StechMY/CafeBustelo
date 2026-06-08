@@ -39,7 +39,7 @@ class UsersTable
         return $table
             ->columns([
                 TextColumn::make('username')
-                    ->label('Username')
+                    ->label(__('filament.username'))
                     ->searchable()
                     ->sortable()
                     ->weight('bold')
@@ -47,13 +47,13 @@ class UsersTable
                     ->description(fn(User $record): string => $record->name),
 
                 TextColumn::make('phone')
-                    ->label('Phone')
+                    ->label(__('filament.phone'))
                     ->searchable()
                     ->copyable()
                     ->placeholder('-'),
 
                 TextColumn::make('status')
-                    ->label('Status')
+                    ->label(__('filament.status'))
                     ->badge()
                     ->searchable()
                     ->sortable()
@@ -65,148 +65,148 @@ class UsersTable
                     }),
 
                 TextColumn::make('referral_code')
-                    ->label('Referral Code')
+                    ->label(__('filament.referral_code'))
                     ->searchable()
                     ->copyable()
                     ->badge()
                     ->color('info'),
 
                 TextColumn::make('referrer.username')
-                    ->label('Referred By')
+                    ->label(__('filament.referred_by'))
                     ->searchable()
                     ->placeholder('-'),
                 TextColumn::make('recharge_wallet_balance')
-                    ->label('Recharge Balance')
+                    ->label(__('filament.recharge_balance'))
                     ->state(fn(User $record): float => $record->recharge_wallet_balance)
                     ->prefix(config('app.currency') . " ")
                     ->sortable(false)
                     ->toggleable(),
 
                 TextColumn::make('withdrawable_wallet_balance')
-                    ->label('Withdrawable Balance')
+                    ->label(__('filament.withdrawable_balance'))
                     ->state(fn(User $record): float => $record->withdrawable_wallet_balance)
                     ->prefix(config('app.currency') . " ")
                     ->sortable(false)
                     ->toggleable(),
 
                 TextColumn::make('total_commission')
-                    ->label('Commission')
+                    ->label(__('filament.commission'))
                     ->state(fn(User $record): float => $record->total_commission)
                     ->prefix(config('app.currency') . " ")
                     ->sortable(false)
                     ->toggleable(),
 
                 TextColumn::make('current_vip_level')
-                    ->label('LV')
-                    ->state(fn(User $record): string => 'LV' . $record->current_vip_level_number)
+                    ->label(__('filament.lv'))
+                    ->state(fn(User $record): string => __('filament.lv') . $record->current_vip_level_number)
                     ->badge()
                     ->color('info')
                     ->sortable(false),
 
                 TextColumn::make('active_team_size')
-                    ->label('Active Team')
+                    ->label(__('filament.active_team'))
                     ->state(fn(User $record): int => $record->activeTeamSize())
                     ->sortable(false)
                     ->toggleable(),
 
                 TextColumn::make('last_login_ip')
-                    ->label('Last IP')
+                    ->label(__('filament.last_ip'))
                     ->searchable()
                     ->copyable()
                     ->placeholder('-')
                     ->toggleable(),
 
                 TextColumn::make('last_login_at')
-                    ->label('Last Login')
+                    ->label(__('filament.last_login'))
                     ->dateTime()
                     ->sortable()
                     ->placeholder('-'),
 
                 ToggleColumn::make('order_status')
-                    ->label('Order')
+                    ->label(__('filament.order'))
                     ->sortable()
                     ->onColor('success')
                     ->offColor('danger')
                     ->afterStateUpdated(function (User $record, bool $state): void {
                         Notification::make()
-                            ->title('Order status updated')
-                            ->body($record->username . ' ' . ($state ? 'can now buy products.' : 'cannot buy products now.'))
+                            ->title(__('filament.order_status_updated'))
+                            ->body($record->username . ' ' . ($state ? __('filament.can_now_buy_products') : __('filament.cannot_buy_products_now')))
                             ->success()
                             ->send();
                     }),
 
                 ToggleColumn::make('withdraw_status')
-                    ->label('Withdraw')
+                    ->label(__('filament.withdraw'))
                     ->sortable()
                     ->onColor('success')
                     ->offColor('danger')
                     ->afterStateUpdated(function (User $record, bool $state): void {
                         Notification::make()
-                            ->title('Withdraw status updated')
-                            ->body($record->username . ' ' . ($state ? 'can now withdraw.' : 'cannot withdraw now.'))
+                            ->title(__('filament.withdraw_status_updated'))
+                            ->body($record->username . ' ' . ($state ? __('filament.can_now_withdraw') : __('filament.cannot_withdraw_now')))
                             ->success()
                             ->send();
                     }),
                 ToggleColumn::make('check_in_status')
-                    ->label('Check-in')
+                    ->label(__('filament.check_in'))
                     ->sortable()
                     ->onColor('success')
                     ->offColor('danger')
                     ->afterStateUpdated(function (User $record, bool $state): void {
                         Notification::make()
-                            ->title('Check in status updated')
-                            ->body($record->username . ' ' . ($state ? 'can now check in.' : 'cannot check in now.'))
+                            ->title(__('filament.check_in_status_updated'))
+                            ->body($record->username . ' ' . ($state ? __('filament.can_now_check_in') : __('filament.cannot_check_in_now')))
                             ->success()
                             ->send();
                     }),
 
                 ToggleColumn::make('is_virtual')
-                    ->label('Virtual')
+                    ->label(__('filament.virtual'))
                     ->sortable()
                     ->onColor('warning')
                     ->offColor('gray')
                     ->afterStateUpdated(function (User $record, bool $state): void {
                         Notification::make()
-                            ->title('Virtual status updated')
-                            ->body($record->username . ' is now marked as ' . ($state ? 'virtual.' : 'real.'))
+                            ->title(__('filament.virtual_status_updated'))
+                            ->body($record->username . ' ' . __('filament.is_now_marked_as') . ' ' . ($state ? __('filament.virtual') : __('filament.real')))
                             ->success()
                             ->send();
                     }),
                 ToggleColumn::make('weekly_salary_status')
-                    ->label('Weekly Salary')
+                    ->label(__('filament.weekly_salary'))
                     ->afterStateUpdated(function ($record, bool $state): void {
                         Notification::make()
-                            ->title('Weekly salary status updated')
+                            ->title(__('filament.weekly_salary_status_updated'))
                             ->success()
                             ->send();
                     }),
 
                 ToggleColumn::make('monthly_salary_status')
-                    ->label('Monthly Salary')
+                    ->label(__('filament.monthly_salary'))
                     ->afterStateUpdated(function ($record, bool $state): void {
                         Notification::make()
-                            ->title('Monthly salary status updated')
+                            ->title(__('filament.monthly_salary_status_updated'))
                             ->success()
                             ->send();
                     }),
 
                 ToggleColumn::make('annual_salary_status')
-                    ->label('Annual Salary')
+                    ->label(__('filament.annual_salary'))
                     ->afterStateUpdated(function ($record, bool $state): void {
                         Notification::make()
-                            ->title('Annual salary status updated')
+                            ->title(__('filament.annual_salary_status_updated'))
                             ->success()
                             ->send();
                     }),
 
                 TextColumn::make('accumulated_recharge')
-                    ->label('Accum. Recharge')
+                    ->label(__('filament.accum_recharge'))
                     ->prefix(config('app.currency') . " ")
                     ->sortable()
                     ->toggleable(),
 
                 TextColumn::make('created_at')
-                    ->label('Created')
+                    ->label(__('filament.created'))
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
@@ -215,24 +215,24 @@ class UsersTable
             ->filters([
                 SelectFilter::make('status')
                     ->options([
-                        'active' => 'Active',
-                        'inactive' => 'Inactive',
-                        // 'suspended' => 'Suspended',
+                        'active' => __('filament.active'),
+                        'inactive' => __('filament.inactive'),
+                        // 'suspended' => __('filament.suspended'),
                     ]),
 
                 SelectFilter::make('is_virtual')
-                    ->label('Virtual User')
+                    ->label(__('filament.virtual_user'))
                     ->options([
-                        1 => 'Virtual',
-                        0 => 'Real',
+                        1 => __('filament.virtual'),
+                        0 => __('filament.real'),
                     ]),
 
                 Filter::make('ip_address')
-                    ->label('Search IP History')
+                    ->label(__('filament.search_ip_history'))
                     ->form([
                         TextInput::make('ip')
-                            ->label('IP Address')
-                            ->placeholder('Example: 175.141.1.1'),
+                            ->label(__('filament.ip_address'))
+                            ->placeholder(__('filament.example_175_141_1_1')),
                     ])
                     ->query(function (Builder $query, array $data): Builder {
                         $ip = $data['ip'] ?? null;
@@ -257,7 +257,7 @@ class UsersTable
                 EditAction::make(),
 
                 Action::make('toggleStatus')
-                    ->label(fn(User $record): string => $record->status === 'active' ? 'Deactivate' : 'Activate')
+                    ->label(fn(User $record): string => $record->status === 'active' ? __('filament.deactivate') : __('filament.activate'))
                     ->icon(fn(User $record): string => $record->status === 'active'
                         ? 'heroicon-o-no-symbol'
                         : 'heroicon-o-check-circle')
@@ -269,28 +269,28 @@ class UsersTable
                         ])->save();
 
                         Notification::make()
-                            ->title('User status updated')
+                            ->title(__('filament.user_status_updated'))
                             ->success()
                             ->send();
                     }),
 
                 Action::make('topUp')
-                    ->label('Top Up')
+                    ->label(__('filament.top_up'))
                     ->icon('heroicon-o-plus-circle')
                     ->color('success')
                     ->form([
                         Select::make('wallet_type')
-                            ->label('Wallet')
+                            ->label(__('filament.wallet'))
                             ->required()
                             ->default(Wallet::TYPE_RECHARGE)
                             ->options([
-                                Wallet::TYPE_RECHARGE => 'Recharge Wallet',
-                                Wallet::TYPE_WITHDRAWABLE => 'Withdrawable Wallet',
+                                Wallet::TYPE_RECHARGE => __('filament.recharge_wallet'),
+                                Wallet::TYPE_WITHDRAWABLE => __('filament.withdrawable_wallet'),
                             ])
                             ->native(false),
 
                         TextInput::make('amount')
-                            ->label('Amount')
+                            ->label(__('filament.amount'))
                             ->prefix('RM')
                             ->required()
                             ->numeric()
@@ -298,11 +298,11 @@ class UsersTable
                             ->step('0.01'),
 
                         Checkbox::make('counts_as_recharge')
-                            ->label('Count as accumulated recharge')
-                            ->helperText('Only enable this for real recharge top-up.'),
+                            ->label(__('filament.count_as_accumulated_recharge'))
+                            ->helperText(__('filament.only_enable_this_for_real_recharge_top_up')),
 
                         TextInput::make('remarks')
-                            ->label('Remarks')
+                            ->label(__('filament.remarks'))
                             ->maxLength(255),
                     ])
                     ->requiresConfirmation()
@@ -318,14 +318,14 @@ class UsersTable
                             );
 
                             Notification::make()
-                                ->title('Top-up completed')
+                                ->title(__('filament.top_up_completed'))
                                 ->success()
                                 ->send();
                         } catch (Throwable $exception) {
                             report($exception);
 
                             Notification::make()
-                                ->title('Top-up failed')
+                                ->title(__('filament.top_up_failed'))
                                 ->body($exception->getMessage())
                                 ->danger()
                                 ->send();
@@ -333,11 +333,11 @@ class UsersTable
                     }),
 
                 Action::make('viewTeam')
-                    ->label('Team')
+                    ->label(__('filament.team'))
                     ->icon('heroicon-o-users')
-                    ->modalHeading(fn(User $record): string => 'Team of ' . $record->username)
+                    ->modalHeading(fn(User $record): string => __('filament.team_of') . $record->username)
                     ->modalSubmitAction(false)
-                    ->modalCancelActionLabel('Close')
+                    ->modalCancelActionLabel(__('filament.close'))
                     ->modalContent(fn(User $record) => view('filament.resources.users.components.team-tree', [
                         'record' => $record,
                         'downlineUsers' => $record->allDownlineUsers(),
@@ -348,24 +348,24 @@ class UsersTable
                     DeleteBulkAction::make(),
                 ]),
                 BulkAction::make('giveBonusCode')
-                    ->label('Give Bonus Code')
+                    ->label(__('filament.give_bonus_code'))
                     ->icon('heroicon-o-gift')
                     ->color('warning')
                     ->form([
                         Select::make('type')
-                            ->label('Type')
+                            ->label(__('filament.type'))
                             ->required()
                             ->default(BonusCode::TYPE_ADMIN)
                             ->options([
-                                BonusCode::TYPE_ADMIN => 'Admin',
-                                BonusCode::TYPE_INVITE => 'Invite',
-                                BonusCode::TYPE_UPGRADE => 'Upgrade',
-                                BonusCode::TYPE_COMPENSATION => 'Compensation',
+                                BonusCode::TYPE_ADMIN => __('filament.admin'),
+                                BonusCode::TYPE_INVITE => __('filament.invite'),
+                                BonusCode::TYPE_UPGRADE => __('filament.upgrade'),
+                                BonusCode::TYPE_COMPENSATION => __('filament.compensation'),
                             ])
                             ->native(false),
 
                         TextInput::make('amount')
-                            ->label('Amount')
+                            ->label(__('filament.amount'))
                             ->prefix('RM')
                             ->required()
                             ->numeric()
@@ -373,12 +373,12 @@ class UsersTable
                             ->step('0.01'),
 
                         DateTimePicker::make('expires_at')
-                            ->label('Expires At')
+                            ->label(__('filament.expires_at'))
                             ->seconds(false)
                             ->nullable(),
 
                         Textarea::make('remark')
-                            ->label('Remark / Reason')
+                            ->label(__('filament.remark_reason'))
                             ->rows(3),
                     ])
                     ->action(function (Collection $records, array $data): void {
@@ -398,8 +398,8 @@ class UsersTable
                         });
 
                         Notification::make()
-                            ->title('Bonus codes distributed')
-                            ->body($records->count() . ' user(s) received bonus codes.')
+                            ->title(__('filament.bonus_codes_distributed'))
+                            ->body(__('filament.users_received_bonus_codes', ['count' => $records->count()]))
                             ->success()
                             ->send();
                     })

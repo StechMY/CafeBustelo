@@ -1,0 +1,25 @@
+<?php
+
+return [
+    'security_binding' => 'Pengikatan Keamanan',
+    'bind_bank_account' => 'Ikat Rekening Bank',
+    'bind_desc' => 'Silakan ikat rekening bank sebelum melakukan penarikan pertama.',
+    'security_warning' => 'Demi keamanan dana, rekening bank hanya dapat diikat satu kali. Pastikan data sudah benar sebelum dikirim.',
+    'real_name' => 'Nama Asli',
+    'real_name_placeholder' => 'Masukkan nama lengkap asli',
+    'bank_name' => 'Nama Bank',
+    'bank_name_placeholder' => 'Masukkan nama bank',
+    'bank_account_no' => 'Nomor Rekening Bank',
+    'bank_account_no_placeholder' => 'Masukkan nomor rekening bank',
+    'change_notice' => 'Jika perlu mengganti rekening bank, silakan hubungi layanan pelanggan untuk pemeriksaan.',
+    'bind_now' => 'Ikat Sekarang',
+    'bind_success' => 'Rekening bank berhasil diikat.',
+    'already_bound' => 'Anda sudah mengikat rekening bank.',
+    'bind_required_first' => 'Silakan ikat rekening bank sebelum menarik dana.',
+    'bound_bank_account' => 'Rekening Bank Terikat',
+    'bound' => 'Terikat',
+    'unavailable' => 'Rekening bank terikat Anda tidak tersedia. Silakan hubungi layanan pelanggan.',
+    'locked' => 'Terkunci',
+    'bound_at' => 'Waktu Terikat',
+    'admin_change_note' => 'Setelah terikat, rekening bank hanya dapat diperbarui oleh admin atau layanan pelanggan setelah pemeriksaan.',
+];

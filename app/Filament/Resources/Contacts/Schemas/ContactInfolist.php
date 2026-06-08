@@ -13,7 +13,7 @@ class ContactInfolist
     {
         return $schema
             ->components([
-                Section::make('Contact')
+                Section::make(__('filament.contact'))
                     ->schema([
                         Grid::make(3)
                             ->schema([
@@ -49,7 +49,7 @@ class ContactInfolist
                             ]),
                     ]),
 
-                Section::make('Description')
+                Section::make(__('filament.description'))
                     ->schema([
                         TextEntry::make('description')
                             ->placeholder('-'),

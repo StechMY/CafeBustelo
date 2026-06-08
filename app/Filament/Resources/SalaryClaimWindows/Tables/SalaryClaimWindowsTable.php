@@ -26,15 +26,15 @@ class SalaryClaimWindowsTable
                     ->sortable(),
 
                 TextColumn::make('day_of_week')
-                    ->label('Day of Week')
+                    ->label(__('filament.day_of_week'))
                     ->formatStateUsing(fn ($state): string => match ((int) $state) {
-                        0 => 'Sunday',
-                        1 => 'Monday',
-                        2 => 'Tuesday',
-                        3 => 'Wednesday',
-                        4 => 'Thursday',
-                        5 => 'Friday',
-                        6 => 'Saturday',
+                        0 => __('filament.sunday'),
+                        1 => __('filament.monday'),
+                        2 => __('filament.tuesday'),
+                        3 => __('filament.wednesday'),
+                        4 => __('filament.thursday'),
+                        5 => __('filament.friday'),
+                        6 => __('filament.saturday'),
                         default => '-',
                     })
                     ->placeholder('-'),

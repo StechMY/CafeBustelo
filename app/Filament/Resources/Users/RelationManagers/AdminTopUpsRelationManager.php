@@ -7,12 +7,16 @@ use Filament\Schemas\Schema;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Model;
 
 class AdminTopUpsRelationManager extends RelationManager
 {
     protected static string $relationship = 'adminTopUps';
 
-    protected static ?string $title = 'Admin Top-ups';
+    public static function getTitle(Model $ownerRecord, string $pageClass): string
+    {
+        return __('filament.admin_top_ups');
+    }
 
     public function form(Schema $schema): Schema
     {
@@ -24,7 +28,7 @@ class AdminTopUpsRelationManager extends RelationManager
         return $table
             ->columns([
                 TextColumn::make('adminUser.username')
-                    ->label('Admin')
+                    ->label(__('filament.admin'))
                     ->placeholder('-'),
 
                 TextColumn::make('wallet_type')
@@ -40,7 +44,7 @@ class AdminTopUpsRelationManager extends RelationManager
                     ->sortable(),
 
                 IconColumn::make('counts_as_recharge')
-                    ->label('Counts Recharge')
+                    ->label(__('filament.counts_recharge'))
                     ->boolean(),
 
                 TextColumn::make('remarks')

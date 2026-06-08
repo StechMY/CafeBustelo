@@ -1,0 +1,25 @@
+<?php
+
+return [
+    'security_binding' => 'Security Binding',
+    'bind_bank_account' => 'Bind Bank Account',
+    'bind_desc' => 'Please bind your bank account before submitting your first withdrawal.',
+    'security_warning' => 'For fund security, bank account can only be bound once. Please confirm your details before submitting.',
+    'real_name' => 'Real Name',
+    'real_name_placeholder' => 'Enter your real full name',
+    'bank_name' => 'Bank Name',
+    'bank_name_placeholder' => 'Enter bank name',
+    'bank_account_no' => 'Bank Account No.',
+    'bank_account_no_placeholder' => 'Enter bank account number',
+    'change_notice' => 'If you need to change your bank account, please contact customer service for review.',
+    'bind_now' => 'Bind Now',
+    'bind_success' => 'Bank account bound successfully.',
+    'already_bound' => 'You have already bound a bank account.',
+    'bind_required_first' => 'Please bind your bank account before withdrawal.',
+    'bound_bank_account' => 'Bound Bank Account',
+    'bound' => 'Bound',
+    'unavailable' => 'Your bound bank account is unavailable. Please contact customer service.',
+    'locked' => 'Locked',
+    'bound_at' => 'Bound At',
+    'admin_change_note' => 'Only admin/customer service can update this bank account after review.',
+];

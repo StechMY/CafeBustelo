@@ -6,12 +6,16 @@ use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Model;
 
 class CheckInRecordsRelationManager extends RelationManager
 {
     protected static string $relationship = 'checkInRecords';
 
-    protected static ?string $title = 'Check-in Records';
+    public static function getTitle(Model $ownerRecord, string $pageClass): string
+    {
+        return __('filament.check_in_records');
+    }
 
     public function form(Schema $schema): Schema
     {
@@ -27,8 +31,8 @@ class CheckInRecordsRelationManager extends RelationManager
                     ->sortable(),
 
                 TextColumn::make('vip_level_snapshot')
-                    ->label('VIP')
-                    ->formatStateUsing(fn ($state): string => 'LV' . $state)
+                    ->label(__('filament.vip'))
+                    ->formatStateUsing(fn ($state): string => __('filament.lv') . $state)
                     ->badge()
                     ->color('info')
                     ->sortable(),

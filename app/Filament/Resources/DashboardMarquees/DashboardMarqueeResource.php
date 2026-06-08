@@ -23,11 +23,27 @@ class DashboardMarqueeResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedSpeakerWave;
 
-    protected static string|UnitEnum|null $navigationGroup = 'Platform Management';
-
-    protected static ?string $navigationLabel = 'Dashboard Marquees';
-
     protected static ?int $navigationSort = 71;
+
+    public static function getNavigationGroup(): string|UnitEnum|null
+    {
+        return __('filament.platform_management');
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return __('filament.dashboard_marquees');
+    }
+
+    public static function getModelLabel(): string
+    {
+        return __('filament.dashboard_marquee');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('filament.dashboard_marquees');
+    }
 
     public static function form(Schema $schema): Schema
     {

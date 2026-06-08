@@ -14,17 +14,17 @@ class SalaryClaimInfolist
     {
         return $schema
             ->components([
-                Section::make('Claim Detail')
+                Section::make(__('filament.claim_detail'))
                     ->schema([
                         Grid::make(3)
                             ->schema([
                                 TextEntry::make('user.username')
-                                    ->label('Username')
+                                    ->label(__('filament.username'))
                                     ->copyable()
                                     ->weight('bold'),
 
                                 TextEntry::make('user.name')
-                                    ->label('Name')
+                                    ->label(__('filament.name'))
                                     ->placeholder('-'),
 
                                 TextEntry::make('type')
@@ -39,8 +39,8 @@ class SalaryClaimInfolist
                                 TextEntry::make('period_key'),
 
                                 TextEntry::make('vip_level_snapshot')
-                                    ->label('VIP Snapshot')
-                                    ->formatStateUsing(fn ($state): string => 'LV' . $state),
+                                    ->label(__('filament.vip_snapshot'))
+                                    ->formatStateUsing(fn ($state): string => __('filament.lv') . $state),
 
                                 TextEntry::make('claimed_at')
                                     ->dateTime(),
@@ -62,7 +62,7 @@ class SalaryClaimInfolist
                             ]),
                     ]),
 
-                Section::make('Audit')
+                Section::make(__('filament.audit'))
                     ->schema([
                         Grid::make(2)
                             ->schema([
@@ -74,7 +74,7 @@ class SalaryClaimInfolist
                             ]),
                     ]),
 
-                Section::make('Meta')
+                Section::make(__('filament.meta'))
                     ->collapsed()
                     ->schema([
                         KeyValueEntry::make('meta')

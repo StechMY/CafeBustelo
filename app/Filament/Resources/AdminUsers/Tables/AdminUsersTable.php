@@ -29,18 +29,18 @@ class AdminUsersTable
                     ->sortable(),
 
                 TextColumn::make('roles.name')
-                    ->label('Roles')
+                    ->label(__('filament.roles'))
                     ->badge()
                     ->separator(',')
                     ->searchable(),
 
                 ToggleColumn::make('status')
-                    ->label('Active')
+                    ->label(__('filament.active'))
                     ->getStateUsing(fn (AdminUser $record): bool => $record->status === 'active')
                     ->updateStateUsing(function (AdminUser $record, bool $state): void {
                         if ($record->hasRole('super_admin') && ! auth('admin')->user()?->hasRole('super_admin')) {
                             Notification::make()
-                                ->title('You cannot update super admin status.')
+                                ->title(__('filament.you_cannot_update_super_admin_status'))
                                 ->danger()
                                 ->send();
 
@@ -49,7 +49,7 @@ class AdminUsersTable
 
                         if ($record->id === auth('admin')->id() && ! $state) {
                             Notification::make()
-                                ->title('You cannot disable your own account.')
+                                ->title(__('filament.you_cannot_disable_your_own_account'))
                                 ->danger()
                                 ->send();
 
@@ -61,7 +61,7 @@ class AdminUsersTable
                         ]);
 
                         Notification::make()
-                            ->title('Admin status updated')
+                            ->title(__('filament.admin_status_updated'))
                             ->success()
                             ->send();
                     }),

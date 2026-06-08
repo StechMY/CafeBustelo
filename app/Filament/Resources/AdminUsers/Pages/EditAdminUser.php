@@ -29,7 +29,7 @@ class EditAdminUser extends EditRecord
 
         if ($record->hasRole('super_admin') && ! auth('admin')->user()?->hasRole('super_admin')) {
             Notification::make()
-                ->title('You cannot edit super admin.')
+                ->title(__('filament.you_cannot_edit_super_admin'))
                 ->danger()
                 ->send();
 

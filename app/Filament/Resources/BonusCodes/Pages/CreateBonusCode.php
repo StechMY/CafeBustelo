@@ -23,7 +23,7 @@ class CreateBonusCode extends CreateRecord
         $ownerUserIds = $this->form->getRawState()['owner_user_ids'] ?? [];
 
         if (empty($ownerUserIds)) {
-            throw new \RuntimeException('Please select at least one user.');
+            throw new \RuntimeException(__('filament.please_select_at_least_one_user'));
         }
 
         $adminUser = Filament::auth()->user();
@@ -68,8 +68,8 @@ class CreateBonusCode extends CreateRecord
     protected function afterCreate(): void
     {
         Notification::make()
-            ->title('Bonus codes distributed')
-            ->body(count($this->createdBonusCodeIds) . ' bonus code(s) created successfully.')
+            ->title(__('filament.bonus_codes_distributed'))
+            ->body(__('filament.bonus_codes_created_successfully', ['count' => count($this->createdBonusCodeIds)]))
             ->success()
             ->send();
     }

@@ -8,12 +8,16 @@ use Filament\Schemas\Schema;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Model;
 
 class ReferralsRelationManager extends RelationManager
 {
     protected static string $relationship = 'referrals';
 
-    protected static ?string $title = 'Direct Downline';
+    public static function getTitle(Model $ownerRecord, string $pageClass): string
+    {
+        return __('filament.direct_downline');
+    }
 
     public function form(Schema $schema): Schema
     {

@@ -1,0 +1,25 @@
+<?php
+
+return [
+    'security_binding' => 'Liên kết bảo mật',
+    'bind_bank_account' => 'Liên kết tài khoản ngân hàng',
+    'bind_desc' => 'Vui lòng liên kết tài khoản ngân hàng trước khi rút tiền lần đầu.',
+    'security_warning' => 'Để đảm bảo an toàn tiền, tài khoản ngân hàng chỉ được liên kết một lần. Vui lòng kiểm tra kỹ thông tin trước khi gửi.',
+    'real_name' => 'Họ tên thật',
+    'real_name_placeholder' => 'Nhập họ tên thật',
+    'bank_name' => 'Tên ngân hàng',
+    'bank_name_placeholder' => 'Nhập tên ngân hàng',
+    'bank_account_no' => 'Số tài khoản ngân hàng',
+    'bank_account_no_placeholder' => 'Nhập số tài khoản ngân hàng',
+    'change_notice' => 'Nếu cần thay đổi tài khoản ngân hàng, vui lòng liên hệ CSKH để được kiểm tra.',
+    'bind_now' => 'Liên kết ngay',
+    'bind_success' => 'Liên kết tài khoản ngân hàng thành công.',
+    'already_bound' => 'Bạn đã liên kết tài khoản ngân hàng.',
+    'bind_required_first' => 'Vui lòng liên kết tài khoản ngân hàng trước khi rút tiền.',
+    'bound_bank_account' => 'Tài khoản ngân hàng đã liên kết',
+    'bound' => 'Đã liên kết',
+    'unavailable' => 'Tài khoản ngân hàng đã liên kết của bạn không khả dụng. Vui lòng liên hệ CSKH.',
+    'locked' => 'Đã khóa',
+    'bound_at' => 'Thời gian liên kết',
+    'admin_change_note' => 'Sau khi liên kết, tài khoản ngân hàng chỉ có thể được cập nhật bởi quản trị viên hoặc CSKH sau khi kiểm tra.',
+];

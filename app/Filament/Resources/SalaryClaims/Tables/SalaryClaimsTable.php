@@ -14,13 +14,13 @@ class SalaryClaimsTable
         return $table
             ->columns([
                 TextColumn::make('user.username')
-                    ->label('Username')
+                    ->label(__('filament.username'))
                     ->searchable()
                     ->sortable()
                     ->weight('bold'),
 
                 TextColumn::make('user.phone')
-                    ->label('Phone')
+                    ->label(__('filament.phone'))
                     ->searchable()
                     ->placeholder('-')
                     ->toggleable(),
@@ -40,8 +40,8 @@ class SalaryClaimsTable
                     ->searchable(),
 
                 TextColumn::make('vip_level_snapshot')
-                    ->label('VIP')
-                    ->formatStateUsing(fn ($state): string => 'LV' . $state)
+                    ->label(__('filament.vip'))
+                    ->formatStateUsing(fn ($state): string => __('filament.lv') . $state)
                     ->badge()
                     ->color('info')
                     ->sortable(),
@@ -72,9 +72,9 @@ class SalaryClaimsTable
             ->filters([
                 SelectFilter::make('type')
                     ->options([
-                        'weekly' => 'Weekly',
-                        'monthly' => 'Monthly',
-                        'annual' => 'Annual',
+                        'weekly' => __('filament.weekly'),
+                        'monthly' => __('filament.monthly'),
+                        'annual' => __('filament.annual'),
                     ]),
             ])
             ->recordActions([

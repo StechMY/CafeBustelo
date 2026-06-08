@@ -29,17 +29,33 @@ class SvipPackageResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedSparkles;
 
-    protected static string|UnitEnum|null $navigationGroup = 'Platform Management';
-
-    protected static ?string $navigationLabel = 'SVIP Packages';
-
     protected static ?int $navigationSort = 80;
+
+    public static function getNavigationGroup(): string|UnitEnum|null
+    {
+        return __('filament.platform_management');
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return __('filament.svip_packages');
+    }
+
+    public static function getModelLabel(): string
+    {
+        return __('filament.svip_package');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('filament.svip_packages');
+    }
 
     public static function form(Schema $schema): Schema
     {
         return $schema
             ->components([
-                Section::make('SVIP Package')
+                Section::make(__('filament.svip_package'))
                     ->schema([
                         Grid::make(2)
                             ->schema([
@@ -54,9 +70,9 @@ class SvipPackageResource extends Resource
                                     ->minValue(0),
 
                                 TextInput::make('duration_days')
-                                    ->label('Duration Days')
+                                    ->label(__('filament.duration_days'))
                                     ->numeric()
-                                    ->helperText('Leave empty for lifetime.'),
+                                    ->helperText(__('filament.leave_empty_for_lifetime')),
 
                                 TextInput::make('sort_order')
                                     ->numeric()
@@ -86,7 +102,7 @@ class SvipPackageResource extends Resource
                     ->sortable(),
 
                 TextColumn::make('duration_days')
-                    ->formatStateUsing(fn ($state): string => $state ? $state . ' days' : 'Lifetime')
+                    ->formatStateUsing(fn ($state): string => $state ? __('filament.days_count', ['count' => $state]) : __('filament.lifetime'))
                     ->sortable(),
 
                 IconColumn::make('is_active')

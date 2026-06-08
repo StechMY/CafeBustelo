@@ -14,7 +14,7 @@ class SalaryClaimWindowInfolist
     {
         return $schema
             ->components([
-                Section::make('Claim Window')
+                Section::make(__('filament.claim_window'))
                     ->schema([
                         Grid::make(3)
                             ->schema([
@@ -43,7 +43,7 @@ class SalaryClaimWindowInfolist
                             ]),
                     ]),
 
-                Section::make('Description')
+                Section::make(__('filament.description'))
                     ->schema([
                         TextEntry::make('description')
                             ->placeholder('-'),

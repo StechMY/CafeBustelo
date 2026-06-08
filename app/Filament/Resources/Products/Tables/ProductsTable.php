@@ -25,53 +25,53 @@ class ProductsTable
         return $table
             ->columns([
                 ImageColumn::make('image_path')
-                    ->label('Image')
+                    ->label(__('filament.image'))
                     ->disk('do_spaces')
                     ->square()
                     ->size(56),
 
                 TextColumn::make('name')
-                    ->label('Name')
+                    ->label(__('filament.name'))
                     ->searchable()
                     ->sortable()
                     ->weight('bold')
                     ->description(fn (Product $record): string => $record->code),
 
                 TextColumn::make('price')
-                    ->label('Price')
+                    ->label(__('filament.price'))
                     ->prefix(config('app.currency')." ")
                     ->sortable(),
 
                 TextColumn::make('daily_income')
-                    ->label('Daily')
+                    ->label(__('filament.daily'))
                     ->prefix(config('app.currency')." ")
                     ->sortable(),
 
                 TextColumn::make('duration_days')
-                    ->label('Days')
-                    ->suffix(' days')
+                    ->label(__('filament.days'))
+                    ->suffix(fn (): string => ' ' . __('filament.days'))
                     ->numeric()
                     ->sortable(),
 
                 TextColumn::make('total_income')
-                    ->label('Total Income')
+                    ->label(__('filament.total_income'))
                     ->state(fn (Product $record): float => (float) $record->daily_income * (int) $record->duration_days)
                     ->prefix(config('app.currency')." "),
 
                 TextColumn::make('upgrade_bonus')
-                    ->label('Upgrade Bonus')
+                    ->label(__('filament.upgrade_bonus'))
                     ->prefix(config('app.currency')." ")
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('invite_bonus')
-                    ->label('Invite Bonus')
+                    ->label(__('filament.invite_bonus'))
                     ->prefix(config('app.currency')." ")
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('status')
-                    ->label('Status')
+                    ->label(__('filament.status'))
                     ->badge()
                     ->color(fn (?string $state): string => match ($state) {
                         'active' => 'success',
@@ -82,25 +82,25 @@ class ProductsTable
                     ->sortable(),
 
                 TextColumn::make('sort_order')
-                    ->label('Sort')
+                    ->label(__('filament.sort'))
                     ->numeric()
                     ->sortable()
                     ->toggleable(),
 
                 TextColumn::make('created_at')
-                    ->label('Created')
+                    ->label(__('filament.created'))
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('updated_at')
-                    ->label('Updated')
+                    ->label(__('filament.updated'))
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('deleted_at')
-                    ->label('Deleted')
+                    ->label(__('filament.deleted'))
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
@@ -109,8 +109,8 @@ class ProductsTable
             ->filters([
                 SelectFilter::make('status')
                     ->options([
-                        'active' => 'Active',
-                        'inactive' => 'Inactive',
+                        'active' => __('filament.active'),
+                        'inactive' => __('filament.inactive'),
                     ]),
 
                 TrashedFilter::make(),

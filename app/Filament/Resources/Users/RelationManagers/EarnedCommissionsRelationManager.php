@@ -6,12 +6,16 @@ use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Model;
 
 class EarnedCommissionsRelationManager extends RelationManager
 {
     protected static string $relationship = 'earnedCommissions';
 
-    protected static ?string $title = 'Earned Commissions';
+    public static function getTitle(Model $ownerRecord, string $pageClass): string
+    {
+        return __('filament.earned_commissions');
+    }
 
     public function form(Schema $schema): Schema
     {
@@ -23,16 +27,16 @@ class EarnedCommissionsRelationManager extends RelationManager
         return $table
             ->columns([
                 TextColumn::make('sourceUser.username')
-                    ->label('Source User')
+                    ->label(__('filament.source_user'))
                     ->searchable()
                     ->placeholder('-'),
 
                 TextColumn::make('product.name')
-                    ->label('Product')
+                    ->label(__('filament.product'))
                     ->placeholder('-'),
 
                 TextColumn::make('generation_level')
-                    ->label('Level')
+                    ->label(__('filament.level'))
                     ->formatStateUsing(fn ($state): string => match ((int) $state) {
                         1 => 'B',
                         2 => 'C',
@@ -42,11 +46,11 @@ class EarnedCommissionsRelationManager extends RelationManager
                     ->badge(),
 
                 TextColumn::make('source_daily_income')
-                    ->label('Source Daily Income')
+                    ->label(__('filament.source_daily_income'))
                     ->prefix(config('app.currency')." "),
 
                 TextColumn::make('percentage')
-                    ->label('Percentage')
+                    ->label(__('filament.percentage'))
                     ->formatStateUsing(fn ($state): string => number_format((float) $state, 2) . '%'),
 
                 TextColumn::make('amount')

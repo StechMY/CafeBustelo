@@ -13,6 +13,7 @@ use App\Filament\Resources\Users\RelationManagers\ReferralsRelationManager;
 use App\Filament\Resources\Users\RelationManagers\WalletTransactionsRelationManager;
 use App\Filament\Resources\Users\RelationManagers\CheckInRecordsRelationManager;
 use App\Filament\Resources\Users\RelationManagers\SvipPurchasesRelationManager;
+use App\Filament\Resources\Users\RelationManagers\BankAccountRelationManager;
 use App\Filament\Resources\Users\Schemas\UserForm;
 use App\Filament\Resources\Users\Schemas\UserInfolist;
 use App\Filament\Resources\Users\Tables\UsersTable;
@@ -31,17 +32,29 @@ class UserResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedUsers;
 
-    protected static string|UnitEnum|null $navigationGroup = 'User Management';
-
-    protected static ?string $navigationLabel = 'Users';
-
-    protected static ?string $modelLabel = 'User';
-
-    protected static ?string $pluralModelLabel = 'Users';
-
     protected static ?string $recordTitleAttribute = 'username';
 
     protected static ?int $navigationSort = 10;
+
+    public static function getNavigationGroup(): string|UnitEnum|null
+    {
+        return __('filament.user_management');
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return __('filament.users');
+    }
+
+    public static function getModelLabel(): string
+    {
+        return __('filament.user');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('filament.users');
+    }
 
     public static function form(Schema $schema): Schema
     {
@@ -68,6 +81,7 @@ class UserResource extends Resource
             EarnedCommissionsRelationManager::class,
             CheckInRecordsRelationManager::class,
             SvipPurchasesRelationManager::class,
+            BankAccountRelationManager::class,
         ];
     }
 
@@ -95,11 +109,11 @@ class UserResource extends Resource
     public static function getGlobalSearchResultDetails($record): array
     {
         return [
-            'Name' => $record->name,
-            'Phone' => $record->phone ?: '-',
-            'Status' => $record->status,
-            'Referral Code' => $record->referral_code ?: '-',
-            'Last IP' => $record->last_login_ip ?: '-',
+            __('filament.name') => $record->name,
+            __('filament.phone') => $record->phone ?: '-',
+            __('filament.status') => $record->status,
+            __('filament.referral_code') => $record->referral_code ?: '-',
+            __('filament.last_ip') => $record->last_login_ip ?: '-',
         ];
     }
 

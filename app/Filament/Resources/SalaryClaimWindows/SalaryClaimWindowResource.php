@@ -23,15 +23,27 @@ class SalaryClaimWindowResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedClock;
 
-    protected static string|UnitEnum|null $navigationGroup = 'Finance';
-
-    protected static ?string $navigationLabel = 'Salary Claim Windows';
-
-    protected static ?string $modelLabel = 'Salary Claim Window';
-
-    protected static ?string $pluralModelLabel = 'Salary Claim Windows';
-
     protected static ?int $navigationSort = 42;
+
+    public static function getNavigationGroup(): string|UnitEnum|null
+    {
+        return __('filament.finance');
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return __('filament.salary_claim_windows');
+    }
+
+    public static function getModelLabel(): string
+    {
+        return __('filament.salary_claim_window');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('filament.salary_claim_windows');
+    }
 
     public static function form(Schema $schema): Schema
     {

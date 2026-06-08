@@ -24,18 +24,18 @@ class BonusCodesTable
         return $table
             ->columns([
                 TextColumn::make('code')
-                    ->label('Code')
+                    ->label(__('filament.code'))
                     ->searchable()
                     ->copyable()
                     ->weight('bold'),
 
                 TextColumn::make('owner.username')
-                    ->label('Owner')
+                    ->label(__('filament.owner'))
                     ->searchable()
                     ->sortable(),
 
                 TextColumn::make('owner.phone')
-                    ->label('Phone')
+                    ->label(__('filament.phone'))
                     ->searchable()
                     ->placeholder('-')
                     ->toggleable(),
@@ -67,13 +67,13 @@ class BonusCodesTable
                     ->sortable(),
 
                 TextColumn::make('claim.user.username')
-                    ->label('Claimed By')
+                    ->label(__('filament.claimed_by'))
                     ->searchable()
                     ->placeholder('-')
                     ->toggleable(),
 
                 TextColumn::make('issuedByAdminUser.username')
-                    ->label('Issued By')
+                    ->label(__('filament.issued_by'))
                     ->placeholder('-')
                     ->toggleable(),
 
@@ -97,18 +97,18 @@ class BonusCodesTable
             ->filters([
                 SelectFilter::make('status')
                     ->options([
-                        BonusCode::STATUS_UNUSED => 'Unused',
-                        BonusCode::STATUS_USED => 'Used',
-                        BonusCode::STATUS_CANCELLED => 'Cancelled',
-                        BonusCode::STATUS_EXPIRED => 'Expired',
+                        BonusCode::STATUS_UNUSED => __('filament.unused'),
+                        BonusCode::STATUS_USED => __('filament.used'),
+                        BonusCode::STATUS_CANCELLED => __('filament.cancelled'),
+                        BonusCode::STATUS_EXPIRED => __('filament.expired'),
                     ]),
 
                 SelectFilter::make('type')
                     ->options([
-                        BonusCode::TYPE_ADMIN => 'Admin',
-                        BonusCode::TYPE_INVITE => 'Invite',
-                        BonusCode::TYPE_UPGRADE => 'Upgrade',
-                        BonusCode::TYPE_COMPENSATION => 'Compensation',
+                        BonusCode::TYPE_ADMIN => __('filament.admin'),
+                        BonusCode::TYPE_INVITE => __('filament.invite'),
+                        BonusCode::TYPE_UPGRADE => __('filament.upgrade'),
+                        BonusCode::TYPE_COMPENSATION => __('filament.compensation'),
                     ]),
             ])
             ->recordActions([
@@ -118,13 +118,13 @@ class BonusCodesTable
                     ->visible(fn (BonusCode $record): bool => ! $record->isUsed()),
 
                 Action::make('cancel')
-                    ->label('Cancel')
+                    ->label(__('filament.cancel'))
                     ->icon('heroicon-o-x-circle')
                     ->color('danger')
                     ->visible(fn (BonusCode $record): bool => $record->status === BonusCode::STATUS_UNUSED)
                     ->form([
                         Textarea::make('remark')
-                            ->label('Cancel Remark')
+                            ->label(__('filament.cancel_remark'))
                             ->rows(3),
                     ])
                     ->requiresConfirmation()
@@ -136,14 +136,14 @@ class BonusCodesTable
                             );
 
                             Notification::make()
-                                ->title('Bonus code cancelled')
+                                ->title(__('filament.bonus_code_cancelled'))
                                 ->success()
                                 ->send();
                         } catch (Throwable $exception) {
                             report($exception);
 
                             Notification::make()
-                                ->title('Cancel failed')
+                                ->title(__('filament.cancel_failed'))
                                 ->body($exception->getMessage())
                                 ->danger()
                                 ->send();

@@ -37,5 +37,9 @@ return [
     'current_vip_level' => '当前 VIP 等级',
     'min_withdraw_amount' => '最低提现金额',
     'below_minimum_amount' => '最低提现金额为 :amount。',
-    'invalid_net_amount' => '无效的到账金额。',
+    'withdraw_fee' => '提款手续费',
+    'processing_time' => '提款时间',
+    'security_fee_notice' => '最低提现金额根据你的 VIP 等级计算。提款手续费将用于保障资金安全，提款处理时间为 24-72 小时。',
+    'net_amount_hint' => '实际到账金额将扣除提款手续费。',
+    'invalid_net_amount' => '扣除手续费后的到账金额无效。',
 ];

@@ -15,7 +15,7 @@ class DashboardSlideInfolist
     {
         return $schema
             ->components([
-                Section::make('Slide')
+                Section::make(__('filament.slide'))
                     ->schema([
                         ImageEntry::make('image_path')
                             ->disk('do_spaces')

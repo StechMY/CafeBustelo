@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\CustomerAuthController;
+use App\Http\Controllers\BankAccountController;
 use App\Http\Controllers\BonusCodeController;
 use App\Http\Controllers\CalculatorController;
 use App\Http\Controllers\CheckInController;
@@ -132,6 +133,12 @@ Route::middleware('auth')->group(function (): void {
 
     Route::get('/calculator', CalculatorController::class)
         ->name('calculator.index');
+
+    Route::get('/bank-account/bind', [BankAccountController::class, 'create'])
+        ->name('bank-account.create');
+
+    Route::post('/bank-account/bind', [BankAccountController::class, 'store'])
+        ->name('bank-account.store');
 
     Route::post('/logout', [CustomerAuthController::class, 'logout'])
         ->name('logout');

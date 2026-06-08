@@ -1,0 +1,25 @@
+<?php
+
+return [
+    'security_binding' => '安全绑定',
+    'bind_bank_account' => '绑定银行账户',
+    'bind_desc' => '首次提款前，请先绑定你的银行账户。',
+    'security_warning' => '为保障资金安全，银行账户仅限绑定一次，请确认资料无误后提交。',
+    'real_name' => '真实姓名',
+    'real_name_placeholder' => '请输入真实姓名',
+    'bank_name' => '银行名称',
+    'bank_name_placeholder' => '请输入银行名称',
+    'bank_account_no' => '银行账号',
+    'bank_account_no_placeholder' => '请输入银行账号',
+    'change_notice' => '如需更换银行账户，请联系客服审核处理。',
+    'bind_now' => '立即绑定',
+    'bind_success' => '银行账户绑定成功。',
+    'already_bound' => '你已绑定银行账户。',
+    'bind_required_first' => '提款前请先绑定银行账户。',
+    'bound_bank_account' => '已绑定银行账户',
+    'bound' => '已绑定',
+    'unavailable' => '你的绑定银行账户不可用，请联系客服处理。',
+    'locked' => '已锁定',
+    'bound_at' => '绑定时间',
+    'admin_change_note' => '银行账户绑定后仅可由管理员或客服审核后修改。',
+];

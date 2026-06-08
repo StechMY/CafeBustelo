@@ -17,7 +17,7 @@ class DashboardPopupForm
     {
         return $schema
             ->components([
-                Section::make('Popup Content')
+                Section::make(__('filament.popup_content'))
                     ->schema([
                         TextInput::make('title')
                             ->required()
@@ -28,7 +28,7 @@ class DashboardPopupForm
                             ->columnSpanFull(),
 
                         FileUpload::make('image_path')
-                            ->label('Popup Image')
+                            ->label(__('filament.popup_image'))
                             ->disk('do_spaces')
                             ->directory('dashboard/popups')
                             ->image()
@@ -39,7 +39,7 @@ class DashboardPopupForm
                             ->schema([
                                 TextInput::make('button_text')
                                     ->maxLength(100)
-                                    ->placeholder('View Now'),
+                                    ->placeholder(__('filament.view_now')),
 
                                 TextInput::make('button_url')
                                     ->url()
@@ -48,7 +48,7 @@ class DashboardPopupForm
                             ]),
                     ]),
 
-                Section::make('Display Settings')
+                Section::make(__('filament.display_settings'))
                     ->schema([
                         Grid::make(2)
                             ->schema([
@@ -56,8 +56,8 @@ class DashboardPopupForm
                                     ->default(true),
 
                                 Toggle::make('show_every_visit')
-                                    ->label('Show Every Dashboard Visit')
-                                    ->helperText('If off, popup shows once per login session.')
+                                    ->label(__('filament.show_every_dashboard_visit'))
+                                    ->helperText(__('filament.if_off_popup_shows_once_per_login_session'))
                                     ->default(false),
 
                                 TextInput::make('sort_order')

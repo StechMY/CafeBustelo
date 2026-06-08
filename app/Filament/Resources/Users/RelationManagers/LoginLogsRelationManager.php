@@ -6,12 +6,16 @@ use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Model;
 
 class LoginLogsRelationManager extends RelationManager
 {
     protected static string $relationship = 'loginLogs';
 
-    protected static ?string $title = 'IP Login History';
+    public static function getTitle(Model $ownerRecord, string $pageClass): string
+    {
+        return __('filament.ip_login_history');
+    }
 
     public function form(Schema $schema): Schema
     {
@@ -23,17 +27,17 @@ class LoginLogsRelationManager extends RelationManager
         return $table
             ->columns([
                 TextColumn::make('ip_address')
-                    ->label('IP Address')
+                    ->label(__('filament.ip_address'))
                     ->searchable()
                     ->copyable(),
 
                 TextColumn::make('user_agent')
-                    ->label('User Agent')
+                    ->label(__('filament.user_agent'))
                     ->limit(80)
                     ->tooltip(fn ($record): ?string => $record->user_agent),
 
                 TextColumn::make('login_at')
-                    ->label('Login At')
+                    ->label(__('filament.login_at'))
                     ->dateTime()
                     ->sortable(),
             ])

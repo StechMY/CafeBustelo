@@ -23,15 +23,27 @@ class CommissionLevelResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedChartBar;
 
-    protected static string|UnitEnum|null $navigationGroup = 'Finance';
-
-    protected static ?string $navigationLabel = 'Commission Levels';
-
-    protected static ?string $modelLabel = 'Commission Level';
-
-    protected static ?string $pluralModelLabel = 'Commission Levels';
-
     protected static ?int $navigationSort = 43;
+
+    public static function getNavigationGroup(): string|UnitEnum|null
+    {
+        return __('filament.finance');
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return __('filament.commission_levels');
+    }
+
+    public static function getModelLabel(): string
+    {
+        return __('filament.commission_level');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('filament.commission_levels');
+    }
 
     public static function form(Schema $schema): Schema
     {

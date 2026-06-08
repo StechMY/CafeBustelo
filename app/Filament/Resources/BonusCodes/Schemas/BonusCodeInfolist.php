@@ -14,21 +14,21 @@ class BonusCodeInfolist
     {
         return $schema
             ->components([
-                Section::make('Bonus Code')
+                Section::make(__('filament.bonus_code'))
                     ->schema([
                         Grid::make(3)
                             ->schema([
                                 TextEntry::make('code')
-                                    ->label('Code')
+                                    ->label(__('filament.code'))
                                     ->weight('bold')
                                     ->copyable(),
 
                                 TextEntry::make('owner.username')
-                                    ->label('Owner')
+                                    ->label(__('filament.owner'))
                                     ->copyable(),
 
                                 TextEntry::make('amount')
-                                    ->label('Amount')
+                                    ->label(__('filament.amount'))
                                     ->prefix(config('app.currency')." "),
 
                                 TextEntry::make('type')
@@ -52,41 +52,41 @@ class BonusCodeInfolist
                                     }),
 
                                 TextEntry::make('claim.user.username')
-                                    ->label('Claimed By')
+                                    ->label(__('filament.claimed_by'))
                                     ->placeholder('-')
                                     ->copyable(),
 
                                 TextEntry::make('issuedByAdminUser.username')
-                                    ->label('Issued By Admin')
+                                    ->label(__('filament.issued_by_admin'))
                                     ->placeholder('-'),
 
                                 TextEntry::make('used_at')
-                                    ->label('Used At')
+                                    ->label(__('filament.used_at'))
                                     ->dateTime()
                                     ->placeholder('-'),
 
                                 TextEntry::make('expires_at')
-                                    ->label('Expires At')
+                                    ->label(__('filament.expires_at'))
                                     ->dateTime()
                                     ->placeholder('-'),
 
                                 TextEntry::make('created_at')
-                                    ->label('Created At')
+                                    ->label(__('filament.created_at'))
                                     ->dateTime(),
 
                                 TextEntry::make('updated_at')
-                                    ->label('Updated At')
+                                    ->label(__('filament.updated_at'))
                                     ->dateTime(),
                             ]),
                     ]),
 
-                Section::make('Remark')
+                Section::make(__('filament.remark'))
                     ->schema([
                         TextEntry::make('remark')
                             ->placeholder('-'),
                     ]),
 
-                Section::make('Meta')
+                Section::make(__('filament.meta'))
                     ->collapsed()
                     ->schema([
                         KeyValueEntry::make('meta')

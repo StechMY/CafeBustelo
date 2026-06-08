@@ -17,11 +17,11 @@ class DashboardMarqueeForm
     {
         return $schema
             ->components([
-                Section::make('Marquee Message')
+                Section::make(__('filament.marquee_message'))
                     ->schema([
                         TextInput::make('title')
                             ->maxLength(255)
-                            ->placeholder('Important'),
+                            ->placeholder(__('filament.important')),
 
                         Textarea::make('message')
                             ->required()
@@ -32,15 +32,15 @@ class DashboardMarqueeForm
                             ->required()
                             ->default('info')
                             ->options([
-                                'info' => 'Info',
-                                'warning' => 'Warning',
-                                'success' => 'Success',
-                                'danger' => 'Danger',
+                                'info' => __('filament.info'),
+                                'warning' => __('filament.warning'),
+                                'success' => __('filament.success'),
+                                'danger' => __('filament.danger'),
                             ])
                             ->native(false),
                     ]),
 
-                Section::make('Display Settings')
+                Section::make(__('filament.display_settings'))
                     ->schema([
                         Grid::make(2)
                             ->schema([

@@ -23,13 +23,13 @@ class ViewBonusCode extends ViewRecord
                 ->visible(fn (BonusCode $record): bool => ! $record->isUsed()),
 
             Action::make('cancel')
-                ->label('Cancel')
+                ->label(__('filament.cancel'))
                 ->icon('heroicon-o-x-circle')
                 ->color('danger')
                 ->visible(fn (BonusCode $record): bool => $record->status === BonusCode::STATUS_UNUSED)
                 ->form([
                     Textarea::make('remark')
-                        ->label('Cancel Remark')
+                        ->label(__('filament.cancel_remark'))
                         ->rows(3),
                 ])
                 ->requiresConfirmation()
@@ -41,7 +41,7 @@ class ViewBonusCode extends ViewRecord
                         );
 
                         Notification::make()
-                            ->title('Bonus code cancelled')
+                            ->title(__('filament.bonus_code_cancelled'))
                             ->success()
                             ->send();
 
@@ -52,7 +52,7 @@ class ViewBonusCode extends ViewRecord
                         report($exception);
 
                         Notification::make()
-                            ->title('Cancel failed')
+                            ->title(__('filament.cancel_failed'))
                             ->body($exception->getMessage())
                             ->danger()
                             ->send();

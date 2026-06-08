@@ -23,11 +23,27 @@ class DashboardSlideResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedPhoto;
 
-    protected static string|UnitEnum|null $navigationGroup = 'Platform Management';
-
-    protected static ?string $navigationLabel = 'Dashboard Slides';
-
     protected static ?int $navigationSort = 70;
+
+    public static function getNavigationGroup(): string|UnitEnum|null
+    {
+        return __('filament.platform_management');
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return __('filament.dashboard_slides');
+    }
+
+    public static function getModelLabel(): string
+    {
+        return __('filament.dashboard_slide');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('filament.dashboard_slides');
+    }
 
     public static function form(Schema $schema): Schema
     {

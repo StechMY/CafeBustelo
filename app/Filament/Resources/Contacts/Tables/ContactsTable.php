@@ -40,7 +40,7 @@ class ContactsTable
                     ->url(fn ($record): string => $record->link, true),
 
                 ToggleColumn::make('status')
-                    ->label('Active')
+                    ->label(__('filament.active'))
                     ->onColor('success')
                     ->offColor('gray')
                     ->getStateUsing(fn ($record): bool => $record->status === 'active')
@@ -50,7 +50,7 @@ class ContactsTable
                         ]);
 
                         Notification::make()
-                            ->title('Contact status updated')
+                            ->title(__('filament.contact_status_updated'))
                             ->success()
                             ->send();
                     }),

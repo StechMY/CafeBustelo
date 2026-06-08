@@ -18,6 +18,7 @@ class VipLevel extends Model
         'team_subsidy',
         'annual_salary',
         'min_withdraw_amount',
+        'withdraw_fee_percent',
         'position_name',
         'status',
     ];

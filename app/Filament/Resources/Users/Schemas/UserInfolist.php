@@ -14,38 +14,38 @@ class UserInfolist
     {
         return $schema
             ->components([
-                Section::make('User')
+                Section::make(__('filament.user'))
                     ->schema([
                         Grid::make(3)
                             ->schema([
                                 TextEntry::make('username')
-                                    ->label('Username')
+                                    ->label(__('filament.username'))
                                     ->weight('bold')
                                     ->copyable(),
 
                                 TextEntry::make('name')
-                                    ->label('Name'),
+                                    ->label(__('filament.name')),
 
                                 TextEntry::make('phone')
-                                    ->label('Phone')
+                                    ->label(__('filament.phone'))
                                     ->copyable()
                                     ->placeholder('-'),
 
                                 TextEntry::make('referral_code')
-                                    ->label('Referral Code')
+                                    ->label(__('filament.referral_code'))
                                     ->badge()
                                     ->copyable()
                                     ->color('info'),
 
                                 TextEntry::make('referrer.username')
-                                    ->label('Referred By')
+                                    ->label(__('filament.referred_by'))
                                     ->placeholder('-')
                                     ->url(fn(User $record): ?string => $record->referrer
                                         ? route('filament.admin.resources.users.view', $record->referrer)
                                         : null),
 
                                 TextEntry::make('status')
-                                    ->label('Status')
+                                    ->label(__('filament.status'))
                                     ->badge()
                                     ->color(fn(?string $state): string => match ($state) {
                                         'active' => 'success',
@@ -56,176 +56,176 @@ class UserInfolist
                             ]),
                     ]),
 
-                Section::make('Controls')
+                Section::make(__('filament.controls'))
                     ->schema([
                         Grid::make(4)
                             ->schema([
                                 TextEntry::make('is_virtual')
-                                    ->label('Virtual')
+                                    ->label(__('filament.virtual'))
                                     ->formatStateUsing(fn(bool $state): string => $state ? 'Yes' : 'No')
                                     ->badge()
                                     ->color(fn(bool $state): string => $state ? 'warning' : 'gray'),
 
                                 TextEntry::make('order_status')
-                                    ->label('Can Buy')
-                                    ->formatStateUsing(fn(bool $state): string => $state ? 'Enabled' : 'Disabled')
+                                    ->label(__('filament.can_buy'))
+                                    ->formatStateUsing(fn(bool $state): string => $state ? __('filament.enabled') : 'Disabled')
                                     ->badge()
                                     ->color(fn(bool $state): string => $state ? 'success' : 'danger'),
 
                                 TextEntry::make('withdraw_status')
-                                    ->label('Can Withdraw')
-                                    ->formatStateUsing(fn(bool $state): string => $state ? 'Enabled' : 'Disabled')
+                                    ->label(__('filament.can_withdraw'))
+                                    ->formatStateUsing(fn(bool $state): string => $state ? __('filament.enabled') : 'Disabled')
                                     ->badge()
                                     ->color(fn(bool $state): string => $state ? 'success' : 'danger'),
 
                                 TextEntry::make('check_in_status')
-                                    ->label('Can Check In')
-                                    ->formatStateUsing(fn(bool $state): string => $state ? 'Enabled' : 'Disabled')
+                                    ->label(__('filament.can_check_in_2'))
+                                    ->formatStateUsing(fn(bool $state): string => $state ? __('filament.enabled') : 'Disabled')
                                     ->badge()
                                     ->color(fn(bool $state): string => $state ? 'success' : 'danger'),
 
                                 TextEntry::make('weekly_salary_status')
-                                    ->label('Weekly Salary Claim')
-                                    ->formatStateUsing(fn(bool $state): string => $state ? 'Enabled' : 'Disabled')
+                                    ->label(__('filament.weekly_salary_claim'))
+                                    ->formatStateUsing(fn(bool $state): string => $state ? __('filament.enabled') : 'Disabled')
                                     ->badge()
                                     ->color(fn(bool $state): string => $state ? 'success' : 'danger'),
                                 TextEntry::make('monthly_salary_status')
-                                    ->label('Monthly Salary Claim')
-                                    ->formatStateUsing(fn(bool $state): string => $state ? 'Enabled' : 'Disabled')
+                                    ->label(__('filament.monthly_salary_claim'))
+                                    ->formatStateUsing(fn(bool $state): string => $state ? __('filament.enabled') : 'Disabled')
                                     ->badge()
                                     ->color(fn(bool $state): string => $state ? 'success' : 'danger'),
                                 TextEntry::make('annual_salary_status')
-                                    ->label('Annual Salary Claim')
-                                    ->formatStateUsing(fn(bool $state): string => $state ? 'Enabled' : 'Disabled')
+                                    ->label(__('filament.annual_salary_claim'))
+                                    ->formatStateUsing(fn(bool $state): string => $state ? __('filament.enabled') : 'Disabled')
                                     ->badge()
                                     ->color(fn(bool $state): string => $state ? 'success' : 'danger'),
 
                                 TextEntry::make('accumulated_recharge')
-                                    ->label('Accumulated Recharge')
+                                    ->label(__('filament.accumulated_recharge'))
                                     ->prefix(config('app.currency') . " "),
                             ]),
                     ]),
 
-                Section::make('Wallet Summary')
+                Section::make(__('filament.wallet_summary'))
                     ->schema([
                         Grid::make(4)
                             ->schema([
                                 TextEntry::make('recharge_wallet_balance')
-                                    ->label('Recharge Wallet')
+                                    ->label(__('filament.recharge_wallet'))
                                     ->state(fn(User $record): float => $record->recharge_wallet_balance)
                                     ->prefix(config('app.currency') . " "),
 
                                 TextEntry::make('withdrawable_wallet_balance')
-                                    ->label('Withdrawable Wallet')
+                                    ->label(__('filament.withdrawable_wallet'))
                                     ->state(fn(User $record): float => $record->withdrawable_wallet_balance)
                                     ->prefix(config('app.currency') . " "),
 
                                 TextEntry::make('total_approved_recharge')
-                                    ->label('Approved Recharge')
+                                    ->label(__('filament.approved_recharge'))
                                     ->state(fn(User $record): float => $record->total_approved_recharge)
                                     ->prefix(config('app.currency') . " "),
 
                                 TextEntry::make('total_approved_withdraw')
-                                    ->label('Approved Withdraw')
+                                    ->label(__('filament.approved_withdraw'))
                                     ->state(fn(User $record): float => $record->total_approved_withdraw)
                                     ->prefix(config('app.currency') . " "),
                             ]),
                     ]),
 
-                Section::make('Income Summary')
+                Section::make(__('filament.income_summary'))
                     ->schema([
                         Grid::make(4)
                             ->schema([
                                 TextEntry::make('total_daily_income')
-                                    ->label('Daily Income')
+                                    ->label(__('filament.daily_income'))
                                     ->state(fn(User $record): float => $record->total_daily_income)
                                     ->prefix(config('app.currency') . " "),
 
                                 TextEntry::make('total_commission')
-                                    ->label('Commission')
+                                    ->label(__('filament.commission'))
                                     ->state(fn(User $record): float => $record->total_commission)
                                     ->prefix(config('app.currency') . " "),
 
                                 TextEntry::make('bonus_income')
-                                    ->label('Bonus')
+                                    ->label(__('filament.bonus'))
                                     ->state(fn(User $record): float => (float) $record->bonusClaims()->sum('amount'))
                                     ->prefix(config('app.currency') . " "),
 
                                 TextEntry::make('salary_income')
-                                    ->label('Salary + Subsidy')
+                                    ->label(__('filament.salary_plus_subsidy'))
                                     ->state(fn(User $record): float => (float) $record->salaryClaims()->sum('total_amount'))
                                     ->prefix(config('app.currency') . " "),
                             ]),
                     ]),
 
-                Section::make('VIP Level Summary')
+                Section::make(__('filament.vip_level_summary'))
                     ->schema([
                         Grid::make(4)
                             ->schema([
                                 TextEntry::make('current_vip_level_number')
-                                    ->label('Current LV')
-                                    ->state(fn(User $record): string => 'LV' . $record->current_vip_level_number)
+                                    ->label(__('filament.current_lv'))
+                                    ->state(fn(User $record): string => __('filament.lv') . $record->current_vip_level_number)
                                     ->badge()
                                     ->color('info'),
 
                                 TextEntry::make('current_vip_level_name')
-                                    ->label('Level Name')
+                                    ->label(__('filament.level_name'))
                                     ->state(fn(User $record): string => $record->current_vip_level_name),
 
                                 TextEntry::make('accumulated_recharge')
-                                    ->label('Accumulated Recharge')
+                                    ->label(__('filament.accumulated_recharge'))
                                     ->prefix(config('app.currency') . " "),
 
                                 TextEntry::make('active_team_size')
-                                    ->label('Active Team Size')
+                                    ->label(__('filament.active_team_size'))
                                     ->state(fn(User $record): int => $record->activeTeamSize()),
                             ]),
                     ]),
 
-                Section::make('Team')
+                Section::make(__('filament.team'))
                     ->schema([
                         Grid::make(4)
                             ->schema([
                                 TextEntry::make('b_team_count')
-                                    ->label('B Team')
+                                    ->label(__('filament.b_team'))
                                     ->state(fn(User $record): int => $record->teamUsersByLevel(1)->count()),
 
                                 TextEntry::make('c_team_count')
-                                    ->label('C Team')
+                                    ->label(__('filament.c_team'))
                                     ->state(fn(User $record): int => $record->teamUsersByLevel(2)->count()),
 
                                 TextEntry::make('d_team_count')
-                                    ->label('D Team')
+                                    ->label(__('filament.d_team'))
                                     ->state(fn(User $record): int => $record->teamUsersByLevel(3)->count()),
 
                                 TextEntry::make('active_team_size')
-                                    ->label('Active Team Size')
+                                    ->label(__('filament.active_team_size'))
                                     ->state(fn(User $record): int => $record->activeTeamSize()),
                             ]),
                     ]),
 
-                Section::make('Login IP')
+                Section::make(__('filament.login_ip'))
                     ->schema([
                         Grid::make(3)
                             ->schema([
                                 TextEntry::make('registered_ip')
-                                    ->label('Registered IP')
+                                    ->label(__('filament.registered_ip'))
                                     ->copyable()
                                     ->placeholder('-'),
 
                                 TextEntry::make('last_login_ip')
-                                    ->label('Last Login IP')
+                                    ->label(__('filament.last_login_ip'))
                                     ->copyable()
                                     ->placeholder('-'),
 
                                 TextEntry::make('last_login_at')
-                                    ->label('Last Login At')
+                                    ->label(__('filament.last_login_at'))
                                     ->dateTime()
                                     ->placeholder('-'),
                             ]),
                     ]),
 
-                Section::make('Timestamps')
+                Section::make(__('filament.timestamps'))
                     ->collapsed()
                     ->schema([
                         Grid::make(3)

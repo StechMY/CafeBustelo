@@ -15,26 +15,26 @@ class CommissionLevelForm
     {
         return $schema
             ->components([
-                Section::make('Commission Level')
+                Section::make(__('filament.commission_level'))
                     ->schema([
                         Grid::make(2)
                             ->schema([
                                 TextInput::make('level')
-                                    ->label('Level')
-                                    ->helperText('1 = B, 2 = C, 3 = D')
+                                    ->label(__('filament.level'))
+                                    ->helperText(__('filament.1_b_2_c_3_d'))
                                     ->required()
                                     ->numeric()
                                     ->minValue(1)
                                     ->unique(ignoreRecord: true),
 
                                 TextInput::make('name')
-                                    ->label('Name')
+                                    ->label(__('filament.name'))
                                     ->required()
                                     ->maxLength(64)
-                                    ->placeholder('B Level'),
+                                    ->placeholder(__('filament.b_level')),
 
                                 TextInput::make('rate_percent')
-                                    ->label('Rate')
+                                    ->label(__('filament.rate'))
                                     ->suffix('%')
                                     ->required()
                                     ->numeric()
@@ -43,16 +43,16 @@ class CommissionLevelForm
                                     ->step('0.01'),
 
                                 TextInput::make('sort_order')
-                                    ->label('Sort Order')
+                                    ->label(__('filament.sort_order'))
                                     ->numeric()
                                     ->default(0),
 
                                 Toggle::make('is_active')
-                                    ->label('Active')
+                                    ->label(__('filament.active'))
                                     ->default(true),
 
                                 Textarea::make('description')
-                                    ->label('Description')
+                                    ->label(__('filament.description'))
                                     ->rows(3)
                                     ->columnSpanFull(),
                             ]),

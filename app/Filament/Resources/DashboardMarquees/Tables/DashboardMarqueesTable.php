@@ -35,10 +35,10 @@ class DashboardMarqueesTable
                     }),
 
                 ToggleColumn::make('is_enabled')
-                    ->label('Enabled')
+                    ->label(__('filament.enabled'))
                     ->afterStateUpdated(function (): void {
                         Notification::make()
-                            ->title('Marquee status updated')
+                            ->title(__('filament.marquee_status_updated'))
                             ->success()
                             ->send();
                     }),

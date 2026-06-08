@@ -24,19 +24,31 @@ class AdminUserResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedUserGroup;
 
-    protected static string|UnitEnum|null $navigationGroup = 'System Management';
-
-    protected static ?string $navigationLabel = 'Admin Users';
-
-    protected static ?string $modelLabel = 'Admin User';
-
-    protected static ?string $pluralModelLabel = 'Admin Users';
-
     protected static ?int $navigationSort = 90;
     
     public static function canAccess(): bool
     {
         return auth('admin')->user()?->hasRole('super_admin') ?? false;
+    }
+
+    public static function getNavigationGroup(): string|UnitEnum|null
+    {
+        return __('filament.system_management');
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return __('filament.admin_users');
+    }
+
+    public static function getModelLabel(): string
+    {
+        return __('filament.admin_user');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('filament.admin_users');
     }
 
     public static function form(Schema $schema): Schema

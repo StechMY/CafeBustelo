@@ -18,12 +18,12 @@ class RechargeRequestForm
     {
         return $schema
             ->components([
-                Section::make('Recharge Request')
+                Section::make(__('filament.recharge_request'))
                     ->schema([
                         Grid::make(2)
                             ->schema([
                                 Select::make('user_id')
-                                    ->label('User')
+                                    ->label(__('filament.user'))
                                     ->relationship(
                                         name: 'user',
                                         titleAttribute: 'username',
@@ -35,7 +35,7 @@ class RechargeRequestForm
                                     ->required(),
 
                                 TextInput::make('amount')
-                                    ->label('Amount')
+                                    ->label(__('filament.amount'))
                                     ->prefix(config('app.currency'))
                                     ->numeric()
                                     ->required()
@@ -43,30 +43,30 @@ class RechargeRequestForm
                                     ->step('0.01'),
 
                                 Select::make('status')
-                                    ->label('Status')
+                                    ->label(__('filament.status'))
                                     ->required()
                                     ->default('pending')
                                     ->options([
-                                        'pending' => 'Pending',
-                                        'approved' => 'Approved',
-                                        'rejected' => 'Rejected',
+                                        'pending' => __('filament.pending'),
+                                        'approved' => __('filament.approved'),
+                                        'rejected' => __('filament.rejected'),
                                     ])
                                     ->native(false),
 
                                 TextInput::make('bank_name')
-                                    ->label('Bank Name')
+                                    ->label(__('filament.bank_name'))
                                     ->maxLength(100),
 
                                 TextInput::make('reference_no')
-                                    ->label('Reference No')
+                                    ->label(__('filament.reference_no'))
                                     ->maxLength(100),
                             ]),
                     ]),
 
-                Section::make('Receipt')
+                Section::make(__('filament.receipt'))
                     ->schema([
                         FileUpload::make('receipt_path')
-                            ->label('Receipt')
+                            ->label(__('filament.receipt'))
                             ->disk('do_spaces')
                             ->directory('recharge-receipts/admin')
                             ->visibility('public')

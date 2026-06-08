@@ -28,10 +28,10 @@ class DashboardSlidesTable
                     ->weight('bold'),
 
                 ToggleColumn::make('is_enabled')
-                    ->label('Enabled')
+                    ->label(__('filament.enabled'))
                     ->afterStateUpdated(function (): void {
                         Notification::make()
-                            ->title('Slide status updated')
+                            ->title(__('filament.slide_status_updated'))
                             ->success()
                             ->send();
                     }),

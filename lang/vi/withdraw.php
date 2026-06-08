@@ -37,5 +37,9 @@ return [
     'current_vip_level' => 'Cấp VIP hiện tại',
     'min_withdraw_amount' => 'Số tiền rút tối thiểu',
     'below_minimum_amount' => 'Số tiền rút tối thiểu là :amount.',
-    'invalid_net_amount' => 'Số tiền rút thực nhận không hợp lệ.',
+    'withdraw_fee' => 'Phí rút tiền',
+    'processing_time' => 'Thời gian xử lý',
+    'security_fee_notice' => 'Số tiền rút tối thiểu dựa trên cấp VIP của bạn. Phí rút tiền được áp dụng để đảm bảo an toàn tiền. Thời gian xử lý là 24-72 giờ.',
+    'net_amount_hint' => 'Số tiền thực nhận sẽ được trừ phí rút tiền.',
+    'invalid_net_amount' => 'Số tiền thực nhận sau khi trừ phí không hợp lệ.',
 ];

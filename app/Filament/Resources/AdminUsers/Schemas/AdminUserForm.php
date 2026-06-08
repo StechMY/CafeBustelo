@@ -17,7 +17,7 @@ class AdminUserForm
     {
         return $schema
             ->components([
-                Section::make('Admin Information')
+                Section::make(__('filament.admin_information'))
                     ->schema([
                         Grid::make(2)
                             ->schema([
@@ -34,13 +34,13 @@ class AdminUserForm
                                     ->required()
                                     ->default('active')
                                     ->options([
-                                        'active' => 'Active',
-                                        'inactive' => 'Inactive',
+                                        'active' => __('filament.active'),
+                                        'inactive' => __('filament.inactive'),
                                     ])
                                     ->native(false),
 
                                 Select::make('roles')
-                                    ->label('Role')
+                                    ->label(__('filament.role'))
                                     ->relationship('roles', 'name', function ($query) {
 
                                         /**
@@ -59,7 +59,7 @@ class AdminUserForm
                             ]),
                     ]),
 
-                Section::make('Password')
+                Section::make(__('filament.password'))
                     ->schema([
                         Grid::make(2)
                             ->schema([

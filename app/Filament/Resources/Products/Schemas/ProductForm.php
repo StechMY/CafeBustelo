@@ -19,13 +19,13 @@ class ProductForm
     {
         return $schema
             ->components([
-                Section::make('Product Information')
-                    ->description('Basic product package information.')
+                Section::make(__('filament.product_information'))
+                    ->description(__('filament.basic_product_package_information'))
                     ->schema([
                         Grid::make(2)
                             ->schema([
                                 TextInput::make('name')
-                                    ->label('Product Name')
+                                    ->label(__('filament.product_name'))
                                     ->required()
                                     ->maxLength(255)
                                     ->live(onBlur: true)
@@ -38,7 +38,7 @@ class ProductForm
                                     }),
 
                                 TextInput::make('code')
-                                    ->label('Product Code')
+                                    ->label(__('filament.product_code'))
                                     ->required()
                                     ->maxLength(32)
                                     ->unique(ignoreRecord: true)
@@ -46,28 +46,28 @@ class ProductForm
                                     ->dehydrateStateUsing(fn(?string $state): ?string => $state ? Str::upper($state) : null),
 
                                 Select::make('status')
-                                    ->label('Status')
+                                    ->label(__('filament.status'))
                                     ->required()
                                     ->default('active')
                                     ->options([
-                                        'active' => 'Active',
-                                        'inactive' => 'Inactive',
+                                        'active' => __('filament.active'),
+                                        'inactive' => __('filament.inactive'),
                                     ])
                                     ->native(false),
 
                                 TextInput::make('sort_order')
-                                    ->label('Sort Order')
+                                    ->label(__('filament.sort_order'))
                                     ->numeric()
                                     ->default(0)
                                     ->minValue(0),
                             ]),
                     ]),
 
-                Section::make('Product Image')
-                    ->description('Uploaded to DigitalOcean Spaces.')
+                Section::make(__('filament.product_image'))
+                    ->description(__('filament.uploaded_to_digitalocean_spaces'))
                     ->schema([
                         FileUpload::make('image_path')
-                            ->label('Product Image')
+                            ->label(__('filament.product_image'))
                             ->disk('do_spaces')
                             ->directory('products')
                             ->visibility('public')
@@ -94,16 +94,16 @@ class ProductForm
                             ->downloadable()
                             ->openable()
                             ->previewable()
-                            ->helperText('Recommended: square or 4:3 image. Max 4MB.'),
+                            ->helperText(__('filament.recommended_square_or_4_3_image_max_4mb')),
                     ]),
 
-                Section::make('Pricing & Income')
-                    ->description('These values affect product purchase, daily income, and commission calculation.')
+                Section::make(__('filament.pricing_and_income'))
+                    ->description(__('filament.these_values_affect_product_purchase_daily_income_and_commission_calcu'))
                     ->schema([
                         Grid::make(2)
                             ->schema([
                                 TextInput::make('price')
-                                    ->label('Price')
+                                    ->label(__('filament.price'))
                                     ->prefix(config('app.currency'))
                                     ->required()
                                     ->numeric()
@@ -111,7 +111,7 @@ class ProductForm
                                     ->step('0.01'),
 
                                 TextInput::make('daily_income')
-                                    ->label('Daily Income')
+                                    ->label(__('filament.daily_income'))
                                     ->prefix(config('app.currency'))
                                     ->required()
                                     ->numeric()
@@ -120,7 +120,7 @@ class ProductForm
                                     ->live(),
 
                                 TextInput::make('duration_days')
-                                    ->label('Duration Days')
+                                    ->label(__('filament.duration_days'))
                                     ->required()
                                     ->numeric()
                                     ->minValue(1)
@@ -128,7 +128,7 @@ class ProductForm
                                     ->live(),
 
                                 Placeholder::make('total_income_preview')
-                                    ->label('Total Income Preview')
+                                    ->label(__('filament.total_income_preview'))
                                     ->content(function (callable $get): string {
                                         $dailyIncome = (float) ($get('daily_income') ?? 0);
                                         $durationDays = (int) ($get('duration_days') ?? 0);
@@ -137,7 +137,7 @@ class ProductForm
                                     }),
 
                                 TextInput::make('upgrade_bonus')
-                                    ->label('Upgrade Bonus')
+                                    ->label(__('filament.upgrade_bonus'))
                                     ->prefix(config('app.currency'))
                                     ->required()
                                     ->numeric()
@@ -146,7 +146,7 @@ class ProductForm
                                     ->step('0.01'),
 
                                 TextInput::make('invite_bonus')
-                                    ->label('Invite Bonus')
+                                    ->label(__('filament.invite_bonus'))
                                     ->prefix(config('app.currency'))
                                     ->required()
                                     ->numeric()
@@ -156,11 +156,11 @@ class ProductForm
                             ]),
                     ]),
 
-                Section::make('Extra Metadata')
+                Section::make(__('filament.extra_metadata'))
                     ->collapsed()
                     ->schema([
                         KeyValue::make('meta')
-                            ->label('Meta')
+                            ->label(__('filament.meta'))
                             ->keyLabel('Key')
                             ->valueLabel('Value')
                             ->nullable(),

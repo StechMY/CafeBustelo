@@ -23,11 +23,27 @@ class DashboardPopupResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedMegaphone;
 
-    protected static string|UnitEnum|null $navigationGroup = 'Platform Management';
-
-    protected static ?string $navigationLabel = 'Dashboard Popups';
-
     protected static ?int $navigationSort = 72;
+
+    public static function getNavigationGroup(): string|UnitEnum|null
+    {
+        return __('filament.platform_management');
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return __('filament.dashboard_popups');
+    }
+
+    public static function getModelLabel(): string
+    {
+        return __('filament.dashboard_popup');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('filament.dashboard_popups');
+    }
 
     public static function form(Schema $schema): Schema
     {

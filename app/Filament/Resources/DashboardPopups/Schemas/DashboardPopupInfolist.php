@@ -15,7 +15,7 @@ class DashboardPopupInfolist
     {
         return $schema
             ->components([
-                Section::make('Popup')
+                Section::make(__('filament.popup'))
                     ->schema([
                         ImageEntry::make('image_path')
                             ->disk('do_spaces')

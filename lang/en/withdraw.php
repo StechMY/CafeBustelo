@@ -37,5 +37,9 @@ return [
     'current_vip_level' => 'Current VIP Level',
     'min_withdraw_amount' => 'Minimum Withdraw Amount',
     'below_minimum_amount' => 'Minimum withdraw amount is :amount.',
-    'invalid_net_amount' => 'Invalid net withdraw amount.',
+    'withdraw_fee' => 'Withdrawal Fee',
+    'processing_time' => 'Processing Time',
+    'security_fee_notice' => 'Minimum withdrawal is based on your VIP level. A withdrawal fee applies for fund security. Withdrawal processing time is 24-72 hours.',
+    'net_amount_hint' => 'The actual received amount will be deducted by the withdrawal fee.',
+    'invalid_net_amount' => 'Invalid received amount after fee deduction.',
 ];

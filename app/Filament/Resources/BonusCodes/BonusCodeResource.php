@@ -23,17 +23,29 @@ class BonusCodeResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedGift;
 
-    protected static string|UnitEnum|null $navigationGroup = 'Finance';
-
-    protected static ?string $navigationLabel = 'Bonus Codes';
-
-    protected static ?string $modelLabel = 'Bonus Code';
-
-    protected static ?string $pluralModelLabel = 'Bonus Codes';
-
     protected static ?string $recordTitleAttribute = 'code';
 
     protected static ?int $navigationSort = 30;
+
+    public static function getNavigationGroup(): string|UnitEnum|null
+    {
+        return __('filament.finance');
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return __('filament.bonus_codes');
+    }
+
+    public static function getModelLabel(): string
+    {
+        return __('filament.bonus_code');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('filament.bonus_codes');
+    }
 
     public static function form(Schema $schema): Schema
     {

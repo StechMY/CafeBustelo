@@ -18,7 +18,7 @@ class CommissionLevelsTable
         return $table
             ->columns([
                 TextColumn::make('level')
-                    ->label('Level')
+                    ->label(__('filament.level'))
                     ->sortable()
                     ->weight('bold'),
 
@@ -27,15 +27,15 @@ class CommissionLevelsTable
                     ->weight('bold'),
 
                 TextColumn::make('rate_percent')
-                    ->label('Rate')
+                    ->label(__('filament.rate'))
                     ->formatStateUsing(fn ($state): string => number_format((float) $state, 2) . '%')
                     ->sortable(),
 
                 ToggleColumn::make('is_active')
-                    ->label('Active')
+                    ->label(__('filament.active'))
                     ->afterStateUpdated(function (): void {
                         Notification::make()
-                            ->title('Commission level status updated')
+                            ->title(__('filament.commission_level_status_updated'))
                             ->success()
                             ->send();
                     }),

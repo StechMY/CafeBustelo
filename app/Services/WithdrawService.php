@@ -13,16 +13,14 @@ class WithdrawService
 {
     public function __construct(
         private readonly WalletService $walletService,
-    ) {}
+    ) {
+    }
 
     public function submit(
         User $user,
         float|string $amount,
-        ?string $bankName,
-        ?string $bankAccountName,
-        ?string $bankAccountNo,
     ): WithdrawRequest {
-        if (! $user->canWithdraw()) {
+        if (!$user->canWithdraw()) {
             throw new RuntimeException(__('withdraw.withdraw_disabled'));
         }
 
@@ -36,17 +34,23 @@ class WithdrawService
             throw new RuntimeException(__('withdraw.invalid_amount'));
         }
 
-        return DB::transaction(function () use (
-            $user,
-            $amount,
-            $bankName,
-            $bankAccountName,
-            $bankAccountNo,
-        ): WithdrawRequest {
+        return DB::transaction(function () use ($user, $amount): WithdrawRequest {
             $lockedUser = User::query()
                 ->whereKey($user->id)
                 ->lockForUpdate()
                 ->firstOrFail();
+
+            $bankAccount = $lockedUser->bankAccount()
+                ->lockForUpdate()
+                ->first();
+
+            if (!$bankAccount) {
+                throw new RuntimeException(__('bank_account.bind_required_first'));
+            }
+
+            if (!$bankAccount->isActive()) {
+                throw new RuntimeException(__('bank_account.unavailable'));
+            }
 
             $vipLevel = $lockedUser->currentVipLevel();
 
@@ -62,7 +66,8 @@ class WithdrawService
                 ]));
             }
 
-            $feeAmount = $this->calculateFeeAmount($lockedUser, $vipLevel, $amount);
+            $feePercent = $this->withdrawFeePercent($vipLevel);
+            $feeAmount = $this->calculateFeeAmount($feePercent, $amount);
             $netAmount = round($amount - $feeAmount, 2);
 
             if ($netAmount <= 0) {
@@ -71,14 +76,21 @@ class WithdrawService
 
             $withdrawRequest = WithdrawRequest::query()->create([
                 'user_id' => $lockedUser->id,
+                'user_bank_account_id' => $bankAccount->id,
+
                 'amount' => $amount,
                 'fee_amount' => $feeAmount,
                 'net_amount' => $netAmount,
+
                 'vip_level_snapshot' => $vipLevelNumber,
                 'min_withdraw_amount_snapshot' => $minWithdrawAmount,
-                'bank_name' => $bankName,
-                'bank_account_name' => $bankAccountName,
-                'bank_account_no' => $bankAccountNo,
+                'withdraw_fee_percent_snapshot' => $feePercent,
+
+                // snapshot bank info, so future admin changes do not modify old request history
+                'bank_name' => $bankAccount->bank_name,
+                'bank_account_name' => $bankAccount->bank_account_name,
+                'bank_account_no' => $bankAccount->bank_account_no,
+
                 'status' => 'pending',
             ]);
 
@@ -91,10 +103,12 @@ class WithdrawService
                 remarks: 'Withdraw request submitted',
                 meta: [
                     'withdraw_request_id' => $withdrawRequest->id,
+                    'fee_percent' => $feePercent,
                     'fee_amount' => $feeAmount,
                     'net_amount' => $netAmount,
                     'vip_level_snapshot' => $vipLevelNumber,
                     'min_withdraw_amount_snapshot' => $minWithdrawAmount,
+                    'user_bank_account_id' => $bankAccount->id,
                 ],
             );
 
@@ -113,7 +127,7 @@ class WithdrawService
                 ->lockForUpdate()
                 ->firstOrFail();
 
-            if (! $lockedRequest->isPending()) {
+            if (!$lockedRequest->isPending()) {
                 throw new RuntimeException('Only pending withdraw requests can be approved.');
             }
 
@@ -149,7 +163,7 @@ class WithdrawService
                 ->lockForUpdate()
                 ->firstOrFail();
 
-            if (! $lockedRequest->isPending()) {
+            if (!$lockedRequest->isPending()) {
                 throw new RuntimeException('Only pending withdraw requests can be rejected.');
             }
 
@@ -173,6 +187,7 @@ class WithdrawService
                 remarks: 'Withdraw request rejected',
                 meta: [
                     'withdraw_request_id' => $lockedRequest->id,
+                    'fee_percent' => $lockedRequest->withdraw_fee_percent_snapshot,
                     'fee_amount' => $lockedRequest->fee_amount,
                     'net_amount' => $lockedRequest->net_amount,
                     'admin_user_id' => $adminUser?->id,
@@ -183,12 +198,17 @@ class WithdrawService
         });
     }
 
-    private function calculateFeeAmount(User $user, mixed $vipLevel, float $amount): float
+    private function withdrawFeePercent(mixed $vipLevel): float
     {
         if ($vipLevel && isset($vipLevel->withdraw_fee_percent)) {
-            return round($amount * ((float) $vipLevel->withdraw_fee_percent / 100), 2);
+            return round((float) $vipLevel->withdraw_fee_percent, 2);
         }
 
         return 0.00;
+    }
+
+    private function calculateFeeAmount(float $feePercent, float $amount): float
+    {
+        return round($amount * ($feePercent / 100), 2);
     }
 }

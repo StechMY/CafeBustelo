@@ -14,45 +14,45 @@ class VipLevelForm
     {
         return $schema
             ->components([
-                Section::make('Basic Information')
+                Section::make(__('filament.basic_information'))
                     ->schema([
                         Grid::make(2)
                             ->schema([
                                 TextInput::make('level')
-                                    ->label('Level')
+                                    ->label(__('filament.level'))
                                     ->required()
                                     ->numeric()
                                     ->minValue(1)
                                     ->unique(ignoreRecord: true),
 
                                 TextInput::make('name')
-                                    ->label('Name')
+                                    ->label(__('filament.name'))
                                     ->required()
                                     ->maxLength(100),
 
                                 TextInput::make('position_name')
-                                    ->label('Position Name')
+                                    ->label(__('filament.position_name'))
                                     ->maxLength(100)
-                                    ->placeholder('Junior Manager / City Leader'),
+                                    ->placeholder(__('filament.junior_manager_city_leader')),
 
                                 Select::make('status')
-                                    ->label('Status')
+                                    ->label(__('filament.status'))
                                     ->required()
                                     ->default('active')
                                     ->options([
-                                        'active' => 'Active',
-                                        'inactive' => 'Inactive',
+                                        'active' => __('filament.active'),
+                                        'inactive' => __('filament.inactive'),
                                     ])
                                     ->native(false),
                             ]),
                     ]),
 
-                Section::make('Level Requirements')
+                Section::make(__('filament.level_requirements'))
                     ->schema([
                         Grid::make(2)
                             ->schema([
                                 TextInput::make('required_accumulated_recharge')
-                                    ->label('Required Accumulated Recharge')
+                                    ->label(__('filament.required_accumulated_recharge'))
                                     ->prefix(config('app.currency'))
                                     ->required()
                                     ->numeric()
@@ -60,7 +60,7 @@ class VipLevelForm
                                     ->step('0.01'),
 
                                 TextInput::make('required_active_team_size')
-                                    ->label('Required Active Team Size')
+                                    ->label(__('filament.required_active_team_size'))
                                     ->required()
                                     ->numeric()
                                     ->default(0)
@@ -68,12 +68,12 @@ class VipLevelForm
                             ]),
                     ]),
 
-                Section::make('Income & Salary Benefits')
+                Section::make(__('filament.income_and_salary_benefits'))
                     ->schema([
                         Grid::make(2)
                             ->schema([
                                 TextInput::make('daily_check_in_amount')
-                                    ->label('Daily Check-in Amount')
+                                    ->label(__('filament.daily_check_in_amount'))
                                     ->prefix(config('app.currency'))
                                     ->required()
                                     ->numeric()
@@ -81,7 +81,7 @@ class VipLevelForm
                                     ->step('0.01'),
 
                                 TextInput::make('weekly_salary')
-                                    ->label('Weekly Salary')
+                                    ->label(__('filament.weekly_salary'))
                                     ->prefix(config('app.currency'))
                                     ->required()
                                     ->numeric()
@@ -89,7 +89,7 @@ class VipLevelForm
                                     ->step('0.01'),
 
                                 TextInput::make('monthly_salary')
-                                    ->label('Monthly Salary')
+                                    ->label(__('filament.monthly_salary'))
                                     ->prefix(config('app.currency'))
                                     ->required()
                                     ->numeric()
@@ -97,7 +97,7 @@ class VipLevelForm
                                     ->step('0.01'),
 
                                 TextInput::make('team_subsidy')
-                                    ->label('Monthly Team Subsidy')
+                                    ->label(__('filament.monthly_team_subsidy'))
                                     ->prefix(config('app.currency'))
                                     ->required()
                                     ->numeric()
@@ -105,7 +105,7 @@ class VipLevelForm
                                     ->step('0.01'),
 
                                 TextInput::make('annual_salary')
-                                    ->label('Annual Salary')
+                                    ->label(__('filament.annual_salary'))
                                     ->prefix(config('app.currency'))
                                     ->required()
                                     ->numeric()
@@ -113,8 +113,15 @@ class VipLevelForm
                                     ->step('0.01'),
 
                                 TextInput::make('min_withdraw_amount')
-                                    ->label('Minimum Withdraw Amount')
+                                    ->label(__('filament.minimum_withdraw_amount'))
                                     ->prefix(config('app.currency'))
+                                    ->required()
+                                    ->numeric()
+                                    ->default(0)
+                                    ->step('0.01'),
+
+                                TextInput::make('withdraw_fee_percent')
+                                    ->label(__('filament.withdraw_fee_percent'))
                                     ->required()
                                     ->numeric()
                                     ->default(0)

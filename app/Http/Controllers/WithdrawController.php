@@ -35,7 +35,7 @@ class WithdrawController extends Controller
         ]);
     }
 
-    public function create(Request $request): View
+    public function create(Request $request): View|RedirectResponse
     {
         $user = $request->user();
 
@@ -44,14 +44,29 @@ class WithdrawController extends Controller
             ->where('type', Wallet::TYPE_WITHDRAWABLE)
             ->first();
 
+        $bankAccount = $user->bankAccount()->where('status','active')->first();
+
+        if (! $bankAccount) {
+            return redirect()
+                ->route('bank-account.create')
+                ->with('warning', __('bank_account.bind_required_first'));
+        }
+
         $vipLevel = $user->currentVipLevel();
+
+        $minWithdrawAmount = $vipLevel ? (float) $vipLevel->min_withdraw_amount : 0;
+        $withdrawFeePercent = $vipLevel && isset($vipLevel->withdraw_fee_percent)
+            ? (float) $vipLevel->withdraw_fee_percent
+            : 0;
 
         return view('withdraw.create', [
             'user' => $user,
             'withdrawableBalance' => $wallet?->balance ?? 0,
             'lockedBalance' => $wallet?->locked_balance ?? 0,
             'vipLevel' => $vipLevel,
-            'minWithdrawAmount' => $vipLevel ? (float) $vipLevel->min_withdraw_amount : 0,
+            'minWithdrawAmount' => $minWithdrawAmount,
+            'withdrawFeePercent' => $withdrawFeePercent,
+            'bankAccount' => $bankAccount,
         ]);
     }
 
@@ -59,18 +74,12 @@ class WithdrawController extends Controller
     {
         $data = $request->validate([
             'amount' => ['required', 'numeric', 'min:1', 'max:99999999'],
-            'bank_name' => ['required', 'string', 'max:100'],
-            'bank_account_name' => ['required', 'string', 'max:150'],
-            'bank_account_no' => ['required', 'string', 'max:100'],
         ]);
 
         try {
             $withdrawRequest = $withdrawService->submit(
                 user: $request->user(),
                 amount: $data['amount'],
-                bankName: $data['bank_name'],
-                bankAccountName: $data['bank_account_name'],
-                bankAccountNo: $data['bank_account_no'],
             );
 
             return redirect()

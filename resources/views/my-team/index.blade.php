@@ -92,69 +92,72 @@
         <div class="mx-auto max-w-7xl px-3 py-3 sm:px-6 sm:py-10 lg:px-8">
             <div class="grid gap-4 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
                 <div>
-                    <div class="inline-flex rounded-full bg-white/75 px-3 py-1.5 text-[10px] font-black uppercase tracking-wide text-[#003b7a] shadow sm:px-5 sm:py-2 sm:text-xs sm:tracking-[0.22em]">
+                    <div
+                         class="inline-flex rounded-full bg-white/75 px-3 py-1.5 text-[10px] font-black uppercase tracking-wide text-[#003b7a] shadow sm:px-5 sm:py-2 sm:text-xs sm:tracking-[0.22em]">
                         {{ __('my_team.team_center') }}
                     </div>
 
-                    <h1 class="mt-3 max-w-3xl text-3xl font-black uppercase leading-[0.9] tracking-tight text-[#003b7a] sm:mt-4 sm:text-6xl lg:text-7xl">
+                    <h1
+                        class="mt-3 max-w-3xl text-3xl font-black uppercase leading-[0.9] tracking-tight text-[#003b7a] sm:mt-4 sm:text-6xl lg:text-7xl">
                         {{ __('my_team.my_team') }}
                     </h1>
 
-                    <p class="mt-2 line-clamp-2 max-w-2xl text-xs font-bold leading-relaxed text-[#003b7a]/75 sm:mt-5 sm:line-clamp-none sm:text-base">
+                    <p
+                       class="mt-2 line-clamp-2 max-w-2xl text-xs font-bold leading-relaxed text-[#003b7a]/75 sm:mt-5 sm:line-clamp-none sm:text-base">
                         {{ __('my_team.hero_desc') }}
                     </p>
                 </div>
 
                 <div
-                    x-data="{
-                        copiedCode: false,
-                        copiedLink: false,
-
-                        copy(text, type) {
-                            const done = () => {
-                                if (type === 'code') {
-                                    this.copiedCode = true;
-                                    setTimeout(() => this.copiedCode = false, 1600);
-                                } else {
-                                    this.copiedLink = true;
-                                    setTimeout(() => this.copiedLink = false, 1600);
-                                }
-                            };
-
-                            if (navigator.clipboard && window.isSecureContext) {
-                                navigator.clipboard.writeText(text).then(done).catch(() => this.fallbackCopy(text, done));
-                                return;
-                            }
-
-                            this.fallbackCopy(text, done);
-                        },
-
-                        fallbackCopy(text, done) {
-                            const input = document.createElement('textarea');
-                            input.value = text;
-                            input.setAttribute('readonly', '');
-                            input.style.position = 'fixed';
-                            input.style.opacity = '0';
-
-                            document.body.appendChild(input);
-                            input.select();
-
-                            try {
-                                document.execCommand('copy');
-                                done();
-                            } catch (error) {
-                                alert(text);
-                            }
-
-                            document.body.removeChild(input);
-                        }
-                    }"
-                    class="overflow-hidden rounded-[1.35rem] border-3 border-[#003b7a] bg-white shadow-[6px_6px_0_#003b7a] sm:rounded-[2rem] sm:border-4 sm:shadow-[10px_10px_0_#003b7a]"
-                >
+                     x-data="{
+                         copiedCode: false,
+                         copiedLink: false,
+                     
+                         copy(text, type) {
+                             const done = () => {
+                                 if (type === 'code') {
+                                     this.copiedCode = true;
+                                     setTimeout(() => this.copiedCode = false, 1600);
+                                 } else {
+                                     this.copiedLink = true;
+                                     setTimeout(() => this.copiedLink = false, 1600);
+                                 }
+                             };
+                     
+                             if (navigator.clipboard && window.isSecureContext) {
+                                 navigator.clipboard.writeText(text).then(done).catch(() => this.fallbackCopy(text, done));
+                                 return;
+                             }
+                     
+                             this.fallbackCopy(text, done);
+                         },
+                     
+                         fallbackCopy(text, done) {
+                             const input = document.createElement('textarea');
+                             input.value = text;
+                             input.setAttribute('readonly', '');
+                             input.style.position = 'fixed';
+                             input.style.opacity = '0';
+                     
+                             document.body.appendChild(input);
+                             input.select();
+                     
+                             try {
+                                 document.execCommand('copy');
+                                 done();
+                             } catch (error) {
+                                 alert(text);
+                             }
+                     
+                             document.body.removeChild(input);
+                         }
+                     }"
+                     class="overflow-hidden rounded-[1.35rem] border-3 border-[#003b7a] bg-white shadow-[6px_6px_0_#003b7a] sm:rounded-[2rem] sm:border-4 sm:shadow-[10px_10px_0_#003b7a]">
                     <div class="bg-[#003b7a] px-4 py-3 text-white sm:px-6 sm:py-4">
                         <div class="flex items-center justify-between gap-4">
                             <div class="min-w-0">
-                                <div class="text-[10px] font-black uppercase tracking-[0.18em] text-[#ffd900] sm:tracking-[0.22em]">
+                                <div
+                                     class="text-[10px] font-black uppercase tracking-[0.18em] text-[#ffd900] sm:tracking-[0.22em]">
                                     {{ __('my_team.invitation') }}
                                 </div>
 
@@ -163,7 +166,8 @@
                                 </h2>
                             </div>
 
-                            <div class="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-[#ffd900] text-[#003b7a] sm:h-11 sm:w-11">
+                            <div
+                                 class="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-[#ffd900] text-[#003b7a] sm:h-11 sm:w-11">
                                 @include('partials.icon', [
                                     'name' => 'team',
                                     'class' => 'h-5 w-5 sm:h-6 sm:w-6',
@@ -173,68 +177,71 @@
                     </div>
 
                     <div class="grid gap-3 bg-white p-4 sm:p-6 lg:grid-cols-[170px_1fr] lg:items-start">
-                        <div class="mx-auto w-full max-w-[150px] rounded-[1.25rem] bg-[#fff8c7] p-2 ring-1 ring-[#003b7a]/10 sm:max-w-[190px] sm:rounded-[1.5rem] sm:p-3">
+                        <div
+                             class="mx-auto w-full max-w-[150px] rounded-[1.25rem] bg-[#fff8c7] p-2 ring-1 ring-[#003b7a]/10 sm:max-w-[190px] sm:rounded-[1.5rem] sm:p-3">
                             <div class="rounded-xl bg-white p-1.5 [&_svg]:h-auto [&_svg]:w-full sm:rounded-2xl sm:p-2">
                                 {!! QrCode::format('svg')->size(180)->margin(1)->generate($inviteUrl) !!}
                             </div>
 
-                            <div class="mt-1.5 text-center text-[9px] font-black uppercase tracking-wide text-[#003b7a]/60 sm:mt-2 sm:text-[10px]">
+                            <div
+                                 class="mt-1.5 text-center text-[9px] font-black uppercase tracking-wide text-[#003b7a]/60 sm:mt-2 sm:text-[10px]">
                                 {{ __('dashboard.scan_to_register') }}
                             </div>
                         </div>
 
                         <div class="min-w-0 space-y-2 sm:space-y-3">
-                            <div class="rounded-[1rem] bg-[#fff8c7] p-3 ring-1 ring-[#003b7a]/10 sm:rounded-[1.25rem] sm:p-4">
+                            <div
+                                 class="rounded-[1rem] bg-[#fff8c7] p-3 ring-1 ring-[#003b7a]/10 sm:rounded-[1.25rem] sm:p-4">
                                 <div class="flex items-center justify-between gap-3">
                                     <div class="min-w-0">
-                                        <div class="text-[9px] font-black uppercase tracking-[0.14em] text-[#003b7a]/55 sm:text-[10px]">
+                                        <div
+                                             class="text-[9px] font-black uppercase tracking-[0.14em] text-[#003b7a]/55 sm:text-[10px]">
                                             {{ __('my_team.invite_code') }}
                                         </div>
 
-                                        <div class="mt-1 break-all text-xl font-black leading-tight text-[#003b7a] sm:text-2xl">
+                                        <div
+                                             class="mt-1 break-all text-xl font-black leading-tight text-[#003b7a] sm:text-2xl">
                                             {{ $user->referral_code }}
                                         </div>
                                     </div>
 
                                     <button
-                                        type="button"
-                                        class="shrink-0 rounded-full bg-[#003b7a] px-3 py-1.5 text-[9px] font-black uppercase text-white sm:px-4 sm:py-2 sm:text-[10px]"
-                                        @click="copy(@js($user->referral_code), 'code')"
-                                        x-text="copiedCode ? @js(__('app.copied')) : @js(__('app.copy'))"
-                                    ></button>
+                                            type="button"
+                                            class="shrink-0 rounded-full bg-[#003b7a] px-3 py-1.5 text-[9px] font-black uppercase text-white sm:px-4 sm:py-2 sm:text-[10px]"
+                                            @click="copy(@js($user->referral_code), 'code')"
+                                            x-text="copiedCode ? @js(__('app.copied')) : @js(__('app.copy'))"></button>
                                 </div>
                             </div>
 
-                            <div class="rounded-[1rem] bg-[#fff8c7] p-3 ring-1 ring-[#003b7a]/10 sm:rounded-[1.25rem] sm:p-4">
+                            <div
+                                 class="rounded-[1rem] bg-[#fff8c7] p-3 ring-1 ring-[#003b7a]/10 sm:rounded-[1.25rem] sm:p-4">
                                 <div class="flex items-center justify-between gap-3">
                                     <div class="min-w-0 flex-1">
-                                        <div class="text-[9px] font-black uppercase tracking-[0.14em] text-[#003b7a]/55 sm:text-[10px]">
+                                        <div
+                                             class="text-[9px] font-black uppercase tracking-[0.14em] text-[#003b7a]/55 sm:text-[10px]">
                                             {{ __('my_team.invite_link') }}
                                         </div>
 
                                         <div
-                                            class="mt-1 block max-w-full overflow-hidden text-ellipsis whitespace-nowrap text-xs font-black text-[#003b7a] sm:text-sm"
-                                            title="{{ $inviteUrl }}"
-                                        >
+                                             class="mt-1 block max-w-full overflow-hidden text-ellipsis whitespace-nowrap text-xs font-black text-[#003b7a] sm:text-sm"
+                                             title="{{ $inviteUrl }}">
                                             {{ $inviteUrl }}
                                         </div>
                                     </div>
 
                                     <button
-                                        type="button"
-                                        class="shrink-0 rounded-full bg-[#e4003a] px-3 py-1.5 text-[9px] font-black uppercase text-white sm:px-4 sm:py-2 sm:text-[10px]"
-                                        @click="copy(@js($inviteUrl), 'link')"
-                                        x-text="copiedLink ? @js(__('app.copied')) : @js(__('app.copy'))"
-                                    ></button>
+                                            type="button"
+                                            class="shrink-0 rounded-full bg-[#e4003a] px-3 py-1.5 text-[9px] font-black uppercase text-white sm:px-4 sm:py-2 sm:text-[10px]"
+                                            @click="copy(@js($inviteUrl), 'link')"
+                                            x-text="copiedLink ? @js(__('app.copied')) : @js(__('app.copy'))"></button>
                                 </div>
                             </div>
 
                             <button
-                                type="button"
-                                class="w-full rounded-xl bg-[#ffd900] px-4 py-2.5 text-xs font-black uppercase text-[#003b7a] shadow-lg transition hover:-translate-y-0.5 sm:rounded-2xl sm:px-5 sm:py-3 sm:text-sm"
-                                @click="copy(@js($inviteUrl), 'link')"
-                                x-text="copiedLink ? @js(__('app.copied')) : @js(__('dashboard.copy_invite_link'))"
-                            ></button>
+                                    type="button"
+                                    class="w-full rounded-xl bg-[#ffd900] px-4 py-2.5 text-xs font-black uppercase text-[#003b7a] shadow-lg transition hover:-translate-y-0.5 sm:rounded-2xl sm:px-5 sm:py-3 sm:text-sm"
+                                    @click="copy(@js($inviteUrl), 'link')"
+                                    x-text="copiedLink ? @js(__('app.copied')) : @js(__('dashboard.copy_invite_link'))"></button>
                         </div>
                     </div>
                 </div>
@@ -246,7 +253,8 @@
         <div class="mx-auto max-w-7xl px-3 py-4 sm:px-6 sm:py-8 lg:px-8">
             <div class="grid grid-cols-3 gap-2 sm:gap-3">
                 @foreach ($topStats as $item)
-                    <div class="rounded-[1rem] p-3 shadow-lg ring-1 ring-black/5 sm:rounded-[2rem] sm:p-5 {{ $item['class'] }}">
+                    <div
+                         class="rounded-[1rem] p-3 shadow-lg ring-1 ring-black/5 sm:rounded-[2rem] sm:p-5 {{ $item['class'] }}">
                         <div class="flex items-center justify-between gap-2">
                             <div class="line-clamp-2 text-[8px] font-black uppercase leading-tight opacity-70 sm:text-xs">
                                 {{ $item['label'] }}
@@ -265,12 +273,12 @@
                 @endforeach
             </div>
 
-            <div class="-mx-3 mt-4 flex snap-x snap-mandatory gap-3 overflow-x-auto overscroll-x-contain px-3 pb-2 [-webkit-overflow-scrolling:touch] sm:mx-0 sm:grid sm:grid-cols-3 sm:overflow-visible sm:px-0 sm:pb-0 sm:gap-4">
+            <div
+                 class="-mx-3 mt-4 flex snap-x snap-mandatory gap-3 overflow-x-auto overscroll-x-contain px-3 pb-2 [-webkit-overflow-scrolling:touch] sm:mx-0 sm:grid sm:grid-cols-3 sm:overflow-visible sm:px-0 sm:pb-0 sm:gap-4">
                 @foreach ($levelCards as $card)
                     <a
-                        href="{{ route('my-team.level', $card['key']) }}"
-                        class="group w-[58vw] shrink-0 snap-start overflow-hidden rounded-[1.35rem] bg-gradient-to-br {{ $card['class'] }} p-4 text-white shadow-xl transition hover:-translate-y-1 hover:shadow-2xl sm:w-auto sm:shrink sm:rounded-[2rem] sm:p-5"
-                    >
+                       href="{{ route('my-team.level', $card['key']) }}"
+                       class="group w-[58vw] shrink-0 snap-start overflow-hidden rounded-[1.35rem] bg-gradient-to-br {{ $card['class'] }} p-4 text-white shadow-xl transition hover:-translate-y-1 hover:shadow-2xl sm:w-auto sm:shrink sm:rounded-[2rem] sm:p-5">
                         <div class="flex items-start justify-between gap-3">
                             <div>
                                 <div class="text-4xl font-black leading-none sm:text-5xl">
@@ -310,7 +318,8 @@
                             </div>
                         </div>
 
-                        <div class="mt-3 rounded-xl bg-[#ffd900] px-4 py-2 text-center text-xs font-black uppercase text-[#003b7a] transition group-hover:bg-white sm:mt-5 sm:rounded-2xl sm:px-5 sm:py-3 sm:text-sm">
+                        <div
+                             class="mt-3 rounded-xl bg-[#ffd900] px-4 py-2 text-center text-xs font-black uppercase text-[#003b7a] transition group-hover:bg-white sm:mt-5 sm:rounded-2xl sm:px-5 sm:py-3 sm:text-sm">
                             {{ __('my_team.check_detail') }}
                         </div>
                     </a>
@@ -334,7 +343,8 @@
                     @foreach ($timelineStats as $item)
                         <div class="rounded-[1rem] bg-[#fff8c7] p-3 ring-1 ring-[#003b7a]/10 sm:rounded-[1.5rem] sm:p-4">
                             <div class="flex items-center justify-between gap-2">
-                                <div class="line-clamp-2 text-[9px] font-black uppercase leading-tight text-[#003b7a]/60 sm:text-[10px]">
+                                <div
+                                     class="line-clamp-2 text-[9px] font-black uppercase leading-tight text-[#003b7a]/60 sm:text-[10px]">
                                     {{ $item['label'] }}
                                 </div>
 
@@ -350,6 +360,19 @@
                         </div>
                     @endforeach
                 </div>
+            </div>
+            <div class="mt-4 grid gap-3 sm:mt-5 sm:gap-4">
+                <img
+                     src="/lvl/rule_en.jpeg"
+                     alt="{{ __('my_team.info_image_1') }}"
+                     class="w-full rounded-[1.35rem] object-cover shadow-xl ring-1 ring-black/5 sm:rounded-[2rem]"
+                     loading="lazy">
+
+                <img
+                     src="/lvl/rule_vi.jpeg"
+                     alt="{{ __('my_team.info_image_2') }}"
+                     class="w-full rounded-[1.35rem] object-cover shadow-xl ring-1 ring-black/5 sm:rounded-[2rem]"
+                     loading="lazy">
             </div>
         </div>
     </section>

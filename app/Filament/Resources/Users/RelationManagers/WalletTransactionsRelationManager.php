@@ -6,12 +6,16 @@ use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Model;
 
 class WalletTransactionsRelationManager extends RelationManager
 {
     protected static string $relationship = 'walletTransactions';
 
-    protected static ?string $title = 'Wallet Transactions';
+    public static function getTitle(Model $ownerRecord, string $pageClass): string
+    {
+        return __('filament.wallet_transactions');
+    }
 
     public function form(Schema $schema): Schema
     {
@@ -23,7 +27,7 @@ class WalletTransactionsRelationManager extends RelationManager
         return $table
             ->columns([
                 TextColumn::make('wallet_type')
-                    ->label('Wallet')
+                    ->label(__('filament.wallet'))
                     ->badge()
                     ->color(fn (?string $state): string => match ($state) {
                         'recharge' => 'info',
@@ -32,7 +36,7 @@ class WalletTransactionsRelationManager extends RelationManager
                     }),
 
                 TextColumn::make('type')
-                    ->label('Type')
+                    ->label(__('filament.type'))
                     ->badge()
                     ->searchable(),
 
@@ -49,11 +53,11 @@ class WalletTransactionsRelationManager extends RelationManager
                     ->sortable(),
 
                 TextColumn::make('balance_before')
-                    ->label('Before')
+                    ->label(__('filament.before'))
                     ->prefix(config('app.currency')." "),
 
                 TextColumn::make('balance_after')
-                    ->label('After')
+                    ->label(__('filament.after'))
                     ->prefix(config('app.currency')." "),
 
                 TextColumn::make('remarks')

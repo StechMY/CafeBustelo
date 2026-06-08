@@ -16,55 +16,55 @@ class ContactForm
     {
         return $schema
             ->components([
-                Section::make('Contact Information')
+                Section::make(__('filament.contact_information'))
                     ->schema([
                         Grid::make(2)
                             ->schema([
                                 TextInput::make('name')
-                                    ->label('Name')
+                                    ->label(__('filament.name'))
                                     ->required()
                                     ->maxLength(255)
-                                    ->placeholder('Customer Service 1'),
+                                    ->placeholder(__('filament.customer_service_1')),
 
                                 Select::make('type')
-                                    ->label('Type')
+                                    ->label(__('filament.type'))
                                     ->required()
                                     ->default(Contact::TYPE_WHATSAPP)
                                     ->options([
-                                        Contact::TYPE_WHATSAPP => 'WhatsApp',
-                                        Contact::TYPE_TELEGRAM => 'Telegram',
-                                        Contact::TYPE_EMAIL => 'Email',
-                                        Contact::TYPE_PHONE => 'Phone',
-                                        Contact::TYPE_LINK => 'Link',
+                                        Contact::TYPE_WHATSAPP => __('filament.whatsapp'),
+                                        Contact::TYPE_TELEGRAM => __('filament.telegram'),
+                                        Contact::TYPE_EMAIL => __('filament.email'),
+                                        Contact::TYPE_PHONE => __('filament.phone'),
+                                        Contact::TYPE_LINK => __('filament.link'),
                                     ])
                                     ->native(false)
                                     ->live(),
 
                                 TextInput::make('link')
-                                    ->label('Link')
+                                    ->label(__('filament.link'))
                                     ->required()
                                     ->maxLength(2048)
                                     ->url()
                                     ->placeholder('https://wa.me/60123456789')
-                                    ->helperText('Use full URL. Example: https://wa.me/60123456789'),
+                                    ->helperText(__('filament.use_full_url_example_https_wa_me_60123456789')),
 
                                 Select::make('status')
-                                    ->label('Status')
+                                    ->label(__('filament.status'))
                                     ->required()
                                     ->default(Contact::STATUS_ACTIVE)
                                     ->options([
-                                        Contact::STATUS_ACTIVE => 'Active',
-                                        Contact::STATUS_INACTIVE => 'Inactive',
+                                        Contact::STATUS_ACTIVE => __('filament.active'),
+                                        Contact::STATUS_INACTIVE => __('filament.inactive'),
                                     ])
                                     ->native(false),
 
                                 TextInput::make('sort_order')
-                                    ->label('Sort Order')
+                                    ->label(__('filament.sort_order'))
                                     ->numeric()
                                     ->default(0),
 
                                 Textarea::make('description')
-                                    ->label('Description')
+                                    ->label(__('filament.description'))
                                     ->rows(3)
                                     ->columnSpanFull(),
                             ]),

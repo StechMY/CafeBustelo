@@ -23,13 +23,13 @@ class ViewRechargeRequest extends ViewRecord
             // EditAction::make(),
 
             Action::make('approve')
-                ->label('Approve')
+                ->label(__('filament.approve'))
                 ->icon('heroicon-o-check-circle')
                 ->color('success')
                 ->visible(fn (RechargeRequest $record): bool => $record->status === 'pending')
                 ->form([
                     Textarea::make('admin_remark')
-                        ->label('Admin Remark')
+                        ->label(__('filament.admin_remark'))
                         ->rows(3),
                 ])
                 ->requiresConfirmation()
@@ -42,7 +42,7 @@ class ViewRechargeRequest extends ViewRecord
                         );
 
                         Notification::make()
-                            ->title('Recharge approved')
+                            ->title(__('filament.recharge_approved'))
                             ->success()
                             ->send();
 
@@ -53,7 +53,7 @@ class ViewRechargeRequest extends ViewRecord
                         report($exception);
 
                         Notification::make()
-                            ->title('Approve failed')
+                            ->title(__('filament.approve_failed'))
                             ->body($exception->getMessage())
                             ->danger()
                             ->send();
@@ -61,13 +61,13 @@ class ViewRechargeRequest extends ViewRecord
                 }),
 
             Action::make('reject')
-                ->label('Reject')
+                ->label(__('filament.reject'))
                 ->icon('heroicon-o-x-circle')
                 ->color('danger')
                 ->visible(fn (RechargeRequest $record): bool => $record->status === 'pending')
                 ->form([
                     Textarea::make('admin_remark')
-                        ->label('Reject Reason')
+                        ->label(__('filament.reject_reason'))
                         ->required()
                         ->rows(3),
                 ])
@@ -81,7 +81,7 @@ class ViewRechargeRequest extends ViewRecord
                         );
 
                         Notification::make()
-                            ->title('Recharge rejected')
+                            ->title(__('filament.recharge_rejected'))
                             ->success()
                             ->send();
 
@@ -92,7 +92,7 @@ class ViewRechargeRequest extends ViewRecord
                         report($exception);
 
                         Notification::make()
-                            ->title('Reject failed')
+                            ->title(__('filament.reject_failed'))
                             ->body($exception->getMessage())
                             ->danger()
                             ->send();

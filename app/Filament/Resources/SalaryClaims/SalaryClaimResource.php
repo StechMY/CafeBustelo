@@ -20,15 +20,27 @@ class SalaryClaimResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedReceiptPercent;
 
-    protected static string|UnitEnum|null $navigationGroup = 'Finance';
-
-    protected static ?string $navigationLabel = 'Salary Claims';
-
-    protected static ?string $modelLabel = 'Salary Claim';
-
-    protected static ?string $pluralModelLabel = 'Salary Claims';
-
     protected static ?int $navigationSort = 41;
+
+    public static function getNavigationGroup(): string|UnitEnum|null
+    {
+        return __('filament.finance');
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return __('filament.salary_claims');
+    }
+
+    public static function getModelLabel(): string
+    {
+        return __('filament.salary_claim');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('filament.salary_claims');
+    }
 
     public static function infolist(Schema $schema): Schema
     {

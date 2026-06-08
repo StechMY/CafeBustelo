@@ -15,19 +15,17 @@
 <header class="sticky top-0 z-40 border-b border-[#003b7a]/10 bg-[#003b7a] text-white shadow-sm">
     <div class="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-3 sm:px-6 lg:h-20 lg:px-8">
         <a href="{{ route('dashboard') }}" class="flex shrink-0 items-center gap-3">
-            <img
+            {{-- <img
                  src="{{ asset('logo.jpg') }}"
                  alt="{{ __('app.brand_name') }}"
-                 class="h-11 w-11 rounded-full object-cover shadow-sm ring-2 ring-[#ffd900] lg:h-12 lg:w-12">
+                 class="h-11 w-11 rounded-full object-cover shadow-sm ring-2 ring-[#ffd900] lg:h-12 lg:w-12"> --}}
 
-            <div class="leading-none">
-                <div class="text-base font-black lg:text-lg">
-                    {{ __('app.brand_name') }}
-                </div>
-
-                <div class="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-[#ffd900]">
-                    {{ __('app.vip_club') }}
-                </div>
+             <div
+                 class="flex h-11 w-[120px] items-center justify-center rounded-2xl bg-[#ffd900] px-3 py-2 shadow-sm ring-1 ring-white/20 lg:h-12 lg:w-[170px]">
+                <img
+                     src="{{ asset('cafe-bustelo-logo.svg') }}"
+                     alt="{{ __('app.brand_name') }}"
+                     class="max-h-full max-w-full object-contain">
             </div>
         </a>
 

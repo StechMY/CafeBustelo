@@ -16,8 +16,8 @@ class VipLevelsTable
         return $table
             ->columns([
                 TextColumn::make('level')
-                    ->label('LV')
-                    ->formatStateUsing(fn ($state): string => 'LV' . $state)
+                    ->label(__('filament.lv'))
+                    ->formatStateUsing(fn ($state): string => __('filament.lv') . $state)
                     ->sortable()
                     ->weight('bold'),
 
@@ -30,36 +30,36 @@ class VipLevelsTable
                     ->placeholder('-'),
 
                 TextColumn::make('required_accumulated_recharge')
-                    ->label('Required Recharge')
+                    ->label(__('filament.required_recharge'))
                     ->prefix(config('app.currency')." ")
                     ->sortable(),
 
                 TextColumn::make('required_active_team_size')
-                    ->label('Team Size')
+                    ->label(__('filament.team_size'))
                     ->sortable(),
 
                 TextColumn::make('daily_check_in_amount')
-                    ->label('Daily')
+                    ->label(__('filament.daily'))
                     ->prefix(config('app.currency')." ")
                     ->sortable(),
 
                 TextColumn::make('weekly_salary')
-                    ->label('Weekly')
+                    ->label(__('filament.weekly'))
                     ->prefix(config('app.currency')." ")
                     ->sortable(),
 
                 TextColumn::make('monthly_salary')
-                    ->label('Monthly')
+                    ->label(__('filament.monthly'))
                     ->prefix(config('app.currency')." ")
                     ->sortable(),
 
                 TextColumn::make('team_subsidy')
-                    ->label('Team Subsidy')
+                    ->label(__('filament.team_subsidy'))
                     ->prefix(config('app.currency')." ")
                     ->sortable(),
 
                 TextColumn::make('annual_salary')
-                    ->label('Annual')
+                    ->label(__('filament.annual'))
                     ->prefix(config('app.currency')." ")
                     ->sortable(),
 

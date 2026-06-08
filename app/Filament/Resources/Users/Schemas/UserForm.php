@@ -17,29 +17,29 @@ class UserForm
     {
         return $schema
             ->components([
-                Section::make('Account Information')
+                Section::make(__('filament.account_information'))
                     ->schema([
                         Grid::make(2)
                             ->schema([
                                 TextInput::make('name')
-                                    ->label('Name')
+                                    ->label(__('filament.name'))
                                     ->required()
                                     ->maxLength(255),
 
                                 TextInput::make('username')
-                                    ->label('Username')
+                                    ->label(__('filament.username'))
                                     ->required()
                                     ->maxLength(32)
                                     ->unique(ignoreRecord: true)
                                     ->alphaDash(),
 
                                 TextInput::make('phone')
-                                    ->label('Phone')
+                                    ->label(__('filament.phone'))
                                     ->tel()
                                     ->maxLength(32),
 
                                 TextInput::make('password')
-                                    ->label('Password')
+                                    ->label(__('filament.password'))
                                     ->password()
                                     ->revealable()
                                     ->dehydrated(fn(?string $state): bool => filled($state))
@@ -47,7 +47,7 @@ class UserForm
                                     ->maxLength(255),
 
                                 TextInput::make('referral_code')
-                                    ->label('Referral Code')
+                                    ->label(__('filament.referral_code'))
                                     ->maxLength(32)
                                     ->unique(ignoreRecord: true)
                                     ->default(fn(): string => strtoupper(Str::random(8)))
@@ -55,10 +55,10 @@ class UserForm
                             ]),
                     ]),
 
-                Section::make('Referral')
+                Section::make(__('filament.referral'))
                     ->schema([
                         Select::make('referrer_id')
-                            ->label('Referred By')
+                            ->label(__('filament.referred_by'))
                             ->relationship(
                                 name: 'referrer',
                                 titleAttribute: 'username',
@@ -66,62 +66,62 @@ class UserForm
                             )
                             ->preload()
                             ->nullable()
-                            ->helperText('Select the user who referred this customer.'),
+                            ->helperText(__('filament.select_the_user_who_referred_this_customer')),
                     ]),
 
-                Section::make('Status & Controls')
+                Section::make(__('filament.status_and_controls'))
                     ->schema([
                         Grid::make(2)
                             ->schema([
                                 Select::make('status')
-                                    ->label('User Status')
+                                    ->label(__('filament.user_status'))
                                     ->required()
                                     ->default('inactive')
                                     ->options([
-                                        'active' => 'Active',
-                                        'inactive' => 'Inactive',
-                                        'suspended' => 'Suspended',
+                                        'active' => __('filament.active'),
+                                        'inactive' => __('filament.inactive'),
+                                        'suspended' => __('filament.suspended'),
                                     ])
                                     ->native(false),
 
                                 Toggle::make('is_virtual')
-                                    ->label('Virtual User')
+                                    ->label(__('filament.virtual_user'))
                                     ->default(false)
                                     ->onColor('warning')
                                     ->offColor('gray'),
 
                                 Toggle::make('order_status')
-                                    ->label('Can Buy Product')
+                                    ->label(__('filament.can_buy_product'))
                                     ->default(true)
                                     ->onColor('success')
                                     ->offColor('danger'),
 
                                 Toggle::make('withdraw_status')
-                                    ->label('Can Withdraw')
+                                    ->label(__('filament.can_withdraw'))
                                     ->default(true)
                                     ->onColor('success')
                                     ->offColor('danger'),
                                     
                                 Toggle::make('check_in_status')
-                                    ->label('Can Check in')
+                                    ->label(__('filament.can_check_in'))
                                     ->default(true)
                                     ->onColor('success')
                                     ->offColor('danger'),
 
                                 Toggle::make('weekly_salary_status')
-                                    ->label('Weekly Salary Claim')
+                                    ->label(__('filament.weekly_salary_claim'))
                                     ->default(true),
 
                                 Toggle::make('monthly_salary_status')
-                                    ->label('Monthly Salary Claim')
+                                    ->label(__('filament.monthly_salary_claim'))
                                     ->default(true),
 
                                 Toggle::make('annual_salary_status')
-                                    ->label('Annual Salary Claim')
+                                    ->label(__('filament.annual_salary_claim'))
                                     ->default(true),
 
                                 TextInput::make('accumulated_recharge')
-                                    ->label('Accumulated Recharge')
+                                    ->label(__('filament.accumulated_recharge'))
                                     ->prefix(config('app.currency'))
                                     ->numeric()
                                     ->default(0)
@@ -130,18 +130,18 @@ class UserForm
                             ]),
                     ]),
 
-                Section::make('Login Information')
+                Section::make(__('filament.login_information'))
                     ->collapsed()
                     ->schema([
                         Grid::make(2)
                             ->schema([
                                 TextInput::make('registered_ip')
-                                    ->label('Registered IP')
+                                    ->label(__('filament.registered_ip'))
                                     ->disabled()
                                     ->dehydrated(false),
 
                                 TextInput::make('last_login_ip')
-                                    ->label('Last Login IP')
+                                    ->label(__('filament.last_login_ip'))
                                     ->disabled()
                                     ->dehydrated(false),
                             ]),

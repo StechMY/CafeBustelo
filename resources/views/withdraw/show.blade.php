@@ -20,7 +20,8 @@
                     </p>
                 </div>
 
-                <span class="rounded-full px-3 py-1 text-xs font-black uppercase
+                <span
+                      class="rounded-full px-3 py-1 text-xs font-black uppercase
                     @class([
                         'bg-yellow-100 text-yellow-700' => $withdrawRequest->status === 'pending',
                         'bg-green-100 text-green-700' => $withdrawRequest->status === 'approved',
@@ -31,46 +32,46 @@
             </div>
 
             <div class="grid gap-3 sm:grid-cols-3">
-    <div class="rounded-2xl bg-[#fff8c7] p-4">
-        <div class="text-xs font-black uppercase text-[#003b7a]/60">
-            {{ __('withdraw.amount') }}
-        </div>
-        <div class="mt-1 font-black text-[#003b7a]">
-            {{ config('app.currency') }} {{ number_format((float) $withdrawRequest->amount, 2) }}
-        </div>
-    </div>
+                <div class="rounded-2xl bg-[#fff8c7] p-4">
+                    <div class="text-xs font-black uppercase text-[#003b7a]/60">
+                        {{ __('withdraw.amount') }}
+                    </div>
+                    <div class="mt-1 font-black text-[#003b7a]">
+                        {{ config('app.currency') }} {{ number_format((float) $withdrawRequest->amount, 2) }}
+                    </div>
+                </div>
 
-    <div class="rounded-2xl bg-[#fff8c7] p-4">
-        <div class="text-xs font-black uppercase text-[#003b7a]/60">
-            {{ __('withdraw.fee_amount') }}
-        </div>
-        <div class="mt-1 font-black text-[#e4003a]">
-            {{ config('app.currency') }} {{ number_format((float) $withdrawRequest->fee_amount, 2) }}
-        </div>
-    </div>
+                <div class="rounded-2xl bg-[#fff8c7] p-4">
+                    <div class="text-xs font-black uppercase text-[#003b7a]/60">
+                        {{ __('withdraw.fee_amount') }}
+                    </div>
+                    <div class="mt-1 font-black text-[#e4003a]">
+                        {{ config('app.currency') }} {{ number_format((float) $withdrawRequest->fee_amount, 2) }}
+                    </div>
+                </div>
 
-    <div class="rounded-2xl bg-[#ffd900] p-4">
-        <div class="text-xs font-black uppercase text-[#003b7a]/60">
-            {{ __('withdraw.net_amount') }}
-        </div>
-        <div class="mt-1 font-black text-[#003b7a]">
-            {{ config('app.currency') }} {{ number_format((float) $withdrawRequest->net_amount, 2) }}
-        </div>
-    </div>
-</div>
+                <div class="rounded-2xl bg-[#ffd900] p-4">
+                    <div class="text-xs font-black uppercase text-[#003b7a]/60">
+                        {{ __('withdraw.net_amount') }}
+                    </div>
+                    <div class="mt-1 font-black text-[#003b7a]">
+                        {{ config('app.currency') }} {{ number_format((float) $withdrawRequest->net_amount, 2) }}
+                    </div>
+                </div>
+            </div>
 
-<div class="rounded-2xl bg-[#fff8c7] p-4">
-    <div class="text-xs font-black uppercase text-[#003b7a]/60">
-        {{ __('withdraw.vip_snapshot') }}
-    </div>
-    <div class="mt-1 font-black text-[#003b7a]">
-        LV{{ $withdrawRequest->vip_level_snapshot }}
-        · {{ __('withdraw.min_withdraw_amount') }}:
-        {{ config('app.currency') }} {{ number_format((float) $withdrawRequest->min_withdraw_amount_snapshot, 2) }}
-    </div>
-</div>
-
-            <div class="grid gap-3">
+            <div class="grid gap-3 mt-3">
+                <div class="rounded-2xl bg-[#fff8c7] p-4">
+                    <div class="text-xs font-black uppercase text-[#003b7a]/60">
+                        {{ __('withdraw.vip_snapshot') }}
+                    </div>
+                    <div class="mt-1 font-black text-[#003b7a]">
+                        LV{{ $withdrawRequest->vip_level_snapshot }}
+                        · {{ __('withdraw.min_withdraw_amount') }}:
+                        {{ config('app.currency') }}
+                        {{ number_format((float) $withdrawRequest->min_withdraw_amount_snapshot, 2) }}
+                    </div>
+                </div>
                 <div class="rounded-2xl bg-[#fff8c7] p-4">
                     <div class="text-xs font-black uppercase text-[#003b7a]/60">
                         {{ __('withdraw.bank_name') }}

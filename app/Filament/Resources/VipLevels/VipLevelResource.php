@@ -23,15 +23,27 @@ class VipLevelResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedTrophy;
 
-    protected static string|UnitEnum|null $navigationGroup = 'Platform Management';
-
-    protected static ?string $navigationLabel = 'VIP Levels';
-
-    protected static ?string $modelLabel = 'VIP Level';
-
-    protected static ?string $pluralModelLabel = 'VIP Levels';
-
     protected static ?int $navigationSort = 10;
+
+    public static function getNavigationGroup(): string|UnitEnum|null
+    {
+        return __('filament.platform_management');
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return __('filament.vip_levels');
+    }
+
+    public static function getModelLabel(): string
+    {
+        return __('filament.vip_level');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('filament.vip_levels');
+    }
 
     public static function form(Schema $schema): Schema
     {

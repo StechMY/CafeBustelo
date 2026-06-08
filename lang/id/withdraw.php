@@ -36,5 +36,9 @@ return [
     'current_vip_level' => 'Level VIP Saat Ini',
     'min_withdraw_amount' => 'Jumlah Penarikan Minimum',
     'below_minimum_amount' => 'Jumlah penarikan minimum adalah :amount.',
-    'invalid_net_amount' => 'Jumlah penarikan bersih tidak valid.',
+    'withdraw_fee' => 'Biaya Penarikan',
+    'processing_time' => 'Waktu Proses',
+    'security_fee_notice' => 'Minimum penarikan berdasarkan level VIP Anda. Biaya penarikan berlaku demi keamanan dana. Waktu proses penarikan adalah 24-72 jam.',
+    'net_amount_hint' => 'Jumlah yang diterima akan dikurangi biaya penarikan.',
+    'invalid_net_amount' => 'Jumlah diterima setelah potongan biaya tidak valid.',
 ];

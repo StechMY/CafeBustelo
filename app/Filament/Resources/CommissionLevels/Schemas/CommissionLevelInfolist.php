@@ -14,19 +14,19 @@ class CommissionLevelInfolist
     {
         return $schema
             ->components([
-                Section::make('Commission Level')
+                Section::make(__('filament.commission_level'))
                     ->schema([
                         Grid::make(3)
                             ->schema([
                                 TextEntry::make('level')
-                                    ->label('Level')
+                                    ->label(__('filament.level'))
                                     ->weight('bold'),
 
                                 TextEntry::make('name')
                                     ->weight('bold'),
 
                                 TextEntry::make('rate_percent')
-                                    ->label('Rate')
+                                    ->label(__('filament.rate'))
                                     ->formatStateUsing(fn ($state): string => number_format((float) $state, 2) . '%'),
 
                                 IconEntry::make('is_active')
@@ -39,7 +39,7 @@ class CommissionLevelInfolist
                             ]),
                     ]),
 
-                Section::make('Description')
+                Section::make(__('filament.description'))
                     ->schema([
                         TextEntry::make('description')
                             ->placeholder('-'),

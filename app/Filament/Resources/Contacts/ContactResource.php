@@ -23,15 +23,27 @@ class ContactResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedChatBubbleLeftRight;
 
-    protected static string|UnitEnum|null $navigationGroup = 'Platform Management';
-
-    protected static ?string $navigationLabel = 'Contacts';
-
-    protected static ?string $modelLabel = 'Contact';
-
-    protected static ?string $pluralModelLabel = 'Contacts';
-
     protected static ?int $navigationSort = 60;
+
+    public static function getNavigationGroup(): string|UnitEnum|null
+    {
+        return __('filament.platform_management');
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return __('filament.contacts');
+    }
+
+    public static function getModelLabel(): string
+    {
+        return __('filament.contact');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('filament.contacts');
+    }
 
     public static function form(Schema $schema): Schema
     {

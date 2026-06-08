@@ -23,15 +23,27 @@ class WithdrawRequestResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBanknotes;
 
-    protected static string|UnitEnum|null $navigationGroup = 'Finance';
-
-    protected static ?string $navigationLabel = 'Withdraw Requests';
-
-    protected static ?string $modelLabel = 'Withdraw Request';
-
-    protected static ?string $pluralModelLabel = 'Withdraw Requests';
-
     protected static ?int $navigationSort = 20;
+
+    public static function getNavigationGroup(): string|UnitEnum|null
+    {
+        return __('filament.finance');
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return __('filament.withdraw_requests');
+    }
+
+    public static function getModelLabel(): string
+    {
+        return __('filament.withdraw_request');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('filament.withdraw_requests');
+    }
 
     public static function form(Schema $schema): Schema
     {

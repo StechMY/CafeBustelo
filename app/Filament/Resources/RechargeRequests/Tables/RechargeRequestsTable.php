@@ -25,13 +25,13 @@ class RechargeRequestsTable
         return $table
             ->columns([
                 TextColumn::make('user.username')
-                    ->label('Username')
+                    ->label(__('filament.username'))
                     ->searchable()
                     ->sortable()
                     ->weight('bold'),
 
                 TextColumn::make('user.phone')
-                    ->label('Phone')
+                    ->label(__('filament.phone'))
                     ->searchable()
                     ->placeholder('-'),
 
@@ -63,7 +63,7 @@ class RechargeRequestsTable
                     ->placeholder('-'),
 
                 TextColumn::make('reviewer.username')
-                    ->label('Reviewer')
+                    ->label(__('filament.reviewer'))
                     ->placeholder('-'),
 
                 TextColumn::make('reviewed_at')
@@ -75,9 +75,9 @@ class RechargeRequestsTable
             ->filters([
                 SelectFilter::make('status')
                     ->options([
-                        'pending' => 'Pending',
-                        'approved' => 'Approved',
-                        'rejected' => 'Rejected',
+                        'pending' => __('filament.pending'),
+                        'approved' => __('filament.approved'),
+                        'rejected' => __('filament.rejected'),
                     ]),
             ])
             ->recordActions([
@@ -86,13 +86,13 @@ class RechargeRequestsTable
                 DeleteAction::make(),
 
                 Action::make('approve')
-                    ->label('Approve')
+                    ->label(__('filament.approve'))
                     ->icon('heroicon-o-check-circle')
                     ->color('success')
                     ->visible(fn(RechargeRequest $record): bool => $record->status === 'pending')
                     ->form([
                         Textarea::make('admin_remark')
-                            ->label('Admin Remark')
+                            ->label(__('filament.admin_remark'))
                             ->rows(3),
                     ])
                     ->requiresConfirmation()
@@ -105,14 +105,14 @@ class RechargeRequestsTable
                             );
 
                             Notification::make()
-                                ->title('Recharge approved')
+                                ->title(__('filament.recharge_approved'))
                                 ->success()
                                 ->send();
                         } catch (Throwable $exception) {
                             report($exception);
 
                             Notification::make()
-                                ->title('Approve failed')
+                                ->title(__('filament.approve_failed'))
                                 ->body($exception->getMessage())
                                 ->danger()
                                 ->send();
@@ -120,13 +120,13 @@ class RechargeRequestsTable
                     }),
 
                 Action::make('reject')
-                    ->label('Reject')
+                    ->label(__('filament.reject'))
                     ->icon('heroicon-o-x-circle')
                     ->color('danger')
                     ->visible(fn(RechargeRequest $record): bool => $record->status === 'pending')
                     ->form([
                         Textarea::make('admin_remark')
-                            ->label('Reject Reason')
+                            ->label(__('filament.reject_reason'))
                             ->required()
                             ->rows(3),
                     ])
@@ -140,14 +140,14 @@ class RechargeRequestsTable
                             );
 
                             Notification::make()
-                                ->title('Recharge rejected')
+                                ->title(__('filament.recharge_rejected'))
                                 ->success()
                                 ->send();
                         } catch (Throwable $exception) {
                             report($exception);
 
                             Notification::make()
-                                ->title('Reject failed')
+                                ->title(__('filament.reject_failed'))
                                 ->body($exception->getMessage())
                                 ->danger()
                                 ->send();

@@ -14,25 +14,25 @@ class RechargeRequestInfolist
     {
         return $schema
             ->components([
-                Section::make('Request')
+                Section::make(__('filament.request'))
                     ->schema([
                         Grid::make(3)
                             ->schema([
                                 TextEntry::make('user.username')
-                                    ->label('Username')
+                                    ->label(__('filament.username'))
                                     ->weight('bold')
                                     ->copyable(),
 
                                 TextEntry::make('user.name')
-                                    ->label('Name'),
+                                    ->label(__('filament.name')),
 
                                 TextEntry::make('user.phone')
-                                    ->label('Phone')
+                                    ->label(__('filament.phone'))
                                     ->copyable()
                                     ->placeholder('-'),
 
                                 TextEntry::make('amount')
-                                    ->label('Amount')
+                                    ->label(__('filament.amount'))
                                     ->prefix(config('app.currency')." "),
 
                                 TextEntry::make('status')
@@ -50,7 +50,7 @@ class RechargeRequestInfolist
                             ]),
                     ]),
 
-                Section::make('Payment Detail')
+                Section::make(__('filament.payment_detail'))
                     ->schema([
                         Grid::make(2)
                             ->schema([
@@ -63,22 +63,22 @@ class RechargeRequestInfolist
                             ]),
                     ]),
 
-                Section::make('Receipt')
+                Section::make(__('filament.receipt'))
                     ->schema([
                         ImageEntry::make('receipt_path')
-                            ->label('Receipt Preview')
+                            ->label(__('filament.receipt_preview'))
                             ->disk(fn ($record): string => $record->receipt_disk ?: 'do_spaces')
                             ->height(300)
                             ->visible(fn ($record): bool => $record->receipt_path && ! str_ends_with(strtolower($record->receipt_path), '.pdf')),
 
                     ]),
 
-                Section::make('Review')
+                Section::make(__('filament.review'))
                     ->schema([
                         Grid::make(3)
                             ->schema([
                                 TextEntry::make('reviewer.username')
-                                    ->label('Reviewed By')
+                                    ->label(__('filament.reviewed_by'))
                                     ->placeholder('-'),
 
                                 TextEntry::make('reviewed_at')

@@ -17,7 +17,7 @@ class DashboardSlideForm
     {
         return $schema
             ->components([
-                Section::make('Slide Content')
+                Section::make(__('filament.slide_content'))
                     ->schema([
                         TextInput::make('title')
                             ->required()
@@ -28,7 +28,7 @@ class DashboardSlideForm
                             ->columnSpanFull(),
 
                         FileUpload::make('image_path')
-                            ->label('Slide Image')
+                            ->label(__('filament.slide_image'))
                             ->disk('do_spaces')
                             ->directory('dashboard/slides')
                             ->image()
@@ -40,7 +40,7 @@ class DashboardSlideForm
                             ->schema([
                                 TextInput::make('button_text')
                                     ->maxLength(100)
-                                    ->placeholder('Learn More'),
+                                    ->placeholder(__('filament.learn_more')),
 
                                 TextInput::make('button_url')
                                     ->url()
@@ -49,7 +49,7 @@ class DashboardSlideForm
                             ]),
                     ]),
 
-                Section::make('Display Settings')
+                Section::make(__('filament.display_settings'))
                     ->schema([
                         Grid::make(2)
                             ->schema([

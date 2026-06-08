@@ -13,7 +13,7 @@ class AdminUserInfolist
     {
         return $schema
             ->components([
-                Section::make('Admin User')
+                Section::make(__('filament.admin_user'))
                     ->schema([
                         Grid::make(3)
                             ->schema([
@@ -27,7 +27,7 @@ class AdminUserInfolist
                                     ->color(fn (?string $state): string => $state === 'active' ? 'success' : 'gray'),
 
                                 TextEntry::make('roles.name')
-                                    ->label('Roles')
+                                    ->label(__('filament.roles'))
                                     ->badge()
                                     ->separator(','),
 

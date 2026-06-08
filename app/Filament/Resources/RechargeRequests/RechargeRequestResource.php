@@ -23,15 +23,27 @@ class RechargeRequestResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCreditCard;
 
-    protected static string|UnitEnum|null $navigationGroup = 'Finance';
-
-    protected static ?string $navigationLabel = 'Recharge Requests';
-
-    protected static ?string $modelLabel = 'Recharge Request';
-
-    protected static ?string $pluralModelLabel = 'Recharge Requests';
-
     protected static ?int $navigationSort = 10;
+
+    public static function getNavigationGroup(): string|UnitEnum|null
+    {
+        return __('filament.finance');
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return __('filament.recharge_requests');
+    }
+
+    public static function getModelLabel(): string
+    {
+        return __('filament.recharge_request');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('filament.recharge_requests');
+    }
 
     public static function form(Schema $schema): Schema
     {
