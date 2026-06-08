@@ -40,7 +40,7 @@ class ProductInfolist
                                         TextEntry::make('status')
                                             ->label(__('filament.status'))
                                             ->badge()
-                                            ->color(fn (?string $state): string => match ($state) {
+                                            ->color(fn(?string $state): string => match ($state) {
                                                 'active' => 'success',
                                                 'inactive' => 'gray',
                                                 default => 'warning',
@@ -60,29 +60,31 @@ class ProductInfolist
                             ->schema([
                                 TextEntry::make('price')
                                     ->label(__('filament.price'))
-                                    ->prefix(config('app.currency')." "),
+                                    ->prefix(config('app.currency') . " "),
+                                TextEntry::make('max_purchase_per_user')
+                                    ->label(__('filament.max_purchase_per_user')),
 
                                 TextEntry::make('daily_income')
                                     ->label(__('filament.daily_income'))
-                                    ->prefix(config('app.currency')." "),
+                                    ->prefix(config('app.currency') . " "),
 
                                 TextEntry::make('duration_days')
                                     ->label(__('filament.duration'))
-                                    ->suffix(fn (): string => ' ' . __('filament.days'))
+                                    ->suffix(fn(): string => ' ' . __('filament.days'))
                                     ->numeric(),
 
                                 TextEntry::make('total_income')
                                     ->label(__('filament.total_income'))
-                                    ->state(fn (Product $record): float => (float) $record->daily_income * (int) $record->duration_days)
-                                    ->prefix(config('app.currency')." "),
+                                    ->state(fn(Product $record): float => (float) $record->daily_income * (int) $record->duration_days)
+                                    ->prefix(config('app.currency') . " "),
 
                                 TextEntry::make('upgrade_bonus')
                                     ->label(__('filament.upgrade_bonus'))
-                                    ->prefix(config('app.currency')." "),
+                                    ->prefix(config('app.currency') . " "),
 
                                 TextEntry::make('invite_bonus')
                                     ->label(__('filament.invite_bonus'))
-                                    ->prefix(config('app.currency')." "),
+                                    ->prefix(config('app.currency') . " "),
                             ]),
                     ]),
 
@@ -113,7 +115,7 @@ class ProductInfolist
                                     ->label(__('filament.deleted_at'))
                                     ->dateTime()
                                     ->placeholder('-')
-                                    ->visible(fn (Product $record): bool => $record->trashed()),
+                                    ->visible(fn(Product $record): bool => $record->trashed()),
                             ]),
                     ]),
             ]);

@@ -35,45 +35,49 @@ class ProductsTable
                     ->searchable()
                     ->sortable()
                     ->weight('bold')
-                    ->description(fn (Product $record): string => $record->code),
+                    ->description(fn(Product $record): string => $record->code),
 
                 TextColumn::make('price')
                     ->label(__('filament.price'))
-                    ->prefix(config('app.currency')." ")
+                    ->prefix(config('app.currency') . " ")
+                    ->sortable(),
+
+                TextColumn::make('max_purchase_per_user')
+                    ->label(__('filament.max_purchase_per_user'))
                     ->sortable(),
 
                 TextColumn::make('daily_income')
                     ->label(__('filament.daily'))
-                    ->prefix(config('app.currency')." ")
+                    ->prefix(config('app.currency') . " ")
                     ->sortable(),
 
                 TextColumn::make('duration_days')
                     ->label(__('filament.days'))
-                    ->suffix(fn (): string => ' ' . __('filament.days'))
+                    ->suffix(fn(): string => ' ' . __('filament.days'))
                     ->numeric()
                     ->sortable(),
 
                 TextColumn::make('total_income')
                     ->label(__('filament.total_income'))
-                    ->state(fn (Product $record): float => (float) $record->daily_income * (int) $record->duration_days)
-                    ->prefix(config('app.currency')." "),
+                    ->state(fn(Product $record): float => (float) $record->daily_income * (int) $record->duration_days)
+                    ->prefix(config('app.currency') . " "),
 
                 TextColumn::make('upgrade_bonus')
                     ->label(__('filament.upgrade_bonus'))
-                    ->prefix(config('app.currency')." ")
+                    ->prefix(config('app.currency') . " ")
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('invite_bonus')
                     ->label(__('filament.invite_bonus'))
-                    ->prefix(config('app.currency')." ")
+                    ->prefix(config('app.currency') . " ")
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('status')
                     ->label(__('filament.status'))
                     ->badge()
-                    ->color(fn (?string $state): string => match ($state) {
+                    ->color(fn(?string $state): string => match ($state) {
                         'active' => 'success',
                         'inactive' => 'gray',
                         default => 'warning',

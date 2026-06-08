@@ -48,4 +48,7 @@ return [
     'completed' => 'Selesai',
     'claim_confirm_note' => 'Konfirmasi untuk mengklaim pendapatan produk ini sekarang.',
     'ownership_status' => 'Status Kepemilikan',
+    'max_purchase_limit_reached' => 'Anda telah mencapai batas pembelian untuk produk ini. Batas: :limit.',
+    'purchase_limit_reached' => 'Batas Tercapai',
+    'purchased_count' => 'Dibeli :count/:limit',
 ];

@@ -37,6 +37,21 @@ class ProductPurchaseService
                 throw new RuntimeException(__('products.product_not_available'));
             }
 
+            $purchasedCount = \App\Models\UserProduct::query()
+                ->where('user_id', $user->id)
+                ->where('product_id', $lockedProduct->id)
+                ->whereIn('status', ['active', 'expired', 'completed'])
+                ->lockForUpdate()
+                ->count();
+
+            $maxPurchase = max(1, (int) ($lockedProduct->max_purchase_per_user ?: 2));
+
+            if ($purchasedCount >= $maxPurchase) {
+                throw new RuntimeException(__('products.max_purchase_limit_reached', [
+                    'limit' => $maxPurchase,
+                ]));
+            }
+
             $now = now();
 
             $userProduct = UserProduct::query()->create([

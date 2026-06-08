@@ -315,6 +315,7 @@ return [
     'weekly_salary_claim' => '周薪领取',
     'weekly_salary_status_updated' => '周薪状态已更新',
     'whatsapp' => 'WhatsApp',
+    'zalo' => 'Zalo',
     'withdraw' => '提现',
     'withdraw_approved' => '提现已批准',
     'withdraw_rejected' => '提现已拒绝',
@@ -415,4 +416,6 @@ return [
     'total_unused_recharge_balance' => '未使用充值余额总计',
     'withdrawable_wallet_balance' => '可提现钱包余额',
     'total_user_claimable_balance' => '用户可领取余额总计',
+    'max_purchase_per_user' => '每位用户最多购买次数',
+    'max_purchase_per_user_help' => '同一个用户最多可购买此产品的次数，默认 2 次。',
 ];

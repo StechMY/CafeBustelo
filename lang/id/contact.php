@@ -13,6 +13,7 @@ return [
     'no_contacts_desc' => 'Kontak layanan pelanggan akan muncul di sini setelah tersedia.',
     'types' => [
         'whatsapp' => 'WhatsApp',
+        'zalo' => 'Zalo',
         'telegram' => 'Telegram',
         'email' => 'Email',
         'phone' => 'Telepon',

@@ -14,6 +14,7 @@ class Contact extends Model
     public const TYPE_EMAIL = 'email';
     public const TYPE_PHONE = 'phone';
     public const TYPE_LINK = 'link';
+    public const TYPE_ZALO = 'zalo';
 
     protected $fillable = [
         'name',
@@ -43,6 +44,7 @@ class Contact extends Model
             self::TYPE_TELEGRAM => 'telegram',
             self::TYPE_EMAIL => 'email',
             self::TYPE_PHONE => 'phone',
+            self::TYPE_ZALO => 'zalo',
             default => 'link',
         };
     }

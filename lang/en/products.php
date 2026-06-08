@@ -48,4 +48,7 @@ return [
     'completed' => 'Completed',
     'claim_confirm_note' => 'Confirm to claim this product income now.',
     'ownership_status' => 'Ownership Status',
+    'max_purchase_limit_reached' => 'You have reached the purchase limit for this product. Limit: :limit.',
+    'purchase_limit_reached' => 'Limit Reached',
+    'purchased_count' => 'Purchased :count/:limit',
 ];

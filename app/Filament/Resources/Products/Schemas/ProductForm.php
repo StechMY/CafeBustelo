@@ -109,6 +109,15 @@ class ProductForm
                                     ->numeric()
                                     ->minValue(0.01)
                                     ->step('0.01'),
+                                    
+                                TextInput::make('max_purchase_per_user')
+                                    ->label(__('filament.max_purchase_per_user'))
+                                    ->numeric()
+                                    ->required()
+                                    ->default(2)
+                                    ->minValue(1)
+                                    ->step(1)
+                                    ->helperText(__('filament.max_purchase_per_user_help')),
 
                                 TextInput::make('daily_income')
                                     ->label(__('filament.daily_income'))

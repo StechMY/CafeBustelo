@@ -15,6 +15,7 @@ return [
     'types' => [
         'whatsapp' => 'WhatsApp',
         'telegram' => 'Telegram',
+        'zalo' => 'Zalo',
         'email' => '邮箱',
         'phone' => '电话',
         'link' => '链接',

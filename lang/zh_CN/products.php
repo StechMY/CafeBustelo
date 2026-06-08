@@ -48,4 +48,7 @@ return [
     'completed' => '已完成',
     'claim_confirm_note' => '确认领取此产品收益。',
     'ownership_status' => '持有状态',
+    'max_purchase_limit_reached' => '你已达到此产品的购买上限。上限：:limit 次。',
+    'purchase_limit_reached' => '已达购买上限',
+    'purchased_count' => '已购买 :count/:limit',
 ];

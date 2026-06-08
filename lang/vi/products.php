@@ -48,4 +48,8 @@ return [
     'completed' => 'Hoàn tất',
     'claim_confirm_note' => 'Xác nhận nhận thu nhập từ sản phẩm này ngay bây giờ.',
     'ownership_status' => 'Trạng thái sở hữu',
+    'max_purchase_limit_reached' => 'Bạn đã đạt giới hạn mua sản phẩm này. Giới hạn: :limit.',
+    'purchase_limit_reached' => 'Đã đạt giới hạn',
+    'purchased_count' => 'Đã mua :count/:limit',
+
 ];

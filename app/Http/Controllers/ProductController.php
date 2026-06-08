@@ -43,12 +43,22 @@ class ProductController extends Controller
             ->values()
             ->all();
 
+        $userProductPurchaseCounts = \App\Models\UserProduct::query()
+            ->where('user_id', $request->user()->id)
+            ->whereIn('status', ['active', 'expired'])
+            ->selectRaw('product_id, COUNT(*) as total')
+            ->groupBy('product_id')
+            ->pluck('total', 'product_id')
+            ->map(fn($value) => (int) $value)
+            ->all();
+
         return view('products.index', [
             'user' => $user,
             'products' => $products,
             'rechargeBalance' => $rechargeWallet?->balance ?? 0,
             'activeUserProducts' => $activeUserProducts,
             'ownedProductIdsForUpgradeBonus' => $ownedProductIdsForUpgradeBonus,
+            'userProductPurchaseCounts' => $userProductPurchaseCounts,
         ]);
     }
 

@@ -301,6 +301,7 @@ return [
     'weekly_salary_claim' => 'Weekly Salary Claim',
     'weekly_salary_status_updated' => 'Weekly salary status updated',
     'whatsapp' => 'WhatsApp',
+    'zalo' => 'Zalo',
     'withdraw' => 'Withdraw',
     'withdraw_approved' => 'Withdraw approved',
     'withdraw_rejected' => 'Withdraw rejected',
@@ -415,4 +416,6 @@ return [
     'total_unused_recharge_balance' => 'Total unused recharge balance',
     'withdrawable_wallet_balance' => 'Withdrawable Wallet Balance',
     'total_user_claimable_balance' => 'Total user claimable balance',
+    'max_purchase_per_user' => 'Max Purchase Per User',
+    'max_purchase_per_user_help' => 'Maximum times one user can purchase this product. Default is 2.',
 ];

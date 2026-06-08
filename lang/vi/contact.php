@@ -14,6 +14,7 @@ return [
 
     'types' => [
         'whatsapp' => 'WhatsApp',
+        'zalo' => 'Zalo',
         'telegram' => 'Telegram',
         'email' => 'Email',
         'phone' => 'Điện thoại',

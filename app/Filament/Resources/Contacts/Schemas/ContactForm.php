@@ -33,6 +33,7 @@ class ContactForm
                                     ->options([
                                         Contact::TYPE_WHATSAPP => __('filament.whatsapp'),
                                         Contact::TYPE_TELEGRAM => __('filament.telegram'),
+                                        Contact::TYPE_ZALO => __('filament.zalo'),
                                         Contact::TYPE_EMAIL => __('filament.email'),
                                         Contact::TYPE_PHONE => __('filament.phone'),
                                         Contact::TYPE_LINK => __('filament.link'),

@@ -20,6 +20,7 @@ class Product extends Model
         'duration_days',
         'upgrade_bonus',
         'invite_bonus',
+        'max_purchase_per_user',
         'status',
         'sort_order',
         'meta',
@@ -34,6 +35,7 @@ class Product extends Model
             'invite_bonus' => 'decimal:2',
             'duration_days' => 'integer',
             'sort_order' => 'integer',
+            'max_purchase_per_user' => 'integer',
             'meta' => 'array',
         ];
     }
@@ -51,6 +53,11 @@ class Product extends Model
     public function commissionRecords(): HasMany
     {
         return $this->hasMany(CommissionRecord::class);
+    }
+
+    public function maxPurchasePerUser(): int
+    {
+        return max(1, (int) ($this->max_purchase_per_user ?: 2));
     }
 
     public function isActive(): bool
