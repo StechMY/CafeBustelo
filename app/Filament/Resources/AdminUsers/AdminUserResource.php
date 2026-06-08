@@ -26,10 +26,10 @@ class AdminUserResource extends Resource
 
     protected static ?int $navigationSort = 90;
     
-    public static function canAccess(): bool
-    {
-        return auth('admin')->user()?->hasRole('super_admin') ?? false;
-    }
+    // public static function canAccess(): bool
+    // {
+    //     return auth('admin')->user()?->hasRole('super_admin') ?? false;
+    // }
 
     public static function getNavigationGroup(): string|UnitEnum|null
     {
