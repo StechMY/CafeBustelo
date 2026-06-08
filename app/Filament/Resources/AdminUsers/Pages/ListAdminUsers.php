@@ -14,7 +14,6 @@ class ListAdminUsers extends ListRecords
     {
         return [
             CreateAction::make()
-                ->visible(fn (): bool => auth('admin')->user()?->hasRole('super_admin') ?? false),
         ];
     }
 }
