@@ -37,7 +37,7 @@ class RechargeRequestsTable
 
                 TextColumn::make('amount')
                     ->label(__('filament.amount'))
-                    ->prefix(config('app.currency')." ")
+                    ->prefix(config('app.currency') . " ")
                     ->sortable(),
 
                 TextColumn::make('status')
@@ -57,7 +57,28 @@ class RechargeRequestsTable
                     ->copyable()
                     ->placeholder('-'),
 
-                ImageColumn::make('receipt_path')->disk('do_spaces')->url(fn ($record): ?string => $record?->receipt_url)
+                TextColumn::make('payment_method_name')
+                    ->label(__('filament.recharge_method'))
+                    ->searchable()
+                    ->toggleable(),
+
+                TextColumn::make('payment_bank_name')
+                    ->label(__('filament.bank_name'))
+                    ->searchable()
+                    ->toggleable(),
+
+                TextColumn::make('payment_account_name')
+                    ->label(__('filament.account_name'))
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+
+                TextColumn::make('payment_account_no')
+                    ->label(__('filament.account_no'))
+                    ->searchable()
+                    ->copyable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+
+                ImageColumn::make('receipt_path')->disk('do_spaces')->url(fn($record): ?string => $record?->receipt_url)
                     ->label(__('filament.receipt_path'))
                     ->openUrlInNewTab(),
 

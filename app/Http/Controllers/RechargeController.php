@@ -2,11 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\RechargeMethod;
 use App\Models\RechargeRequest;
 use App\Models\Wallet;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class RechargeController extends Controller
@@ -34,8 +35,15 @@ class RechargeController extends Controller
 
     public function create(Request $request): View
     {
+        $rechargeMethods = RechargeMethod::query()
+            ->where('status', RechargeMethod::STATUS_ACTIVE)
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->get();
+
         return view('recharge.create', [
             'user' => $request->user(),
+            'rechargeMethods' => $rechargeMethods,
         ]);
     }
 
@@ -43,7 +51,11 @@ class RechargeController extends Controller
     {
         $data = $request->validate([
             'amount' => ['required', 'numeric', 'min:1', 'max:99999999'],
-            'bank_name' => ['nullable', 'string', 'max:100'],
+            'recharge_method_id' => [
+                'required',
+                'integer',
+                Rule::exists('recharge_methods', 'id')->where('status', RechargeMethod::STATUS_ACTIVE),
+            ],
             'reference_no' => ['nullable', 'string', 'max:100'],
             'receipt' => [
                 'required',
@@ -53,18 +65,35 @@ class RechargeController extends Controller
             ],
         ]);
 
+        $rechargeMethod = RechargeMethod::query()
+            ->whereKey($data['recharge_method_id'])
+            ->where('status', RechargeMethod::STATUS_ACTIVE)
+            ->firstOrFail();
+
+        $receiptDisk = 'do_spaces';
+
         $receiptPath = $request->file('receipt')
-            ->storePublicly('recharge-receipts/' . now()->format('Y/m'), 'do_spaces');
+            ->storePublicly('recharge-receipts/' . now()->format('Y/m'), $receiptDisk);
 
         $rechargeRequest = RechargeRequest::query()->create([
             'user_id' => $request->user()->id,
+            'recharge_method_id' => $rechargeMethod->id,
+
             'amount' => $data['amount'],
             'receipt_path' => $receiptPath,
-            'receipt_disk' => 'do_spaces',
-            'bank_name' => $data['bank_name'] ?? null,
+            'receipt_disk' => $receiptDisk,
+
+            // snapshot admin payment info
+            'payment_method_name' => $rechargeMethod->name,
+            'payment_bank_name' => $rechargeMethod->bank_name,
+            'payment_account_name' => $rechargeMethod->account_name,
+            'payment_account_no' => $rechargeMethod->account_no,
+
+            // backward compatibility with existing admin screens
+            'bank_name' => $rechargeMethod->bank_name,
+
             'reference_no' => $data['reference_no'] ?? null,
             'status' => 'pending',
-            'submitted_at' => now(),
         ]);
 
         return redirect()

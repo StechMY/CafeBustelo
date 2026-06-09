@@ -26,4 +26,12 @@ return [
     'admin_remark' => 'Admin Remark',
     'view_receipt' => 'View Receipt',
     'back_to_recharge' => 'Back to Recharge',
+    'select_recharge_method' => 'Select Recharge Method',
+    'payment_method' => 'Payment Method',
+    'payment_information' => 'Payment Information',
+    'scan_qr_to_pay' => 'Scan QR to Pay',
+    'account_name' => 'Account Name',
+    'account_no' => 'Account No.',
+    'no_qr_image' => 'No QR image available',
+    'no_recharge_method_available' => 'No recharge method is available now. Please contact customer service.',
 ];

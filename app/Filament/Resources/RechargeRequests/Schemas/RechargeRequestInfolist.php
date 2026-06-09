@@ -56,9 +56,9 @@ class RechargeRequestInfolist
                     ->schema([
                         Grid::make(2)
                             ->schema([
-                                TextEntry::make('bank_name')
-                                    ->label(__('filament.bank_name'))
-                                    ->placeholder('-'),
+                                // TextEntry::make('bank_name')
+                                //     ->label(__('filament.bank_name'))
+                                //     ->placeholder('-'),
 
                                 TextEntry::make('reference_no')
                                     ->label(__('filament.reference_no'))
@@ -66,6 +66,35 @@ class RechargeRequestInfolist
                                     ->placeholder('-'),
                             ]),
                     ]),
+
+                Section::make(__('filament.payment_information'))
+                    ->schema([
+                        Grid::make(2)
+                            ->schema([
+                                TextEntry::make('payment_method_name')
+                                    ->label(__('filament.recharge_method'))
+                                    ->placeholder('-'),
+
+                                TextEntry::make('payment_bank_name')
+                                    ->label(__('filament.bank_name'))
+                                    ->placeholder('-'),
+
+                                TextEntry::make('payment_account_name')
+                                    ->label(__('filament.account_name'))
+                                    ->placeholder('-'),
+
+                                TextEntry::make('payment_account_no')
+                                    ->label(__('filament.account_no'))
+                                    ->copyable()
+                                    ->placeholder('-'),
+
+                                TextEntry::make('reference_no')
+                                    ->label(__('filament.reference_no'))
+                                    ->copyable()
+                                    ->placeholder('-'),
+                            ]),
+                    ])
+                    ->columnSpanFull(),
 
                 Section::make(__('filament.receipt'))
                     ->columnSpanFull()

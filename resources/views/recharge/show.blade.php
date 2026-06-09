@@ -20,7 +20,8 @@
                     </p>
                 </div>
 
-                <span class="rounded-full px-3 py-1 text-xs font-black uppercase
+                <span
+                      class="rounded-full px-3 py-1 text-xs font-black uppercase
                     @class([
                         'bg-yellow-100 text-yellow-700' => $rechargeRequest->status === 'pending',
                         'bg-green-100 text-green-700' => $rechargeRequest->status === 'approved',
@@ -31,12 +32,45 @@
             </div>
 
             <div class="grid gap-3">
-                <div class="rounded-2xl bg-[#fff8c7] p-4">
-                    <div class="text-xs font-black uppercase text-[#003b7a]/60">
-                        {{ __('recharge.bank_name') }}
+                <div class="grid gap-3 sm:grid-cols-2">
+                    <div class="rounded-2xl bg-[#fff8c7] p-4">
+                        <div class="text-xs font-black uppercase text-[#003b7a]/60">
+                            {{ __('recharge.payment_method') }}
+                        </div>
+
+                        <div class="mt-1 font-black text-[#003b7a]">
+                            {{ $rechargeRequest->payment_method_name ?: '-' }}
+                        </div>
                     </div>
-                    <div class="mt-1 font-black text-[#003b7a]">
-                        {{ $rechargeRequest->bank_name ?: '-' }}
+
+                    <div class="rounded-2xl bg-[#fff8c7] p-4">
+                        <div class="text-xs font-black uppercase text-[#003b7a]/60">
+                            {{ __('recharge.bank_name') }}
+                        </div>
+
+                        <div class="mt-1 font-black text-[#003b7a]">
+                            {{ $rechargeRequest->payment_bank_name ?: $rechargeRequest->bank_name ?: '-' }}
+                        </div>
+                    </div>
+
+                    <div class="rounded-2xl bg-[#fff8c7] p-4">
+                        <div class="text-xs font-black uppercase text-[#003b7a]/60">
+                            {{ __('recharge.account_name') }}
+                        </div>
+
+                        <div class="mt-1 font-black text-[#003b7a]">
+                            {{ $rechargeRequest->payment_account_name ?: '-' }}
+                        </div>
+                    </div>
+
+                    <div class="rounded-2xl bg-[#fff8c7] p-4">
+                        <div class="text-xs font-black uppercase text-[#003b7a]/60">
+                            {{ __('recharge.account_no') }}
+                        </div>
+
+                        <div class="mt-1 break-all font-black text-[#003b7a]">
+                            {{ $rechargeRequest->payment_account_no ?: '-' }}
+                        </div>
                     </div>
                 </div>
 
@@ -44,10 +78,12 @@
                     <div class="text-xs font-black uppercase text-[#003b7a]/60">
                         {{ __('recharge.reference_no') }}
                     </div>
+
                     <div class="mt-1 font-black text-[#003b7a]">
                         {{ $rechargeRequest->reference_no ?: '-' }}
                     </div>
                 </div>
+
 
                 @if ($rechargeRequest->admin_remark)
                     <div class="rounded-2xl bg-red-50 p-4">

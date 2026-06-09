@@ -26,4 +26,12 @@ return [
     'admin_remark' => 'Catatan Admin',
     'view_receipt' => 'Lihat Bukti Transfer',
     'back_to_recharge' => 'Kembali ke Isi Saldo',
+    'select_recharge_method' => 'Pilih Metode Deposit',
+    'payment_method' => 'Metode Deposit',
+    'payment_information' => 'Informasi Pembayaran',
+    'scan_qr_to_pay' => 'Pindai QR untuk Membayar',
+    'account_name' => 'Nama Rekening',
+    'account_no' => 'Nomor Rekening',
+    'no_qr_image' => 'Gambar QR belum tersedia',
+    'no_recharge_method_available' => 'Tidak ada metode deposit yang tersedia saat ini. Silakan hubungi layanan pelanggan.',
 ];

@@ -26,4 +26,12 @@ return [
     'admin_remark' => 'Ghi chú quản trị viên',
     'view_receipt' => 'Xem biên lai',
     'back_to_recharge' => 'Quay lại nạp tiền',
+    'select_recharge_method' => 'Chọn phương thức nạp tiền',
+    'payment_method' => 'Phương thức nạp tiền',
+    'payment_information' => 'Thông tin thanh toán',
+    'scan_qr_to_pay' => 'Quét QR để thanh toán',
+    'account_name' => 'Tên tài khoản',
+    'account_no' => 'Số tài khoản',
+    'no_qr_image' => 'Chưa có hình QR',
+    'no_recharge_method_available' => 'Hiện không có phương thức nạp tiền khả dụng. Vui lòng liên hệ CSKH.',
 ];

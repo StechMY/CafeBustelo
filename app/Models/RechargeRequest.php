@@ -10,11 +10,23 @@ class RechargeRequest extends Model
 {
     protected $fillable = [
         'user_id',
+        'recharge_method_id',
+
         'amount',
         'receipt_path',
+        'receipt_disk',
+
+        'payment_method_name',
+        'payment_bank_name',
+        'payment_account_name',
+        'payment_account_no',
+
+        // keep these for backward compatibility
         'bank_name',
         'reference_no',
+
         'status',
+        'submitted_at',
         'reviewed_by',
         'reviewed_at',
         'admin_remark',
@@ -24,6 +36,7 @@ class RechargeRequest extends Model
     {
         return [
             'amount' => 'decimal:2',
+            'submitted_at' => 'datetime',
             'reviewed_at' => 'datetime',
         ];
     }
@@ -33,6 +46,11 @@ class RechargeRequest extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function rechargeMethod(): BelongsTo
+    {
+        return $this->belongsTo(RechargeMethod::class);
+    }
+
     public function reviewer(): BelongsTo
     {
         return $this->belongsTo(AdminUser::class, 'reviewed_by');
@@ -40,7 +58,7 @@ class RechargeRequest extends Model
 
     public function getReceiptUrlAttribute(): ?string
     {
-        if (!$this->receipt_path) {
+        if (! $this->receipt_path) {
             return null;
         }
 

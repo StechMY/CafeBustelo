@@ -26,4 +26,12 @@ return [
     'admin_remark' => '管理员备注',
     'view_receipt' => '查看收据',
     'back_to_recharge' => '返回充值',
+    'select_recharge_method' => '选择充值方式',
+    'payment_method' => '充值方式',
+    'payment_information' => '付款资料',
+    'scan_qr_to_pay' => '扫码付款',
+    'account_name' => '账户名称',
+    'account_no' => '账户号码',
+    'no_qr_image' => '暂无二维码图片',
+    'no_recharge_method_available' => '当前暂无可用充值方式，请联系客服。',
 ];
