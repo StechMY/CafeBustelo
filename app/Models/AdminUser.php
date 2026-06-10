@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Filament\Models\Contracts\HasName;
@@ -24,6 +25,7 @@ class AdminUser extends Authenticatable implements FilamentUser, HasName
         'username',
         'password',
         'role',
+        'managed_user_id',
         'status',
         'last_login_at',
         'last_login_ip',
@@ -51,8 +53,52 @@ class AdminUser extends Authenticatable implements FilamentUser, HasName
     {
         return $this->status === 'active';
     }
+
     public function isSuperAdmin(): bool
     {
         return $this->hasRole('super_admin');
+    }
+
+    public function isSupport(): bool
+    {
+        return $this->hasRole('Support') || $this->hasRole('support');
+    }
+
+    public function managedUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'managed_user_id');
+    }
+
+    public function hasDownlineRestriction(): bool
+    {
+        return $this->isSupport() && filled($this->managed_user_id);
+    }
+
+    public function managedDownlineUserIds(?int $maxDepth = null): array
+    {
+        if (! $this->hasDownlineRestriction()) {
+            return [];
+        }
+
+        $managedUser = $this->managedUser;
+
+        if (! $managedUser) {
+            return [];
+        }
+
+        return $managedUser
+            ->allDownlineUsers($maxDepth)
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+    }
+
+    public function canAccessUserRecord(User $user): bool
+    {
+        if (! $this->hasDownlineRestriction()) {
+            return true;
+        }
+
+        return in_array((int) $user->id, $this->managedDownlineUserIds(), true);
     }
 }

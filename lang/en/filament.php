@@ -428,4 +428,13 @@ return [
     'payment_information' => 'Payment Information',
     'request_information' => 'Request Information',
     'review_information' => 'Review Information',
+    'managed_referral_user' => 'Managed Referral User',
+    'managed_referral_user_help' => 'For Support role only. This admin will only see users under the selected user referral tree.',
+    'create_user_access' => 'Create / Link User Access',
+    'create_user_access_desc' => 'The system will check whether a frontend user with the same username exists. If yes, it will link it. If not, it will create a new frontend user account.',
+    'user_password' => 'User Password',
+    'leave_blank_to_generate_password' => 'Leave blank to generate a secure temporary password automatically.',
+    'user_access_created_and_linked' => 'User access created and linked successfully.',
+    'existing_user_access_linked' => 'Existing user account linked successfully.',
+    'temporary_user_password' => 'Temporary user password',
 ];

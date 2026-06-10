@@ -24,50 +24,51 @@ class PlatformUserStats extends StatsOverviewWidget
 
     protected ?string $pollingInterval = null;
 
-    protected int | string | array $columnSpan = 'full';
+    protected int|string|array $columnSpan = 'full';
 
     protected function getStats(): array
     {
         $filters = $this->pageFilters;
 
         $newUsers = User::query()
-            ->tap(fn (Builder $query) => PlatformDashboardQuery::applyDateRange($query, $filters, 'created_at'))
-            ->tap(fn (Builder $query) => PlatformDashboardQuery::applyDirectUserVirtualFilter($query, $filters))
+            ->tap(fn(Builder $query) => PlatformDashboardQuery::applyDateRange($query, $filters, 'created_at'))
+            ->tap(fn(Builder $query) => PlatformDashboardQuery::applyDirectUserVirtualFilter($query, $filters))
             ->count();
 
         $activeUsers = User::query()
             ->where('status', 'active')
-            ->tap(fn (Builder $query) => PlatformDashboardQuery::applyDirectUserVirtualFilter($query, $filters))
+            ->tap(fn(Builder $query) => PlatformDashboardQuery::applyDirectUserVirtualFilter($query, $filters))
             ->count();
 
         $inactiveUsers = User::query()
             ->where('status', 'inactive')
-            ->tap(fn (Builder $query) => PlatformDashboardQuery::applyDirectUserVirtualFilter($query, $filters))
+            ->tap(fn(Builder $query) => PlatformDashboardQuery::applyDirectUserVirtualFilter($query, $filters))
             ->count();
 
         $virtualUsers = User::query()
             ->where('is_virtual', true)
+            ->tap(fn(Builder $query) => PlatformDashboardQuery::applyDirectUserSupportScope($query))
             ->count();
 
         $activeUserProducts = UserProduct::query()
             ->where('status', 'active')
-            ->tap(fn (Builder $query) => PlatformDashboardQuery::applyUserVirtualFilter($query, $filters))
+            ->tap(fn(Builder $query) => PlatformDashboardQuery::applyUserVirtualFilter($query, $filters))
             ->count();
 
         $expiredUserProducts = UserProduct::query()
             ->where('status', 'expired')
-            ->tap(fn (Builder $query) => PlatformDashboardQuery::applyDateRange($query, $filters, 'expires_at'))
-            ->tap(fn (Builder $query) => PlatformDashboardQuery::applyUserVirtualFilter($query, $filters))
+            ->tap(fn(Builder $query) => PlatformDashboardQuery::applyDateRange($query, $filters, 'expires_at'))
+            ->tap(fn(Builder $query) => PlatformDashboardQuery::applyUserVirtualFilter($query, $filters))
             ->count();
 
         $rechargeWalletBalance = Wallet::query()
             ->where('type', 'recharge')
-            ->tap(fn (Builder $query) => PlatformDashboardQuery::applyUserVirtualFilter($query, $filters))
+            ->tap(fn(Builder $query) => PlatformDashboardQuery::applyUserVirtualFilter($query, $filters))
             ->sum('balance');
 
         $withdrawableWalletBalance = Wallet::query()
             ->where('type', 'withdrawable')
-            ->tap(fn (Builder $query) => PlatformDashboardQuery::applyUserVirtualFilter($query, $filters))
+            ->tap(fn(Builder $query) => PlatformDashboardQuery::applyUserVirtualFilter($query, $filters))
             ->sum('balance');
 
         return [

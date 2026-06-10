@@ -5,6 +5,7 @@ namespace App\Filament\Resources\BonusCodes\Pages;
 use App\Filament\Resources\BonusCodes\BonusCodeResource;
 use App\Models\BonusCode;
 use App\Services\BonusCodeService;
+use App\Support\FilamentSupportScope;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\Textarea;
@@ -16,17 +17,29 @@ class ViewBonusCode extends ViewRecord
 {
     protected static string $resource = BonusCodeResource::class;
 
+    protected function authorizeAccess(): void
+    {
+        parent::authorizeAccess();
+
+        abort_unless(
+            FilamentSupportScope::canAccessBonusCode($this->record),
+            403
+        );
+    }
+
     protected function getHeaderActions(): array
     {
         return [
             EditAction::make()
-                ->visible(fn (BonusCode $record): bool => ! $record->isUsed()),
+                ->visible(fn(BonusCode $record): bool => !$record->isUsed()
+                    && FilamentSupportScope::canAccessBonusCode($record)),
 
             Action::make('cancel')
                 ->label(__('filament.cancel'))
                 ->icon('heroicon-o-x-circle')
                 ->color('danger')
-                ->visible(fn (BonusCode $record): bool => $record->status === BonusCode::STATUS_UNUSED)
+                ->visible(fn(BonusCode $record): bool => $record->status === BonusCode::STATUS_UNUSED
+                    && FilamentSupportScope::canAccessBonusCode($record))
                 ->form([
                     Textarea::make('remark')
                         ->label(__('filament.cancel_remark'))

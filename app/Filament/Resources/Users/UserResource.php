@@ -18,6 +18,7 @@ use App\Filament\Resources\Users\Schemas\UserForm;
 use App\Filament\Resources\Users\Schemas\UserInfolist;
 use App\Filament\Resources\Users\Tables\UsersTable;
 use App\Models\User;
+use App\Support\FilamentSupportScope;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
@@ -87,12 +88,21 @@ class UserResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        return (string) User::query()->count();
+        return (string) FilamentSupportScope::applyToUsersQuery(
+            User::query()
+        )->count();
     }
 
     public static function getNavigationBadgeColor(): string|array|null
     {
         return 'info';
+    }
+
+    public static function getGlobalSearchEloquentQuery(): Builder
+    {
+        return FilamentSupportScope::applyToUsersQuery(
+            parent::getGlobalSearchEloquentQuery()
+        );
     }
 
     public static function getGloballySearchableAttributes(): array
@@ -115,6 +125,13 @@ class UserResource extends Resource
             __('filament.referral_code') => $record->referral_code ?: '-',
             __('filament.last_ip') => $record->last_login_ip ?: '-',
         ];
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return FilamentSupportScope::applyToUsersQuery(
+            parent::getEloquentQuery()
+        );
     }
 
     public static function getPages(): array

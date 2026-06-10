@@ -6,6 +6,7 @@ use App\Filament\Resources\Users\UserResource;
 use App\Models\User;
 use App\Models\Wallet;
 use App\Services\AdminTopUpService;
+use App\Support\FilamentSupportScope;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
 use Filament\Facades\Filament;
@@ -19,6 +20,14 @@ use Throwable;
 class ViewUser extends ViewRecord
 {
     protected static string $resource = UserResource::class;
+
+
+    protected function authorizeAccess(): void
+    {
+        parent::authorizeAccess();
+
+        abort_unless(FilamentSupportScope::canAccessUser($this->record), 403);
+    }
 
     protected function getHeaderActions(): array
     {
@@ -94,4 +103,5 @@ class ViewUser extends ViewRecord
                 ]))
         ];
     }
+
 }

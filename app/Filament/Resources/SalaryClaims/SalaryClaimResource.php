@@ -7,11 +7,13 @@ use App\Filament\Resources\SalaryClaims\Pages\ViewSalaryClaim;
 use App\Filament\Resources\SalaryClaims\Schemas\SalaryClaimInfolist;
 use App\Filament\Resources\SalaryClaims\Tables\SalaryClaimsTable;
 use App\Models\SalaryClaim;
+use App\Support\FilamentSupportScope;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use UnitEnum;
 
 class SalaryClaimResource extends Resource
@@ -40,6 +42,22 @@ class SalaryClaimResource extends Resource
     public static function getPluralModelLabel(): string
     {
         return __('filament.salary_claims');
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return FilamentSupportScope::applyToUserOwnedQuery(
+            parent::getEloquentQuery(),
+            'user_id'
+        );
+    }
+
+    public static function getGlobalSearchEloquentQuery(): Builder
+    {
+        return FilamentSupportScope::applyToUserOwnedQuery(
+            parent::getGlobalSearchEloquentQuery(),
+            'user_id'
+        );
     }
 
     public static function infolist(Schema $schema): Schema

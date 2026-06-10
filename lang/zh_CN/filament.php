@@ -428,4 +428,13 @@ return [
     'payment_information' => '付款资料',
     'request_information' => '申请资料',
     'review_information' => '审核资料',
+    'managed_referral_user' => '绑定推广用户',
+    'managed_referral_user_help' => '仅用于 Support 角色。此管理员只能查看该用户推广团队下的用户资料。',
+    'create_user_access' => '创建 / 绑定用户入口',
+    'create_user_access_desc' => '系统会检查是否存在相同用户名的前台用户。如已存在则直接绑定；如不存在则自动创建前台用户账户。',
+    'user_password' => '用户密码',
+    'leave_blank_to_generate_password' => '留空则系统自动生成安全临时密码。',
+    'user_access_created_and_linked' => '用户入口已创建并绑定成功。',
+    'existing_user_access_linked' => '已绑定现有用户账户。',
+    'temporary_user_password' => '临时用户密码',
 ];

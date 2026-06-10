@@ -3,12 +3,23 @@
 namespace App\Filament\Resources\BonusCodes\Pages;
 
 use App\Filament\Resources\BonusCodes\BonusCodeResource;
+use App\Support\FilamentSupportScope;
 use Filament\Actions\ViewAction;
 use Filament\Resources\Pages\EditRecord;
 
 class EditBonusCode extends EditRecord
 {
     protected static string $resource = BonusCodeResource::class;
+
+    protected function authorizeAccess(): void
+    {
+        parent::authorizeAccess();
+
+        abort_unless(
+            FilamentSupportScope::canAccessBonusCode($this->record),
+            403
+        );
+    }
 
     protected function mutateFormDataBeforeSave(array $data): array
     {

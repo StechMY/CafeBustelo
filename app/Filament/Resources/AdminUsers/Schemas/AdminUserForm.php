@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\AdminUsers\Schemas;
 
 use App\Models\AdminUser;
+use App\Models\User;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Grid;
@@ -59,6 +60,38 @@ class AdminUserForm
                                     ->preload()
                                     ->native(false)
                                     ->required(),
+
+                                Select::make('managed_user_id')
+                                    ->label(__('filament.managed_referral_user'))
+                                    ->options(fn(): array => User::query()
+                                        ->orderBy('username')
+                                        ->limit(50)
+                                        ->get()
+                                        ->mapWithKeys(fn(User $user) => [
+                                            $user->id => "{$user->username} ({$user->referral_code})",
+                                        ])
+                                        ->all())
+                                    ->searchable()
+                                    ->getSearchResultsUsing(fn(string $search): array => User::query()
+                                        ->where(function ($query) use ($search): void {
+                                            $query
+                                                ->where('username', 'like', "%{$search}%")
+                                                ->orWhere('name', 'like', "%{$search}%")
+                                                ->orWhere('phone', 'like', "%{$search}%")
+                                                ->orWhere('referral_code', 'like', "%{$search}%");
+                                        })
+                                        ->limit(50)
+                                        ->get()
+                                        ->mapWithKeys(fn(User $user) => [
+                                            $user->id => "{$user->username} ({$user->referral_code})",
+                                        ])
+                                        ->all())
+                                    ->getOptionLabelUsing(fn($value): ?string => User::query()
+                                        ->whereKey($value)
+                                        ->first()
+                                            ?->username)
+                                    ->native(false)
+                                    ->helperText(__('filament.managed_referral_user_help')),
                             ]),
                     ]),
 

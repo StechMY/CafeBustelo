@@ -5,6 +5,7 @@ namespace App\Filament\Resources\WithdrawRequests\Pages;
 use App\Filament\Resources\WithdrawRequests\WithdrawRequestResource;
 use App\Models\WithdrawRequest;
 use App\Services\WithdrawService;
+use App\Support\FilamentSupportScope;
 use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
 use Filament\Facades\Filament;
@@ -17,6 +18,16 @@ class ViewWithdrawRequest extends ViewRecord
 {
     protected static string $resource = WithdrawRequestResource::class;
 
+    protected function authorizeAccess(): void
+    {
+        parent::authorizeAccess();
+
+        abort_unless(
+            FilamentSupportScope::canAccessUserId($this->record->user_id),
+            403
+        );
+    }
+
     protected function getHeaderActions(): array
     {
         return [
@@ -24,7 +35,7 @@ class ViewWithdrawRequest extends ViewRecord
                 ->label(__('filament.approve'))
                 ->icon('heroicon-o-check-circle')
                 ->color('success')
-                ->visible(fn (WithdrawRequest $record): bool => $record->status === 'pending')
+                ->visible(fn(WithdrawRequest $record): bool => $record->status === 'pending')
                 ->form([
                     Textarea::make('admin_remark')
                         ->label(__('filament.admin_remark'))
@@ -62,7 +73,7 @@ class ViewWithdrawRequest extends ViewRecord
                 ->label(__('filament.reject'))
                 ->icon('heroicon-o-x-circle')
                 ->color('danger')
-                ->visible(fn (WithdrawRequest $record): bool => $record->status === 'pending')
+                ->visible(fn(WithdrawRequest $record): bool => $record->status === 'pending')
                 ->form([
                     Textarea::make('admin_remark')
                         ->label(__('filament.reject_reason'))
@@ -98,7 +109,7 @@ class ViewWithdrawRequest extends ViewRecord
                 }),
 
             DeleteAction::make()
-                ->visible(fn (WithdrawRequest $record): bool => $record->status !== 'approved')
+                ->visible(fn(WithdrawRequest $record): bool => $record->status !== 'approved')
                 ->requiresConfirmation()
                 ->successNotificationTitle(__('filament.withdraw_request_deleted'))
                 ->after(function (): void {

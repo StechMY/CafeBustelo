@@ -16,6 +16,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Throwable;
+use App\Support\FilamentSupportScope;
 
 class BonusCodesTable
 {
@@ -43,7 +44,7 @@ class BonusCodesTable
                 TextColumn::make('type')
                     ->label(__('filament.type'))
                     ->badge()
-                    ->color(fn (?string $state): string => match ($state) {
+                    ->color(fn(?string $state): string => match ($state) {
                         'admin' => 'warning',
                         'invite' => 'info',
                         'upgrade' => 'success',
@@ -54,13 +55,13 @@ class BonusCodesTable
 
                 TextColumn::make('amount')
                     ->label(__('filament.amount'))
-                    ->prefix(config('app.currency')." ")
+                    ->prefix(config('app.currency') . " ")
                     ->sortable(),
 
                 TextColumn::make('status')
                     ->label(__('filament.status'))
                     ->badge()
-                    ->color(fn (?string $state): string => match ($state) {
+                    ->color(fn(?string $state): string => match ($state) {
                         'unused' => 'warning',
                         'used' => 'success',
                         'cancelled' => 'danger',
@@ -121,13 +122,15 @@ class BonusCodesTable
                 ViewAction::make(),
 
                 EditAction::make()
-                    ->visible(fn (BonusCode $record): bool => ! $record->isUsed()),
+                    ->visible(fn(BonusCode $record): bool => !$record->isUsed()
+                        && FilamentSupportScope::canAccessBonusCode($record)),
 
                 Action::make('cancel')
                     ->label(__('filament.cancel'))
                     ->icon('heroicon-o-x-circle')
                     ->color('danger')
-                    ->visible(fn (BonusCode $record): bool => $record->status === BonusCode::STATUS_UNUSED)
+                    ->visible(fn(BonusCode $record): bool => $record->status === BonusCode::STATUS_UNUSED
+                        && FilamentSupportScope::canAccessBonusCode($record))
                     ->form([
                         Textarea::make('remark')
                             ->label(__('filament.cancel_remark'))
@@ -157,14 +160,16 @@ class BonusCodesTable
                     }),
 
                 DeleteAction::make()
-                    ->visible(fn (BonusCode $record): bool => ! $record->isUsed()),
+                    ->visible(fn(BonusCode $record): bool => !$record->isUsed()
+                        && FilamentSupportScope::canAccessBonusCode($record)),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
                     DeleteBulkAction::make()
                         ->action(function ($records): void {
                             $records
-                                ->filter(fn (BonusCode $record): bool => ! $record->isUsed())
+                                ->filter(fn(BonusCode $record): bool => !$record->isUsed()
+                                    && FilamentSupportScope::canAccessBonusCode($record))
                                 ->each
                                 ->delete();
                         }),

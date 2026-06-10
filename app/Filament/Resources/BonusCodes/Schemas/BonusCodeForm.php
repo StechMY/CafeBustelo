@@ -13,6 +13,8 @@ use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use App\Support\FilamentSupportScope;
+use Illuminate\Database\Eloquent\Builder;
 
 class BonusCodeForm
 {
@@ -29,6 +31,7 @@ class BonusCodeForm
                                     ->multiple()
                                     ->options(function (): array {
                                         return User::query()
+                                            ->tap(fn(Builder $query) => FilamentSupportScope::applyToUsersQuery($query))
                                             ->orderBy('username')
                                             ->limit(200)
                                             ->get()
@@ -42,7 +45,7 @@ class BonusCodeForm
                                     ->searchable()
                                     ->required()
                                     ->dehydrated(false)
-                                    ->visible(fn (string $operation): bool => $operation === 'create')
+                                    ->visible(fn(string $operation): bool => $operation === 'create')
                                     ->helperText(__('filament.select_one_or_more_users_the_system_will_generate_one_bonus_code_for_e')),
 
                                 Select::make('owner_user_id')
@@ -50,14 +53,16 @@ class BonusCodeForm
                                     ->relationship(
                                         name: 'owner',
                                         titleAttribute: 'username',
-                                        modifyQueryUsing: fn ($query) => $query->orderBy('username'),
+                                        modifyQueryUsing: fn(Builder $query): Builder => FilamentSupportScope::applyToUsersQuery(
+                                            $query->orderBy('username')
+                                        ),
                                     )
-                                    ->getOptionLabelFromRecordUsing(fn (User $record): string => "{$record->username} - {$record->name}")
+                                    ->getOptionLabelFromRecordUsing(fn(User $record): string => "{$record->username} - {$record->name}")
                                     ->searchable(['username', 'name', 'phone', 'referral_code'])
                                     ->preload()
                                     ->required()
-                                    ->visible(fn (string $operation): bool => $operation === 'edit')
-                                    ->disabled(fn (?BonusCode $record): bool => $record?->isUsed() ?? false),
+                                    ->visible(fn(string $operation): bool => $operation === 'edit')
+                                    ->disabled(fn(?BonusCode $record): bool => $record?->isUsed() ?? false),
 
                                 Select::make('type')
                                     ->label(__('filament.type'))
@@ -70,7 +75,7 @@ class BonusCodeForm
                                         BonusCode::TYPE_COMPENSATION => __('filament.compensation'),
                                     ])
                                     ->native(false)
-                                    ->disabled(fn (?BonusCode $record): bool => $record?->isUsed() ?? false),
+                                    ->disabled(fn(?BonusCode $record): bool => $record?->isUsed() ?? false),
 
                                 TextInput::make('code')
                                     ->label(__('filament.code'))
@@ -78,8 +83,8 @@ class BonusCodeForm
                                     ->unique(ignoreRecord: true)
                                     ->placeholder(__('filament.leave_empty_to_auto_generate'))
                                     ->helperText(__('filament.for_multiple_users_leave_this_empty_each_user_needs_a_unique_code'))
-                                    ->dehydrateStateUsing(fn (?string $state): ?string => filled($state) ? strtoupper(trim($state)) : null)
-                                    ->disabled(fn (?BonusCode $record): bool => $record?->isUsed() ?? false),
+                                    ->dehydrateStateUsing(fn(?string $state): ?string => filled($state) ? strtoupper(trim($state)) : null)
+                                    ->disabled(fn(?BonusCode $record): bool => $record?->isUsed() ?? false),
 
                                 TextInput::make('amount')
                                     ->label(__('filament.amount'))
@@ -88,7 +93,7 @@ class BonusCodeForm
                                     ->numeric()
                                     ->minValue(0.01)
                                     ->step('0.01')
-                                    ->disabled(fn (?BonusCode $record): bool => $record?->isUsed() ?? false),
+                                    ->disabled(fn(?BonusCode $record): bool => $record?->isUsed() ?? false),
 
                                 Select::make('status')
                                     ->label(__('filament.status'))
@@ -101,13 +106,13 @@ class BonusCodeForm
                                         BonusCode::STATUS_EXPIRED => __('filament.expired'),
                                     ])
                                     ->native(false)
-                                    ->disabled(fn (?BonusCode $record): bool => $record?->isUsed() ?? false),
+                                    ->disabled(fn(?BonusCode $record): bool => $record?->isUsed() ?? false),
 
                                 DateTimePicker::make('expires_at')
                                     ->label(__('filament.expires_at'))
                                     ->seconds(false)
                                     ->nullable()
-                                    ->disabled(fn (?BonusCode $record): bool => $record?->isUsed() ?? false),
+                                    ->disabled(fn(?BonusCode $record): bool => $record?->isUsed() ?? false),
 
                                 Textarea::make('remark')
                                     ->label(__('filament.remark_reason'))

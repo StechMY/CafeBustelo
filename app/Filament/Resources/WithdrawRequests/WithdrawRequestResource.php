@@ -8,6 +8,7 @@ use App\Filament\Resources\WithdrawRequests\Schemas\WithdrawRequestForm;
 use App\Filament\Resources\WithdrawRequests\Schemas\WithdrawRequestInfolist;
 use App\Filament\Resources\WithdrawRequests\Tables\WithdrawRequestsTable;
 use App\Models\WithdrawRequest;
+use App\Support\FilamentSupportScope;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
@@ -24,6 +25,22 @@ class WithdrawRequestResource extends Resource
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBanknotes;
 
     protected static ?int $navigationSort = 20;
+
+    public static function getEloquentQuery(): Builder
+    {
+        return FilamentSupportScope::applyToUserOwnedQuery(
+            parent::getEloquentQuery(),
+            'user_id'
+        );
+    }
+
+    public static function getGlobalSearchEloquentQuery(): Builder
+    {
+        return FilamentSupportScope::applyToUserOwnedQuery(
+            parent::getGlobalSearchEloquentQuery(),
+            'user_id'
+        );
+    }
 
     public static function getNavigationGroup(): string|UnitEnum|null
     {
@@ -62,7 +79,10 @@ class WithdrawRequestResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        return (string) WithdrawRequest::query()
+        return (string) FilamentSupportScope::applyToUserOwnedQuery(
+            WithdrawRequest::query(),
+            'user_id'
+        )
             ->where('status', 'pending')
             ->count();
     }

@@ -16,6 +16,8 @@ use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use UnitEnum;
+use App\Support\FilamentSupportScope;
+use Illuminate\Database\Eloquent\Builder;
 
 class RechargeRequestResource extends Resource
 {
@@ -24,6 +26,22 @@ class RechargeRequestResource extends Resource
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCreditCard;
 
     protected static ?int $navigationSort = 10;
+
+    public static function getEloquentQuery(): Builder
+    {
+        return FilamentSupportScope::applyToUserOwnedQuery(
+            parent::getEloquentQuery(),
+            'user_id'
+        );
+    }
+
+    public static function getGlobalSearchEloquentQuery(): Builder
+    {
+        return FilamentSupportScope::applyToUserOwnedQuery(
+            parent::getGlobalSearchEloquentQuery(),
+            'user_id'
+        );
+    }
 
     public static function getNavigationGroup(): string|UnitEnum|null
     {
@@ -62,7 +80,10 @@ class RechargeRequestResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        return (string) RechargeRequest::query()
+        return (string) FilamentSupportScope::applyToUserOwnedQuery(
+            RechargeRequest::query(),
+            'user_id'
+        )
             ->where('status', 'pending')
             ->count();
     }

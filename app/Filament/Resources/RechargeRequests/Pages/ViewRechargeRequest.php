@@ -5,6 +5,7 @@ namespace App\Filament\Resources\RechargeRequests\Pages;
 use App\Filament\Resources\RechargeRequests\RechargeRequestResource;
 use App\Models\RechargeRequest;
 use App\Services\RechargeApprovalService;
+use App\Support\FilamentSupportScope;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
 use Filament\Facades\Filament;
@@ -17,6 +18,16 @@ class ViewRechargeRequest extends ViewRecord
 {
     protected static string $resource = RechargeRequestResource::class;
 
+    protected function authorizeAccess(): void
+    {
+        parent::authorizeAccess();
+
+        abort_unless(
+            FilamentSupportScope::canAccessUserId($this->record->user_id),
+            403
+        );
+    }
+
     protected function getHeaderActions(): array
     {
         return [
@@ -26,7 +37,7 @@ class ViewRechargeRequest extends ViewRecord
                 ->label(__('filament.approve'))
                 ->icon('heroicon-o-check-circle')
                 ->color('success')
-                ->visible(fn (RechargeRequest $record): bool => $record->status === 'pending')
+                ->visible(fn(RechargeRequest $record): bool => $record->status === 'pending')
                 ->form([
                     Textarea::make('admin_remark')
                         ->label(__('filament.admin_remark'))
@@ -64,7 +75,7 @@ class ViewRechargeRequest extends ViewRecord
                 ->label(__('filament.reject'))
                 ->icon('heroicon-o-x-circle')
                 ->color('danger')
-                ->visible(fn (RechargeRequest $record): bool => $record->status === 'pending')
+                ->visible(fn(RechargeRequest $record): bool => $record->status === 'pending')
                 ->form([
                     Textarea::make('admin_remark')
                         ->label(__('filament.reject_reason'))

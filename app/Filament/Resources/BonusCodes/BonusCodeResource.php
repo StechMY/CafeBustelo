@@ -10,11 +10,13 @@ use App\Filament\Resources\BonusCodes\Schemas\BonusCodeForm;
 use App\Filament\Resources\BonusCodes\Schemas\BonusCodeInfolist;
 use App\Filament\Resources\BonusCodes\Tables\BonusCodesTable;
 use App\Models\BonusCode;
+use App\Support\FilamentSupportScope;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use UnitEnum;
 
 class BonusCodeResource extends Resource
@@ -47,6 +49,20 @@ class BonusCodeResource extends Resource
         return __('filament.bonus_codes');
     }
 
+    public static function getEloquentQuery(): Builder
+    {
+        return FilamentSupportScope::applyToBonusCodeQuery(
+            parent::getEloquentQuery()
+        );
+    }
+
+    public static function getGlobalSearchEloquentQuery(): Builder
+    {
+        return FilamentSupportScope::applyToBonusCodeQuery(
+            parent::getGlobalSearchEloquentQuery()
+        );
+    }
+
     public static function form(Schema $schema): Schema
     {
         return BonusCodeForm::configure($schema);
@@ -64,7 +80,9 @@ class BonusCodeResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        return (string) BonusCode::query()
+        return (string) FilamentSupportScope::applyToBonusCodeQuery(
+            BonusCode::query()
+        )
             ->where('status', BonusCode::STATUS_UNUSED)
             ->count();
     }

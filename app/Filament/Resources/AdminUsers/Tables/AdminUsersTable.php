@@ -12,6 +12,13 @@ use Filament\Notifications\Notification;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\ToggleColumn;
 use Filament\Tables\Table;
+use App\Models\User;
+use App\Models\Wallet;
+use Filament\Actions\Action;
+use Filament\Forms\Components\TextInput;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 class AdminUsersTable
 {
@@ -36,11 +43,17 @@ class AdminUsersTable
                     ->separator(',')
                     ->searchable(),
 
+                TextColumn::make('managedUser.username')
+                    ->label(__('filament.managed_referral_user'))
+                    ->placeholder('-')
+                    ->searchable()
+                    ->toggleable(),
+
                 ToggleColumn::make('status')
                     ->label(__('filament.active'))
-                    ->getStateUsing(fn (AdminUser $record): bool => $record->status === 'active')
+                    ->getStateUsing(fn(AdminUser $record): bool => $record->status === 'active')
                     ->updateStateUsing(function (AdminUser $record, bool $state): void {
-                        if ($record->hasRole('super_admin') && ! auth('admin')->user()?->hasRole('super_admin')) {
+                        if ($record->hasRole('super_admin') && !auth('admin')->user()?->hasRole('super_admin')) {
                             Notification::make()
                                 ->title(__('filament.you_cannot_update_super_admin_status'))
                                 ->danger()
@@ -49,7 +62,7 @@ class AdminUsersTable
                             return;
                         }
 
-                        if ($record->id === auth('admin')->id() && ! $state) {
+                        if ($record->id === auth('admin')->id() && !$state) {
                             Notification::make()
                                 ->title(__('filament.you_cannot_disable_your_own_account'))
                                 ->danger()
@@ -89,6 +102,103 @@ class AdminUsersTable
             ])
             ->defaultSort('created_at', 'desc')
             ->recordActions([
+                Action::make('createUserAccess')
+                    ->label(__('filament.create_user_access'))
+                    ->icon('heroicon-o-link')
+                    ->color('success')
+                    ->visible(function (AdminUser $record): bool {
+                        return auth('admin')->user()?->hasRole('super_admin')
+                            && !$record->hasRole('super_admin');
+                    })
+                    ->form([
+                        TextInput::make('password')
+                            ->label(__('filament.user_password'))
+                            ->password()
+                            ->revealable()
+                            ->helperText(__('filament.leave_blank_to_generate_password'))
+                            ->maxLength(255),
+
+                        TextInput::make('password_confirmation')
+                            ->label(__('filament.password_confirmation'))
+                            ->password()
+                            ->revealable()
+                            ->same('password')
+                            ->dehydrated(false),
+                    ])
+                    ->requiresConfirmation()
+                    ->modalHeading(__('filament.create_user_access'))
+                    ->modalDescription(__('filament.create_user_access_desc'))
+                    ->action(function (AdminUser $record, array $data): void {
+                        $created = false;
+                        $temporaryPassword = null;
+
+                        DB::transaction(function () use ($record, $data, &$created, &$temporaryPassword): void {
+                            $user = User::query()
+                                ->where('username', $record->username)
+                                ->lockForUpdate()
+                                ->first();
+
+                            if (!$user) {
+                                $temporaryPassword = filled($data['password'] ?? null)
+                                    ? $data['password']
+                                    : Str::password(12);
+
+                                $user = User::query()->create([
+                                    'name' => $record->name ?: $record->username,
+                                    'username' => $record->username,
+                                    'password' => Hash::make($temporaryPassword),
+                                    'referral_code' => self::generateUniqueReferralCode(),
+                                    'status' => 'active',
+                                    'is_virtual' => false,
+                                    'order_status' => true,
+                                    'withdraw_status' => true,
+                                    'weekly_salary_status' => true,
+                                    'monthly_salary_status' => true,
+                                    'annual_salary_status' => true,
+                                    'check_in_status' => true,
+                                    'accumulated_recharge' => 0,
+                                ]);
+
+                                Wallet::query()->firstOrCreate([
+                                    'user_id' => $user->id,
+                                    'type' => Wallet::TYPE_RECHARGE,
+                                ], [
+                                    'balance' => 0,
+                                    'locked_balance' => 0,
+                                ]);
+
+                                Wallet::query()->firstOrCreate([
+                                    'user_id' => $user->id,
+                                    'type' => Wallet::TYPE_WITHDRAWABLE,
+                                ], [
+                                    'balance' => 0,
+                                    'locked_balance' => 0,
+                                ]);
+
+                                $created = true;
+                            }
+
+                            $record->update([
+                                'managed_user_id' => $user->id,
+                            ]);
+                        });
+
+                        if ($created) {
+                            Notification::make()
+                                ->title(__('filament.user_access_created_and_linked'))
+                                ->body(__('filament.temporary_user_password') . ': ' . $temporaryPassword)
+                                ->success()
+                                ->persistent()
+                                ->send();
+
+                            return;
+                        }
+
+                        Notification::make()
+                            ->title(__('filament.existing_user_access_linked'))
+                            ->success()
+                            ->send();
+                    }),
                 ViewAction::make(),
 
                 EditAction::make()
@@ -97,7 +207,7 @@ class AdminUsersTable
                             return true;
                         }
 
-                        return ! $record->hasRole('super_admin');
+                        return !$record->hasRole('super_admin');
                     }),
 
                 DeleteAction::make()
@@ -116,8 +226,17 @@ class AdminUsersTable
             ->toolbarActions([
                 BulkActionGroup::make([
                     DeleteBulkAction::make()
-                        ->visible(fn (): bool => auth('admin')->user()?->hasRole('super_admin') ?? false),
+                        ->visible(fn(): bool => auth('admin')->user()?->hasRole('super_admin') ?? false),
                 ]),
             ]);
+    }
+
+    private static function generateUniqueReferralCode(): string
+    {
+        do {
+            $code = strtoupper(\Illuminate\Support\Str::random(8));
+        } while (\App\Models\User::query()->where('referral_code', $code)->exists());
+
+        return $code;
     }
 }
