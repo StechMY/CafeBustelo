@@ -37,6 +37,22 @@ class User extends Authenticatable
         'registered_ip',
         'last_login_ip',
         'last_login_at',
+
+        'display_vip_level',
+        'display_active_team_count',
+        'display_accumulated_recharge',
+        'display_total_earning',
+        'display_total_withdrawals',
+        'display_total_team_commission',
+        'display_total_team_recharge',
+        'display_total_users_count',
+        'display_valid_users_count',
+        'display_b_count',
+        'display_b_active_count',
+        'display_c_count',
+        'display_c_active_count',
+        'display_d_count',
+        'display_d_active_count',
     ];
 
     protected $hidden = [
@@ -58,6 +74,21 @@ class User extends Authenticatable
             'activated_at' => 'datetime',
             'last_login_at' => 'datetime',
             'check_in_status' => 'boolean',
+            'display_vip_level' => 'integer',
+            'display_active_team_count' => 'integer',
+            'display_accumulated_recharge' => 'decimal:2',
+            'display_total_earning' => 'decimal:2',
+            'display_total_withdrawals' => 'decimal:2',
+            'display_total_team_commission' => 'decimal:2',
+            'display_total_team_recharge' => 'decimal:2',
+            'display_total_users_count' => 'integer',
+            'display_valid_users_count' => 'integer',
+            'display_b_count' => 'integer',
+            'display_b_active_count' => 'integer',
+            'display_c_count' => 'integer',
+            'display_c_active_count' => 'integer',
+            'display_d_count' => 'integer',
+            'display_d_active_count' => 'integer',
         ];
     }
 
@@ -333,4 +364,5 @@ class User extends Authenticatable
 
         return $level ? (int) $level->level : 1;
     }
+
 }

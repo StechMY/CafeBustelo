@@ -130,7 +130,7 @@
                                         <template x-for="product in products" :key="product.id">
                                             <option
                                                     :value="product.id"
-                                                    x-text="`${product.code} - ${product.name} (${currency} ${money(product.daily_income)}/{{ __('calculator.day') }})`">
+                                                    x-text="`${product.code} - ${product.name}`">
                                             </option>
                                         </template>
                                     </select>

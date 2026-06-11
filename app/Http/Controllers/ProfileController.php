@@ -8,6 +8,7 @@ use App\Models\DailyIncomeClaim;
 use App\Models\RechargeRequest;
 use App\Models\SalaryClaim;
 use App\Models\SvipPackage;
+use App\Models\User;
 use App\Models\VipLevel;
 use App\Models\Wallet;
 use App\Models\WalletTransaction;
@@ -48,6 +49,8 @@ class ProfileController extends Controller
         $stats = [
             'recharge_wallet_balance' => $rechargeWallet?->balance ?? 0,
             'withdrawable_wallet_balance' => $withdrawableWallet?->balance ?? 0,
+
+            'accumulated_recharge' => (float) $user->accumulated_recharge,
 
             'total_earning' => WalletTransaction::query()
                 ->where('user_id', $user->id)
@@ -103,6 +106,45 @@ class ProfileController extends Controller
                 ->count(),
         ];
 
+        $displayVipLevelNo = (int) $this->displayOverride(
+            $user,
+            'display_vip_level',
+            $currentVipLevel?->level ?? 1
+        );
+
+        $displayCurrentVipLevel = VipLevel::query()
+            ->where('level', $displayVipLevelNo)
+            ->first();
+
+        $displayNextVipLevel = VipLevel::query()
+            ->where('level', '>', $displayVipLevelNo)
+            ->orderBy('level')
+            ->first();
+
+        $activeTeamSize = (int) $this->displayOverride(
+            $user,
+            'display_active_team_count',
+            $activeTeamSize
+        );
+
+        $stats['accumulated_recharge'] = (float) $this->displayOverride(
+            $user,
+            'display_accumulated_recharge',
+            $stats['accumulated_recharge']
+        );
+
+        $stats['total_earning'] = (float) $this->displayOverride(
+            $user,
+            'display_total_earning',
+            $stats['total_earning']
+        );
+
+        $stats['total_withdrawals'] = (float) $this->displayOverride(
+            $user,
+            'display_total_withdrawals',
+            $stats['total_withdrawals']
+        );
+
         $nextVipLevel = VipLevel::query()
             ->where('status', 'active')
             ->when($currentVipLevel, fn($query) => $query->where('level', '>', $currentVipLevel->level))
@@ -120,8 +162,9 @@ class ProfileController extends Controller
         return view('profile.index', [
             'user' => $user,
             'stats' => $stats,
-            'currentVipLevel' => $currentVipLevel,
-            'nextVipLevel' => $nextVipLevel,
+            'currentVipLevel' => $displayCurrentVipLevel ?: $currentVipLevel,
+            'displayVipLevelNo' => $displayVipLevelNo,
+            'nextVipLevel' => $displayNextVipLevel,
             'activeTeamSize' => $activeTeamSize,
             'svipPackage' => $svipPackage,
             'activeSvipPurchase' => $activeSvipPurchase,
@@ -162,5 +205,15 @@ class ProfileController extends Controller
         ])->save();
 
         return back()->with('success', __('profile.avatar_deleted'));
+    }
+
+
+    private function displayOverride(User $user, string $field, mixed $realValue): mixed
+    {
+        $value = $user->getAttribute($field);
+
+        return $value !== null && $value !== ''
+            ? $value
+            : $realValue;
     }
 }

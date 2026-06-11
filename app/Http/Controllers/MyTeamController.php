@@ -35,34 +35,36 @@ class MyTeamController extends Controller
 
         $commissionRates = $this->commissionRates();
 
+        $stats = [
+            'total_team_commission' => $this->totalTeamCommission($user),
+            'total_valid_users' => $allUsers->where('status', 'active')->count(),
+            'total_users' => $allUsers->count(),
+            'team_accumulated_recharge' => $this->teamAccumulatedRecharge($allUsers),
+
+            'b_count' => $bUsers->count(),
+            'c_count' => $cUsers->count(),
+            'd_count' => $dUsers->count(),
+
+            'b_active_count' => $bUsers->where('status', 'active')->count(),
+            'c_active_count' => $cUsers->where('status', 'active')->count(),
+            'd_active_count' => $dUsers->where('status', 'active')->count(),
+
+            'today_joined_count' => $this->joinedCount($allUsers, today()),
+            'yesterday_joined_count' => $this->joinedCount($allUsers, today()->subDay()),
+
+            'today_recharge' => $this->rechargeSumForDate($allUserIds, today()),
+            'yesterday_recharge' => $this->rechargeSumForDate($allUserIds, today()->subDay()),
+
+            'this_month_recharge' => $this->rechargeSumForMonth($allUserIds, now()->startOfMonth()),
+            'last_month_recharge' => $this->rechargeSumForMonth($allUserIds, now()->subMonthNoOverflow()->startOfMonth()),
+        ];
+
+        $stats = $this->applyDisplayOverrides($user, $stats);
+
         return view('my-team.index', [
             'user' => $user,
             'inviteUrl' => url('/register?ref=' . $user->referral_code),
-
-            'stats' => [
-                'total_team_commission' => $this->totalTeamCommission($user),
-                'total_valid_users' => $allUsers->where('status', 'active')->count(),
-                'total_users' => $allUsers->count(),
-                'team_accumulated_recharge' => $this->teamAccumulatedRecharge($allUsers),
-
-                'b_count' => $bUsers->count(),
-                'c_count' => $cUsers->count(),
-                'd_count' => $dUsers->count(),
-
-                'b_active_count' => $bUsers->where('status', 'active')->count(),
-                'c_active_count' => $cUsers->where('status', 'active')->count(),
-                'd_active_count' => $dUsers->where('status', 'active')->count(),
-
-                'today_joined_count' => $this->joinedCount($allUsers, today()),
-                'yesterday_joined_count' => $this->joinedCount($allUsers, today()->subDay()),
-
-                'today_recharge' => $this->rechargeSumForDate($allUserIds, today()),
-                'yesterday_recharge' => $this->rechargeSumForDate($allUserIds, today()->subDay()),
-
-                'this_month_recharge' => $this->rechargeSumForMonth($allUserIds, now()->startOfMonth()),
-                'last_month_recharge' => $this->rechargeSumForMonth($allUserIds, now()->subMonthNoOverflow()->startOfMonth()),
-            ],
-
+            'stats' => $stats,
             'commissionRates' => $commissionRates,
         ]);
     }
@@ -130,7 +132,7 @@ class MyTeamController extends Controller
             return User::query()
                 ->where('referrer_id', $user->id)
                 ->get()
-                ->each(fn (User $downline) => $downline->team_depth = 1)
+                ->each(fn(User $downline) => $downline->team_depth = 1)
                 ->values();
         }
 
@@ -143,7 +145,7 @@ class MyTeamController extends Controller
         return User::query()
             ->whereIn('referrer_id', $previousLevelUsers->pluck('id'))
             ->get()
-            ->each(fn (User $downline) => $downline->team_depth = $depth)
+            ->each(fn(User $downline) => $downline->team_depth = $depth)
             ->values();
     }
 
@@ -166,7 +168,7 @@ class MyTeamController extends Controller
 
     private function teamAccumulatedRecharge(Collection $users): float
     {
-        return (float) $users->sum(fn (User $user): float => (float) $user->accumulated_recharge);
+        return (float) $users->sum(fn(User $user): float => (float) $user->accumulated_recharge);
     }
 
     private function joinedCount(Collection $users, mixed $date): int
@@ -174,7 +176,7 @@ class MyTeamController extends Controller
         $date = CarbonImmutable::parse($date)->toDateString();
 
         return $users
-            ->filter(fn (User $user): bool => $user->created_at?->toDateString() === $date)
+            ->filter(fn(User $user): bool => $user->created_at?->toDateString() === $date)
             ->count();
     }
 
@@ -267,5 +269,79 @@ class MyTeamController extends Controller
                 'query' => $query,
             ],
         );
+    }
+
+    private function applyDisplayOverrides(User $user, array $stats): array
+    {
+        $stats['total_team_commission'] = (float) $this->displayOverride(
+            $user,
+            'display_total_team_commission',
+            $stats['total_team_commission']
+        );
+
+        $stats['team_accumulated_recharge'] = (float) $this->displayOverride(
+            $user,
+            'display_total_team_recharge',
+            $stats['team_accumulated_recharge']
+        );
+
+        $stats['total_users'] = (int) $this->displayOverride(
+            $user,
+            'display_total_users_count',
+            $stats['total_users']
+        );
+
+        $stats['total_valid_users'] = (int) $this->displayOverride(
+            $user,
+            'display_valid_users_count',
+            $stats['total_valid_users']
+        );
+
+        $stats['b_count'] = (int) $this->displayOverride(
+            $user,
+            'display_b_count',
+            $stats['b_count']
+        );
+
+        $stats['b_active_count'] = (int) $this->displayOverride(
+            $user,
+            'display_b_active_count',
+            $stats['b_active_count']
+        );
+
+        $stats['c_count'] = (int) $this->displayOverride(
+            $user,
+            'display_c_count',
+            $stats['c_count']
+        );
+
+        $stats['c_active_count'] = (int) $this->displayOverride(
+            $user,
+            'display_c_active_count',
+            $stats['c_active_count']
+        );
+
+        $stats['d_count'] = (int) $this->displayOverride(
+            $user,
+            'display_d_count',
+            $stats['d_count']
+        );
+
+        $stats['d_active_count'] = (int) $this->displayOverride(
+            $user,
+            'display_d_active_count',
+            $stats['d_active_count']
+        );
+
+        return $stats;
+    }
+
+    private function displayOverride(User $user, string $field, mixed $realValue): mixed
+    {
+        $value = $user->getAttribute($field);
+
+        return $value !== null && $value !== ''
+            ? $value
+            : $realValue;
     }
 }

@@ -101,7 +101,7 @@ class UserForm
                                     ->default(true)
                                     ->onColor('success')
                                     ->offColor('danger'),
-                                    
+
                                 Toggle::make('check_in_status')
                                     ->label(__('filament.can_check_in'))
                                     ->default(true)
@@ -129,6 +129,113 @@ class UserForm
                                     ->step('0.01'),
                             ]),
                     ]),
+
+                Section::make(__('filament.display_overrides'))
+                    ->description(__('filament.display_overrides_desc'))
+                    ->schema([
+                        Grid::make(3)
+                            ->schema([
+                                TextInput::make('display_vip_level')
+                                    ->label(__('filament.display_vip_level'))
+                                    ->numeric()
+                                    ->minValue(1)
+                                    ->maxValue(99)
+                                    ->helperText(__('filament.leave_empty_use_real_value')),
+
+                                TextInput::make('display_active_team_count')
+                                    ->label(__('filament.display_active_team_count'))
+                                    ->numeric()
+                                    ->minValue(0)
+                                    ->helperText(__('filament.leave_empty_use_real_value')),
+
+                                TextInput::make('display_accumulated_recharge')
+                                    ->label(__('filament.display_accumulated_recharge'))
+                                    ->numeric()
+                                    ->minValue(0)
+                                    ->step('0.01')
+                                    ->helperText(__('filament.leave_empty_use_real_value')),
+
+                                TextInput::make('display_total_earning')
+                                    ->label(__('filament.display_total_earning'))
+                                    ->numeric()
+                                    ->minValue(0)
+                                    ->step('0.01')
+                                    ->helperText(__('filament.leave_empty_use_real_value')),
+
+                                TextInput::make('display_total_withdrawals')
+                                    ->label(__('filament.display_total_withdrawals'))
+                                    ->numeric()
+                                    ->minValue(0)
+                                    ->step('0.01')
+                                    ->helperText(__('filament.leave_empty_use_real_value')),
+
+                                TextInput::make('display_total_team_commission')
+                                    ->label(__('filament.display_total_team_commission'))
+                                    ->numeric()
+                                    ->minValue(0)
+                                    ->step('0.01')
+                                    ->helperText(__('filament.leave_empty_use_real_value')),
+
+                                TextInput::make('display_total_team_recharge')
+                                    ->label(__('filament.display_total_team_recharge'))
+                                    ->numeric()
+                                    ->minValue(0)
+                                    ->step('0.01')
+                                    ->helperText(__('filament.leave_empty_use_real_value')),
+
+                                TextInput::make('display_total_users_count')
+                                    ->label(__('filament.display_total_users_count'))
+                                    ->numeric()
+                                    ->minValue(0)
+                                    ->helperText(__('filament.leave_empty_use_real_value')),
+
+                                TextInput::make('display_valid_users_count')
+                                    ->label(__('filament.display_valid_users_count'))
+                                    ->numeric()
+                                    ->minValue(0)
+                                    ->helperText(__('filament.leave_empty_use_real_value')),
+                            ]),
+
+                        Grid::make(3)
+                            ->schema([
+                                TextInput::make('display_b_count')
+                                    ->label(__('filament.display_b_count'))
+                                    ->numeric()
+                                    ->minValue(0)
+                                    ->helperText(__('filament.leave_empty_use_real_value')),
+
+                                TextInput::make('display_c_count')
+                                    ->label(__('filament.display_c_count'))
+                                    ->numeric()
+                                    ->minValue(0)
+                                    ->helperText(__('filament.leave_empty_use_real_value')),
+
+                                TextInput::make('display_d_count')
+                                    ->label(__('filament.display_d_count'))
+                                    ->numeric()
+                                    ->minValue(0)
+                                    ->helperText(__('filament.leave_empty_use_real_value')),
+
+                                TextInput::make('display_b_active_count')
+                                    ->label(__('filament.display_b_active_count'))
+                                    ->numeric()
+                                    ->minValue(0)
+                                    ->helperText(__('filament.leave_empty_use_real_value')),
+
+                                TextInput::make('display_c_active_count')
+                                    ->label(__('filament.display_c_active_count'))
+                                    ->numeric()
+                                    ->minValue(0)
+                                    ->helperText(__('filament.leave_empty_use_real_value')),
+
+                                TextInput::make('display_d_active_count')
+                                    ->label(__('filament.display_d_active_count'))
+                                    ->numeric()
+                                    ->minValue(0)
+                                    ->helperText(__('filament.leave_empty_use_real_value')),
+                            ]),
+                    ])
+                    ->collapsed(),
 
                 Section::make(__('filament.login_information'))
                     ->collapsed()
