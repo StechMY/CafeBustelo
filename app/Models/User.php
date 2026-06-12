@@ -66,6 +66,8 @@ class User extends Authenticatable
         'display_yesterday_recharge',
         'display_this_month_recharge',
         'display_last_month_recharge',
+        'display_wallet_total_credit',
+        'display_wallet_total_debit',
     ];
 
     protected $hidden = [
@@ -113,6 +115,8 @@ class User extends Authenticatable
             'display_yesterday_recharge' => 'decimal:2',
             'display_this_month_recharge' => 'decimal:2',
             'display_last_month_recharge' => 'decimal:2',
+            'display_wallet_total_credit' => 'decimal:2',
+            'display_wallet_total_debit' => 'decimal:2',
         ];
     }
 

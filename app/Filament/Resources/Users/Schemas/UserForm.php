@@ -206,6 +206,16 @@ class UserForm
                                     'display_salary_income_total',
                                     __('filament.display_salary_income_total')
                                 ),
+
+                                self::displayMoneyInput(
+                                    'display_wallet_total_credit',
+                                    __('filament.display_wallet_total_credit')
+                                ),
+
+                                self::displayMoneyInput(
+                                    'display_wallet_total_debit',
+                                    __('filament.display_wallet_total_debit')
+                                ),
                             ]),
 
                         Grid::make(3)

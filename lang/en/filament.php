@@ -468,4 +468,6 @@ return [
     'display_yesterday_recharge' => 'Display Yesterday Recharge',
     'display_this_month_recharge' => 'Display This Month Recharge',
     'display_last_month_recharge' => 'Display Last Month Recharge',
+    'display_wallet_total_credit' => 'Display Wallet Total Credit',
+    'display_wallet_total_debit' => 'Display Wallet Total Debit',
 ];

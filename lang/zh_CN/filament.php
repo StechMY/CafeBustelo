@@ -468,4 +468,6 @@ return [
     'display_yesterday_recharge' => '展示昨日充值',
     'display_this_month_recharge' => '展示本月充值',
     'display_last_month_recharge' => '展示上月充值',
+    'display_wallet_total_credit' => '展示钱包总收入',
+    'display_wallet_total_debit' => '展示钱包总支出',
 ];

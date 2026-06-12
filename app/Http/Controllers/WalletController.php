@@ -73,6 +73,18 @@ class WalletController extends Controller
                 ->sum('amount'),
         ];
 
+        $summary['total_credit'] = (float) $this->displayOverride(
+            $user,
+            'display_wallet_total_credit',
+            $summary['total_credit']
+        );
+
+        $summary['total_debit'] = (float) $this->displayOverride(
+            $user,
+            'display_wallet_total_debit',
+            $summary['total_debit']
+        );
+
         return view('wallet.index', [
             'user' => $user,
             'summary' => $summary,
@@ -91,5 +103,14 @@ class WalletController extends Controller
         return view('wallet.show', [
             'walletTransaction' => $walletTransaction,
         ]);
+    }
+
+    private function displayOverride($user, string $field, mixed $realValue): mixed
+    {
+        $value = $user->getAttribute($field);
+
+        return $value !== null && $value !== ''
+            ? $value
+            : $realValue;
     }
 }
