@@ -142,133 +142,142 @@ class UserForm
                                     ->maxValue(99)
                                     ->helperText(__('filament.leave_empty_use_real_value')),
 
-                                TextInput::make('display_active_team_count')
-                                    ->label(__('filament.display_active_team_count'))
-                                    ->numeric()
-                                    ->minValue(0)
-                                    ->helperText(__('filament.leave_empty_use_real_value')),
+                                self::displayIntegerInput(
+                                    'display_active_team_count',
+                                    __('filament.display_active_team_count')
+                                ),
 
-                                TextInput::make('display_accumulated_recharge')
-                                    ->label(__('filament.display_accumulated_recharge'))
-                                    ->numeric()
-                                    ->minValue(0)
-                                    ->step('0.01')
-                                    ->helperText(__('filament.leave_empty_use_real_value')),
+                                self::displayMoneyInput(
+                                    'display_accumulated_recharge',
+                                    __('filament.display_accumulated_recharge')
+                                ),
 
-                                TextInput::make('display_total_earning')
-                                    ->label(__('filament.display_total_earning'))
-                                    ->numeric()
-                                    ->minValue(0)
-                                    ->step('0.01')
-                                    ->helperText(__('filament.leave_empty_use_real_value')),
+                                self::displayMoneyInput(
+                                    'display_total_earning',
+                                    __('filament.display_total_earning')
+                                ),
 
-                                TextInput::make('display_total_withdrawals')
-                                    ->label(__('filament.display_total_withdrawals'))
-                                    ->numeric()
-                                    ->minValue(0)
-                                    ->step('0.01')
-                                    ->helperText(__('filament.leave_empty_use_real_value')),
+                                self::displayMoneyInput(
+                                    'display_total_withdrawals',
+                                    __('filament.display_total_withdrawals')
+                                ),
 
-                                TextInput::make('display_total_team_commission')
-                                    ->label(__('filament.display_total_team_commission'))
-                                    ->numeric()
-                                    ->minValue(0)
-                                    ->step('0.01')
-                                    ->helperText(__('filament.leave_empty_use_real_value')),
+                                self::displayMoneyInput(
+                                    'display_total_team_commission',
+                                    __('filament.display_total_team_commission')
+                                ),
 
-                                TextInput::make('display_total_team_recharge')
-                                    ->label(__('filament.display_total_team_recharge'))
-                                    ->numeric()
-                                    ->minValue(0)
-                                    ->step('0.01')
-                                    ->helperText(__('filament.leave_empty_use_real_value')),
+                                self::displayMoneyInput(
+                                    'display_total_team_recharge',
+                                    __('filament.display_total_team_recharge')
+                                ),
 
-                                TextInput::make('display_total_users_count')
-                                    ->label(__('filament.display_total_users_count'))
-                                    ->numeric()
-                                    ->minValue(0)
-                                    ->helperText(__('filament.leave_empty_use_real_value')),
+                                self::displayIntegerInput(
+                                    'display_total_users_count',
+                                    __('filament.display_total_users_count')
+                                ),
 
-                                TextInput::make('display_valid_users_count')
-                                    ->label(__('filament.display_valid_users_count'))
-                                    ->numeric()
-                                    ->minValue(0)
-                                    ->helperText(__('filament.leave_empty_use_real_value')),
+                                self::displayIntegerInput(
+                                    'display_valid_users_count',
+                                    __('filament.display_valid_users_count')
+                                ),
 
-                                TextInput::make('display_income_today')
-                                    ->label(__('filament.display_income_today'))
-                                    ->numeric()
-                                    ->minValue(0)
-                                    ->step('0.01')
-                                    ->helperText(__('filament.leave_empty_use_real_value')),
+                                self::displayMoneyInput(
+                                    'display_income_today',
+                                    __('filament.display_income_today')
+                                ),
 
-                                TextInput::make('display_yesterday_earnings')
-                                    ->label(__('filament.display_yesterday_earnings'))
-                                    ->numeric()
-                                    ->minValue(0)
-                                    ->step('0.01')
-                                    ->helperText(__('filament.leave_empty_use_real_value')),
+                                self::displayMoneyInput(
+                                    'display_yesterday_earnings',
+                                    __('filament.display_yesterday_earnings')
+                                ),
 
-                                TextInput::make('display_team_income')
-                                    ->label(__('filament.display_team_income'))
-                                    ->numeric()
-                                    ->minValue(0)
-                                    ->step('0.01')
-                                    ->helperText(__('filament.leave_empty_use_real_value')),
+                                self::displayMoneyInput(
+                                    'display_team_income',
+                                    __('filament.display_team_income')
+                                ),
 
-                                TextInput::make('display_daily_income_total')
-                                    ->label(__('filament.display_daily_income_total'))
-                                    ->numeric()
-                                    ->minValue(0)
-                                    ->step('0.01')
-                                    ->helperText(__('filament.leave_empty_use_real_value')),
+                                self::displayMoneyInput(
+                                    'display_daily_income_total',
+                                    __('filament.display_daily_income_total')
+                                ),
 
-                                TextInput::make('display_salary_income_total')
-                                    ->label(__('filament.display_salary_income_total'))
-                                    ->numeric()
-                                    ->minValue(0)
-                                    ->step('0.01')
-                                    ->helperText(__('filament.leave_empty_use_real_value')),
+                                self::displayMoneyInput(
+                                    'display_salary_income_total',
+                                    __('filament.display_salary_income_total')
+                                ),
                             ]),
 
                         Grid::make(3)
                             ->schema([
-                                TextInput::make('display_b_count')
-                                    ->label(__('filament.display_b_count'))
-                                    ->numeric()
-                                    ->minValue(0)
-                                    ->helperText(__('filament.leave_empty_use_real_value')),
+                                self::displayIntegerInput(
+                                    'display_b_count',
+                                    __('filament.display_b_count')
+                                ),
 
-                                TextInput::make('display_c_count')
-                                    ->label(__('filament.display_c_count'))
-                                    ->numeric()
-                                    ->minValue(0)
-                                    ->helperText(__('filament.leave_empty_use_real_value')),
+                                self::displayIntegerInput(
+                                    'display_c_count',
+                                    __('filament.display_c_count')
+                                ),
 
-                                TextInput::make('display_d_count')
-                                    ->label(__('filament.display_d_count'))
-                                    ->numeric()
-                                    ->minValue(0)
-                                    ->helperText(__('filament.leave_empty_use_real_value')),
+                                self::displayIntegerInput(
+                                    'display_d_count',
+                                    __('filament.display_d_count')
+                                ),
 
-                                TextInput::make('display_b_active_count')
-                                    ->label(__('filament.display_b_active_count'))
-                                    ->numeric()
-                                    ->minValue(0)
-                                    ->helperText(__('filament.leave_empty_use_real_value')),
+                                self::displayIntegerInput(
+                                    'display_b_active_count',
+                                    __('filament.display_b_active_count')
+                                ),
 
-                                TextInput::make('display_c_active_count')
-                                    ->label(__('filament.display_c_active_count'))
-                                    ->numeric()
-                                    ->minValue(0)
-                                    ->helperText(__('filament.leave_empty_use_real_value')),
+                                self::displayIntegerInput(
+                                    'display_c_active_count',
+                                    __('filament.display_c_active_count')
+                                ),
 
-                                TextInput::make('display_d_active_count')
-                                    ->label(__('filament.display_d_active_count'))
-                                    ->numeric()
-                                    ->minValue(0)
-                                    ->helperText(__('filament.leave_empty_use_real_value')),
+                                self::displayIntegerInput(
+                                    'display_d_active_count',
+                                    __('filament.display_d_active_count')
+                                ),
                             ]),
+
+                        Section::make(__('filament.display_team_statistics'))
+                            ->description(__('filament.display_team_statistics_desc'))
+                            ->schema([
+                                Grid::make(3)
+                                    ->schema([
+                                        self::displayIntegerInput(
+                                            'display_today_joined_count',
+                                            __('filament.display_today_joined_count')
+                                        ),
+
+                                        self::displayIntegerInput(
+                                            'display_yesterday_joined_count',
+                                            __('filament.display_yesterday_joined_count')
+                                        ),
+
+                                        self::displayMoneyInput(
+                                            'display_today_recharge',
+                                            __('filament.display_today_recharge')
+                                        ),
+
+                                        self::displayMoneyInput(
+                                            'display_yesterday_recharge',
+                                            __('filament.display_yesterday_recharge')
+                                        ),
+
+                                        self::displayMoneyInput(
+                                            'display_this_month_recharge',
+                                            __('filament.display_this_month_recharge')
+                                        ),
+
+                                        self::displayMoneyInput(
+                                            'display_last_month_recharge',
+                                            __('filament.display_last_month_recharge')
+                                        ),
+                                    ]),
+                            ])
+                            ->collapsed(),
                     ])
                     ->collapsed(),
 
@@ -288,6 +297,63 @@ class UserForm
                                     ->dehydrated(false),
                             ]),
                     ]),
+            ]);
+    }
+
+    private static function displayMoneyInput(string $field, string $label): TextInput
+    {
+        return TextInput::make($field)
+            ->label($label)
+            ->minValue(0)
+            ->step('0.01')
+            ->placeholder('1,000.00')
+            ->helperText(__('filament.leave_empty_use_real_value'))
+            ->formatStateUsing(function ($state): ?string {
+                if ($state === null || $state === '') {
+                    return null;
+                }
+
+                return number_format((float) $state, 2, '.', ',');
+            })
+            ->dehydrateStateUsing(function ($state): ?string {
+                if ($state === null || $state === '') {
+                    return null;
+                }
+
+                return str_replace(',', '', (string) $state);
+            })
+            ->rule('nullable')
+            ->rule('regex:/^\d{1,3}(,\d{3})*(\.\d{1,2})?$|^\d+(\.\d{1,2})?$/')
+            ->extraInputAttributes([
+                'inputmode' => 'decimal',
+            ]);
+    }
+
+    private static function displayIntegerInput(string $field, string $label): TextInput
+    {
+        return TextInput::make($field)
+            ->label($label)
+            ->minValue(0)
+            ->placeholder('10,000')
+            ->helperText(__('filament.leave_empty_use_real_value'))
+            ->formatStateUsing(function ($state): ?string {
+                if ($state === null || $state === '') {
+                    return null;
+                }
+
+                return number_format((int) $state);
+            })
+            ->dehydrateStateUsing(function ($state): ?string {
+                if ($state === null || $state === '') {
+                    return null;
+                }
+
+                return str_replace(',', '', (string) $state);
+            })
+            ->rule('nullable')
+            ->rule('regex:/^\d{1,3}(,\d{3})*$|^\d+$/')
+            ->extraInputAttributes([
+                'inputmode' => 'numeric',
             ]);
     }
 }

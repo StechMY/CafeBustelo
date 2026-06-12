@@ -333,6 +333,42 @@ class MyTeamController extends Controller
             $stats['d_active_count']
         );
 
+        $stats['today_joined_count'] = (int) $this->displayOverride(
+            $user,
+            'display_today_joined_count',
+            $stats['today_joined_count']
+        );
+
+        $stats['yesterday_joined_count'] = (int) $this->displayOverride(
+            $user,
+            'display_yesterday_joined_count',
+            $stats['yesterday_joined_count']
+        );
+
+        $stats['today_recharge'] = (float) $this->displayOverride(
+            $user,
+            'display_today_recharge',
+            $stats['today_recharge']
+        );
+
+        $stats['yesterday_recharge'] = (float) $this->displayOverride(
+            $user,
+            'display_yesterday_recharge',
+            $stats['yesterday_recharge']
+        );
+
+        $stats['this_month_recharge'] = (float) $this->displayOverride(
+            $user,
+            'display_this_month_recharge',
+            $stats['this_month_recharge']
+        );
+
+        $stats['last_month_recharge'] = (float) $this->displayOverride(
+            $user,
+            'display_last_month_recharge',
+            $stats['last_month_recharge']
+        );
+
         return $stats;
     }
 

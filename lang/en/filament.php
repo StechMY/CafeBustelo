@@ -460,4 +460,12 @@ return [
     'display_team_income' => 'Display Team Income',
     'display_daily_income_total' => 'Display Daily Income Total',
     'display_salary_income_total' => 'Display Salary Income Total',
+    'display_team_statistics' => 'Display Team Statistics',
+    'display_team_statistics_desc' => 'Fake display values for the Team Statistics section. Leave empty to use real calculated values.',
+    'display_today_joined_count' => 'Display Today Joined Count',
+    'display_yesterday_joined_count' => 'Display Yesterday Joined Count',
+    'display_today_recharge' => 'Display Today Recharge',
+    'display_yesterday_recharge' => 'Display Yesterday Recharge',
+    'display_this_month_recharge' => 'Display This Month Recharge',
+    'display_last_month_recharge' => 'Display Last Month Recharge',
 ];

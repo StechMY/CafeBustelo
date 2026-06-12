@@ -59,6 +59,13 @@ class User extends Authenticatable
         'display_team_income',
         'display_daily_income_total',
         'display_salary_income_total',
+
+        'display_today_joined_count',
+        'display_yesterday_joined_count',
+        'display_today_recharge',
+        'display_yesterday_recharge',
+        'display_this_month_recharge',
+        'display_last_month_recharge',
     ];
 
     protected $hidden = [
@@ -100,6 +107,12 @@ class User extends Authenticatable
             'display_team_income' => 'decimal:2',
             'display_daily_income_total' => 'decimal:2',
             'display_salary_income_total' => 'decimal:2',
+            'display_today_joined_count' => 'integer',
+            'display_yesterday_joined_count' => 'integer',
+            'display_today_recharge' => 'decimal:2',
+            'display_yesterday_recharge' => 'decimal:2',
+            'display_this_month_recharge' => 'decimal:2',
+            'display_last_month_recharge' => 'decimal:2',
         ];
     }
 

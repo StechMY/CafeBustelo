@@ -460,4 +460,12 @@ return [
     'display_team_income' => '展示团队收益',
     'display_daily_income_total' => '展示每日收益总额',
     'display_salary_income_total' => '展示工资收益总额',
+    'display_team_statistics' => '展示团队统计',
+    'display_team_statistics_desc' => '用于团队统计区域的展示数值。留空则使用系统真实计算值。',
+    'display_today_joined_count' => '展示今日加入人数',
+    'display_yesterday_joined_count' => '展示昨日加入人数',
+    'display_today_recharge' => '展示今日充值',
+    'display_yesterday_recharge' => '展示昨日充值',
+    'display_this_month_recharge' => '展示本月充值',
+    'display_last_month_recharge' => '展示上月充值',
 ];
