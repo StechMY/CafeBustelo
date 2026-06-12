@@ -62,11 +62,11 @@
                 'value' => $stats['daily_income_total'],
                 'icon' => 'check-in',
             ],
-            [
-                'label' => __('profile.salary_income_total'),
-                'value' => $stats['salary_income_total'],
-                'icon' => 'salary',
-            ],
+            // [
+            //     'label' => __('profile.salary_income_total'),
+            //     'value' => $stats['salary_income_total'],
+            //     'icon' => 'salary',
+            // ],
             ['label' => __('profile.total_earning'), 'value' => $stats['total_earning'], 'icon' => 'salary'],
         ];
 
