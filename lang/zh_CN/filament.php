@@ -455,4 +455,9 @@ return [
     'display_c_active_count' => '展示 C 级有效人数',
     'display_d_count' => '展示 D 级总人数',
     'display_d_active_count' => '展示 D 级有效人数',
+    'display_income_today' => '展示今日收益',
+    'display_yesterday_earnings' => '展示昨日收益',
+    'display_team_income' => '展示团队收益',
+    'display_daily_income_total' => '展示每日收益总额',
+    'display_salary_income_total' => '展示工资收益总额',
 ];

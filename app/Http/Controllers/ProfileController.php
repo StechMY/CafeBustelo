@@ -145,11 +145,35 @@ class ProfileController extends Controller
             $stats['total_withdrawals']
         );
 
-        $nextVipLevel = VipLevel::query()
-            ->where('status', 'active')
-            ->when($currentVipLevel, fn($query) => $query->where('level', '>', $currentVipLevel->level))
-            ->orderBy('level')
-            ->first();
+        $stats['income_today'] = (float) $this->displayOverride(
+            $user,
+            'display_income_today',
+            $stats['income_today']
+        );
+
+        $stats['yesterday_earnings'] = (float) $this->displayOverride(
+            $user,
+            'display_yesterday_earnings',
+            $stats['yesterday_earnings']
+        );
+
+        $stats['team_income'] = (float) $this->displayOverride(
+            $user,
+            'display_team_income',
+            $stats['team_income']
+        );
+
+        $stats['daily_income_total'] = (float) $this->displayOverride(
+            $user,
+            'display_daily_income_total',
+            $stats['daily_income_total']
+        );
+
+        $stats['salary_income_total'] = (float) $this->displayOverride(
+            $user,
+            'display_salary_income_total',
+            $stats['salary_income_total']
+        );
 
         $svipPackage = SvipPackage::query()
             ->active()

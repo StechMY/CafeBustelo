@@ -53,6 +53,12 @@ class User extends Authenticatable
         'display_c_active_count',
         'display_d_count',
         'display_d_active_count',
+
+        'display_income_today',
+        'display_yesterday_earnings',
+        'display_team_income',
+        'display_daily_income_total',
+        'display_salary_income_total',
     ];
 
     protected $hidden = [
@@ -89,6 +95,11 @@ class User extends Authenticatable
             'display_c_active_count' => 'integer',
             'display_d_count' => 'integer',
             'display_d_active_count' => 'integer',
+            'display_income_today' => 'decimal:2',
+            'display_yesterday_earnings' => 'decimal:2',
+            'display_team_income' => 'decimal:2',
+            'display_daily_income_total' => 'decimal:2',
+            'display_salary_income_total' => 'decimal:2',
         ];
     }
 

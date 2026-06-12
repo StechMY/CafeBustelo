@@ -194,6 +194,41 @@ class UserForm
                                     ->numeric()
                                     ->minValue(0)
                                     ->helperText(__('filament.leave_empty_use_real_value')),
+
+                                TextInput::make('display_income_today')
+                                    ->label(__('filament.display_income_today'))
+                                    ->numeric()
+                                    ->minValue(0)
+                                    ->step('0.01')
+                                    ->helperText(__('filament.leave_empty_use_real_value')),
+
+                                TextInput::make('display_yesterday_earnings')
+                                    ->label(__('filament.display_yesterday_earnings'))
+                                    ->numeric()
+                                    ->minValue(0)
+                                    ->step('0.01')
+                                    ->helperText(__('filament.leave_empty_use_real_value')),
+
+                                TextInput::make('display_team_income')
+                                    ->label(__('filament.display_team_income'))
+                                    ->numeric()
+                                    ->minValue(0)
+                                    ->step('0.01')
+                                    ->helperText(__('filament.leave_empty_use_real_value')),
+
+                                TextInput::make('display_daily_income_total')
+                                    ->label(__('filament.display_daily_income_total'))
+                                    ->numeric()
+                                    ->minValue(0)
+                                    ->step('0.01')
+                                    ->helperText(__('filament.leave_empty_use_real_value')),
+
+                                TextInput::make('display_salary_income_total')
+                                    ->label(__('filament.display_salary_income_total'))
+                                    ->numeric()
+                                    ->minValue(0)
+                                    ->step('0.01')
+                                    ->helperText(__('filament.leave_empty_use_real_value')),
                             ]),
 
                         Grid::make(3)

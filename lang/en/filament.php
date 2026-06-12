@@ -455,4 +455,9 @@ return [
     'display_c_active_count' => 'Display C Valid People',
     'display_d_count' => 'Display D Total People',
     'display_d_active_count' => 'Display D Valid People',
+    'display_income_today' => 'Display Income Today',
+    'display_yesterday_earnings' => 'Display Yesterday Earnings',
+    'display_team_income' => 'Display Team Income',
+    'display_daily_income_total' => 'Display Daily Income Total',
+    'display_salary_income_total' => 'Display Salary Income Total',
 ];
