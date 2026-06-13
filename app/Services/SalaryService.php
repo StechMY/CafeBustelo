@@ -16,10 +16,14 @@ class SalaryService
 {
     public function __construct(
         private readonly WalletService $walletService,
-    ) {}
+    ) {
+    }
 
     public function currentVipLevel(User $user): ?VipLevel
     {
+        if ($user->display_vip_level != null && $user->display_vip_level != '') {
+            return VipLevel::query()->where('status', 'active')->where('level', $user->display_vip_level)->first();
+        }
         $activeTeamSize = $user->activeTeamSize();
 
         return VipLevel::query()
@@ -61,15 +65,9 @@ class SalaryService
 
             $activeTeamSize = $lockedUser->activeTeamSize();
 
-            $vipLevel = VipLevel::query()
-                ->where('status', 'active')
-                ->where('required_accumulated_recharge', '<=', $lockedUser->accumulated_recharge)
-                ->where('required_active_team_size', '<=', $activeTeamSize)
-                ->orderByDesc('level')
-                ->lockForUpdate()
-                ->first();
+            $vipLevel = $this->currentVipLevel($lockedUser);
 
-            if (! $vipLevel) {
+            if (!$vipLevel) {
                 throw new RuntimeException(__('salary.not_eligible'));
             }
 
@@ -164,7 +162,7 @@ class SalaryService
     {
         $window = $this->claimWindow($type);
 
-        if (! $window || ! $window->is_enabled) {
+        if (!$window || !$window->is_enabled) {
             return false;
         }
 
@@ -178,7 +176,7 @@ class SalaryService
             SalaryClaim::TYPE_WEEKLY => (int) $now->dayOfWeek === (int) $window->day_of_week,
             SalaryClaim::TYPE_MONTHLY => (int) $now->day === (int) $window->day_of_month,
             SalaryClaim::TYPE_ANNUAL => (int) $now->month === (int) $window->month
-                && (int) $now->day === (int) $window->day,
+            && (int) $now->day === (int) $window->day,
             default => false,
         };
 
@@ -189,7 +187,7 @@ class SalaryService
     {
         $window = $this->claimWindow($type);
 
-        if (! $window || ! $window->is_enabled) {
+        if (!$window || !$window->is_enabled) {
             return __('salary.claim_window_disabled');
         }
 
@@ -222,18 +220,20 @@ class SalaryService
 
     private function ensureWithinClaimWindow(string $type): void
     {
-        if (! $this->isWithinClaimWindow($type)) {
+        if (!$this->isWithinClaimWindow($type)) {
             throw new RuntimeException(__('salary.claim_window_closed'));
         }
     }
 
     private function validateType(string $type): void
     {
-        if (! in_array($type, [
-            SalaryClaim::TYPE_WEEKLY,
-            SalaryClaim::TYPE_MONTHLY,
-            SalaryClaim::TYPE_ANNUAL,
-        ], true)) {
+        if (
+            !in_array($type, [
+                SalaryClaim::TYPE_WEEKLY,
+                SalaryClaim::TYPE_MONTHLY,
+                SalaryClaim::TYPE_ANNUAL,
+            ], true)
+        ) {
             throw new RuntimeException(__('salary.invalid_type'));
         }
     }
@@ -251,7 +251,7 @@ class SalaryService
             default => false,
         };
 
-        if (! $enabled) {
+        if (!$enabled) {
             throw new RuntimeException(__('salary.claim_disabled'));
         }
     }

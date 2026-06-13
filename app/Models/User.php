@@ -369,6 +369,9 @@ class User extends Authenticatable
 
     public function currentVipLevel(): ?VipLevel
     {
+        if ($this->display_vip_level != null && $this->display_vip_level != '') {
+            return VipLevel::query()->where('status', 'active')->where('level', $this->display_vip_level)->first();
+        }
         $activeTeamSize = $this->activeTeamSize();
 
         return VipLevel::query()
