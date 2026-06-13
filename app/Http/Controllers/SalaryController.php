@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\SalaryClaim;
+use App\Models\User;
 use App\Models\VipLevel;
 use App\Services\SalaryService;
 use Illuminate\Http\RedirectResponse;
@@ -18,6 +19,18 @@ class SalaryController extends Controller
         $user = $request->user();
 
         $activeTeamSize = $user->activeTeamSize();
+        $activeTeamSize = (int) $this->displayOverride(
+            $user,
+            'display_active_team_count',
+            $activeTeamSize
+        );
+
+        $accumulatedRecharge = (float) $this->displayOverride(
+            $user,
+            'display_accumulated_recharge',
+            (float) $user->accumulated_recharge
+        );
+
         $currentVipLevel = $salaryService->currentVipLevel($user);
 
         $vipLevels = VipLevel::query()
@@ -57,6 +70,7 @@ class SalaryController extends Controller
         return view('salary.index', [
             'user' => $user,
             'activeTeamSize' => $activeTeamSize,
+            'accumulatedRecharge' => $accumulatedRecharge,
             'currentVipLevel' => $currentVipLevel,
             'vipLevels' => $vipLevels,
             'claimStates' => $claimStates,
@@ -85,5 +99,14 @@ class SalaryController extends Controller
 
             return back()->with('error', __('salary.claim_failed'));
         }
+    }
+
+    private function displayOverride(User $user, string $field, mixed $realValue): mixed
+    {
+        $value = $user->getAttribute($field);
+
+        return $value !== null && $value !== ''
+            ? $value
+            : $realValue;
     }
 }

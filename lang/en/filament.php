@@ -470,4 +470,8 @@ return [
     'display_last_month_recharge' => 'Display Last Month Recharge',
     'display_wallet_total_credit' => 'Display Wallet Total Credit',
     'display_wallet_total_debit' => 'Display Wallet Total Debit',
+    'welcome_bonus_settings' => 'Welcome Bonus Settings',
+    'enable_welcome_bonus' => 'Enable Welcome Bonus',
+    'welcome_bonus_amount' => 'Welcome Bonus Amount',
+    'welcome_bonus_settings_saved' => 'Welcome bonus settings saved.',
 ];

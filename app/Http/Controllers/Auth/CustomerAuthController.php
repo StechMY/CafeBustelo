@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Services\WelcomeBonusService;
+use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Wallet;
@@ -61,7 +63,7 @@ class CustomerAuthController extends Controller
         return redirect()->intended(route('dashboard'));
     }
 
-    public function register(Request $request): RedirectResponse
+    public function register(Request $request, WelcomeBonusService $welcomeBonusService): RedirectResponse
     {
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
@@ -99,41 +101,47 @@ class CustomerAuthController extends Controller
                 ->first();
         }
 
-        $user = User::query()->create([
-            'name' => $data['name'],
-            'username' => $data['username'],
-            'phone' => $data['phone'] ?? null,
-            'password' => $data['password'],
-            'referrer_id' => $referrer?->id,
-            'referral_code' => $this->generateReferralCode(),
-            'status' => 'inactive',
-            'is_virtual' => false,
-            'accumulated_recharge' => 0,
-            'registered_ip' => $request->ip(),
-            'last_login_ip' => $request->ip(),
-            'last_login_at' => now(),
-            'order_status' => true,
-            'withdraw_status' => true,
-        ]);
+        $user = DB::transaction(function () use ($data, $referrer, $request, $welcomeBonusService): User {
+            $user = User::query()->create([
+                'name' => $data['name'],
+                'username' => $data['username'],
+                'phone' => $data['phone'] ?? null,
+                'password' => $data['password'],
+                'referrer_id' => $referrer?->id,
+                'referral_code' => $this->generateReferralCode(),
+                'status' => 'inactive',
+                'is_virtual' => false,
+                'accumulated_recharge' => 0,
+                'registered_ip' => $request->ip(),
+                'last_login_ip' => $request->ip(),
+                'last_login_at' => now(),
+                'order_status' => true,
+                'withdraw_status' => true,
+            ]);
 
-        Wallet::query()->firstOrCreate([
-            'user_id' => $user->id,
-            'type' => Wallet::TYPE_RECHARGE,
-        ], [
-            'balance' => 0,
-            'locked_balance' => 0,
-        ]);
+            Wallet::query()->firstOrCreate([
+                'user_id' => $user->id,
+                'type' => Wallet::TYPE_RECHARGE,
+            ], [
+                'balance' => 0,
+                'locked_balance' => 0,
+            ]);
 
-        Wallet::query()->firstOrCreate([
-            'user_id' => $user->id,
-            'type' => Wallet::TYPE_WITHDRAWABLE,
-        ], [
-            'balance' => 0,
-            'locked_balance' => 0,
-        ]);
+            Wallet::query()->firstOrCreate([
+                'user_id' => $user->id,
+                'type' => Wallet::TYPE_WITHDRAWABLE,
+            ], [
+                'balance' => 0,
+                'locked_balance' => 0,
+            ]);
+
+            $welcomeBonusService->give($user);
+
+            return $user;
+        });
 
         Auth::login($user);
-        
+
         $user->loginLogs()->create([
             'ip_address' => $request->ip(),
             'user_agent' => $request->userAgent(),

@@ -38,6 +38,8 @@ class User extends Authenticatable
         'last_login_ip',
         'last_login_at',
 
+        'new_user_bonus_claimed_at',
+
         'display_vip_level',
         'display_active_team_count',
         'display_accumulated_recharge',
@@ -87,6 +89,7 @@ class User extends Authenticatable
             'monthly_salary_status' => 'boolean',
             'annual_salary_status' => 'boolean',
             'activated_at' => 'datetime',
+            'new_user_bonus_claimed_at' => 'datetime',
             'last_login_at' => 'datetime',
             'check_in_status' => 'boolean',
             'display_vip_level' => 'integer',

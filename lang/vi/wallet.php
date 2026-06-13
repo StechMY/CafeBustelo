@@ -61,6 +61,7 @@ return [
         'salary_monthly' => 'Lương hằng tháng',
         'salary_annual' => 'Lương hằng năm',
         'svip_purchase' => 'Mua SVIP',
+        'welcome_bonus' => 'Thưởng chào mừng',
     ],
 
     'bonus_code' => 'Mã thưởng',

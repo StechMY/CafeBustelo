@@ -470,4 +470,8 @@ return [
     'display_last_month_recharge' => '展示上月充值',
     'display_wallet_total_credit' => '展示钱包总收入',
     'display_wallet_total_debit' => '展示钱包总支出',
+    'welcome_bonus_settings' => '新人奖励设置',
+    'enable_welcome_bonus' => '开启新人奖励',
+    'welcome_bonus_amount' => '新人奖励金额',
+    'welcome_bonus_settings_saved' => '新人奖励设置已保存。',
 ];

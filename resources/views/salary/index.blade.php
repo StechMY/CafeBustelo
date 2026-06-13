@@ -64,7 +64,7 @@
                             </div>
 
                             <div class="mt-1 break-words text-lg font-black text-[#003b7a] sm:text-xl">
-                                {{ $currency }} {{ number_format((float) $user->accumulated_recharge, 2) }}
+                                {{ $currency }} {{ number_format((float) $accumulatedRecharge, 2) }}
                             </div>
                         </div>
                     </div>

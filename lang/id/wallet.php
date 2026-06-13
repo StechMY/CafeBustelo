@@ -51,6 +51,7 @@ return [
         'salary_monthly' => 'Gaji Bulanan',
         'salary_annual' => 'Gaji Tahunan',
         'svip_purchase' => 'Pembelian SVIP',
+        'welcome_bonus' => 'Bonus Selamat Datang',
     ],
     'bonus_code' => 'Kode Bonus',
     'check_in' => 'Hadiah Check-in',
