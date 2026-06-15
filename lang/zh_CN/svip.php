@@ -19,4 +19,6 @@ return [
     'lifetime' => '永久',
     'confirm_title' => '确认购买 SVIP？',
     'confirm_desc' => '购买后，系统会在产品收益可领取时自动帮你领取。',
+    'invalid_wallet_type' => '付款钱包无效。',
+    'insufficient_balance' => '余额不足',
 ];

@@ -19,4 +19,6 @@ return [
     'lifetime' => 'Lifetime',
     'confirm_title' => 'Purchase SVIP?',
     'confirm_desc' => 'After purchase, SVIP will automatically claim your product daily income when available.',
+    'invalid_wallet_type' => 'Invalid payment wallet.',
+    'insufficient_balance' => 'Insufficient balance',
 ];

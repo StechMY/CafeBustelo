@@ -17,6 +17,10 @@ class UserProduct extends Model
         'price_snapshot',
         'daily_income_snapshot',
         'duration_days_snapshot',
+        'claim_interval_hours_snapshot',
+        'total_claims_snapshot',
+        'product_type_snapshot',
+        'extra_points_snapshot',
         'claimed_days',
         'missed_days',
         'purchased_at',
@@ -32,6 +36,9 @@ class UserProduct extends Model
             'price_snapshot' => 'decimal:2',
             'daily_income_snapshot' => 'decimal:2',
             'duration_days_snapshot' => 'integer',
+            'claim_interval_hours_snapshot' => 'integer',
+            'total_claims_snapshot' => 'integer',
+            'extra_points_snapshot' => 'integer',
             'claimed_days' => 'integer',
             'missed_days' => 'integer',
             'purchased_at' => 'datetime',
@@ -64,5 +71,27 @@ class UserProduct extends Model
     public function isActive(): bool
     {
         return $this->status === 'active';
+    }
+
+    public function effectiveClaimIntervalHours(): int
+    {
+        return max(1, (int) ($this->claim_interval_hours_snapshot ?: 24));
+    }
+
+    public function effectiveTotalClaims(): int
+    {
+        if ($this->total_claims_snapshot !== null && (int) $this->total_claims_snapshot > 0) {
+            return (int) $this->total_claims_snapshot;
+        }
+
+        $durationDays = max(1, (int) $this->duration_days_snapshot);
+        $claimIntervalHours = $this->effectiveClaimIntervalHours();
+
+        return max(1, (int) floor(($durationDays * 24) / $claimIntervalHours));
+    }
+
+    public function isHourlyClaimProduct(): bool
+    {
+        return $this->effectiveClaimIntervalHours() < 24;
     }
 }

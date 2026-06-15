@@ -26,4 +26,6 @@ return [
     'login' => 'Login',
     'register' => 'Register',
     'calculator' => 'Calculator',
+    'downline_products' => 'Downline Products',
+    'points' => 'Points',
 ];

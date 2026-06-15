@@ -8,9 +8,11 @@ use App\Http\Controllers\CheckInController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\DailyIncomeClaimController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DownlineProductController;
 use App\Http\Controllers\HumanGateController;
 use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\MyTeamController;
+use App\Http\Controllers\PointClaimController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RechargeController;
@@ -133,6 +135,12 @@ Route::middleware('auth')->group(function (): void {
 
     Route::get('/calculator', CalculatorController::class)
         ->name('calculator.index');
+
+    Route::get('/downline-products', [DownlineProductController::class, 'index'])
+        ->name('downline-products.index');
+
+    Route::get('/points', [PointClaimController::class, 'index'])->name('points.index');
+    Route::post('/points/redeem', [PointClaimController::class, 'redeem'])->name('points.redeem');
 
     Route::get('/bank-account/bind', [BankAccountController::class, 'create'])
         ->name('bank-account.create');

@@ -15,14 +15,23 @@ class SvipService
         private readonly WalletService $walletService,
     ) {}
 
-    public function purchase(User $user, SvipPackage $package): SvipPurchase
-    {
-        return DB::transaction(function () use ($user, $package): SvipPurchase {
+    public function purchase(
+        User $user,
+        SvipPackage $package,
+        string $walletType = Wallet::TYPE_RECHARGE,
+    ): SvipPurchase {
+        if (! in_array($walletType, [
+            Wallet::TYPE_RECHARGE,
+            Wallet::TYPE_WITHDRAWABLE,
+        ], true)) {
+            throw new RuntimeException(__('svip.invalid_wallet_type'));
+        }
+
+        return DB::transaction(function () use ($user, $package, $walletType): SvipPurchase {
             $lockedUser = User::query()
                 ->whereKey($user->id)
                 ->lockForUpdate()
                 ->firstOrFail();
-
             $lockedPackage = SvipPackage::query()
                 ->whereKey($package->id)
                 ->lockForUpdate()
@@ -71,12 +80,13 @@ class SvipService
                 'meta' => [
                     'package_name' => $lockedPackage->name,
                     'duration_days' => $lockedPackage->duration_days,
+                    'payment_wallet_type' => $walletType,
                 ],
             ]);
 
             $this->walletService->debit(
                 user: $lockedUser,
-                walletType: Wallet::TYPE_RECHARGE,
+                walletType: $walletType,
                 transactionType: 'svip_purchase',
                 amount: $price,
                 reference: $purchase,
@@ -84,6 +94,7 @@ class SvipService
                 meta: [
                     'svip_purchase_id' => $purchase->id,
                     'svip_package_id' => $lockedPackage->id,
+                    'payment_wallet_type' => $walletType,
                 ],
             );
 

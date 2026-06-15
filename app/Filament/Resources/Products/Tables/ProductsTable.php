@@ -56,6 +56,54 @@ class ProductsTable
                     ->suffix(fn(): string => ' ' . __('filament.days'))
                     ->numeric()
                     ->sortable(),
+                TextColumn::make('product_type')
+                    ->label(__('filament.product_type'))
+                    ->badge()
+                    ->formatStateUsing(fn(?string $state): string => Product::typeOptions()[$state] ?? str((string) $state)->headline())
+                    ->sortable(),
+
+                TextColumn::make('available_days')
+                    ->label(__('filament.available_days'))
+                    ->state(function (Product $record): string {
+                        $days = $record->available_days ?? [];
+
+                        if (!is_array($days)) {
+                            $days = json_decode((string) $days, true) ?: [];
+                        }
+
+                        if ($days === []) {
+                            return __('filament.everyday');
+                        }
+
+                        return collect($days)
+                            ->map(fn($day) => Product::weekdayOptions()[(int) $day] ?? $day)
+                            ->join(', ');
+                    })
+                    ->toggleable(),
+                    
+                TextColumn::make('stock_quantity')
+                    ->label(__('filament.stock'))
+                    ->state(fn(Product $record): string => $record->stock_quantity === null
+                        ? __('filament.unlimited')
+                        : "{$record->sold_quantity} / {$record->stock_quantity}")
+                    ->toggleable(),
+
+                TextColumn::make('claim_interval_hours')
+                    ->label(__('filament.claim_interval_hours'))
+                    ->suffix(' h')
+                    ->sortable()
+                    ->toggleable(),
+
+                TextColumn::make('effective_total_claims')
+                    ->label(__('filament.total_claims'))
+                    ->state(fn(Product $record): int => $record->effectiveTotalClaims())
+                    ->sortable()
+                    ->toggleable(),
+
+                TextColumn::make('extra_points')
+                    ->label(__('filament.extra_points'))
+                    ->sortable()
+                    ->toggleable(),
 
                 TextColumn::make('total_income')
                     ->label(__('filament.total_income'))

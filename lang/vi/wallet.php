@@ -62,6 +62,7 @@ return [
         'salary_annual' => 'Lương hằng năm',
         'svip_purchase' => 'Mua SVIP',
         'welcome_bonus' => 'Thưởng chào mừng',
+        'points_redeem' => 'Đổi điểm',
     ],
 
     'bonus_code' => 'Mã thưởng',

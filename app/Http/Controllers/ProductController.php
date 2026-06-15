@@ -29,6 +29,11 @@ class ProductController extends Controller
             ->where('type', Wallet::TYPE_RECHARGE)
             ->first();
 
+        $withdrawableWallet = Wallet::query()
+            ->where('user_id', $user->id)
+            ->where('type', Wallet::TYPE_WITHDRAWABLE)
+            ->first();
+
         $activeUserProducts = UserProduct::query()
             ->with('product')
             ->where('user_id', $user->id)
@@ -56,6 +61,7 @@ class ProductController extends Controller
             'user' => $user,
             'products' => $products,
             'rechargeBalance' => $rechargeWallet?->balance ?? 0,
+            'withdrawableBalance' => $withdrawableWallet?->balance ?? 0,
             'activeUserProducts' => $activeUserProducts,
             'ownedProductIdsForUpgradeBonus' => $ownedProductIdsForUpgradeBonus,
             'userProductPurchaseCounts' => $userProductPurchaseCounts,
@@ -68,9 +74,14 @@ class ProductController extends Controller
         ProductPurchaseService $productPurchaseService,
     ): RedirectResponse {
         try {
+            $data = $request->validate([
+                'wallet_type' => ['required', 'string', 'in:recharge,withdrawable'],
+            ]);
+
             $productPurchaseService->purchase(
                 user: $request->user(),
                 product: $product,
+                walletType: $data['wallet_type'],
             );
 
             return redirect()

@@ -26,4 +26,6 @@ return [
     'login' => 'Đăng nhập',
     'register' => 'Đăng ký',
     'calculator' => 'Máy tính',
+    'downline_products' => 'Sản phẩm tuyến dưới',
+    'points' => 'Điểm',
 ];

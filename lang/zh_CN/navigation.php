@@ -26,4 +26,6 @@ return [
     'login' => '登录',
     'register' => '注册',
     'calculator' => '计算器',
+    'downline_products' => '下线产品明细',
+    'points' => '积分',
 ];

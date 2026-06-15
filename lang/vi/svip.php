@@ -19,4 +19,6 @@ return [
     'lifetime' => 'Vĩnh viễn',
     'confirm_title' => 'Mua SVIP?',
     'confirm_desc' => 'Sau khi mua, SVIP sẽ tự động nhận thu nhập hằng ngày từ sản phẩm khi có thể nhận.',
+    'invalid_wallet_type' => 'Ví thanh toán không hợp lệ.',
+    'insufficient_balance' => 'Số dư không đủ',
 ];

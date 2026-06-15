@@ -14,37 +14,48 @@ class ProductPurchaseService
 {
     public function __construct(
         private readonly WalletService $walletService,
+        private readonly PointService $pointService,
     ) {
     }
 
-    public function purchase(User $user, Product $product): UserProduct
-    {
-        if (!$product->isActive()) {
+    public function purchase(
+        User $user,
+        Product $product,
+        string $walletType = Wallet::TYPE_RECHARGE,
+    ): UserProduct {
+        if (! $product->isActive()) {
             throw new RuntimeException(__('products.product_not_available'));
         }
 
-        if (!$user->canOrder()) {
+        if (! $user->canOrder()) {
             throw new RuntimeException(__('products.order_disabled'));
         }
 
-        return DB::transaction(function () use ($user, $product): UserProduct {
+        if (! in_array($walletType, [
+            Wallet::TYPE_RECHARGE,
+            Wallet::TYPE_WITHDRAWABLE,
+        ], true)) {
+            throw new RuntimeException(__('products.invalid_wallet_type'));
+        }
+
+        return DB::transaction(function () use ($user, $product, $walletType): UserProduct {
             $lockedProduct = Product::query()
                 ->whereKey($product->id)
                 ->lockForUpdate()
                 ->firstOrFail();
 
-            if (!$lockedProduct->isActive()) {
-                throw new RuntimeException(__('products.product_not_available'));
+            if (! $lockedProduct->isPurchasableNow()) {
+                throw new RuntimeException(__('products.product_not_available_now'));
             }
 
-            $purchasedCount = \App\Models\UserProduct::query()
+            $purchasedCount = UserProduct::query()
                 ->where('user_id', $user->id)
                 ->where('product_id', $lockedProduct->id)
                 ->whereIn('status', ['active', 'expired', 'completed'])
                 ->lockForUpdate()
                 ->count();
 
-            $maxPurchase = max(1, (int) ($lockedProduct->max_purchase_per_user ?: 2));
+            $maxPurchase = $lockedProduct->maxPurchasePerUser();
 
             if ($purchasedCount >= $maxPurchase) {
                 throw new RuntimeException(__('products.max_purchase_limit_reached', [
@@ -53,6 +64,8 @@ class ProductPurchaseService
             }
 
             $now = now();
+            $claimIntervalHours = $lockedProduct->effectiveClaimIntervalHours();
+            $totalClaims = $lockedProduct->effectiveTotalClaims();
 
             $userProduct = UserProduct::query()->create([
                 'user_id' => $user->id,
@@ -60,21 +73,26 @@ class ProductPurchaseService
                 'price_snapshot' => $lockedProduct->price,
                 'daily_income_snapshot' => $lockedProduct->daily_income,
                 'duration_days_snapshot' => $lockedProduct->duration_days,
+                'claim_interval_hours_snapshot' => $claimIntervalHours,
+                'total_claims_snapshot' => $totalClaims,
+                'product_type_snapshot' => $lockedProduct->product_type,
+                'extra_points_snapshot' => (int) $lockedProduct->extra_points,
                 'claimed_days' => 0,
                 'missed_days' => 0,
                 'purchased_at' => $now,
-                'next_claim_at' => $now->copy()->addDay(),
-                'expires_at' => $this->calculateExpiresAt($now, (int) $lockedProduct->duration_days),
+                'next_claim_at' => $now->copy()->addHours($claimIntervalHours),
+                'expires_at' => $this->calculateExpiresAt($now, $claimIntervalHours, $totalClaims),
                 'status' => 'active',
                 'meta' => [
                     'product_name_snapshot' => $lockedProduct->name,
                     'product_code_snapshot' => $lockedProduct->code,
+                    'payment_wallet_type' => $walletType,
                 ],
             ]);
 
             $this->walletService->debit(
                 user: $user,
-                walletType: Wallet::TYPE_RECHARGE,
+                walletType: $walletType,
                 transactionType: 'product_purchase',
                 amount: $lockedProduct->price,
                 reference: $userProduct,
@@ -83,8 +101,18 @@ class ProductPurchaseService
                     'product_id' => $lockedProduct->id,
                     'product_name' => $lockedProduct->name,
                     'product_code' => $lockedProduct->code,
+                    'payment_wallet_type' => $walletType,
+                    'claim_interval_hours' => $claimIntervalHours,
+                    'total_claims' => $totalClaims,
+                    'product_type' => $lockedProduct->product_type,
                 ],
             );
+
+            if ($lockedProduct->stock_quantity !== null) {
+                $lockedProduct->increment('sold_quantity');
+            }
+
+            $this->pointService->giveUpgradeDayPurchasePoints($user, $userProduct);
 
             if ($user->status !== 'active') {
                 $user->forceFill([
@@ -97,8 +125,8 @@ class ProductPurchaseService
         });
     }
 
-    private function calculateExpiresAt(Carbon $purchasedAt, int $durationDays): Carbon
+    private function calculateExpiresAt(Carbon $purchasedAt, int $claimIntervalHours, int $totalClaims): Carbon
     {
-        return $purchasedAt->copy()->addDays($durationDays);
+        return $purchasedAt->copy()->addHours($claimIntervalHours * $totalClaims);
     }
 }

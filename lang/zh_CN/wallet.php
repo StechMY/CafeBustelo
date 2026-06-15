@@ -62,6 +62,7 @@ return [
         'salary_annual' => '年度薪资',
         'svip_purchase' => 'SVIP 购买',
         'welcome_bonus' => '新人奖励',
+        'points_redeem' => '积分兑换',
     ],
 
     'bonus_code' => '奖励码',

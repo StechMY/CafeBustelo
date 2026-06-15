@@ -55,7 +55,7 @@ class AutoClaimSvipDailyIncome extends Command
                     $claimableProducts = UserProduct::query()
                         ->where('user_id', $user->id)
                         ->where('status', 'active')
-                        ->whereColumn('claimed_days', '<', 'duration_days_snapshot')
+                        ->whereRaw('(claimed_days + missed_days) < COALESCE(total_claims_snapshot, duration_days_snapshot)')
                         ->whereNotNull('next_claim_at')
                         ->where('next_claim_at', '<=', now())
                         ->orderBy('next_claim_at')

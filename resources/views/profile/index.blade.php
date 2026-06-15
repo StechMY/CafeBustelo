@@ -16,6 +16,8 @@
             ['label' => __('navigation.team'), 'route' => 'my-team.index', 'icon' => 'team'],
             ['label' => __('navigation.contact'), 'route' => 'contact.index', 'icon' => 'contact'],
             ['label' => __('navigation.calculator'), 'route' => 'calculator.index', 'icon' => 'calculator'],
+            ['label' => __('navigation.downline_products'), 'route' => 'downline-products.index', 'icon' => 'team'],
+            ['label' => __('navigation.points'), 'route' => 'points.index', 'icon' => 'bonus'],
         ];
 
         $walletCards = [
@@ -422,16 +424,52 @@
                                     @endif
                                 </div>
                             @else
+                                @php
+                                    $svipPrice = (float) $svipPackage->price;
+                                    $canBuySvipWithRecharge = (float) $stats['recharge_wallet_balance'] >= $svipPrice;
+                                    $canBuySvipWithWithdrawable =
+                                        (float) $stats['withdrawable_wallet_balance'] >= $svipPrice;
+                                    $canBuySvip = $canBuySvipWithRecharge || $canBuySvipWithWithdrawable;
+                                @endphp
+
                                 <form
                                       method="POST"
                                       action="{{ route('svip.purchase', $svipPackage) }}"
-                                      class="js-svip-purchase-form mt-3 sm:mt-4">
+                                      class="js-svip-purchase-form mt-3 sm:mt-4"
+                                      data-can-afford="{{ $canBuySvip ? '1' : '0' }}"
+                                      data-price="{{ number_format($svipPrice, 2) }}"
+                                      data-recharge-balance="{{ number_format((float) $stats['recharge_wallet_balance'], 2) }}"
+                                      data-withdrawable-balance="{{ number_format((float) $stats['withdrawable_wallet_balance'], 2) }}">
                                     @csrf
+
+                                    <select
+                                            name="wallet_type"
+                                            class="mb-2 w-full rounded-xl border border-white/15 bg-white/10 px-3 py-2.5 text-xs font-black text-white outline-none sm:rounded-2xl sm:px-4 sm:py-3 sm:text-sm">
+                                        <option value="recharge" class="text-[#003b7a]" @disabled(!$canBuySvipWithRecharge)>
+                                            {{ __('wallet.recharge_wallet') }} -
+                                            {{ $currency }}
+                                            {{ number_format((float) $stats['recharge_wallet_balance'], 2) }}
+                                        </option>
+
+                                        <option value="withdrawable" class="text-[#003b7a]" @disabled(!$canBuySvipWithWithdrawable)>
+                                            {{ __('wallet.withdrawable_wallet') }} -
+                                            {{ $currency }}
+                                            {{ number_format((float) $stats['withdrawable_wallet_balance'], 2) }}
+                                        </option>
+                                    </select>
 
                                     <button
                                             type="submit"
-                                            class="w-full rounded-xl bg-[#ffd900] px-4 py-2.5 text-xs font-black uppercase text-[#003b7a] shadow-lg transition hover:-translate-y-0.5 hover:shadow-xl sm:rounded-2xl sm:px-5 sm:py-3 sm:text-sm">
-                                        {{ __('svip.purchase_now') }}
+                                            @disabled(!$canBuySvip)
+                                            class="w-full rounded-xl px-4 py-2.5 text-xs font-black uppercase shadow-lg transition sm:rounded-2xl sm:px-5 sm:py-3 sm:text-sm
+            {{ $canBuySvip
+                ? 'bg-[#ffd900] text-[#003b7a] hover:-translate-y-0.5 hover:shadow-xl'
+                : 'cursor-not-allowed bg-gray-500 text-gray-300' }}">
+                                        @if (!$canBuySvip)
+                                            {{ __('svip.insufficient_balance') }}
+                                        @else
+                                            {{ __('svip.purchase_now') }}
+                                        @endif
                                     </button>
                                 </form>
                             @endif
@@ -610,10 +648,50 @@
 
                         event.preventDefault();
 
+                        const canAfford = form.dataset.canAfford === '1';
+                        const price = form.dataset.price;
+                        const rechargeBalance = form.dataset.rechargeBalance;
+                        const withdrawableBalance = form.dataset.withdrawableBalance;
+
+                        if (!canAfford) {
+                            await Swal.fire({
+                                icon: 'warning',
+                                title: @json(__('svip.insufficient_balance')),
+                                html: `
+                            <div style="font-weight:700; color:#003b7a;">
+                                {{ __('wallet.recharge_wallet') }}: {{ $currency }} ${rechargeBalance}<br>
+                                {{ __('wallet.withdrawable_wallet') }}: {{ $currency }} ${withdrawableBalance}
+                            </div>
+                        `,
+                                confirmButtonText: @json(__('app.ok')),
+                                confirmButtonColor: '#003b7a',
+                            });
+
+                            return;
+                        }
+
+                        const walletSelect = form.querySelector('select[name="wallet_type"]');
+                        const walletLabel = walletSelect ?
+                            walletSelect.options[walletSelect.selectedIndex].text :
+                            '';
+
                         const result = await Swal.fire({
                             icon: 'question',
                             title: @json(__('svip.confirm_title')),
-                            text: @json(__('svip.confirm_desc')),
+                            html: `
+                        <div style="text-align:left; border-radius:16px; background:#fff8c7; padding:16px; color:#003b7a;">
+                            <div style="font-weight:900; font-size:18px;">{{ __('svip.svip') }}</div>
+                            <div style="margin-top:8px; font-weight:800;">
+                                {{ __('svip.price') }}: {{ $currency }} ${price}
+                            </div>
+                            <div style="margin-top:8px; font-weight:800;">
+                                {{ __('products.payment_wallet') }}: ${walletLabel}
+                            </div>
+                            <div style="margin-top:8px; font-size:13px; color:#4b5563;">
+                                {{ __('svip.confirm_desc') }}
+                            </div>
+                        </div>
+                    `,
                             showCancelButton: true,
                             confirmButtonText: @json(__('svip.purchase_now')),
                             cancelButtonText: @json(__('app.cancel')),

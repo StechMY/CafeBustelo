@@ -62,6 +62,7 @@ return [
         'salary_annual' => 'Annual Salary',
         'svip_purchase' => 'SVIP Purchase',
         'welcome_bonus' => 'Welcome Bonus',
+        'points_redeem' => 'Points Redeem',
     ],
 
     'bonus_code' => 'Bonus Code',

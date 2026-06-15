@@ -19,4 +19,6 @@ return [
     'lifetime' => 'Seumur Hidup',
     'confirm_title' => 'Beli SVIP?',
     'confirm_desc' => 'Setelah pembelian, SVIP akan otomatis mengklaim pendapatan harian produk saat tersedia.',
+    'invalid_wallet_type' => 'Dompet pembayaran tidak valid.',
+    'insufficient_balance' => 'Saldo tidak mencukupi',
 ];

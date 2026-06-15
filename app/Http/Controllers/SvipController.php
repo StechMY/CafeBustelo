@@ -17,9 +17,14 @@ class SvipController extends Controller
         SvipService $svipService,
     ): RedirectResponse {
         try {
+            $data = $request->validate([
+                'wallet_type' => ['required', 'string', 'in:recharge,withdrawable'],
+            ]);
+
             $svipService->purchase(
                 user: $request->user(),
                 package: $package,
+                walletType: $data['wallet_type'],
             );
 
             return back()->with('success', __('svip.purchase_success'));

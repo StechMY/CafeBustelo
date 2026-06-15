@@ -3,28 +3,26 @@
 @section('title', __('calculator.calculator'))
 
 @section('content')
-@section('content')
     @php
         $currency = config('app.currency', 'RM');
     @endphp
 
     <div
-         x-data="teamIncomeCalculator({
-             products: @js($calculatorProducts),
-             rates: @js($rates),
-             currency: @js($currency),
-         })">
+        x-data="teamIncomeCalculator({
+            products: @js($calculatorProducts),
+            rates: @js($rates),
+            currency: @js($currency),
+        })"
+    >
         <section class="bg-[#ffd900]">
             <div class="mx-auto max-w-7xl px-3 py-6 sm:px-6 sm:py-10 lg:px-8">
                 <div class="grid gap-6 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
                     <div>
-                        <div
-                             class="inline-flex rounded-full bg-white/75 px-5 py-2 text-xs font-black uppercase tracking-[0.22em] text-[#003b7a] shadow">
+                        <div class="inline-flex rounded-full bg-white/75 px-5 py-2 text-xs font-black uppercase tracking-[0.22em] text-[#003b7a] shadow">
                             {{ __('calculator.calculator_center') }}
                         </div>
 
-                        <h1
-                            class="mt-4 max-w-3xl text-4xl font-black uppercase leading-[0.9] tracking-tight text-[#003b7a] sm:text-6xl lg:text-7xl">
+                        <h1 class="mt-4 max-w-3xl text-4xl font-black uppercase leading-[0.9] tracking-tight text-[#003b7a] sm:text-6xl lg:text-7xl">
                             {{ __('calculator.hero_title') }}
                         </h1>
 
@@ -40,7 +38,26 @@
 
                         <h2
                             class="mt-3 text-3xl font-black leading-tight text-[#003b7a] sm:text-4xl"
-                            x-text="selectedProduct ? selectedProduct.name : '-'"></h2>
+                            x-text="selectedProduct ? selectedProduct.name : '-'"
+                        ></h2>
+
+                        <div class="mt-3 flex flex-wrap gap-1.5">
+                            <span class="rounded-full bg-[#003b7a] px-3 py-1 text-[10px] font-black uppercase text-white">
+                                <span x-text="selectedProduct?.code || '-'"></span>
+                            </span>
+
+                            <span class="rounded-full bg-[#fff8c7] px-3 py-1 text-[10px] font-black uppercase text-[#003b7a]">
+                                <span x-text="selectedProduct?.type_label || '-'"></span>
+                            </span>
+
+                            <span
+                                x-show="Number(selectedProduct?.extra_points || 0) > 0"
+                                class="rounded-full bg-[#e4003a] px-3 py-1 text-[10px] font-black uppercase text-white"
+                            >
+                                +<span x-text="money(selectedProduct?.extra_points || 0)"></span>
+                                {{ __('points.points') }}
+                            </span>
+                        </div>
 
                         <div class="mt-5 grid grid-cols-2 gap-3">
                             <div class="rounded-2xl bg-[#fff8c7] p-4">
@@ -49,8 +66,20 @@
                                 </div>
 
                                 <div
-                                     class="mt-1 text-xl font-black text-[#e4003a]"
-                                     x-text="formatMoney(selectedProduct?.daily_income || 0)"></div>
+                                    class="mt-1 text-xl font-black text-[#e4003a]"
+                                    x-text="formatMoney(selectedProduct?.daily_income || 0)"
+                                ></div>
+                            </div>
+
+                            <div class="rounded-2xl bg-[#fff8c7] p-4">
+                                <div class="text-[10px] font-black uppercase text-[#003b7a]/60">
+                                    {{ __('products.claim_interval') }}
+                                </div>
+
+                                <div class="mt-1 text-xl font-black text-[#003b7a]">
+                                    <span x-text="selectedProduct?.claim_interval_hours || 24"></span>
+                                    {{ __('products.hours') }}
+                                </div>
                             </div>
 
                             <div class="rounded-2xl bg-[#fff8c7] p-4">
@@ -63,6 +92,16 @@
                                     {{ __('calculator.days') }}
                                 </div>
                             </div>
+
+                            <div class="rounded-2xl bg-[#fff8c7] p-4">
+                                <div class="text-[10px] font-black uppercase text-[#003b7a]/60">
+                                    {{ __('filament.total_claims') }}
+                                </div>
+
+                                <div class="mt-1 text-xl font-black text-[#003b7a]">
+                                    <span x-text="selectedProduct?.total_claims || selectedProduct?.duration_days || 0"></span>
+                                </div>
+                            </div>
                         </div>
 
                         <div class="mt-5 rounded-2xl bg-[#003b7a] p-4 text-white">
@@ -71,8 +110,9 @@
                             </div>
 
                             <div
-                                 class="mt-1 break-words text-3xl font-black text-[#ffd900]"
-                                 x-text="formatMoney(totalDaily())"></div>
+                                class="mt-1 break-words text-3xl font-black text-[#ffd900]"
+                                x-text="formatMoney(totalDaily())"
+                            ></div>
                         </div>
                     </div>
                 </div>
@@ -109,12 +149,8 @@
                                     </p>
                                 </div>
 
-                                <div
-                                     class="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-[#003b7a] text-[#ffd900]">
-                                    @include('partials.icon', [
-                                        'name' => 'calculator',
-                                        'class' => 'h-6 w-6',
-                                    ])
+                                <div class="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-[#003b7a] text-[#ffd900]">
+                                    @include('partials.icon', ['name' => 'calculator', 'class' => 'h-6 w-6'])
                                 </div>
                             </div>
 
@@ -125,15 +161,59 @@
                                     </label>
 
                                     <select
-                                            x-model.number="productId"
-                                            class="w-full rounded-2xl border-2 border-[#003b7a]/15 bg-[#fff8c7] px-4 py-3 text-sm font-black text-[#003b7a] outline-none focus:border-[#003b7a]">
+                                        x-model.number="productId"
+                                        class="w-full rounded-2xl border-2 border-[#003b7a]/15 bg-[#fff8c7] px-4 py-3 text-sm font-black text-[#003b7a] outline-none focus:border-[#003b7a]"
+                                    >
                                         <template x-for="product in products" :key="product.id">
                                             <option
-                                                    :value="product.id"
-                                                    x-text="`${product.code} - ${product.name}`">
-                                            </option>
+                                                :value="product.id"
+                                                x-text="`${product.code} - ${product.name}`"
+                                            ></option>
                                         </template>
                                     </select>
+                                </div>
+
+                                <div class="rounded-[1.5rem] bg-[#fff8c7] p-4 ring-1 ring-[#003b7a]/10">
+                                    <div class="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <div class="text-[10px] font-black uppercase text-[#003b7a]/55">
+                                                {{ __('products.claim_interval') }}
+                                            </div>
+
+                                            <div class="mt-1 text-lg font-black text-[#003b7a]">
+                                                <span x-text="selectedProduct?.claim_interval_hours || 24"></span>
+                                                {{ __('products.hours') }}
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <div class="text-[10px] font-black uppercase text-[#003b7a]/55">
+                                                {{ __('filament.total_claims') }}
+                                            </div>
+
+                                            <div class="mt-1 text-lg font-black text-[#003b7a]">
+                                                <span x-text="selectedProduct?.total_claims || selectedProduct?.duration_days || 0"></span>
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <div class="text-[10px] font-black uppercase text-[#003b7a]/55">
+                                                {{ __('calculator.cycle_estimate') }}
+                                            </div>
+
+                                            <div class="mt-1 text-lg font-black text-[#e4003a]" x-text="formatMoney(productCycleIncome())"></div>
+                                        </div>
+
+                                        <div>
+                                            <div class="text-[10px] font-black uppercase text-[#003b7a]/55">
+                                                {{ __('points.points') }}
+                                            </div>
+
+                                            <div class="mt-1 text-lg font-black text-[#e4003a]">
+                                                +<span x-text="money(selectedProduct?.extra_points || 0)"></span>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
 
                                 <div class="grid grid-cols-3 gap-3">
@@ -144,11 +224,12 @@
                                         </label>
 
                                         <input
-                                               type="number"
-                                               min="0"
-                                               step="1"
-                                               x-model.number="bCount"
-                                               class="w-full rounded-2xl border-2 border-[#003b7a]/15 bg-white px-3 py-3 text-center text-lg font-black text-[#003b7a] outline-none focus:border-[#003b7a]">
+                                            type="number"
+                                            min="0"
+                                            step="1"
+                                            x-model.number="bCount"
+                                            class="w-full rounded-2xl border-2 border-[#003b7a]/15 bg-white px-3 py-3 text-center text-lg font-black text-[#003b7a] outline-none focus:border-[#003b7a]"
+                                        >
                                     </div>
 
                                     <div>
@@ -158,11 +239,12 @@
                                         </label>
 
                                         <input
-                                               type="number"
-                                               min="0"
-                                               step="1"
-                                               x-model.number="cCount"
-                                               class="w-full rounded-2xl border-2 border-[#003b7a]/15 bg-white px-3 py-3 text-center text-lg font-black text-[#003b7a] outline-none focus:border-[#003b7a]">
+                                            type="number"
+                                            min="0"
+                                            step="1"
+                                            x-model.number="cCount"
+                                            class="w-full rounded-2xl border-2 border-[#003b7a]/15 bg-white px-3 py-3 text-center text-lg font-black text-[#003b7a] outline-none focus:border-[#003b7a]"
+                                        >
                                     </div>
 
                                     <div>
@@ -172,18 +254,20 @@
                                         </label>
 
                                         <input
-                                               type="number"
-                                               min="0"
-                                               step="1"
-                                               x-model.number="dCount"
-                                               class="w-full rounded-2xl border-2 border-[#003b7a]/15 bg-white px-3 py-3 text-center text-lg font-black text-[#003b7a] outline-none focus:border-[#003b7a]">
+                                            type="number"
+                                            min="0"
+                                            step="1"
+                                            x-model.number="dCount"
+                                            class="w-full rounded-2xl border-2 border-[#003b7a]/15 bg-white px-3 py-3 text-center text-lg font-black text-[#003b7a] outline-none focus:border-[#003b7a]"
+                                        >
                                     </div>
                                 </div>
 
                                 <button
-                                        type="button"
-                                        class="w-full rounded-2xl bg-[#e4003a] px-5 py-3 text-sm font-black uppercase text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-[#c90032]"
-                                        @click="reset()">
+                                    type="button"
+                                    class="w-full rounded-2xl bg-[#e4003a] px-5 py-3 text-sm font-black uppercase text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-[#c90032]"
+                                    @click="reset()"
+                                >
                                     {{ __('app.reset') }}
                                 </button>
                             </div>
@@ -202,31 +286,9 @@
                                 </div>
 
                                 <div
-                                     class="shrink-0 rounded-full bg-[#ffd900] px-4 py-2 text-xs font-black uppercase text-[#003b7a]"
-                                     x-text="selectedProduct?.code || '-'"></div>
-                            </div>
-
-                            <div class="mt-5 grid grid-cols-2 gap-3">
-                                <div class="rounded-2xl bg-[#fff8c7] p-4">
-                                    <div class="text-[10px] font-black uppercase text-[#003b7a]/60">
-                                        {{ __('calculator.daily_income') }}
-                                    </div>
-
-                                    <div
-                                         class="mt-1 text-xl font-black text-[#e4003a]"
-                                         x-text="formatMoney(selectedProduct?.daily_income || 0)"></div>
-                                </div>
-
-                                <div class="rounded-2xl bg-[#fff8c7] p-4">
-                                    <div class="text-[10px] font-black uppercase text-[#003b7a]/60">
-                                        {{ __('calculator.duration') }}
-                                    </div>
-
-                                    <div class="mt-1 text-xl font-black text-[#003b7a]">
-                                        <span x-text="selectedProduct?.duration_days || 0"></span>
-                                        {{ __('calculator.days') }}
-                                    </div>
-                                </div>
+                                    class="shrink-0 rounded-full bg-[#ffd900] px-4 py-2 text-xs font-black uppercase text-[#003b7a]"
+                                    x-text="selectedProduct?.code || '-'"
+                                ></div>
                             </div>
 
                             <div class="mt-5 space-y-3">
@@ -234,9 +296,7 @@
                                     <div class="rounded-[1.5rem] bg-[#fff8c7] p-4 ring-1 ring-[#003b7a]/10">
                                         <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                                             <div>
-                                                <div class="text-xs font-black uppercase text-[#003b7a]/60"
-                                                     x-text="row.label">
-                                                </div>
+                                                <div class="text-xs font-black uppercase text-[#003b7a]/60" x-text="row.label"></div>
 
                                                 <div class="mt-1 text-sm font-bold text-[#003b7a]/70">
                                                     <span x-text="formatMoney(selectedProduct?.daily_income || 0)"></span>
@@ -248,8 +308,9 @@
                                             </div>
 
                                             <div
-                                                 class="text-2xl font-black text-[#e4003a]"
-                                                 x-text="formatMoney(row.amount)"></div>
+                                                class="text-2xl font-black text-[#e4003a]"
+                                                x-text="formatMoney(row.amount)"
+                                            ></div>
                                         </div>
                                     </div>
                                 </template>
@@ -262,8 +323,9 @@
                                     </div>
 
                                     <div
-                                         class="mt-2 break-words text-2xl font-black"
-                                         x-text="formatMoney(totalDaily())"></div>
+                                        class="mt-2 break-words text-2xl font-black"
+                                        x-text="formatMoney(totalDaily())"
+                                    ></div>
                                 </div>
 
                                 <div class="rounded-[1.5rem] bg-[#e4003a] p-4 text-white shadow-lg">
@@ -272,8 +334,9 @@
                                     </div>
 
                                     <div
-                                         class="mt-2 break-words text-2xl font-black"
-                                         x-text="formatMoney(totalMonthly())"></div>
+                                        class="mt-2 break-words text-2xl font-black"
+                                        x-text="formatMoney(totalMonthly())"
+                                    ></div>
                                 </div>
 
                                 <div class="rounded-[1.5rem] bg-[#ffd900] p-4 text-[#003b7a] shadow-lg">
@@ -282,13 +345,13 @@
                                     </div>
 
                                     <div
-                                         class="mt-2 break-words text-2xl font-black"
-                                         x-text="formatMoney(totalCycle())"></div>
+                                        class="mt-2 break-words text-2xl font-black"
+                                        x-text="formatMoney(totalCycle())"
+                                    ></div>
                                 </div>
                             </div>
 
-                            <div
-                                 class="mt-5 rounded-[1.5rem] bg-[#003b7a]/5 p-4 text-sm font-bold leading-relaxed text-[#003b7a]/70">
+                            <div class="mt-5 rounded-[1.5rem] bg-[#003b7a]/5 p-4 text-sm font-bold leading-relaxed text-[#003b7a]/70">
                                 {{ __('calculator.disclaimer') }}
                             </div>
                         </div>
@@ -304,11 +367,7 @@
         function teamIncomeCalculator(config) {
             return {
                 products: config.products || [],
-                rates: config.rates || {
-                    b: 0,
-                    c: 0,
-                    d: 0,
-                },
+                rates: config.rates || { b: 0, c: 0, d: 0 },
                 currency: config.currency || 'RM',
 
                 productId: config.products?.[0]?.id || null,
@@ -338,16 +397,25 @@
                     return Math.floor(number);
                 },
 
+                totalClaims() {
+                    return Number(this.selectedProduct?.total_claims || this.selectedProduct?.duration_days || 0);
+                },
+
+                productCycleIncome() {
+                    return Number(this.selectedProduct?.daily_income || 0) * this.totalClaims();
+                },
+
                 amount(rate, count) {
-                    const dailyIncome = Number(this.selectedProduct?.daily_income || 0);
+                    const claimIncome = Number(this.selectedProduct?.daily_income || 0);
                     const cleanRate = Number(rate || 0);
                     const cleanCount = this.sanitizeCount(count);
 
-                    return dailyIncome * (cleanRate / 100) * cleanCount;
+                    return claimIncome * (cleanRate / 100) * cleanCount;
                 },
 
                 rows() {
-                    return [{
+                    return [
+                        {
                             key: 'b',
                             label: @json(__('calculator.b_level_income')),
                             rate: Number(this.rates.b || 0),
@@ -380,7 +448,7 @@
                 },
 
                 totalCycle() {
-                    return this.totalDaily() * Number(this.selectedProduct?.duration_days || 0);
+                    return this.totalDaily() * this.totalClaims();
                 },
 
                 money(value) {

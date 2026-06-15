@@ -37,6 +37,7 @@ class User extends Authenticatable
         'registered_ip',
         'last_login_ip',
         'last_login_at',
+        'points_balance',
 
         'new_user_bonus_claimed_at',
 
@@ -120,6 +121,7 @@ class User extends Authenticatable
             'display_last_month_recharge' => 'decimal:2',
             'display_wallet_total_credit' => 'decimal:2',
             'display_wallet_total_debit' => 'decimal:2',
+            'points_balance' => 'decimal:2',
         ];
     }
 
@@ -215,6 +217,11 @@ class User extends Authenticatable
     public function svipPurchases(): HasMany
     {
         return $this->hasMany(SvipPurchase::class);
+    }
+
+    public function pointTransactions(): HasMany
+    {
+        return $this->hasMany(PointTransaction::class);
     }
 
     public function activeSvipPurchase(): HasOne

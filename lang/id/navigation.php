@@ -24,4 +24,6 @@ return [
     'login' => 'Masuk',
     'register' => 'Daftar',
     'calculator' => 'Kalkulator',
+    'downline_products' => 'Produk Downline',
+    'points' => 'Poin',
 ];

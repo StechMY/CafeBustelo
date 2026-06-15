@@ -17,50 +17,57 @@
         <div class="mx-auto max-w-7xl px-3 py-3 sm:px-6 sm:py-8 lg:px-8">
             <div class="grid gap-4 lg:grid-cols-[1.45fr_0.85fr] lg:items-center">
                 <div>
-                    <div
-                         class="mb-2 inline-flex rounded-full bg-white/70 px-3 py-1.5 text-[10px] font-black uppercase tracking-wide shadow sm:mb-3 sm:px-4 sm:py-2 sm:text-xs">
+                    <div class="mb-2 inline-flex rounded-full bg-white/70 px-3 py-1.5 text-[10px] font-black uppercase tracking-wide shadow sm:mb-3 sm:px-4 sm:py-2 sm:text-xs">
                         {{ __('products.product_center') }}
                     </div>
 
-                    <h1
-                        class="max-w-3xl text-3xl font-black uppercase leading-[0.9] tracking-tight text-[#003b7a] sm:text-6xl lg:text-7xl">
+                    <h1 class="max-w-3xl text-3xl font-black uppercase leading-[0.9] tracking-tight text-[#003b7a] sm:text-6xl lg:text-7xl">
                         {{ __('products.hero_title') }}
                     </h1>
 
-                    <p
-                       class="mt-2 line-clamp-2 max-w-2xl text-xs font-bold leading-relaxed text-[#003b7a]/80 sm:mt-5 sm:line-clamp-none sm:text-base">
+                    <p class="mt-2 line-clamp-2 max-w-2xl text-xs font-bold leading-relaxed text-[#003b7a]/80 sm:mt-5 sm:line-clamp-none sm:text-base">
                         {{ __('products.hero_description') }}
                     </p>
                 </div>
 
-                <div
-                     class="rounded-[1.35rem] border-3 border-[#003b7a] bg-white p-3 shadow-[6px_6px_0_#003b7a] sm:rounded-[2rem] sm:border-4 sm:p-6 sm:shadow-[10px_10px_0_#003b7a]">
+                <div class="rounded-[1.35rem] border-3 border-[#003b7a] bg-white p-3 shadow-[6px_6px_0_#003b7a] sm:rounded-[2rem] sm:border-4 sm:p-6 sm:shadow-[10px_10px_0_#003b7a]">
                     <div class="flex items-center justify-between gap-3 lg:block">
                         <div class="min-w-0">
-                            <div class="text-[10px] font-black uppercase text-[#e4003a] sm:text-sm">
-                                {{ __('dashboard.recharge_wallet') }}
-                            </div>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div class="rounded-2xl bg-[#003b7a] p-3 text-white">
+                                    <div class="text-[9px] font-black uppercase text-white/70">
+                                        {{ __('wallet.recharge_wallet') }}
+                                    </div>
 
-                            <div
-                                 class="mt-1 break-words text-2xl font-black leading-none text-[#003b7a] sm:mt-2 sm:text-5xl">
-                                {{ $currency }} {{ number_format((float) $rechargeBalance, 2) }}
-                            </div>
+                                    <div class="mt-1 break-words text-lg font-black">
+                                        {{ $currency }} {{ number_format((float) $rechargeBalance, 2) }}
+                                    </div>
+                                </div>
 
-                            <p class="mt-2 hidden text-xs font-bold text-[#003b7a]/70 sm:mt-3 sm:block sm:text-sm">
-                                {{ __('products.recharge_balance_description') }}
-                            </p>
+                                <div class="rounded-2xl bg-[#e4003a] p-3 text-white">
+                                    <div class="text-[9px] font-black uppercase text-white/70">
+                                        {{ __('wallet.withdrawable_wallet') }}
+                                    </div>
+
+                                    <div class="mt-1 break-words text-lg font-black">
+                                        {{ $currency }} {{ number_format((float) $withdrawableBalance, 2) }}
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         <div class="grid shrink-0 grid-cols-1 gap-2 sm:mt-4 sm:grid-cols-2 lg:flex lg:flex-wrap lg:gap-3">
                             <a
-                               href="{{ route('recharge.index') }}"
-                               class="rounded-full bg-[#003b7a] px-4 py-2 text-center text-[10px] font-black uppercase text-white shadow-lg hover:bg-[#002b59] sm:px-5 sm:py-3 sm:text-sm">
+                                href="{{ route('recharge.index') }}"
+                                class="rounded-full bg-[#003b7a] px-4 py-2 text-center text-[10px] font-black uppercase text-white shadow-lg hover:bg-[#002b59] sm:px-5 sm:py-3 sm:text-sm"
+                            >
                                 {{ __('dashboard.recharge') }}
                             </a>
 
                             <a
-                               href="{{ route('dashboard') }}"
-                               class="rounded-full bg-[#ffd900] px-4 py-2 text-center text-[10px] font-black uppercase text-[#003b7a] shadow-lg sm:px-5 sm:py-3 sm:text-sm">
+                                href="{{ route('dashboard') }}"
+                                class="rounded-full bg-[#ffd900] px-4 py-2 text-center text-[10px] font-black uppercase text-[#003b7a] shadow-lg sm:px-5 sm:py-3 sm:text-sm"
+                            >
                                 {{ __('dashboard.dashboard') }}
                             </a>
                         </div>
@@ -84,28 +91,28 @@
                         </p>
                     </div>
 
-                    <div
-                         class="shrink-0 rounded-full bg-[#e4003a] px-3 py-1.5 text-[10px] font-black uppercase text-white sm:text-xs">
+                    <div class="shrink-0 rounded-full bg-[#e4003a] px-3 py-1.5 text-[10px] font-black uppercase text-white sm:text-xs">
                         {{ __('products.total_active_products', ['count' => $activeUserProducts->count()]) }}
                     </div>
                 </div>
 
-                <div
-                     class="-mx-4 mt-3 flex snap-x snap-mandatory gap-3 overflow-x-auto overscroll-x-contain px-4 pb-2 [-webkit-overflow-scrolling:touch] sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 lg:grid-cols-3">
+                <div class="-mx-4 mt-3 flex snap-x snap-mandatory gap-3 overflow-x-auto overscroll-x-contain px-4 pb-2 [-webkit-overflow-scrolling:touch] sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 lg:grid-cols-3">
                     @foreach ($activeUserProducts as $userProduct)
                         @php
-                            $isCompleted =
-                                (int) $userProduct->claimed_days >= (int) $userProduct->duration_days_snapshot;
-                            $isClaimable =
-                                !$isCompleted && $userProduct->next_claim_at && $userProduct->next_claim_at->lte(now());
+                            $totalClaims = $userProduct->effectiveTotalClaims();
+                            $claimIntervalHours = $userProduct->effectiveClaimIntervalHours();
+
+                            $isCompleted = (int) $userProduct->claimed_days >= $totalClaims;
+                            $isClaimable = ! $isCompleted
+                                && $userProduct->next_claim_at
+                                && $userProduct->next_claim_at->lte(now());
                         @endphp
 
-                        <div
-                             class="w-[82vw] shrink-0 snap-start rounded-[1.35rem] bg-[#fff8c7] p-3 ring-1 ring-[#003b7a]/10 sm:w-auto sm:shrink sm:rounded-[1.5rem] sm:p-4">
+                        <div class="w-[82vw] shrink-0 snap-start rounded-[1.35rem] bg-[#fff8c7] p-3 ring-1 ring-[#003b7a]/10 sm:w-auto sm:shrink sm:rounded-[1.5rem] sm:p-4">
                             <div class="flex items-start justify-between gap-3">
                                 <div class="min-w-0">
                                     <div class="truncate text-sm font-black text-[#003b7a] sm:text-base">
-                                        {{ $userProduct->product?->name ?? __('products.product') }}
+                                        {{ $userProduct->product?->name ?? data_get($userProduct->meta, 'product_name_snapshot', __('products.product')) }}
                                     </div>
 
                                     <div class="mt-1 text-[10px] font-black uppercase text-[#003b7a]/55">
@@ -114,8 +121,7 @@
                                     </div>
                                 </div>
 
-                                <span
-                                      class="shrink-0 rounded-full bg-[#003b7a] px-2.5 py-1 text-[10px] font-black uppercase text-white">
+                                <span class="shrink-0 rounded-full bg-[#003b7a] px-2.5 py-1 text-[10px] font-black uppercase text-white">
                                     {{ __('status.' . $userProduct->status) }}
                                 </span>
                             </div>
@@ -123,12 +129,11 @@
                             <div class="mt-3 grid grid-cols-2 gap-2">
                                 <div class="rounded-2xl bg-white p-2.5 sm:p-3">
                                     <div class="text-[10px] font-black uppercase text-[#003b7a]/55">
-                                        {{ __('dashboard.daily') }}
+                                        {{ __('products.income_per_claim') }}
                                     </div>
 
                                     <div class="mt-1 text-base font-black text-[#e4003a] sm:text-lg">
-                                        {{ $currency }}
-                                        {{ number_format((float) $userProduct->daily_income_snapshot, 2) }}
+                                        {{ $currency }} {{ number_format((float) $userProduct->daily_income_snapshot, 2) }}
                                     </div>
                                 </div>
 
@@ -138,7 +143,27 @@
                                     </div>
 
                                     <div class="mt-1 text-base font-black text-[#003b7a] sm:text-lg">
-                                        {{ $userProduct->claimed_days }}/{{ $userProduct->duration_days_snapshot }}
+                                        {{ $userProduct->claimed_days }}/{{ $totalClaims }}
+                                    </div>
+                                </div>
+
+                                <div class="rounded-2xl bg-white p-2.5 sm:p-3">
+                                    <div class="text-[10px] font-black uppercase text-[#003b7a]/55">
+                                        {{ __('products.claim_interval') }}
+                                    </div>
+
+                                    <div class="mt-1 text-xs font-black text-[#003b7a]">
+                                        {{ $claimIntervalHours }} {{ __('products.hours') }}
+                                    </div>
+                                </div>
+
+                                <div class="rounded-2xl bg-white p-2.5 sm:p-3">
+                                    <div class="text-[10px] font-black uppercase text-[#003b7a]/55">
+                                        {{ __('products.total_claims') }}
+                                    </div>
+
+                                    <div class="mt-1 text-xs font-black text-[#003b7a]">
+                                        {{ $totalClaims }}
                                     </div>
                                 </div>
                             </div>
@@ -155,34 +180,37 @@
 
                             @if ($isCompleted)
                                 <button
-                                        type="button"
-                                        disabled
-                                        class="mt-3 w-full cursor-not-allowed rounded-2xl bg-gray-200 px-4 py-2.5 text-xs font-black uppercase text-gray-500">
+                                    type="button"
+                                    disabled
+                                    class="mt-3 w-full cursor-not-allowed rounded-2xl bg-gray-200 px-4 py-2.5 text-xs font-black uppercase text-gray-500"
+                                >
                                     {{ __('products.completed') }}
                                 </button>
                             @elseif ($isClaimable && $dailyIncomeClaimRouteName)
-                                <form method="POST" action="{{ route($dailyIncomeClaimRouteName, $userProduct) }}"
-                                      class="mt-3 js-claim-form">
+                                <form method="POST" action="{{ route($dailyIncomeClaimRouteName, $userProduct) }}" class="mt-3 js-claim-form">
                                     @csrf
 
                                     <button
-                                            type="submit"
-                                            class="w-full rounded-2xl bg-[#e4003a] px-4 py-2.5 text-xs font-black uppercase text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-[#c90032]">
+                                        type="submit"
+                                        class="w-full rounded-2xl bg-[#e4003a] px-4 py-2.5 text-xs font-black uppercase text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-[#c90032]"
+                                    >
                                         {{ __('products.claim_now') }}
                                     </button>
                                 </form>
-                            @elseif ($isClaimable && !$dailyIncomeClaimRouteName)
+                            @elseif ($isClaimable && ! $dailyIncomeClaimRouteName)
                                 <button
-                                        type="button"
-                                        disabled
-                                        class="mt-3 w-full cursor-not-allowed rounded-2xl bg-red-100 px-4 py-2.5 text-xs font-black uppercase text-red-700">
+                                    type="button"
+                                    disabled
+                                    class="mt-3 w-full cursor-not-allowed rounded-2xl bg-red-100 px-4 py-2.5 text-xs font-black uppercase text-red-700"
+                                >
                                     Claim route missing
                                 </button>
                             @else
                                 <button
-                                        type="button"
-                                        disabled
-                                        class="mt-3 w-full cursor-not-allowed rounded-2xl bg-white px-4 py-2.5 text-xs font-black uppercase text-[#003b7a]/45">
+                                    type="button"
+                                    disabled
+                                    class="mt-3 w-full cursor-not-allowed rounded-2xl bg-white px-4 py-2.5 text-xs font-black uppercase text-[#003b7a]/45"
+                                >
                                     {{ __('products.not_ready_yet') }}
                                 </button>
                             @endif
@@ -208,62 +236,121 @@
             <div class="grid grid-cols-2 gap-2 sm:gap-5 md:grid-cols-3 xl:grid-cols-4">
                 @foreach ($products as $product)
                     @php
-                        $canAfford = (float) $rechargeBalance >= (float) $product->price;
+                        $canAffordRecharge = (float) $rechargeBalance >= (float) $product->price;
+                        $canAffordWithdrawable = (float) $withdrawableBalance >= (float) $product->price;
+                        $canAfford = $canAffordRecharge || $canAffordWithdrawable;
+
                         $hasOwnedBefore = in_array($product->id, $ownedProductIdsForUpgradeBonus, true);
-                        $totalIncome = (float) $product->daily_income * (int) $product->duration_days;
+
+                        $claimIntervalHours = $product->effectiveClaimIntervalHours();
+                        $totalClaims = $product->effectiveTotalClaims();
+
+                        $claimIncome = (float) $product->daily_income;
+                        $totalIncome = $claimIncome * $totalClaims;
                         $profit = $totalIncome - (float) $product->price;
                         $roi = $product->price > 0 ? ($profit / (float) $product->price) * 100 : 0;
+
                         $purchasedCount = $userProductPurchaseCounts[$product->id] ?? 0;
-                        $maxPurchase = max(1, (int) ($product->max_purchase_per_user ?: 2));
+                        $maxPurchase = $product->maxPurchasePerUser();
                         $limitReached = $purchasedCount >= $maxPurchase;
-                        $canPurchase = $canAfford && !$limitReached;
+
+                        $isAvailableToday = $product->isAvailableToday();
+                        $isWithinAvailablePeriod = $product->isWithinAvailablePeriod();
+                        $hasStock = $product->hasStock();
+                        $isPurchasableNow = $product->isPurchasableNow();
+
+                        $canPurchase = $canAfford && ! $limitReached && $isPurchasableNow;
+
+                        $remainingStock = $product->stock_quantity === null
+                            ? null
+                            : max(0, (int) $product->stock_quantity - (int) $product->sold_quantity);
+
+                        $availableFromLabel = $product->available_from?->format('d M Y, h:i A') ?? '-';
+                        $availableUntilLabel = $product->available_until?->format('d M Y, h:i A') ?? '-';
+
+                        $availableDaysLabel = collect($product->available_days ?: [])
+                            ->map(fn ($day) => \App\Models\Product::weekdayOptions()[(int) $day] ?? $day)
+                            ->join(', ');
+
+                        $availableDaysLabel = $availableDaysLabel ?: __('filament.everyday');
                     @endphp
 
-                    <article
-                             class="relative overflow-hidden rounded-[1rem] bg-white shadow-lg ring-1 ring-black/5 sm:rounded-[1.75rem]">
-                        <div class="absolute right-0 top-0 h-10 w-10 rounded-bl-[0.9rem] bg-[#ffd900] sm:h-20 sm:w-20">
-                        </div>
+                    <article class="relative overflow-hidden rounded-[1rem] bg-white shadow-lg ring-1 ring-black/5 sm:rounded-[1.75rem]">
+                        <div class="absolute right-0 top-0 h-10 w-10 rounded-bl-[0.9rem] bg-[#ffd900] sm:h-20 sm:w-20"></div>
 
                         <div class="relative z-10 p-2.5 sm:p-5">
-                            <div class="flex items-start justify-between gap-2">
-                                <div class="min-w-0">
-                                    <div
-                                         class="inline-flex rounded-full bg-[#003b7a] px-2 py-0.5 text-[8px] font-black uppercase text-white sm:px-3 sm:py-1 sm:text-xs">
-                                        {{ $product->code }}
+                            <div class="space-y-1.5">
+                                <div class="flex items-start justify-between gap-2">
+                                    <div class="min-w-0">
+                                        <div class="inline-flex max-w-full rounded-full bg-[#003b7a] px-2 py-0.5 text-[8px] font-black uppercase text-white sm:px-3 sm:py-1 sm:text-xs">
+                                            <span class="truncate">{{ $product->code }}</span>
+                                        </div>
+
+                                        <h3 class="mt-1 line-clamp-2 min-h-[1.65rem] text-[11px] font-black uppercase leading-none text-[#003b7a] sm:mt-2 sm:min-h-[2.6rem] sm:text-xl">
+                                            {{ $product->name }}
+                                        </h3>
                                     </div>
 
-                                    <h3
-                                        class="mt-1 line-clamp-2 min-h-[1.65rem] text-[11px] font-black uppercase leading-none text-[#003b7a] sm:mt-2 sm:min-h-[2.6rem] sm:text-xl">
-                                        {{ $product->name }}
-                                    </h3>
+                                    @if ($hasOwnedBefore)
+                                        <div class="shrink-0 rounded-full bg-gray-100 px-1.5 py-0.5 text-[8px] font-black uppercase text-gray-500 sm:px-2 sm:py-1 sm:text-[9px]">
+                                            {{ __('products.owned_short') }}
+                                        </div>
+                                    @endif
                                 </div>
 
-                                @if ($hasOwnedBefore)
-                                    <div
-                                         class="shrink-0 rounded-full bg-gray-100 px-1.5 py-0.5 text-[8px] font-black uppercase text-gray-500 sm:px-2 sm:py-1 sm:text-[9px]">
-                                        {{ __('products.owned_short') }}
-                                    </div>
-                                @endif
+                                <div class="flex flex-wrap gap-1">
+                                    <span class="rounded-full bg-[#fff8c7] px-2 py-0.5 text-[8px] font-black uppercase text-[#003b7a] ring-1 ring-[#003b7a]/10">
+                                        {{ __('products.types.' . $product->product_type) !== 'products.types.' . $product->product_type
+                                            ? __('products.types.' . $product->product_type)
+                                            : str($product->product_type)->headline() }}
+                                    </span>
+
+                                    @if ($remainingStock !== null)
+                                        <span class="rounded-full bg-[#e4003a] px-2 py-0.5 text-[8px] font-black uppercase text-white">
+                                            {{ $remainingStock }} {{ __('products.left') }}
+                                        </span>
+                                    @endif
+
+                                    @if (! $isAvailableToday)
+                                        <span class="rounded-full bg-gray-200 px-2 py-0.5 text-[8px] font-black uppercase text-gray-600">
+                                            {{ __('products.not_available_today') }}
+                                        </span>
+                                    @elseif (! $isWithinAvailablePeriod)
+                                        <span class="rounded-full bg-gray-200 px-2 py-0.5 text-[8px] font-black uppercase text-gray-600">
+                                            {{ __('products.not_available_now') }}
+                                        </span>
+                                    @elseif (! $hasStock)
+                                        <span class="rounded-full bg-gray-200 px-2 py-0.5 text-[8px] font-black uppercase text-gray-600">
+                                            {{ __('products.sold_out') }}
+                                        </span>
+                                    @endif
+
+                                    @if ($claimIntervalHours !== 24)
+                                        <span class="rounded-full bg-[#003b7a] px-2 py-0.5 text-[8px] font-black uppercase text-white">
+                                            {{ $claimIntervalHours }}{{ __('products.hours_short') }}
+                                        </span>
+                                    @endif
+                                </div>
                             </div>
 
                             <div class="mt-2 overflow-hidden rounded-[0.85rem] bg-[#fff8c7] sm:mt-3 sm:rounded-[1.25rem]">
                                 @if ($product->image_url)
                                     <img
-                                         src="{{ $product->image_url }}"
-                                         alt="{{ $product->name }}"
-                                         class="aspect-[1.15/1] w-full object-cover sm:aspect-[4/3]"
-                                         loading="lazy">
+                                        src="{{ $product->image_url }}"
+                                        alt="{{ $product->name }}"
+                                        class="aspect-[1.15/1] w-full object-cover sm:aspect-[4/3]"
+                                        loading="lazy"
+                                    >
                                 @else
-                                    <div
-                                         class="grid aspect-[1.15/1] w-full place-items-center bg-[#ffd900] sm:aspect-[4/3]">
+                                    <div class="grid aspect-[1.15/1] w-full place-items-center bg-[#ffd900] sm:aspect-[4/3]">
                                         <div class="text-center">
                                             <img
-                                                 src="{{ asset('logo.jpg') }}"
-                                                 alt="{{ __('app.brand_name') }}"
-                                                 class="mx-auto h-7 w-7 rounded-full object-cover shadow-sm ring-2 ring-[#ffd900] sm:h-11 sm:w-11 lg:h-12 lg:w-12">
+                                                src="{{ asset('logo.jpg') }}"
+                                                alt="{{ __('app.brand_name') }}"
+                                                class="mx-auto h-7 w-7 rounded-full object-cover shadow-sm ring-2 ring-[#ffd900] sm:h-11 sm:w-11 lg:h-12 lg:w-12"
+                                            >
 
-                                            <div
-                                                 class="mt-1 text-[7px] font-black uppercase text-[#003b7a]/70 sm:mt-2 sm:text-[10px]">
+                                            <div class="mt-1 text-[7px] font-black uppercase text-[#003b7a]/70 sm:mt-2 sm:text-[10px]">
                                                 {{ __('products.no_image') }}
                                             </div>
                                         </div>
@@ -283,66 +370,115 @@
 
                             <div class="mt-1.5 grid grid-cols-2 gap-1.5 sm:mt-2 sm:gap-2">
                                 <div class="rounded-[0.75rem] bg-[#fff8c7] p-1.5 sm:rounded-xl sm:p-2.5">
-                                    <div
-                                         class="text-[7px] font-black uppercase leading-tight text-[#003b7a]/55 sm:text-[9px]">
-                                        {{ __('products.daily_income') }}
+                                    <div class="text-[7px] font-black uppercase leading-tight text-[#003b7a]/55 sm:text-[9px]">
+                                        {{ __('products.income_per_claim') }}
                                     </div>
 
                                     <div class="mt-0.5 text-[11px] font-black text-[#e4003a] sm:mt-1 sm:text-sm">
-                                        {{ $currency }} {{ number_format((float) $product->daily_income, 2) }}
+                                        {{ $currency }} {{ number_format($claimIncome, 2) }}
                                     </div>
                                 </div>
 
                                 <div class="rounded-[0.75rem] bg-[#fff8c7] p-1.5 sm:rounded-xl sm:p-2.5">
-                                    <div
-                                         class="text-[7px] font-black uppercase leading-tight text-[#003b7a]/55 sm:text-[9px]">
-                                        {{ __('products.duration') }}
+                                    <div class="text-[7px] font-black uppercase leading-tight text-[#003b7a]/55 sm:text-[9px]">
+                                        {{ __('products.claim_interval') }}
                                     </div>
 
                                     <div class="mt-0.5 text-[11px] font-black text-[#003b7a] sm:mt-1 sm:text-sm">
-                                        {{ $product->duration_days }} {{ __('products.days') }}
+                                        {{ $claimIntervalHours }} {{ __('products.hours') }}
+                                    </div>
+                                </div>
+
+                                <div class="rounded-[0.75rem] bg-[#fff8c7] p-1.5 sm:rounded-xl sm:p-2.5">
+                                    <div class="text-[7px] font-black uppercase leading-tight text-[#003b7a]/55 sm:text-[9px]">
+                                        {{ __('products.total_claims') }}
+                                    </div>
+
+                                    <div class="mt-0.5 text-[11px] font-black text-[#003b7a] sm:mt-1 sm:text-sm">
+                                        {{ $totalClaims }}
+                                    </div>
+                                </div>
+
+                                <div class="rounded-[0.75rem] bg-[#fff8c7] p-1.5 sm:rounded-xl sm:p-2.5">
+                                    <div class="text-[7px] font-black uppercase leading-tight text-[#003b7a]/55 sm:text-[9px]">
+                                        {{ __('products.total_income') }}
+                                    </div>
+
+                                    <div class="mt-0.5 text-[11px] font-black text-[#e4003a] sm:mt-1 sm:text-sm">
+                                        {{ $currency }} {{ number_format($totalIncome, 2) }}
                                     </div>
                                 </div>
                             </div>
 
                             <div class="mt-2 grid grid-cols-1 gap-1.5">
                                 <button
-                                        type="button"
-                                        class="w-full rounded-lg border border-[#003b7a]/15 bg-white px-2 py-1.5 text-[9px] font-black text-[#003b7a] sm:rounded-xl sm:px-2.5 sm:py-2 sm:text-[11px]"
-                                        data-product-detail
-                                        data-name="{{ $product->name }}"
-                                        data-code="{{ $product->code }}"
-                                        data-price="{{ $currency }} {{ number_format((float) $product->price, 2) }}"
-                                        data-daily="{{ $currency }} {{ number_format((float) $product->daily_income, 2) }}"
-                                        data-days="{{ $product->duration_days }} {{ __('products.days') }}"
-                                        data-total="{{ $currency }} {{ number_format($totalIncome, 2) }}"
-                                        data-profit="{{ $currency }} {{ number_format($profit, 2) }}"
-                                        data-roi="+{{ number_format($roi, 0) }}%"
-                                        data-upgrade="{{ $currency }} {{ number_format((float) $product->upgrade_bonus, 2) }}"
-                                        data-owned="{{ $hasOwnedBefore ? __('products.already_owned') : __('products.available') }}">
+                                    type="button"
+                                    class="w-full rounded-lg border border-[#003b7a]/15 bg-white px-2 py-1.5 text-[9px] font-black text-[#003b7a] sm:rounded-xl sm:px-2.5 sm:py-2 sm:text-[11px]"
+                                    data-product-detail
+                                    data-name="{{ $product->name }}"
+                                    data-code="{{ $product->code }}"
+                                    data-type="{{ __('products.types.' . $product->product_type) !== 'products.types.' . $product->product_type ? __('products.types.' . $product->product_type) : str($product->product_type)->headline() }}"
+                                    data-price="{{ $currency }} {{ number_format((float) $product->price, 2) }}"
+                                    data-income="{{ $currency }} {{ number_format($claimIncome, 2) }}"
+                                    data-interval="{{ $claimIntervalHours }} {{ __('products.hours') }}"
+                                    data-claims="{{ $totalClaims }}"
+                                    data-duration="{{ $product->duration_days }} {{ __('products.days') }}"
+                                    data-total="{{ $currency }} {{ number_format($totalIncome, 2) }}"
+                                    data-profit="{{ $currency }} {{ number_format($profit, 2) }}"
+                                    data-roi="+{{ number_format($roi, 0) }}%"
+                                    data-upgrade="{{ $currency }} {{ number_format((float) $product->upgrade_bonus, 2) }}"
+                                    data-points="{{ number_format((float) $product->extra_points, 2) }}"
+                                    data-days="{{ $availableDaysLabel }}"
+                                    data-from="{{ $availableFromLabel }}"
+                                    data-until="{{ $availableUntilLabel }}"
+                                    data-stock="{{ $remainingStock === null ? __('filament.unlimited') : $remainingStock }}"
+                                    data-owned="{{ $hasOwnedBefore ? __('products.already_owned') : __('products.available') }}"
+                                >
                                     {{ __('products.view_details') }}
                                 </button>
 
                                 <form
-                                      method="POST"
-                                      action="{{ route('products.purchase', $product) }}"
-                                      class="js-purchase-form"
-                                      data-can-afford="{{ $canAfford ? '1' : '0' }}"
-                                      data-name="{{ $product->name }}"
-                                      data-amount="{{ number_format((float) $product->price, 2) }}"
-                                      data-balance="{{ number_format((float) $rechargeBalance, 2) }}">
+                                    method="POST"
+                                    action="{{ route('products.purchase', $product) }}"
+                                    class="js-purchase-form"
+                                    data-can-afford="{{ $canAfford ? '1' : '0' }}"
+                                    data-can-afford-recharge="{{ $canAffordRecharge ? '1' : '0' }}"
+                                    data-can-afford-withdrawable="{{ $canAffordWithdrawable ? '1' : '0' }}"
+                                    data-name="{{ $product->name }}"
+                                    data-amount="{{ number_format((float) $product->price, 2) }}"
+                                    data-recharge-balance="{{ number_format((float) $rechargeBalance, 2) }}"
+                                    data-withdrawable-balance="{{ number_format((float) $withdrawableBalance, 2) }}"
+                                >
                                     @csrf
 
+                                    <select
+                                        name="wallet_type"
+                                        class="mb-1.5 w-full rounded-lg border border-[#003b7a]/20 bg-[#fff8c7] px-2 py-1.5 text-[9px] font-black text-[#003b7a] outline-none sm:mb-2 sm:rounded-xl sm:px-3 sm:py-2 sm:text-xs"
+                                    >
+                                        <option value="recharge" @disabled(! $canAffordRecharge)>
+                                            {{ __('wallet.recharge_wallet') }} -
+                                            {{ $currency }} {{ number_format((float) $rechargeBalance, 2) }}
+                                        </option>
+
+                                        <option value="withdrawable" @disabled(! $canAffordWithdrawable)>
+                                            {{ __('wallet.withdrawable_wallet') }} -
+                                            {{ $currency }} {{ number_format((float) $withdrawableBalance, 2) }}
+                                        </option>
+                                    </select>
+
                                     <button
-                                            type="submit"
-                                            @disabled(!$canPurchase)
-                                            class="w-full rounded-lg px-2 py-2 text-[9px] font-black uppercase shadow-md transition sm:rounded-2xl sm:px-3 sm:py-3 sm:text-sm
-    {{ $canPurchase
-        ? 'bg-[#e4003a] text-white hover:-translate-y-0.5 hover:bg-[#c90032]'
-        : 'cursor-not-allowed bg-gray-200 text-gray-500' }}">
+                                        type="submit"
+                                        @disabled(! $canPurchase)
+                                        class="w-full rounded-lg px-2 py-2 text-[9px] font-black uppercase shadow-md transition sm:rounded-2xl sm:px-3 sm:py-3 sm:text-sm
+                                        {{ $canPurchase
+                                            ? 'bg-[#e4003a] text-white hover:-translate-y-0.5 hover:bg-[#c90032]'
+                                            : 'cursor-not-allowed bg-gray-200 text-gray-500' }}"
+                                    >
                                         @if ($limitReached)
                                             {{ __('products.purchase_limit_reached') }}
-                                        @elseif (!$canAfford)
+                                        @elseif (! $isPurchasableNow)
+                                            {{ __('products.not_available_now') }}
+                                        @elseif (! $canAfford)
                                             {{ __('products.insufficient_balance') }}
                                         @else
                                             {{ __('products.purchase_now') }}
@@ -411,15 +547,17 @@
                     const canAfford = form.dataset.canAfford === '1';
                     const name = form.dataset.name;
                     const amount = form.dataset.amount;
-                    const balance = form.dataset.balance;
+                    const rechargeBalance = form.dataset.rechargeBalance;
+                    const withdrawableBalance = form.dataset.withdrawableBalance;
 
-                    if (!canAfford) {
+                    if (! canAfford) {
                         const result = await Swal.fire({
                             icon: 'warning',
                             title: @json(__('products.insufficient_balance')),
                             html: `
                                 <div style="font-weight:700; color:#003b7a;">
-                                    {{ __('products.current_balance') }}: {{ $currency }} ${balance}
+                                    {{ __('wallet.recharge_wallet') }}: {{ $currency }} ${rechargeBalance}<br>
+                                    {{ __('wallet.withdrawable_wallet') }}: {{ $currency }} ${withdrawableBalance}
                                 </div>
                                 <div style="margin-top:8px; font-size:14px; color:#6b7280;">
                                     {{ __('products.please_recharge_first') }}
@@ -438,6 +576,11 @@
                         return;
                     }
 
+                    const walletSelect = form.querySelector('select[name="wallet_type"]');
+                    const walletLabel = walletSelect
+                        ? walletSelect.options[walletSelect.selectedIndex].text
+                        : '';
+
                     const result = await Swal.fire({
                         icon: 'question',
                         title: @json(__('products.confirm_purchase_title')),
@@ -446,6 +589,9 @@
                                 <div style="font-weight:900; font-size:18px;">${name}</div>
                                 <div style="margin-top:8px; font-weight:800;">
                                     {{ __('products.product_price') }}: {{ $currency }} ${amount}
+                                </div>
+                                <div style="margin-top:8px; font-weight:800;">
+                                    {{ __('products.payment_wallet') }}: ${walletLabel}
                                 </div>
                                 <div style="margin-top:8px; font-size:13px; color:#4b5563;">
                                     {{ __('products.purchase_confirm_note') }}
@@ -484,18 +630,29 @@
                             <div style="text-align:left; display:grid; gap:10px;">
                                 <div style="border-radius:16px; background:#ffd900; padding:14px; color:#003b7a;">
                                     <div style="font-size:12px; font-weight:900; text-transform:uppercase;">${button.dataset.code}</div>
+                                    <div style="font-size:11px; font-weight:900; margin-top:4px; opacity:.75;">${button.dataset.type}</div>
                                     <div style="font-size:26px; font-weight:900; margin-top:4px;">${button.dataset.price}</div>
                                 </div>
 
                                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
                                     <div style="border-radius:14px; background:#fff8c7; padding:12px;">
-                                        <div style="font-size:11px; font-weight:900; color:#6b7280;">{{ __('products.daily_income') }}</div>
-                                        <div style="font-weight:900; color:#e4003a;">${button.dataset.daily}</div>
+                                        <div style="font-size:11px; font-weight:900; color:#6b7280;">{{ __('products.income_per_claim') }}</div>
+                                        <div style="font-weight:900; color:#e4003a;">${button.dataset.income}</div>
+                                    </div>
+
+                                    <div style="border-radius:14px; background:#fff8c7; padding:12px;">
+                                        <div style="font-size:11px; font-weight:900; color:#6b7280;">{{ __('products.claim_interval') }}</div>
+                                        <div style="font-weight:900; color:#003b7a;">${button.dataset.interval}</div>
+                                    </div>
+
+                                    <div style="border-radius:14px; background:#fff8c7; padding:12px;">
+                                        <div style="font-size:11px; font-weight:900; color:#6b7280;">{{ __('products.total_claims') }}</div>
+                                        <div style="font-weight:900; color:#003b7a;">${button.dataset.claims}</div>
                                     </div>
 
                                     <div style="border-radius:14px; background:#fff8c7; padding:12px;">
                                         <div style="font-size:11px; font-weight:900; color:#6b7280;">{{ __('products.duration') }}</div>
-                                        <div style="font-weight:900; color:#003b7a;">${button.dataset.days}</div>
+                                        <div style="font-weight:900; color:#003b7a;">${button.dataset.duration}</div>
                                     </div>
 
                                     <div style="border-radius:14px; background:#fff8c7; padding:12px;">
@@ -514,9 +671,24 @@
                                     </div>
 
                                     <div style="border-radius:14px; background:#fff8c7; padding:12px;">
-                                        <div style="font-size:11px; font-weight:900; color:#6b7280;">{{ __('products.upgrade_bonus') }}</div>
-                                        <div style="font-weight:900; color:#003b7a;">${button.dataset.upgrade}</div>
+                                        <div style="font-size:11px; font-weight:900; color:#6b7280;">{{ __('filament.extra_points') }}</div>
+                                        <div style="font-weight:900; color:#003b7a;">${button.dataset.points}</div>
                                     </div>
+
+                                    <div style="border-radius:14px; background:#fff8c7; padding:12px;">
+                                        <div style="font-size:11px; font-weight:900; color:#6b7280;">{{ __('filament.available_days') }}</div>
+                                        <div style="font-weight:900; color:#003b7a;">${button.dataset.days}</div>
+                                    </div>
+
+                                    <div style="border-radius:14px; background:#fff8c7; padding:12px;">
+                                        <div style="font-size:11px; font-weight:900; color:#6b7280;">{{ __('filament.stock') }}</div>
+                                        <div style="font-weight:900; color:#003b7a;">${button.dataset.stock}</div>
+                                    </div>
+                                </div>
+
+                                <div style="border-radius:14px; border:2px dashed rgba(0,59,122,.2); padding:12px;">
+                                    <div style="font-size:11px; font-weight:900; color:#6b7280;">{{ __('filament.available_from') }} / {{ __('filament.available_until') }}</div>
+                                    <div style="font-weight:900; color:#003b7a;">${button.dataset.from} → ${button.dataset.until}</div>
                                 </div>
 
                                 <div style="border-radius:14px; border:2px dashed rgba(0,59,122,.2); padding:12px;">

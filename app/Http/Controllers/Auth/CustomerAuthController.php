@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
+use App\Services\PointService;
 
 class CustomerAuthController extends Controller
 {
@@ -63,7 +64,7 @@ class CustomerAuthController extends Controller
         return redirect()->intended(route('dashboard'));
     }
 
-    public function register(Request $request, WelcomeBonusService $welcomeBonusService): RedirectResponse
+    public function register(Request $request, WelcomeBonusService $welcomeBonusService, PointService $pointService): RedirectResponse
     {
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
@@ -101,7 +102,7 @@ class CustomerAuthController extends Controller
                 ->first();
         }
 
-        $user = DB::transaction(function () use ($data, $referrer, $request, $welcomeBonusService): User {
+        $user = DB::transaction(function () use ($data, $referrer, $request, $welcomeBonusService, $pointService): User {
             $user = User::query()->create([
                 'name' => $data['name'],
                 'username' => $data['username'],
@@ -135,6 +136,9 @@ class CustomerAuthController extends Controller
                 'locked_balance' => 0,
             ]);
 
+            if ($referrer) {
+                $pointService->giveInviteDayRegisterPoints($referrer, $user);
+            }
             $welcomeBonusService->give($user);
 
             return $user;
