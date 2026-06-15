@@ -79,11 +79,11 @@
                             </div>
 
                             <div class="mt-1 text-base font-black leading-tight text-[#003b7a]">
-                                {{ number_format($exchangeRate, 2) }}
+                                1.00
                                 {{ __('points.points') }}
                                 <br>
                                 =
-                                {{ $currency }} 1.00
+                                {{ $currency }} {{ number_format($exchangeRate, 2) }}
                             </div>
                         </div>
 
