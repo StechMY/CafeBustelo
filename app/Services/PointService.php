@@ -163,7 +163,7 @@ class PointService
             throw new RuntimeException(__('points.invalid_exchange_rate'));
         }
 
-        $cashAmount = round($points / $rate, 2);
+        $cashAmount = round($points * $rate, 2);
 
         if ($cashAmount <= 0) {
             throw new RuntimeException(__('points.invalid_redeem_amount'));

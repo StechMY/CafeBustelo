@@ -506,7 +506,7 @@ return [
     'invite_day_points_amount' => 'Invite Day Points Amount',
     'points_cash_exchange_enabled' => 'Enable Points to Cash',
     'points_to_cash_rate' => 'Points to Cash Rate',
-    'points_to_cash_rate_help' => 'Example: 100 means 100 points = 1 cash.',
+    'points_to_cash_rate_help' => 'Example: 100 means 1 points = 100 cash.',
     'minimum_points_to_redeem' => 'Minimum Points to Redeem',
     'points_settings_saved' => 'Points settings saved.',
     'upgrade_day_points_weekdays' => 'Upgrade Day Points Weekdays',

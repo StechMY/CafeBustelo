@@ -404,7 +404,7 @@
                         return 0;
                     }
 
-                    return cleanPoints / this.rate;
+                    return cleanPoints * this.rate;
                 },
 
                 money(value) {

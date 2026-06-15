@@ -507,7 +507,7 @@ return [
     'invite_day_points_amount' => '邀请日积分数量',
     'points_cash_exchange_enabled' => '开启积分兑换现金',
     'points_to_cash_rate' => '积分兑换比例',
-    'points_to_cash_rate_help' => '例如：100 代表 100 积分 = 1 现金。',
+    'points_to_cash_rate_help' => '例如：100 代表 1 积分 = 100 现金。',
     'minimum_points_to_redeem' => '最低兑换积分',
     'points_settings_saved' => '积分设置已保存。',
     'upgrade_day_points_weekdays' => '升级日积分星期',
