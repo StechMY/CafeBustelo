@@ -20,4 +20,12 @@ return [
     'purchased_at' => 'Waktu Pembelian',
     'no_records' => 'Belum ada data produk downline',
     'no_records_desc' => 'Belum ada pembelian produk dari anggota downline Anda.',
+    'income_per_claim' => 'Pendapatan per Klaim',
+    'commission_per_claim' => 'Komisi per Klaim',
+    'estimated_full_commission' => 'Estimasi Total Komisi',
+    'claimed_commission_estimate' => 'Estimasi Komisi yang Sudah Diklaim',
+    'total_claims' => 'Total Klaim',
+    'progress' => 'Progres',
+    'claim_interval' => 'Interval Klaim',
+    'claimed' => 'Sudah Diklaim',
 ];

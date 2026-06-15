@@ -29,6 +29,7 @@
                 'label' => 'B',
                 'products' => $summary['b_products'],
                 'commission' => $summary['b_estimated_commission'],
+                'commission_per_claim' => $summary['b_commission_per_claim'] ?? 0,
                 'rate' => $commissionRates->get(1)?->rate_percent ?? 0,
                 'class' => 'from-[#ff3fac] to-[#e4003a]',
             ],
@@ -36,6 +37,7 @@
                 'label' => 'C',
                 'products' => $summary['c_products'],
                 'commission' => $summary['c_estimated_commission'],
+                'commission_per_claim' => $summary['c_commission_per_claim'] ?? 0,
                 'rate' => $commissionRates->get(2)?->rate_percent ?? 0,
                 'class' => 'from-[#22d3c5] to-[#009b8f]',
             ],
@@ -43,6 +45,7 @@
                 'label' => 'D',
                 'products' => $summary['d_products'],
                 'commission' => $summary['d_estimated_commission'],
+                'commission_per_claim' => $summary['d_commission_per_claim'] ?? 0,
                 'rate' => $commissionRates->get(3)?->rate_percent ?? 0,
                 'class' => 'from-[#3b82f6] to-[#003b7a]',
             ],
@@ -78,6 +81,16 @@
                     <p class="mt-3 text-xs font-bold text-[#003b7a]/70 sm:text-sm">
                         {{ __('downline_products.estimated_note') }}
                     </p>
+
+                    <div class="mt-4 rounded-2xl bg-[#fff8c7] p-3">
+                        <div class="text-[9px] font-black uppercase text-[#003b7a]/55">
+                            {{ __('downline_products.claimed_commission_estimate') }}
+                        </div>
+
+                        <div class="mt-1 text-xl font-black text-[#e4003a]">
+                            {{ $currency }} {{ number_format((float) ($summary['total_claimed_commission_estimate'] ?? 0), 2) }}
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -124,10 +137,20 @@
 
                         <div class="rounded-2xl bg-white/20 p-3">
                             <div class="text-[9px] font-black uppercase text-white/60">
-                                {{ __('downline_products.earning') }}
+                                {{ __('downline_products.commission_per_claim') }}
                             </div>
 
                             <div class="mt-1 text-lg font-black">
+                                {{ $currency }} {{ number_format((float) $card['commission_per_claim'], 2) }}
+                            </div>
+                        </div>
+
+                        <div class="col-span-2 rounded-2xl bg-white/20 p-3">
+                            <div class="text-[9px] font-black uppercase text-white/60">
+                                {{ __('downline_products.estimated_full_commission') }}
+                            </div>
+
+                            <div class="mt-1 break-words text-xl font-black">
                                 {{ $currency }} {{ number_format((float) $card['commission'], 2) }}
                             </div>
                         </div>
@@ -160,7 +183,7 @@
                             <div class="flex items-start justify-between gap-3">
                                 <div class="min-w-0">
                                     <div class="text-sm font-black text-[#003b7a]">
-                                        {{ $userProduct->product?->name ?? $userProduct->meta['product_name_snapshot'] ?? '-' }}
+                                        {{ $userProduct->product?->name ?? data_get($userProduct->meta, 'product_name_snapshot', '-') }}
                                     </div>
 
                                     <div class="mt-1 text-[10px] font-bold text-[#003b7a]/60">
@@ -182,32 +205,92 @@
                                     </div>
                                 </div>
                             </div>
+
+                            <div class="mt-3 grid grid-cols-2 gap-2">
+                                <div class="rounded-2xl bg-white p-2.5">
+                                    <div class="text-[9px] font-black uppercase text-[#003b7a]/55">
+                                        {{ __('downline_products.income_per_claim') }}
+                                    </div>
+
+                                    <div class="mt-1 text-xs font-black text-[#003b7a]">
+                                        {{ $currency }} {{ number_format((float) $row['income_per_claim'], 2) }}
+                                    </div>
+                                </div>
+
+                                <div class="rounded-2xl bg-white p-2.5">
+                                    <div class="text-[9px] font-black uppercase text-[#003b7a]/55">
+                                        {{ __('downline_products.commission_per_claim') }}
+                                    </div>
+
+                                    <div class="mt-1 text-xs font-black text-[#e4003a]">
+                                        {{ $currency }} {{ number_format((float) $row['commission_per_claim'], 2) }}
+                                    </div>
+                                </div>
+
+                                <div class="rounded-2xl bg-white p-2.5">
+                                    <div class="text-[9px] font-black uppercase text-[#003b7a]/55">
+                                        {{ __('downline_products.progress') }}
+                                    </div>
+
+                                    <div class="mt-1 text-xs font-black text-[#003b7a]">
+                                        {{ number_format((int) $row['claimed_count']) }}/{{ number_format((int) $row['total_claims']) }}
+                                    </div>
+                                </div>
+
+                                <div class="rounded-2xl bg-white p-2.5">
+                                    <div class="text-[9px] font-black uppercase text-[#003b7a]/55">
+                                        {{ __('downline_products.claim_interval') }}
+                                    </div>
+
+                                    <div class="mt-1 text-xs font-black text-[#003b7a]">
+                                        {{ number_format((int) $row['claim_interval_hours']) }} {{ __('products.hours') }}
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     @endforeach
                 </div>
 
                 <div class="mt-5 hidden overflow-x-auto rounded-[1.25rem] border border-[#003b7a]/10 xl:block">
-                    <table class="w-full min-w-[1000px] table-fixed divide-y divide-[#003b7a]/10 text-sm">
+                    <table class="w-full min-w-[1200px] table-fixed divide-y divide-[#003b7a]/10 text-sm">
                         <thead class="bg-[#fff8c7]">
                             <tr>
-                                <th class="w-[160px] px-3 py-3 text-left text-xs font-black uppercase text-[#003b7a]/70">
+                                <th class="w-[155px] px-3 py-3 text-left text-xs font-black uppercase text-[#003b7a]/70">
                                     {{ __('downline_products.member') }}
                                 </th>
-                                <th class="w-[90px] px-3 py-3 text-left text-xs font-black uppercase text-[#003b7a]/70">
+
+                                <th class="w-[75px] px-3 py-3 text-left text-xs font-black uppercase text-[#003b7a]/70">
                                     {{ __('downline_products.level') }}
                                 </th>
-                                <th class="px-3 py-3 text-left text-xs font-black uppercase text-[#003b7a]/70">
+
+                                <th class="w-[190px] px-3 py-3 text-left text-xs font-black uppercase text-[#003b7a]/70">
                                     {{ __('downline_products.product') }}
                                 </th>
-                                <th class="w-[140px] px-3 py-3 text-right text-xs font-black uppercase text-[#003b7a]/70">
+
+                                <th class="w-[120px] px-3 py-3 text-right text-xs font-black uppercase text-[#003b7a]/70">
                                     {{ __('downline_products.price') }}
                                 </th>
-                                <th class="w-[120px] px-3 py-3 text-right text-xs font-black uppercase text-[#003b7a]/70">
+
+                                <th class="w-[135px] px-3 py-3 text-right text-xs font-black uppercase text-[#003b7a]/70">
+                                    {{ __('downline_products.income_per_claim') }}
+                                </th>
+
+                                <th class="w-[105px] px-3 py-3 text-right text-xs font-black uppercase text-[#003b7a]/70">
+                                    {{ __('downline_products.total_claims') }}
+                                </th>
+
+                                <th class="w-[105px] px-3 py-3 text-right text-xs font-black uppercase text-[#003b7a]/70">
                                     {{ __('downline_products.rate') }}
                                 </th>
-                                <th class="w-[150px] px-3 py-3 text-right text-xs font-black uppercase text-[#003b7a]/70">
-                                    {{ __('downline_products.earning') }}
+
+                                <th class="w-[145px] px-3 py-3 text-right text-xs font-black uppercase text-[#003b7a]/70">
+                                    {{ __('downline_products.commission_per_claim') }}
                                 </th>
+
+                                <th class="w-[160px] px-3 py-3 text-right text-xs font-black uppercase text-[#003b7a]/70">
+                                    {{ __('downline_products.estimated_full_commission') }}
+                                </th>
+
                                 <th class="w-[150px] px-3 py-3 text-left text-xs font-black uppercase text-[#003b7a]/70">
                                     {{ __('downline_products.purchased_at') }}
                                 </th>
@@ -226,7 +309,7 @@
                                             {{ $userProduct->user?->username ?? '-' }}
                                         </div>
 
-                                        <div class="text-xs font-bold text-[#003b7a]/55">
+                                        <div class="truncate text-xs font-bold text-[#003b7a]/55">
                                             {{ $userProduct->user?->name ?? '-' }}
                                         </div>
                                     </td>
@@ -238,12 +321,19 @@
                                     </td>
 
                                     <td class="px-3 py-3 align-top">
-                                        <div class="font-black text-[#003b7a]">
-                                            {{ $userProduct->product?->name ?? $userProduct->meta['product_name_snapshot'] ?? '-' }}
+                                        <div class="line-clamp-2 font-black leading-tight text-[#003b7a]">
+                                            {{ $userProduct->product?->name ?? data_get($userProduct->meta, 'product_name_snapshot', '-') }}
                                         </div>
 
-                                        <div class="text-xs font-bold text-[#003b7a]/55">
-                                            {{ $userProduct->product?->code ?? $userProduct->meta['product_code_snapshot'] ?? '-' }}
+                                        <div class="mt-1 text-xs font-bold text-[#003b7a]/55">
+                                            {{ $userProduct->product?->code ?? data_get($userProduct->meta, 'product_code_snapshot', '-') }}
+                                        </div>
+
+                                        <div class="mt-1 text-[10px] font-bold text-[#003b7a]/45">
+                                            {{ __('downline_products.claimed') }}:
+                                            {{ number_format((int) $row['claimed_count']) }}/{{ number_format((int) $row['total_claims']) }}
+                                            ·
+                                            {{ number_format((int) $row['claim_interval_hours']) }}{{ __('products.hours_short') }}
                                         </div>
                                     </td>
 
@@ -252,7 +342,19 @@
                                     </td>
 
                                     <td class="px-3 py-3 text-right align-top font-black text-[#003b7a]">
+                                        {{ $currency }} {{ number_format((float) $row['income_per_claim'], 2) }}
+                                    </td>
+
+                                    <td class="px-3 py-3 text-right align-top font-black text-[#003b7a]">
+                                        {{ number_format((int) $row['total_claims']) }}
+                                    </td>
+
+                                    <td class="px-3 py-3 text-right align-top font-black text-[#003b7a]">
                                         {{ number_format((float) $row['rate'], 2) }}%
+                                    </td>
+
+                                    <td class="px-3 py-3 text-right align-top font-black text-[#e4003a]">
+                                        {{ $currency }} {{ number_format((float) $row['commission_per_claim'], 2) }}
                                     </td>
 
                                     <td class="px-3 py-3 text-right align-top font-black text-[#e4003a]">

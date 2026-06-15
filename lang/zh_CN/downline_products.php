@@ -20,4 +20,12 @@ return [
     'purchased_at' => '购买时间',
     'no_records' => '暂无下线产品记录',
     'no_records_desc' => '你的下线会员暂时还没有购买产品。',
+    'income_per_claim' => '每次领取收益',
+    'commission_per_claim' => '每次佣金',
+    'estimated_full_commission' => '预计总佣金',
+    'claimed_commission_estimate' => '已领取预计佣金',
+    'total_claims' => '总领取次数',
+    'progress' => '进度',
+    'claim_interval' => '领取间隔',
+    'claimed' => '已领取',
 ];

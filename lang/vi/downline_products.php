@@ -20,4 +20,12 @@ return [
     'purchased_at' => 'Thời gian mua',
     'no_records' => 'Chưa có dữ liệu sản phẩm tuyến dưới',
     'no_records_desc' => 'Chưa có thành viên tuyến dưới nào mua sản phẩm.',
+    'income_per_claim' => 'Thu nhập mỗi lần nhận',
+    'commission_per_claim' => 'Hoa hồng mỗi lần nhận',
+    'estimated_full_commission' => 'Tổng hoa hồng ước tính',
+    'claimed_commission_estimate' => 'Hoa hồng đã nhận ước tính',
+    'total_claims' => 'Tổng số lần nhận',
+    'progress' => 'Tiến độ',
+    'claim_interval' => 'Khoảng cách nhận',
+    'claimed' => 'Đã nhận',
 ];

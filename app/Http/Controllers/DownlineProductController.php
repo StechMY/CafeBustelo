@@ -49,12 +49,36 @@ class DownlineProductController extends Controller
         $rows = $products->getCollection()
             ->map(function (UserProduct $userProduct) use ($levelUserIds, $commissionRates): array {
                 $level = $this->resolveLevel((int) $userProduct->user_id, $levelUserIds);
+
                 $rate = (float) ($commissionRates->get($level)?->rate_percent ?? 0);
+
                 $price = (float) $userProduct->price_snapshot;
-                $earning = round($price * $rate / 100, 2);
+
+                /*
+                 * IMPORTANT:
+                 * Commission is NOT based on product price.
+                 *
+                 * Real rule:
+                 * Downline claims income, then upline receives commission from that income.
+                 *
+                 * Example:
+                 * B rate = 11%
+                 * Downline claim income = 100
+                 * Upline commission = 100 * 11% = 11
+                 */
+                $incomePerClaim = (float) $userProduct->daily_income_snapshot;
+                $totalClaims = $this->effectiveTotalClaims($userProduct);
+                $claimedCount = (int) $userProduct->claimed_days;
+
+                $estimatedCommissionPerClaim = round($incomePerClaim * $rate / 100, 2);
+                $estimatedFullCycleCommission = round($incomePerClaim * $totalClaims * $rate / 100, 2);
+                $claimedCommissionEstimate = round($incomePerClaim * $claimedCount * $rate / 100, 2);
+
+                $estimatedTotalIncome = round($incomePerClaim * $totalClaims, 2);
 
                 return [
                     'user_product' => $userProduct,
+
                     'level' => $level,
                     'level_label' => match ($level) {
                         1 => 'B',
@@ -62,9 +86,24 @@ class DownlineProductController extends Controller
                         3 => 'D',
                         default => '-',
                     },
+
                     'rate' => $rate,
+
+                    // Product purchase price, display only.
                     'price' => $price,
-                    'earning' => $earning,
+
+                    // Product income logic.
+                    'income_per_claim' => $incomePerClaim,
+                    'total_claims' => $totalClaims,
+                    'claimed_count' => $claimedCount,
+                    'claim_interval_hours' => $this->effectiveClaimIntervalHours($userProduct),
+                    'estimated_total_income' => $estimatedTotalIncome,
+
+                    // Commission logic.
+                    'commission_per_claim' => $estimatedCommissionPerClaim,
+                    'claimed_commission_estimate' => $claimedCommissionEstimate,
+                    'earning' => $estimatedFullCycleCommission,
+                    'estimated_full_cycle_commission' => $estimatedFullCycleCommission,
                 ];
             });
 
@@ -72,7 +111,11 @@ class DownlineProductController extends Controller
 
         $summary = [
             'total_products' => $rows->count(),
+
+            // This is product purchase amount, not commission base.
             'total_sales' => $rows->sum('price'),
+
+            // This is estimated full-cycle commission from income claims.
             'total_estimated_commission' => $rows->sum('earning'),
 
             'b_products' => $rows->where('level', 1)->count(),
@@ -82,6 +125,12 @@ class DownlineProductController extends Controller
             'b_estimated_commission' => $rows->where('level', 1)->sum('earning'),
             'c_estimated_commission' => $rows->where('level', 2)->sum('earning'),
             'd_estimated_commission' => $rows->where('level', 3)->sum('earning'),
+
+            'b_commission_per_claim' => $rows->where('level', 1)->sum('commission_per_claim'),
+            'c_commission_per_claim' => $rows->where('level', 2)->sum('commission_per_claim'),
+            'd_commission_per_claim' => $rows->where('level', 3)->sum('commission_per_claim'),
+
+            'total_claimed_commission_estimate' => $rows->sum('claimed_commission_estimate'),
         ];
 
         return view('downline-products.index', [
@@ -121,5 +170,30 @@ class DownlineProductController extends Controller
         }
 
         return 0;
+    }
+
+    private function effectiveClaimIntervalHours(UserProduct $userProduct): int
+    {
+        if (method_exists($userProduct, 'effectiveClaimIntervalHours')) {
+            return $userProduct->effectiveClaimIntervalHours();
+        }
+
+        return max(1, (int) ($userProduct->claim_interval_hours_snapshot ?: 24));
+    }
+
+    private function effectiveTotalClaims(UserProduct $userProduct): int
+    {
+        if (method_exists($userProduct, 'effectiveTotalClaims')) {
+            return $userProduct->effectiveTotalClaims();
+        }
+
+        if ($userProduct->total_claims_snapshot !== null && (int) $userProduct->total_claims_snapshot > 0) {
+            return (int) $userProduct->total_claims_snapshot;
+        }
+
+        $durationDays = max(1, (int) $userProduct->duration_days_snapshot);
+        $claimIntervalHours = $this->effectiveClaimIntervalHours($userProduct);
+
+        return max(1, (int) floor(($durationDays * 24) / $claimIntervalHours));
     }
 }

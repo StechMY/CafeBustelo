@@ -20,4 +20,12 @@ return [
     'purchased_at' => 'Purchased At',
     'no_records' => 'No downline product records',
     'no_records_desc' => 'There are no product purchases from your downline members yet.',
+    'income_per_claim' => 'Income / Claim',
+    'commission_per_claim' => 'Commission / Claim',
+    'estimated_full_commission' => 'Estimated Full Commission',
+    'claimed_commission_estimate' => 'Claimed Commission Estimate',
+    'total_claims' => 'Total Claims',
+    'progress' => 'Progress',
+    'claim_interval' => 'Claim Interval',
+    'claimed' => 'Claimed',
 ];
