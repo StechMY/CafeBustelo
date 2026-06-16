@@ -3,16 +3,18 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Collection as SupportCollection;
 use Illuminate\Support\Facades\Storage;
+use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
+    use HasApiTokens;
     use Notifiable;
 
     protected $fillable = [
@@ -164,9 +166,10 @@ class User extends Authenticatable
     {
         return $this->hasMany(UserProduct::class);
     }
+
     public function bonusClaims(): HasMany
     {
-        return $this->hasMany(\App\Models\BonusClaim::class);
+        return $this->hasMany(BonusClaim::class);
     }
 
     public function activeProducts(): HasMany
@@ -201,12 +204,12 @@ class User extends Authenticatable
 
     public function ownedBonusCodes(): HasMany
     {
-        return $this->hasMany(\App\Models\BonusCode::class, 'owner_user_id');
+        return $this->hasMany(BonusCode::class, 'owner_user_id');
     }
 
     public function checkInRecords(): HasMany
     {
-        return $this->hasMany(\App\Models\CheckInRecord::class);
+        return $this->hasMany(CheckInRecord::class);
     }
 
     public function salaryClaims(): HasMany
@@ -254,7 +257,7 @@ class User extends Authenticatable
     public function teamUsersByLevel(int $level): Collection
     {
         if ($level < 1) {
-            return new Collection();
+            return new Collection;
         }
 
         $parentIds = collect([$this->id]);
@@ -273,11 +276,11 @@ class User extends Authenticatable
             $parentIds = $query->pluck('id');
 
             if ($parentIds->isEmpty()) {
-                return new Collection();
+                return new Collection;
             }
         }
 
-        return new Collection();
+        return new Collection;
     }
 
     public function allDownlineUsers(?int $maxDepth = null): SupportCollection
@@ -370,7 +373,7 @@ class User extends Authenticatable
 
     public function getProfilePhotoUrlAttribute(): ?string
     {
-        if (!$this->profile_photo_path) {
+        if (! $this->profile_photo_path) {
             return null;
         }
 
@@ -405,5 +408,4 @@ class User extends Authenticatable
 
         return $level ? (int) $level->level : 1;
     }
-
 }

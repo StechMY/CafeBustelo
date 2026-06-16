@@ -1,0 +1,593 @@
+# Flutter API Handoff
+
+## 1. Overview
+
+Base API URL format:
+
+```text
+https://your-domain.com/api/v1
+```
+
+Authentication uses Laravel Sanctum personal access tokens. After login/register, store `access_token` securely and send it as:
+
+```http
+Authorization: Bearer <token>
+Accept: application/json
+```
+
+All JSON responses follow:
+
+```json
+{
+  "success": true,
+  "message": "Success",
+  "data": {}
+}
+```
+
+Errors:
+
+```json
+{
+  "success": false,
+  "message": "Validation failed",
+  "errors": {
+    "username": ["The username field is required."]
+  }
+}
+```
+
+Paginated blocks:
+
+```json
+{
+  "success": true,
+  "data": {
+    "items": [],
+    "pagination": {
+      "current_page": 1,
+      "per_page": 20,
+      "total": 100,
+      "last_page": 5
+    }
+  }
+}
+```
+
+Date/time format: ISO-8601 string, for example `2026-06-16T12:00:00.000000Z`.
+
+Currency format: numeric values are returned as numbers. Some objects also include `formatted_*` strings using the backend currency.
+
+## 2. Authentication Flow
+
+### Register
+
+Method: `POST`
+
+URL: `/api/v1/register`
+
+Auth required: no
+
+Body:
+
+| Field | Type | Required | Notes |
+| --- | --- | --- | --- |
+| name | string | yes | max 255 |
+| username | string | yes | alpha dash, min 4, max 32, unique |
+| phone | string | yes | max 32 |
+| referral_code | string | yes | must exist |
+| password | string | yes | min 8 |
+| password_confirmation | string | yes | must match password |
+| device_name | string | no | token name |
+
+Example:
+
+```json
+{
+  "name": "Jane",
+  "username": "jane123",
+  "phone": "60123456789",
+  "referral_code": "ABCD1234",
+  "password": "password123",
+  "password_confirmation": "password123",
+  "device_name": "flutter"
+}
+```
+
+Success:
+
+```json
+{
+  "success": true,
+  "message": "Account created successfully.",
+  "data": {
+    "token_type": "Bearer",
+    "access_token": "1|plainTextToken",
+    "user": {
+      "id": 1,
+      "username": "jane123",
+      "name": "Jane",
+      "phone": "60123456789",
+      "status": "inactive",
+      "referral_code": "ZXCV1234",
+      "points_balance": 0
+    }
+  }
+}
+```
+
+### Login
+
+Method: `POST`
+
+URL: `/api/v1/login`
+
+Auth required: no
+
+Body:
+
+```json
+{
+  "username": "jane123",
+  "password": "password123",
+  "device_name": "flutter"
+}
+```
+
+Success returns the same token shape as register. Store `access_token` in secure storage.
+
+### Logout
+
+Method: `POST`
+
+URL: `/api/v1/logout`
+
+Auth: Bearer token required
+
+Deletes the current token. Flutter should clear local token and cached user state.
+
+### Current User
+
+Method: `GET`
+
+URL: `/api/v1/me`
+
+Auth: Bearer token required
+
+Returns:
+
+```json
+{
+  "success": true,
+  "data": {
+    "user": {}
+  }
+}
+```
+
+## 3. Global Response Format
+
+Use `success` as the first branch. For HTTP 401, clear token and route to login. For 422, display field errors from `errors`.
+
+## 4. Data Types
+
+### User
+
+| Field | Type | Nullable | Meaning | Example |
+| --- | --- | --- | --- | --- |
+| id | integer | no | User ID | 1 |
+| username | string | no | Login username | `jane123` |
+| name | string | yes | Display name | `Jane` |
+| email | string | yes | Email if present | `a@b.com` |
+| phone | string | yes | Phone | `60123456789` |
+| status | string | no | `active`/`inactive` | `active` |
+| is_virtual | boolean | no | Virtual user flag | false |
+| order_status | boolean | no | Can purchase products | true |
+| withdraw_status | boolean | no | Can submit withdraw | true |
+| check_in_status | boolean | no | Can check in | true |
+| referral_code | string | no | Invite code | `ABCD1234` |
+| referrer_id | integer | yes | Parent user | 2 |
+| points_balance | number | no | Points balance | 10 |
+| profile_photo_url | string | yes | Avatar URL | `https://...` |
+| current_vip_level_number | integer | no | Current VIP level | 1 |
+| current_vip_level_name | string | no | VIP label | `LV1` |
+| accumulated_recharge | number | no | Approved recharge total | 1000 |
+| activated_at | string datetime | yes | Activation time | `2026-06-16T...Z` |
+| created_at | string datetime | yes | Created time | `2026-06-16T...Z` |
+
+### Wallet
+
+| Field | Type | Nullable | Meaning | Example |
+| --- | --- | --- | --- | --- |
+| type | string | no | `recharge` or `withdrawable` | `recharge` |
+| label | string | no | Localized wallet label | `Recharge Wallet` |
+| balance | number | no | Available balance | 50 |
+| locked_balance | number | no | Locked amount | 20 |
+| formatted_balance | string | no | Display money | `RM 50.00` |
+
+### Product
+
+| Field | Type | Nullable | Meaning | Example |
+| --- | --- | --- | --- | --- |
+| id | integer | no | Product ID | 1 |
+| code | string | yes | Product code | `P001` |
+| name | string | no | Product name | `Plan A` |
+| product_type | string | no | Product type | `hourly` |
+| product_type_label | string | no | Display label | `Hourly` |
+| price | number | no | Product price | 100 |
+| daily_income | number | no | Claim income amount | 10 |
+| income_per_claim | number | no | Same as claim income | 10 |
+| duration_days | integer | no | Duration days | 30 |
+| claim_interval_hours | integer | no | Claim interval | 24 |
+| total_claims | integer | no | Backend-calculated total claims | 30 |
+| total_income | number | no | income_per_claim * total_claims | 300 |
+| profit | number | no | total_income - price | 200 |
+| roi | number | no | Percent ROI | 200 |
+| available_days | array<int> | no | ISO weekdays | `[1,2]` |
+| available_days_label | string | no | Display days | `Monday, Tuesday` |
+| available_from | string datetime | yes | Start availability | null |
+| available_until | string datetime | yes | End availability | null |
+| stock_quantity | integer | yes | Stock cap | 100 |
+| sold_quantity | integer | no | Sold count | 2 |
+| remaining_stock | integer | yes | Remaining stock | 98 |
+| is_purchasable_now | boolean | no | Current availability | true |
+| can_afford_recharge | boolean | no | Recharge wallet enough | true |
+| can_afford_withdrawable | boolean | no | Withdrawable wallet enough | false |
+| can_purchase | boolean | no | Backend purchase-state hint | true |
+| extra_points | number | no | Product extra points | 0 |
+
+### UserProduct
+
+Fields: `id`, `product_id`, `product_name`, `product_code`, `status`, `price_snapshot`, `daily_income_snapshot`, `income_per_claim`, `duration_days_snapshot`, `claim_interval_hours`, `total_claims`, `claimed_days`, `claimed_count`, `missed_days`, `remaining_claims`, `next_claim_at`, `purchased_at`, `expires_at`, `is_claimable`, `is_completed`, `meta`.
+
+### WalletTransaction
+
+Fields: `id`, `wallet_type`, `wallet_type_label`, `type`, `direction`, `amount`, `formatted_amount`, `balance_before`, `balance_after`, `remarks`, `meta`, `created_at`.
+
+### RechargeRequest
+
+Fields: `id`, `amount`, `formatted_amount`, `status`, `reference_no`, `receipt_url`, `payment_method_name`, `payment_bank_name`, `payment_account_name`, `payment_account_no`, `admin_remark`, `reviewed_at`, `created_at`.
+
+### WithdrawRequest
+
+Fields: `id`, `amount`, `fee_amount`, `net_amount`, `status`, `vip_level_snapshot`, `min_withdraw_amount_snapshot`, `withdraw_fee_percent_snapshot`, `bank_name`, `bank_account_name`, `bank_account_no`, `admin_remark`, `reviewed_at`, `created_at`.
+
+### TeamMember
+
+Fields: `id`, `username`, `name`, `phone`, `status`, `accumulated_recharge`, `created_at`.
+
+### PointTransaction
+
+Fields: `id`, `direction`, `type`, `points`, `balance_before`, `balance_after`, `remarks`, `meta`, `created_at`.
+
+### DownlineProductGroup
+
+Fields: `user_id`, `username`, `name`, `phone`, `level`, `level_label`, `rate`, `product_count`, `total_sales`, `total_income`, `total_estimated_commission`, `total_claimed_commission_estimate`, `latest_purchase_at`, `products`.
+
+### DownlineProductDetail
+
+Fields: `product_name`, `product_code`, `status`, `price`, `income_per_claim`, `total_claims`, `claimed_count`, `claim_interval_hours`, `estimated_total_income`, `rate`, `commission_per_claim`, `claimed_commission_estimate`, `estimated_full_commission`, `purchased_at`.
+
+### SvipPackage
+
+Fields: `id`, `name`, `price`, `formatted_price`, `duration_days`, `is_active`, `description`.
+
+### SvipPurchase
+
+Fields: `id`, `svip_package_id`, `package_name`, `amount`, `status`, `started_at`, `expires_at`, `is_active`, `meta`.
+
+### SalaryClaim
+
+Fields: `id`, `type`, `period_key`, `vip_level_snapshot`, `salary_amount`, `team_subsidy_amount`, `total_amount`, `claimed_at`, `meta`.
+
+### BonusCode
+
+Fields: `id`, `code`, `type`, `amount`, `status`, `remark`, `expires_at`, `used_at`, `created_at`.
+
+### CheckInRecord
+
+Fields: `id`, `claim_date`, `vip_level_snapshot`, `amount`, `claimed_at`, `meta`.
+
+## 5. Endpoint Reference
+
+All endpoints listed below use the global response format.
+
+### App Config
+
+`GET /api/v1/app-config`
+
+Auth: no
+
+Use for startup labels, currency, locale, wallet type labels, product type labels, and enabled modules.
+
+### Dashboard
+
+`GET /api/v1/dashboard`
+
+Auth: yes
+
+Use for home screen. Returns `user`, `wallets`, `stats`, `active_products`, `slides`, `marquees`, `popup`, check-in state, and current VIP.
+
+### Profile
+
+`GET /api/v1/profile`
+
+Auth: yes
+
+Use for profile/account tab. Returns user, wallets, stats, VIP level, next VIP, SVIP package/current purchase, referral URL, and bank account.
+
+`POST /api/v1/profile`
+
+Body:
+
+```json
+{
+  "name": "Jane",
+  "phone": "60123456789"
+}
+```
+
+`POST /api/v1/profile/avatar` uses multipart with `avatar`.
+
+`DELETE /api/v1/profile/avatar` removes avatar.
+
+### Products
+
+`GET /api/v1/products`
+
+Returns product objects with wallet affordability and `can_purchase`.
+
+`POST /api/v1/products/{product}/purchase`
+
+```json
+{
+  "wallet_type": "recharge"
+}
+```
+
+After success, refresh dashboard, wallet, products, and user-products.
+
+`GET /api/v1/user-products`
+
+Paginated purchased products.
+
+`POST /api/v1/user-products/{userProduct}/claim`
+
+After success, refresh dashboard, wallet, and user-products.
+
+### Wallet
+
+`GET /api/v1/wallet`
+
+Returns recharge/withdrawable wallets, totals, transaction types.
+
+`GET /api/v1/wallet/transactions?wallet_type=recharge&direction=credit&type=bonus_code&page=1&per_page=15`
+
+Paginated.
+
+### Recharge
+
+`GET /api/v1/recharge`
+
+Returns recharge wallet, active recharge methods, and request history.
+
+`POST /api/v1/recharge` multipart:
+
+| Field | Type | Required |
+| --- | --- | --- |
+| amount | number | yes |
+| recharge_method_id | integer | yes |
+| reference_no | string | no |
+| receipt | image | yes |
+
+### Withdraw
+
+`GET /api/v1/withdraw`
+
+Returns wallet, bank account, VIP withdrawal settings, and request history.
+
+`POST /api/v1/withdraw`
+
+```json
+{
+  "amount": 100
+}
+```
+
+### Team
+
+`GET /api/v1/team`
+
+Returns invite URL, stats, commission rates, and B/C/D member arrays.
+
+### Check In
+
+`GET /api/v1/check-in`
+
+Returns current VIP, `has_claimed_today`, today record, VIP levels, totals, and records.
+
+`POST /api/v1/check-in`
+
+Claims daily check-in.
+
+### Salary
+
+`GET /api/v1/salary`
+
+Returns current VIP, salary states, VIP levels, and claim history.
+
+`POST /api/v1/salary/claim`
+
+```json
+{
+  "type": "weekly"
+}
+```
+
+### Bonus Codes
+
+`GET /api/v1/bonus-codes?status=unused&type=invite`
+
+Returns stats and paginated bonus codes.
+
+`POST /api/v1/bonus-codes/redeem`
+
+```json
+{
+  "code": "INV-ABCD-EFGH"
+}
+```
+
+### Contact
+
+`GET /api/v1/contact`
+
+Auth: no
+
+Returns active support contacts.
+
+### Calculator
+
+`GET /api/v1/calculator`
+
+Returns products and B/C/D rates. Formula is `commission = income_per_claim * rate / 100`.
+
+### Points
+
+`GET /api/v1/points`
+
+Returns points balance, exchange rate, estimated cash value, minimum redeem, enable flags, formula, and transactions.
+
+`POST /api/v1/points/redeem`
+
+```json
+{
+  "points": 10
+}
+```
+
+### Downline Products
+
+`GET /api/v1/downline-products`
+
+Returns grouped-by-user rows. Commission is based on downline claim income.
+
+### SVIP
+
+`GET /api/v1/svip`
+
+Returns packages, active purchase, and history.
+
+`POST /api/v1/svip/{svipPackage}/purchase`
+
+```json
+{
+  "wallet_type": "withdrawable"
+}
+```
+
+## 6. Business Rules for Flutter Developer
+
+### Product purchase
+
+Flutter can display wallet choices. Backend validates status, stock, active window, max purchase count, wallet balance, and order status. Use `can_purchase` only as UI hint; backend remains source of truth.
+
+### Product claims
+
+Claims may be hourly or daily. Use `claim_interval_hours`, `next_claim_at`, and `is_claimable`. Do not assume one claim per day.
+
+### Commission
+
+Commission is based on claim income, not product price:
+
+```text
+commission_per_claim = income_per_claim * rate / 100
+estimated_full_commission = income_per_claim * total_claims * rate / 100
+claimed_commission_estimate = income_per_claim * claimed_count * rate / 100
+```
+
+### Points
+
+The implemented `PointService` uses:
+
+```text
+cash_amount = points * points_to_cash_rate
+```
+
+The actual rate is returned as `exchange_rate` by `GET /points`.
+
+### SVIP
+
+SVIP can be purchased with recharge or withdrawable wallet. Backend prevents duplicate active SVIP.
+
+### Wallet
+
+Refresh wallet/dashboard after purchase, claim, points redeem, recharge, withdraw, bonus redeem, or SVIP purchase.
+
+## 7. Screen-to-Endpoint Mapping
+
+| Flutter Screen | Endpoint(s) | Notes |
+| --- | --- | --- |
+| Login | `POST /api/v1/login` | Store token securely |
+| Register | `POST /api/v1/register` | Requires referral code |
+| Dashboard | `GET /api/v1/dashboard` | Pull summary, sliders, popup, check-in state |
+| Products | `GET /api/v1/products` | Show list and purchase buttons |
+| Product Detail | `GET /api/v1/products` | Use selected product object |
+| My Products | `GET /api/v1/user-products`, `POST /api/v1/user-products/{id}/claim` | Claim buttons |
+| Wallet | `GET /api/v1/wallet`, `GET /api/v1/wallet/transactions` | Paginated |
+| Recharge | `GET /api/v1/recharge`, `POST /api/v1/recharge` | Multipart receipt upload |
+| Withdraw | `GET /api/v1/withdraw`, `POST /api/v1/withdraw` | Bank account must be active |
+| Team | `GET /api/v1/team` | B/C/D data |
+| Check In | `GET /api/v1/check-in`, `POST /api/v1/check-in` | Daily status |
+| Salary | `GET /api/v1/salary`, `POST /api/v1/salary/claim` | Weekly/monthly/annual |
+| Bonus Codes | `GET /api/v1/bonus-codes`, `POST /api/v1/bonus-codes/redeem` | Redeem code |
+| Contact | `GET /api/v1/contact` | Public support contacts |
+| Calculator | `GET /api/v1/calculator` | Commission formula |
+| Points | `GET /api/v1/points`, `POST /api/v1/points/redeem` | Redeem points |
+| Downline Products | `GET /api/v1/downline-products` | Grouped by user |
+| SVIP | `GET /api/v1/svip`, `POST /api/v1/svip/{id}/purchase` | Wallet type required |
+
+## 8. Example Flutter Integration Notes
+
+Dio header:
+
+```dart
+dio.options.headers['Accept'] = 'application/json';
+dio.options.headers['Authorization'] = 'Bearer $token';
+```
+
+401 handling: delete token, clear cached user, navigate to login.
+
+422 handling: read `errors` map and display field-level messages.
+
+Pagination: keep `page`, append `items`, stop when `current_page >= last_page`.
+
+Money: prefer numeric fields for calculations. Use backend `formatted_*` only for display.
+
+## 9. Testing Checklist
+
+- Register
+- Login
+- Logout
+- Load dashboard
+- Load products
+- Purchase product with recharge wallet
+- Purchase product with withdrawable wallet
+- Claim product income
+- Claim hourly product more than once per day
+- View wallet transactions
+- Submit recharge
+- Submit withdraw
+- Redeem points
+- Buy SVIP with recharge wallet
+- Buy SVIP with withdrawable wallet
+- Load downline product groups
+- Open downline product details
+- Handle insufficient balance
+- Handle unauthenticated token expiry
+- Handle validation errors
+
+## 10. Open Questions
+
+- Current web profile page does not include password/security-password editing. API profile update only supports `name` and `phone`.
+- Current withdraw flow does not validate a security password. API follows existing `WithdrawService`.
