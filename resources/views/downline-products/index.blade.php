@@ -56,20 +56,24 @@
         <div class="mx-auto max-w-7xl px-3 py-3 sm:px-6 sm:py-8 lg:px-8">
             <div class="grid gap-4 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
                 <div>
-                    <div class="mb-2 inline-flex rounded-full bg-white/70 px-3 py-1.5 text-[10px] font-black uppercase tracking-wide shadow sm:mb-3 sm:px-4 sm:py-2 sm:text-xs">
+                    <div
+                         class="mb-2 inline-flex rounded-full bg-white/70 px-3 py-1.5 text-[10px] font-black uppercase tracking-wide shadow sm:mb-3 sm:px-4 sm:py-2 sm:text-xs">
                         {{ __('downline_products.center') }}
                     </div>
 
-                    <h1 class="max-w-3xl text-3xl font-black uppercase leading-[0.9] tracking-tight text-[#003b7a] sm:text-6xl lg:text-7xl">
+                    <h1
+                        class="max-w-3xl text-3xl font-black uppercase leading-[0.9] tracking-tight text-[#003b7a] sm:text-6xl lg:text-7xl">
                         {{ __('downline_products.title') }}
                     </h1>
 
-                    <p class="mt-2 line-clamp-2 max-w-2xl text-xs font-bold leading-relaxed text-[#003b7a]/80 sm:mt-5 sm:line-clamp-none sm:text-base">
+                    <p
+                       class="mt-2 line-clamp-2 max-w-2xl text-xs font-bold leading-relaxed text-[#003b7a]/80 sm:mt-5 sm:line-clamp-none sm:text-base">
                         {{ __('downline_products.description') }}
                     </p>
                 </div>
 
-                <div class="rounded-[1.35rem] border-3 border-[#003b7a] bg-white p-4 shadow-[6px_6px_0_#003b7a] sm:rounded-[2rem] sm:border-4 sm:p-6 sm:shadow-[10px_10px_0_#003b7a]">
+                <div
+                     class="rounded-[1.35rem] border-3 border-[#003b7a] bg-white p-4 shadow-[6px_6px_0_#003b7a] sm:rounded-[2rem] sm:border-4 sm:p-6 sm:shadow-[10px_10px_0_#003b7a]">
                     <div class="text-[10px] font-black uppercase text-[#e4003a] sm:text-sm">
                         {{ __('downline_products.total_estimated_commission') }}
                     </div>
@@ -88,7 +92,8 @@
                         </div>
 
                         <div class="mt-1 text-xl font-black text-[#e4003a]">
-                            {{ $currency }} {{ number_format((float) ($summary['total_claimed_commission_estimate'] ?? 0), 2) }}
+                            {{ $currency }}
+                            {{ number_format((float) ($summary['total_claimed_commission_estimate'] ?? 0), 2) }}
                         </div>
                     </div>
                 </div>
@@ -99,7 +104,8 @@
     <section class="mx-auto max-w-7xl px-3 py-4 sm:px-6 sm:py-8 lg:px-8">
         <div class="grid grid-cols-3 gap-2 sm:gap-4">
             @foreach ($summaryCards as $card)
-                <div class="rounded-[1rem] p-3 shadow-lg ring-1 ring-black/5 sm:rounded-[2rem] sm:p-5 {{ $card['class'] }}">
+                <div
+                     class="rounded-[1rem] p-3 shadow-lg ring-1 ring-black/5 sm:rounded-[2rem] sm:p-5 {{ $card['class'] }}">
                     <div class="line-clamp-2 text-[8px] font-black uppercase leading-tight opacity-70 sm:text-xs">
                         {{ $card['label'] }}
                     </div>
@@ -111,9 +117,11 @@
             @endforeach
         </div>
 
-        <div class="-mx-3 mt-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-3 pb-2 sm:mx-0 sm:grid sm:grid-cols-3 sm:overflow-visible sm:px-0 sm:pb-0">
+        <div
+             class="-mx-3 mt-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-3 pb-2 sm:mx-0 sm:grid sm:grid-cols-3 sm:overflow-visible sm:px-0 sm:pb-0">
             @foreach ($levelCards as $card)
-                <div class="w-[62vw] shrink-0 snap-start rounded-[1.35rem] bg-gradient-to-br {{ $card['class'] }} p-4 text-white shadow-xl sm:w-auto sm:rounded-[2rem] sm:p-5">
+                <div
+                     class="w-[62vw] shrink-0 snap-start rounded-[1.35rem] bg-gradient-to-br {{ $card['class'] }} p-4 text-white shadow-xl sm:w-auto sm:rounded-[2rem] sm:p-5">
                     <div class="flex items-start justify-between gap-3">
                         <div class="text-4xl font-black leading-none sm:text-5xl">
                             {{ $card['label'] }}
@@ -173,93 +181,132 @@
             </div>
 
             @if ($groups->isNotEmpty())
-                <div class="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                    @foreach ($groups as $group)
-                        <article class="rounded-[1.25rem] bg-[#fff8c7] p-4 shadow-sm ring-1 ring-[#003b7a]/10">
-                            <div class="flex items-start justify-between gap-3">
-                                <div class="min-w-0">
-                                    <div class="flex items-center gap-2">
-                                        <span class="rounded-full bg-[#003b7a] px-2.5 py-1 text-[10px] font-black uppercase text-white">
-                                            {{ $group['level_label'] }}
-                                        </span>
+                <div class="mt-4 overflow-hidden rounded-[1.25rem] border border-[#003b7a]/10">
+                    <div
+                         class="hidden bg-[#fff8c7] px-4 py-3 text-xs font-black uppercase text-[#003b7a]/70 lg:grid lg:grid-cols-[1.4fr_0.7fr_0.75fr_0.95fr_0.95fr_150px] lg:gap-3">
+                        <div>{{ __('downline_products.member') }}</div>
+                        <div>{{ __('downline_products.level') }}</div>
+                        <div class="text-right">{{ __('downline_products.products') }}</div>
+                        <div class="text-right">{{ __('downline_products.claimed_commission_estimate') }}</div>
+                        <div class="text-right">{{ __('downline_products.estimated_full_commission') }}</div>
+                        <div class="text-right"></div>
+                    </div>
 
-                                        <span class="truncate text-sm font-black text-[#003b7a]">
-                                            {{ $group['username'] }}
-                                        </span>
-                                    </div>
+                    <div class="divide-y divide-[#003b7a]/10 bg-white">
+                        @foreach ($groups as $group)
+                            <div
+                                 class="p-3 transition hover:bg-[#fff8c7]/45 sm:p-4 lg:grid lg:grid-cols-[1.4fr_0.7fr_0.75fr_0.95fr_0.95fr_150px] lg:items-center lg:gap-3">
+                                <div class="flex items-center justify-between gap-3 lg:block">
+                                    <div class="min-w-0">
+                                        <div class="flex items-center gap-2">
+                                            <span
+                                                  class="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[#003b7a] text-xs font-black uppercase text-white lg:hidden">
+                                                {{ $group['level_label'] }}
+                                            </span>
 
-                                    <div class="mt-1 truncate text-xs font-bold text-[#003b7a]/60">
-                                        {{ $group['name'] }}
-                                    </div>
+                                            <div class="min-w-0">
+                                                <div class="truncate text-sm font-black text-[#003b7a] sm:text-base">
+                                                    {{ $group['username'] }}
+                                                </div>
 
-                                    @if ($group['phone'] && $group['phone'] !== '-')
-                                        <div class="mt-1 truncate text-[11px] font-bold text-[#003b7a]/45">
-                                            {{ $group['phone'] }}
+                                                <div class="truncate text-[11px] font-bold text-[#003b7a]/55 sm:text-xs">
+                                                    {{ $group['name'] }}
+                                                </div>
+                                            </div>
                                         </div>
-                                    @endif
+
+                                        @if ($group['phone'] && $group['phone'] !== '-')
+                                            <div
+                                                 class="mt-1 truncate pl-10 text-[10px] font-bold text-[#003b7a]/40 lg:pl-0">
+                                                {{ $group['phone'] }}
+                                            </div>
+                                        @endif
+                                    </div>
+
+                                    <button
+                                            type="button"
+                                            class="shrink-0 rounded-full bg-[#003b7a] px-3 py-2 text-[10px] font-black uppercase text-white shadow-sm lg:hidden"
+                                            data-downline-detail
+                                            data-username="{{ $group['username'] }}"
+                                            data-name="{{ $group['name'] }}"
+                                            data-level="{{ $group['level_label'] }}"
+                                            data-rate="{{ number_format((float) $group['rate'], 2) }}%"
+                                            data-products='{{ e(json_encode($group['products'], JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_HEX_TAG)) }}'>
+                                        {{ __('downline_products.view_products') }}
+                                    </button>
                                 </div>
 
-                                <div class="shrink-0 rounded-full bg-white px-3 py-1 text-[10px] font-black uppercase text-[#003b7a]">
-                                    {{ number_format((float) $group['rate'], 2) }}%
+                                <div class="mt-3 hidden lg:mt-0 lg:block">
+                                    <span
+                                          class="inline-flex rounded-full bg-[#003b7a] px-3 py-1 text-xs font-black uppercase text-white">
+                                        {{ $group['level_label'] }}
+                                    </span>
+
+                                    <span
+                                          class="ml-1 inline-flex rounded-full bg-[#fff8c7] px-3 py-1 text-xs font-black uppercase text-[#003b7a]">
+                                        {{ number_format((float) $group['rate'], 2) }}%
+                                    </span>
+                                </div>
+
+                                <div class="mt-3 grid grid-cols-3 gap-2 lg:mt-0 lg:block lg:text-right">
+                                    <div class="rounded-xl bg-[#fff8c7] p-2 lg:bg-transparent lg:p-0">
+                                        <div class="text-[9px] font-black uppercase text-[#003b7a]/45 lg:hidden">
+                                            {{ __('downline_products.products') }}
+                                        </div>
+
+                                        <div class="mt-0.5 text-sm font-black text-[#003b7a] lg:text-base">
+                                            {{ number_format((int) $group['product_count']) }}
+                                        </div>
+                                    </div>
+
+                                    <div class="rounded-xl bg-[#fff8c7] p-2 lg:hidden">
+                                        <div class="text-[9px] font-black uppercase text-[#003b7a]/45">
+                                            {{ __('downline_products.total_sales') }}
+                                        </div>
+
+                                        <div class="mt-0.5 text-xs font-black text-[#003b7a]">
+                                            {{ $currency }} {{ number_format((float) $group['total_sales'], 2) }}
+                                        </div>
+                                    </div>
+
+                                    <div class="rounded-xl bg-[#fff8c7] p-2 lg:hidden">
+                                        <div class="text-[9px] font-black uppercase text-[#003b7a]/45">
+                                            {{ __('downline_products.estimated_full_commission') }}
+                                        </div>
+
+                                        <div class="mt-0.5 text-xs font-black text-[#e4003a]">
+                                            {{ $currency }}
+                                            {{ number_format((float) $group['total_estimated_commission'], 2) }}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="hidden text-right font-black text-[#e4003a] lg:block">
+                                    {{ $currency }}
+                                    {{ number_format((float) $group['total_claimed_commission_estimate'], 2) }}
+                                </div>
+
+                                <div class="hidden text-right font-black text-[#e4003a] lg:block">
+                                    {{ $currency }}
+                                    {{ number_format((float) $group['total_estimated_commission'], 2) }}
+                                </div>
+
+                                <div class="hidden text-right lg:block">
+                                    <button
+                                            type="button"
+                                            class="rounded-full bg-[#003b7a] px-4 py-2 text-xs font-black uppercase text-white shadow-sm transition hover:bg-[#002b59]"
+                                            data-downline-detail
+                                            data-username="{{ $group['username'] }}"
+                                            data-name="{{ $group['name'] }}"
+                                            data-level="{{ $group['level_label'] }}"
+                                            data-rate="{{ number_format((float) $group['rate'], 2) }}%"
+                                            data-products='{{ e(json_encode($group['products'], JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_HEX_TAG)) }}'>
+                                        {{ __('downline_products.view_products') }}
+                                    </button>
                                 </div>
                             </div>
-
-                            <div class="mt-4 grid grid-cols-2 gap-2">
-                                <div class="rounded-2xl bg-white p-3">
-                                    <div class="text-[9px] font-black uppercase text-[#003b7a]/55">
-                                        {{ __('downline_products.products') }}
-                                    </div>
-
-                                    <div class="mt-1 text-lg font-black text-[#003b7a]">
-                                        {{ number_format((int) $group['product_count']) }}
-                                    </div>
-                                </div>
-
-                                <div class="rounded-2xl bg-white p-3">
-                                    <div class="text-[9px] font-black uppercase text-[#003b7a]/55">
-                                        {{ __('downline_products.total_sales') }}
-                                    </div>
-
-                                    <div class="mt-1 text-sm font-black text-[#003b7a]">
-                                        {{ $currency }} {{ number_format((float) $group['total_sales'], 2) }}
-                                    </div>
-                                </div>
-
-                                <div class="rounded-2xl bg-white p-3">
-                                    <div class="text-[9px] font-black uppercase text-[#003b7a]/55">
-                                        {{ __('downline_products.claimed_commission_estimate') }}
-                                    </div>
-
-                                    <div class="mt-1 text-sm font-black text-[#e4003a]">
-                                        {{ $currency }} {{ number_format((float) $group['total_claimed_commission_estimate'], 2) }}
-                                    </div>
-                                </div>
-
-                                <div class="rounded-2xl bg-white p-3">
-                                    <div class="text-[9px] font-black uppercase text-[#003b7a]/55">
-                                        {{ __('downline_products.estimated_full_commission') }}
-                                    </div>
-
-                                    <div class="mt-1 text-sm font-black text-[#e4003a]">
-                                        {{ $currency }} {{ number_format((float) $group['total_estimated_commission'], 2) }}
-                                    </div>
-                                </div>
-                            </div>
-
-                            <button
-                                type="button"
-                                class="mt-4 w-full rounded-2xl bg-[#003b7a] px-4 py-2.5 text-xs font-black uppercase text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-[#002b59]"
-                                data-downline-detail
-                                data-username="{{ $group['username'] }}"
-                                data-name="{{ $group['name'] }}"
-                                data-level="{{ $group['level_label'] }}"
-                                data-rate="{{ number_format((float) $group['rate'], 2) }}%"
-                                data-products='@json($group['products'])'
-                            >
-                                {{ __('downline_products.view_products') }}
-                            </button>
-                        </article>
-                    @endforeach
+                        @endforeach
+                    </div>
                 </div>
 
                 <div class="mt-5">
@@ -460,13 +507,16 @@
                     }
 
                     const totalProducts = products.length;
-                    const totalSales = products.reduce((total, product) => total + Number(product.price || 0), 0);
-                    const totalClaimedCommission = products.reduce((total, product) => total + Number(product.claimed_commission_estimate || 0), 0);
-                    const totalEstimatedCommission = products.reduce((total, product) => total + Number(product.earning || 0), 0);
+                    const totalSales = products.reduce((total, product) => total + Number(
+                        product.price || 0), 0);
+                    const totalClaimedCommission = products.reduce((total, product) => total +
+                        Number(product.claimed_commission_estimate || 0), 0);
+                    const totalEstimatedCommission = products.reduce((total, product) => total +
+                        Number(product.earning || 0), 0);
 
-                    const productRows = products.length > 0
-                        ? products.map((product, index) => productCard(product, index)).join('')
-                        : `
+                    const productRows = products.length > 0 ?
+                        products.map((product, index) => productCard(product, index)).join('') :
+                        `
                             <div style="border-radius:18px;background:#fff8c7;padding:24px;text-align:center;color:#003b7a;font-weight:900;">
                                 ${escapeHtml(labels.noRecords)}
                             </div>
