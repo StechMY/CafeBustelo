@@ -28,4 +28,9 @@ return [
     'progress' => '进度',
     'claim_interval' => '领取间隔',
     'claimed' => '已领取',
+    'total_users' => '总用户数',
+    'users' => '用户',
+    'downline_users' => '下级用户',
+    'downline_users_desc' => '按会员分组。点击查看产品可查看所有产品和明细。',
+    'view_products' => '查看产品',
 ];

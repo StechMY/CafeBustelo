@@ -28,4 +28,9 @@ return [
     'progress' => 'Tiến độ',
     'claim_interval' => 'Khoảng cách nhận',
     'claimed' => 'Đã nhận',
+    'total_users' => 'Tổng số người dùng',
+    'users' => 'Người dùng',
+    'downline_users' => 'Người dùng cấp dưới',
+    'downline_users_desc' => 'Được nhóm theo thành viên. Nhấn xem sản phẩm để xem tất cả sản phẩm và chi tiết.',
+    'view_products' => 'Xem sản phẩm',
 ];

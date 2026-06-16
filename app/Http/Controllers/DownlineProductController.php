@@ -6,6 +6,7 @@ use App\Models\CommissionLevel;
 use App\Models\User;
 use App\Models\UserProduct;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\View\View;
 
@@ -36,48 +37,42 @@ class DownlineProductController extends Controller
             ->get()
             ->keyBy('level');
 
-        $products = UserProduct::query()
-            ->with([
-                'user:id,username,name,phone,referrer_id',
-                'product:id,name,code',
-            ])
-            ->whereIn('user_id', $allDownlineIds)
-            ->latest('purchased_at')
-            ->paginate(20)
-            ->withQueryString();
+        $userProducts = collect();
 
-        $rows = $products->getCollection()
+        if ($allDownlineIds !== []) {
+            $userProducts = UserProduct::query()
+                ->with([
+                    'user:id,username,name,phone,referrer_id',
+                    'product:id,name,code',
+                ])
+                ->whereIn('user_id', $allDownlineIds)
+                ->latest('purchased_at')
+                ->get();
+        }
+
+        $rows = $userProducts
             ->map(function (UserProduct $userProduct) use ($levelUserIds, $commissionRates): array {
                 $level = $this->resolveLevel((int) $userProduct->user_id, $levelUserIds);
-
                 $rate = (float) ($commissionRates->get($level)?->rate_percent ?? 0);
 
                 $price = (float) $userProduct->price_snapshot;
-
-                /*
-                 * IMPORTANT:
-                 * Commission is NOT based on product price.
-                 *
-                 * Real rule:
-                 * Downline claims income, then upline receives commission from that income.
-                 *
-                 * Example:
-                 * B rate = 11%
-                 * Downline claim income = 100
-                 * Upline commission = 100 * 11% = 11
-                 */
                 $incomePerClaim = (float) $userProduct->daily_income_snapshot;
                 $totalClaims = $this->effectiveTotalClaims($userProduct);
                 $claimedCount = (int) $userProduct->claimed_days;
+                $claimIntervalHours = $this->effectiveClaimIntervalHours($userProduct);
 
-                $estimatedCommissionPerClaim = round($incomePerClaim * $rate / 100, 2);
-                $estimatedFullCycleCommission = round($incomePerClaim * $totalClaims * $rate / 100, 2);
+                $commissionPerClaim = round($incomePerClaim * $rate / 100, 2);
+                $estimatedFullCommission = round($incomePerClaim * $totalClaims * $rate / 100, 2);
                 $claimedCommissionEstimate = round($incomePerClaim * $claimedCount * $rate / 100, 2);
-
                 $estimatedTotalIncome = round($incomePerClaim * $totalClaims, 2);
 
                 return [
                     'user_product' => $userProduct,
+
+                    'user_id' => (int) $userProduct->user_id,
+                    'username' => $userProduct->user?->username ?? '-',
+                    'name' => $userProduct->user?->name ?? '-',
+                    'phone' => $userProduct->user?->phone ?? '-',
 
                     'level' => $level,
                     'level_label' => match ($level) {
@@ -89,34 +84,93 @@ class DownlineProductController extends Controller
 
                     'rate' => $rate,
 
-                    // Product purchase price, display only.
-                    'price' => $price,
+                    'product_name' => $userProduct->product?->name ?? data_get($userProduct->meta, 'product_name_snapshot', '-'),
+                    'product_code' => $userProduct->product?->code ?? data_get($userProduct->meta, 'product_code_snapshot', '-'),
 
-                    // Product income logic.
+                    'price' => $price,
                     'income_per_claim' => $incomePerClaim,
                     'total_claims' => $totalClaims,
                     'claimed_count' => $claimedCount,
-                    'claim_interval_hours' => $this->effectiveClaimIntervalHours($userProduct),
+                    'claim_interval_hours' => $claimIntervalHours,
                     'estimated_total_income' => $estimatedTotalIncome,
 
-                    // Commission logic.
-                    'commission_per_claim' => $estimatedCommissionPerClaim,
+                    'commission_per_claim' => $commissionPerClaim,
                     'claimed_commission_estimate' => $claimedCommissionEstimate,
-                    'earning' => $estimatedFullCycleCommission,
-                    'estimated_full_cycle_commission' => $estimatedFullCycleCommission,
-                ];
-            });
+                    'earning' => $estimatedFullCommission,
+                    'estimated_full_cycle_commission' => $estimatedFullCommission,
 
-        $products->setCollection($rows);
+                    'purchased_at' => $userProduct->purchased_at,
+                    'purchased_at_label' => $userProduct->purchased_at?->format('d M Y, h:i A') ?? '-',
+                    'status' => $userProduct->status,
+                ];
+            })
+            ->values();
+
+        $groups = $rows
+            ->groupBy('user_id')
+            ->map(function (Collection $items): array {
+                $first = $items->first();
+
+                return [
+                    'user_id' => $first['user_id'],
+                    'username' => $first['username'],
+                    'name' => $first['name'],
+                    'phone' => $first['phone'],
+                    'level' => $first['level'],
+                    'level_label' => $first['level_label'],
+                    'rate' => $first['rate'],
+
+                    'product_count' => $items->count(),
+                    'total_sales' => $items->sum('price'),
+                    'total_income' => $items->sum('estimated_total_income'),
+                    'total_estimated_commission' => $items->sum('earning'),
+                    'total_claimed_commission_estimate' => $items->sum('claimed_commission_estimate'),
+
+                    'latest_purchase_at' => $items->max('purchased_at'),
+                    'latest_purchase_at_label' => optional($items->max('purchased_at'))->format('d M Y, h:i A') ?? '-',
+
+                    'products' => $items
+                        ->map(fn (array $row): array => [
+                            'product_name' => $row['product_name'],
+                            'product_code' => $row['product_code'],
+                            'status' => $row['status'],
+                            'price' => $row['price'],
+                            'income_per_claim' => $row['income_per_claim'],
+                            'total_claims' => $row['total_claims'],
+                            'claimed_count' => $row['claimed_count'],
+                            'claim_interval_hours' => $row['claim_interval_hours'],
+                            'estimated_total_income' => $row['estimated_total_income'],
+                            'rate' => $row['rate'],
+                            'commission_per_claim' => $row['commission_per_claim'],
+                            'claimed_commission_estimate' => $row['claimed_commission_estimate'],
+                            'earning' => $row['earning'],
+                            'purchased_at_label' => $row['purchased_at_label'],
+                        ])
+                        ->values()
+                        ->all(),
+                ];
+            })
+            ->sortByDesc('latest_purchase_at')
+            ->values();
+
+        $groupsPaginator = $this->paginateCollection(
+            items: $groups,
+            perPage: 12,
+            page: LengthAwarePaginator::resolveCurrentPage(),
+            path: $request->url(),
+            query: $request->query(),
+        );
 
         $summary = [
+            'total_users' => $groups->count(),
             'total_products' => $rows->count(),
-
-            // This is product purchase amount, not commission base.
             'total_sales' => $rows->sum('price'),
-
-            // This is estimated full-cycle commission from income claims.
             'total_estimated_commission' => $rows->sum('earning'),
+            'total_claimed_commission_estimate' => $rows->sum('claimed_commission_estimate'),
+
+            'b_users' => $groups->where('level', 1)->count(),
+            'c_users' => $groups->where('level', 2)->count(),
+            'd_users' => $groups->where('level', 3)->count(),
 
             'b_products' => $rows->where('level', 1)->count(),
             'c_products' => $rows->where('level', 2)->count(),
@@ -129,13 +183,11 @@ class DownlineProductController extends Controller
             'b_commission_per_claim' => $rows->where('level', 1)->sum('commission_per_claim'),
             'c_commission_per_claim' => $rows->where('level', 2)->sum('commission_per_claim'),
             'd_commission_per_claim' => $rows->where('level', 3)->sum('commission_per_claim'),
-
-            'total_claimed_commission_estimate' => $rows->sum('claimed_commission_estimate'),
         ];
 
         return view('downline-products.index', [
             'user' => $user,
-            'products' => $products,
+            'groups' => $groupsPaginator,
             'summary' => $summary,
             'commissionRates' => $commissionRates,
         ]);
@@ -195,5 +247,24 @@ class DownlineProductController extends Controller
         $claimIntervalHours = $this->effectiveClaimIntervalHours($userProduct);
 
         return max(1, (int) floor(($durationDays * 24) / $claimIntervalHours));
+    }
+
+    private function paginateCollection(
+        Collection $items,
+        int $perPage,
+        int $page,
+        string $path,
+        array $query = [],
+    ): LengthAwarePaginator {
+        return new LengthAwarePaginator(
+            items: $items->forPage($page, $perPage)->values(),
+            total: $items->count(),
+            perPage: $perPage,
+            currentPage: $page,
+            options: [
+                'path' => $path,
+                'query' => $query,
+            ],
+        );
     }
 }

@@ -28,4 +28,9 @@ return [
     'progress' => 'Progress',
     'claim_interval' => 'Claim Interval',
     'claimed' => 'Claimed',
+    'total_users' => 'Total Users',
+    'users' => 'Users',
+    'downline_users' => 'Downline Users',
+    'downline_users_desc' => 'Grouped by member. Click view products to see all product details.',
+    'view_products' => 'View Products',
 ];

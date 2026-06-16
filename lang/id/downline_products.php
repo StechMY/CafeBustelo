@@ -28,4 +28,9 @@ return [
     'progress' => 'Progres',
     'claim_interval' => 'Interval Klaim',
     'claimed' => 'Sudah Diklaim',
+    'total_users' => 'Total Pengguna',
+    'users' => 'Pengguna',
+    'downline_users' => 'Pengguna Downline',
+    'downline_users_desc' => 'Dikelompokkan berdasarkan anggota. Klik lihat produk untuk melihat semua produk dan detail.',
+    'view_products' => 'Lihat Produk',
 ];
