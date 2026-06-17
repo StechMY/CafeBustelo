@@ -36,6 +36,52 @@
                 'valueClass' => 'text-[#003b7a]',
             ],
         ];
+
+        $filteredSummaryCards = [
+            [
+                'label' => __('wallet.all_filtered_credit'),
+                'value' => $summary['all_filtered_credit'],
+                'class' => 'bg-green-50 text-green-700',
+            ],
+            [
+                'label' => __('wallet.all_filtered_debit'),
+                'value' => $summary['all_filtered_debit'],
+                'class' => 'bg-red-50 text-[#e4003a]',
+            ],
+            [
+                'label' => __('wallet.all_filtered_total'),
+                'value' => $summary['all_filtered_total'],
+                'class' => 'bg-[#fff8c7] text-[#003b7a]',
+            ],
+            [
+                'label' => __('wallet.all_filtered_net'),
+                'value' => $summary['all_filtered_net'],
+                'class' => $summary['all_filtered_net'] >= 0 ? 'bg-green-50 text-green-700' : 'bg-red-50 text-[#e4003a]',
+            ],
+        ];
+
+        $pageSummaryCards = [
+            [
+                'label' => __('wallet.page_credit'),
+                'value' => $summary['page_credit'],
+                'class' => 'bg-green-50 text-green-700',
+            ],
+            [
+                'label' => __('wallet.page_debit'),
+                'value' => $summary['page_debit'],
+                'class' => 'bg-red-50 text-[#e4003a]',
+            ],
+            [
+                'label' => __('wallet.page_total'),
+                'value' => $summary['page_total'],
+                'class' => 'bg-[#fff8c7] text-[#003b7a]',
+            ],
+            [
+                'label' => __('wallet.page_net'),
+                'value' => $summary['page_net'],
+                'class' => $summary['page_net'] >= 0 ? 'bg-green-50 text-green-700' : 'bg-red-50 text-[#e4003a]',
+            ],
+        ];
     @endphp
 
     <section class="bg-[#ffd900]">
@@ -116,52 +162,121 @@
                         {{ __('wallet.transaction_history_desc') }}
                     </p>
                 </div>
+            </div>
 
-                <form
-                    method="GET"
-                    action="{{ route('wallet.index') }}"
-                    class="grid w-full min-w-0 grid-cols-2 gap-2 sm:grid-cols-4 xl:max-w-[720px] xl:grid-cols-[1fr_1fr_1.15fr_auto]"
+            <form
+                method="GET"
+                action="{{ route('wallet.index') }}"
+                class="mt-4 grid w-full min-w-0 grid-cols-2 gap-2 md:grid-cols-3 xl:grid-cols-[1fr_1fr_1.15fr_1fr_1fr_auto_auto]"
+            >
+                <select
+                    name="wallet_type"
+                    class="min-w-0 w-full rounded-xl border-2 border-[#003b7a] bg-[#fff8c7] px-2.5 py-2 text-[10px] font-black text-[#003b7a] outline-none sm:rounded-2xl sm:px-3 sm:text-sm"
                 >
-                    <select
-                        name="wallet_type"
-                        class="min-w-0 w-full rounded-xl border-2 border-[#003b7a] bg-[#fff8c7] px-2.5 py-2 text-[10px] font-black text-[#003b7a] outline-none sm:rounded-2xl sm:px-3 sm:text-sm"
-                    >
-                        <option value="all" @selected($walletType === 'all')>{{ __('wallet.all_wallets') }}</option>
-                        <option value="recharge" @selected($walletType === 'recharge')>{{ __('wallet.recharge_wallet') }}</option>
-                        <option value="withdrawable" @selected($walletType === 'withdrawable')>{{ __('wallet.withdrawable_wallet') }}</option>
-                    </select>
+                    <option value="all" @selected($walletType === 'all')>{{ __('wallet.all_wallets') }}</option>
+                    <option value="recharge" @selected($walletType === 'recharge')>{{ __('wallet.recharge_wallet') }}</option>
+                    <option value="withdrawable" @selected($walletType === 'withdrawable')>{{ __('wallet.withdrawable_wallet') }}</option>
+                </select>
 
-                    <select
-                        name="direction"
-                        class="min-w-0 w-full rounded-xl border-2 border-[#003b7a] bg-[#fff8c7] px-2.5 py-2 text-[10px] font-black text-[#003b7a] outline-none sm:rounded-2xl sm:px-3 sm:text-sm"
-                    >
-                        <option value="all" @selected($direction === 'all')>{{ __('wallet.all_directions') }}</option>
-                        <option value="credit" @selected($direction === 'credit')>{{ __('wallet.credit') }}</option>
-                        <option value="debit" @selected($direction === 'debit')>{{ __('wallet.debit') }}</option>
-                    </select>
+                <select
+                    name="direction"
+                    class="min-w-0 w-full rounded-xl border-2 border-[#003b7a] bg-[#fff8c7] px-2.5 py-2 text-[10px] font-black text-[#003b7a] outline-none sm:rounded-2xl sm:px-3 sm:text-sm"
+                >
+                    <option value="all" @selected($direction === 'all')>{{ __('wallet.all_directions') }}</option>
+                    <option value="credit" @selected($direction === 'credit')>{{ __('wallet.credit') }}</option>
+                    <option value="debit" @selected($direction === 'debit')>{{ __('wallet.debit') }}</option>
+                </select>
 
-                    <select
-                        name="type"
-                        class="col-span-2 min-w-0 w-full rounded-xl border-2 border-[#003b7a] bg-[#fff8c7] px-2.5 py-2 text-[10px] font-black text-[#003b7a] outline-none sm:col-span-1 sm:rounded-2xl sm:px-3 sm:text-sm"
-                    >
-                        <option value="all" @selected($type === 'all')>{{ __('wallet.all_types') }}</option>
+                <select
+                    name="type"
+                    class="col-span-2 min-w-0 w-full rounded-xl border-2 border-[#003b7a] bg-[#fff8c7] px-2.5 py-2 text-[10px] font-black text-[#003b7a] outline-none md:col-span-1 sm:rounded-2xl sm:px-3 sm:text-sm"
+                >
+                    <option value="all" @selected($type === 'all')>{{ __('wallet.all_types') }}</option>
 
-                        @foreach ($transactionTypes as $transactionType)
-                            <option value="{{ $transactionType }}" @selected($type === $transactionType)>
-                                {{ __('wallet.types.' . $transactionType) !== 'wallet.types.' . $transactionType
-                                    ? __('wallet.types.' . $transactionType)
-                                    : str($transactionType)->headline() }}
-                            </option>
+                    @foreach ($transactionTypes as $transactionType)
+                        <option value="{{ $transactionType }}" @selected($type === $transactionType)>
+                            {{ __('wallet.types.' . $transactionType) !== 'wallet.types.' . $transactionType
+                                ? __('wallet.types.' . $transactionType)
+                                : str($transactionType)->headline() }}
+                        </option>
+                    @endforeach
+                </select>
+
+                <input
+                    type="date"
+                    name="start_date"
+                    value="{{ $startDate }}"
+                    class="min-w-0 w-full rounded-xl border-2 border-[#003b7a] bg-[#fff8c7] px-2.5 py-2 text-[10px] font-black text-[#003b7a] outline-none sm:rounded-2xl sm:px-3 sm:text-sm"
+                >
+
+                <input
+                    type="date"
+                    name="end_date"
+                    value="{{ $endDate }}"
+                    class="min-w-0 w-full rounded-xl border-2 border-[#003b7a] bg-[#fff8c7] px-2.5 py-2 text-[10px] font-black text-[#003b7a] outline-none sm:rounded-2xl sm:px-3 sm:text-sm"
+                >
+
+                <button
+                    type="submit"
+                    class="rounded-xl bg-[#003b7a] px-4 py-2 text-[10px] font-black uppercase text-white sm:rounded-2xl sm:text-sm xl:whitespace-nowrap"
+                >
+                    {{ __('wallet.filter') }}
+                </button>
+
+                <a
+                    href="{{ route('wallet.index') }}"
+                    class="rounded-xl bg-[#fff8c7] px-4 py-2 text-center text-[10px] font-black uppercase text-[#003b7a] ring-2 ring-[#003b7a] sm:rounded-2xl sm:text-sm xl:whitespace-nowrap"
+                >
+                    {{ __('wallet.reset') }}
+                </a>
+            </form>
+
+            @if ($errors->any())
+                <div class="mt-4 rounded-2xl bg-red-50 p-4 text-sm font-bold text-red-700">
+                    {{ $errors->first() }}
+                </div>
+            @endif
+
+            <div class="mt-4 grid gap-3 xl:grid-cols-2">
+                <div class="rounded-[1.25rem] bg-[#f8fafc] p-3 ring-1 ring-[#003b7a]/10 sm:p-4">
+                    <div class="text-xs font-black uppercase text-[#003b7a]/60">
+                        {{ __('wallet.all_filtered_summary') }}
+                    </div>
+
+                    <div class="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                        @foreach ($filteredSummaryCards as $card)
+                            <div class="rounded-2xl p-3 {{ $card['class'] }}">
+                                <div class="text-[9px] font-black uppercase opacity-60">
+                                    {{ $card['label'] }}
+                                </div>
+
+                                <div class="mt-1 break-words text-sm font-black sm:text-base">
+                                    {{ $currency }} {{ number_format((float) $card['value'], 2) }}
+                                </div>
+                            </div>
                         @endforeach
-                    </select>
+                    </div>
+                </div>
 
-                    <button
-                        type="submit"
-                        class="col-span-2 w-full rounded-xl bg-[#003b7a] px-4 py-2 text-[10px] font-black uppercase text-white sm:col-span-1 sm:rounded-2xl sm:text-sm xl:w-auto xl:whitespace-nowrap"
-                    >
-                        {{ __('wallet.filter') }}
-                    </button>
-                </form>
+                <div class="rounded-[1.25rem] bg-[#f8fafc] p-3 ring-1 ring-[#003b7a]/10 sm:p-4">
+                    <div class="text-xs font-black uppercase text-[#003b7a]/60">
+                        {{ __('wallet.current_page_summary') }}
+                    </div>
+
+                    <div class="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                        @foreach ($pageSummaryCards as $card)
+                            <div class="rounded-2xl p-3 {{ $card['class'] }}">
+                                <div class="text-[9px] font-black uppercase opacity-60">
+                                    {{ $card['label'] }}
+                                </div>
+
+                                <div class="mt-1 break-words text-sm font-black sm:text-base">
+                                    {{ $currency }} {{ number_format((float) $card['value'], 2) }}
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
             </div>
 
             @if ($transactions->isNotEmpty())

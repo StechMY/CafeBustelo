@@ -69,4 +69,17 @@ return [
 
     'check_in' => '签到奖励',
     'svip_purchase' => 'SVIP 购买',
+    'start_date' => '开始日期',
+    'end_date' => '结束日期',
+    'reset' => '重置',
+    'all_filtered_summary' => '全部筛选数据汇总',
+    'current_page_summary' => '当前页面汇总',
+    'all_filtered_total' => '全部筛选总金额',
+    'all_filtered_credit' => '全部筛选收入',
+    'all_filtered_debit' => '全部筛选支出',
+    'all_filtered_net' => '全部筛选净额',
+    'page_total' => '本页总金额',
+    'page_credit' => '本页收入',
+    'page_debit' => '本页支出',
+    'page_net' => '本页净额',
 ];
