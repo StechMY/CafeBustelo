@@ -24,7 +24,7 @@ return [
     'total_earning' => 'Tổng thu nhập',
     'total_withdrawals' => 'Tổng rút tiền',
     'pending_withdrawals' => 'Rút tiền đang chờ',
-    'team_income' => 'Thu nhập đội nhóm',
+    'team_income' => 'Thu nhập đội nhóm hôm nay',
     'income_today' => 'Thu nhập hôm nay',
     'yesterday_earnings' => 'Thu nhập hôm qua',
     'daily_income_total' => 'Tổng thu nhập hằng ngày',

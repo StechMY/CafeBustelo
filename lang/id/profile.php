@@ -21,7 +21,7 @@ return [
     'total_earning' => 'Total Pendapatan',
     'total_withdrawals' => 'Total Penarikan',
     'pending_withdrawals' => 'Penarikan Tertunda',
-    'team_income' => 'Pendapatan Tim',
+    'team_income' => 'Pendapatan Tim Hari Ini',
     'income_today' => 'Pendapatan Hari Ini',
     'yesterday_earnings' => 'Pendapatan Kemarin',
     'daily_income_total' => 'Total Pendapatan Harian',

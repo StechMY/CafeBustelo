@@ -24,7 +24,7 @@ return [
     'total_earning' => '总收益',
     'total_withdrawals' => '总提现',
     'pending_withdrawals' => '待处理提现',
-    'team_income' => '团队收益',
+    'team_income' => '今日团队收益',
     'income_today' => '今日收益',
     'yesterday_earnings' => '昨日收益',
     'daily_income_total' => '每日收益总额',

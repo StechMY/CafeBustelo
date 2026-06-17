@@ -24,7 +24,7 @@ return [
     'total_earning' => 'Total Earning',
     'total_withdrawals' => 'Total Withdrawals',
     'pending_withdrawals' => 'Pending Withdrawals',
-    'team_income' => 'Team Income',
+    'team_income' => 'Team Income Today',
     'income_today' => 'Income Today',
     'yesterday_earnings' => "Yesterday's Earnings",
     'daily_income_total' => 'Daily Income Total',

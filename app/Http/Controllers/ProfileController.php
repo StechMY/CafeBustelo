@@ -69,6 +69,7 @@ class ProfileController extends Controller
                 ->sum('amount'),
 
             'team_income' => CommissionRecord::query()
+                ->whereBetween('created_at', [$todayStart, $todayEnd]) // 2026-06-17 (want change to today only)
                 ->where('earner_user_id', $user->id)
                 ->where('status', 'paid')
                 ->sum('amount'),
