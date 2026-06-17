@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\ImpersonateUserController;
 use App\Http\Controllers\Auth\CustomerAuthController;
 use App\Http\Controllers\BankAccountController;
 use App\Http\Controllers\BonusCodeController;
@@ -158,3 +159,7 @@ Route::middleware(['web', 'human.only'])->group(function (): void {
     Route::get('/contact', ContactController::class)
         ->name('contact.index');
 });
+
+Route::middleware(['web', 'signed'])
+    ->get('/admin/users/{user}/impersonate', ImpersonateUserController::class)
+    ->name('admin.users.impersonate');

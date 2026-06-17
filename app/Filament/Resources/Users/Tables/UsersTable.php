@@ -31,6 +31,7 @@ use Filament\Forms\Components\Textarea;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Filament\Tables\Enums\FiltersLayout;
+use Illuminate\Support\Facades\URL;
 
 class UsersTable
 {
@@ -255,6 +256,22 @@ class UsersTable
                 ViewAction::make(),
 
                 EditAction::make(),
+                Action::make('login_as_user')
+                    ->label(__('filament.login_as_user'))
+                    ->icon('heroicon-o-arrow-right-on-rectangle')
+                    ->color('warning')
+                    ->requiresConfirmation()
+                    ->modalHeading(__('filament.login_as_user'))
+                    ->modalDescription(fn(User $record): string => __('filament.login_as_user_confirm', [
+                        'username' => $record->username,
+                    ]))
+                    ->modalSubmitActionLabel(__('filament.continue'))
+                    ->url(fn(User $record): string => URL::temporarySignedRoute(
+                        name: 'admin.users.impersonate',
+                        expiration: now()->addMinutes(2),
+                        parameters: ['user' => $record],
+                    ))
+                    ->openUrlInNewTab(),
 
                 Action::make('toggleStatus')
                     ->label(fn(User $record): string => $record->status === 'active' ? __('filament.deactivate') : __('filament.activate'))

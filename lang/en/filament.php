@@ -518,4 +518,9 @@ return [
     'available_from_help' => 'Leave empty if there is no start time limit.',
     'available_until_help' => 'Leave empty if there is no end time limit.',
     'sold_quantity_help' => 'This is updated automatically after purchase.',
+    'login_as_user' => 'Login as User',
+    'login_as_user_confirm' => 'Are you sure you want to login as :username?',
+    'logged_in_as_user' => 'You are now logged in as :username.',
+    'cannot_login_suspended_user' => 'Cannot login as suspended user.',
+    'continue' => 'Continue',
 ];

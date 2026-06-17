@@ -519,4 +519,9 @@ return [
     'available_from_help' => '留空代表不限制开始时间。',
     'available_until_help' => '留空代表不限制结束时间。',
     'sold_quantity_help' => '购买成功后系统会自动更新。',
+    'login_as_user' => '登录此用户',
+    'login_as_user_confirm' => '确定要登录为 :username 吗？',
+    'logged_in_as_user' => '你现在已登录为 :username。',
+    'cannot_login_suspended_user' => '无法登录已被冻结的用户。',
+    'continue' => '继续',
 ];
