@@ -46,16 +46,17 @@
             </a>
 
             <div class="flex items-center gap-2 text-xs font-black sm:gap-3 sm:text-sm">
-                {{-- @include('partials.language-switcher') --}}
+                @include('partials.language-switcher')
+
                 <a
                    href="{{ route('contact.index') }}"
-                   class="hidden rounded-full px-4 py-2 text-white/85 transition hover:bg-white/10 hover:text-white sm:inline-flex">
+                   class="hidden rounded-full px-4 py-2 text-white/85 transition hover:bg-white/10 hover:text-white md:inline-flex">
                     {{ __('navigation.contact') }}
                 </a>
 
                 <a
                    href="{{ route('login') }}"
-                   class="rounded-full px-4 py-2 text-white/85 transition hover:bg-white/10 hover:text-white sm:px-5">
+                   class="hidden rounded-full px-4 py-2 text-white/85 transition hover:bg-white/10 hover:text-white sm:inline-flex sm:px-5">
                     {{ __('common.login') }}
                 </a>
 
