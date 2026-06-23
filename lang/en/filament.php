@@ -543,7 +543,7 @@ return [
     'operation_transfer_referral_rate' => 'Transfer Referral Rate',
     'operation_transfer_referral_rate_desc' => 'Transfer referrals / valid members',
     'operation_today_upgrade_amount' => 'Today Upgrade Amount',
-    'operation_today_upgrade_amount_desc' => 'B/C/D product purchase amount, excluding T1',
+    'operation_today_upgrade_amount_desc' => 'Downline product purchase amount, excluding T1',
     'operation_today_recharge' => 'Today Recharge',
     'operation_today_withdraw' => 'Today Withdraw',
 

@@ -544,7 +544,7 @@ return [
     'operation_transfer_referral_rate' => '转介绍率',
     'operation_transfer_referral_rate_desc' => '转介绍人数 / 有效会员人数',
     'operation_today_upgrade_amount' => '当天加金',
-    'operation_today_upgrade_amount_desc' => 'B/C/D 下属购买产品金额，排除 T1 产品',
+    'operation_today_upgrade_amount_desc' => '下属购买产品金额，排除 T1 产品',
     'operation_today_recharge' => '当天充值',
     'operation_today_withdraw' => '当日提款',
 
