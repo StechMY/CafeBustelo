@@ -212,7 +212,8 @@
         </div>
         @include('dashboard.partials.marketing-widgets')
         <div class="mt-5 grid gap-5 lg:mt-8 lg:grid-cols-3 lg:gap-6">
-            <div class="rounded-[1.5rem] bg-white p-4 shadow-xl ring-1 ring-black/5 sm:rounded-[2rem] sm:p-6 lg:col-span-2 overflow-auto">
+            <div
+                 class="rounded-[1.5rem] bg-white p-4 shadow-xl ring-1 ring-black/5 sm:rounded-[2rem] sm:p-6 lg:col-span-2 overflow-auto">
                 <div class="flex items-center justify-between gap-4">
                     <div class="min-w-0">
                         <h2 class="text-xl font-black uppercase text-[#003b7a] sm:text-2xl">
@@ -456,6 +457,19 @@
                     </p>
                 </div>
             </div>
+        </div>
+        <div class="mt-4 grid gap-3 sm:mt-5 sm:gap-4">
+            <img
+                 src="/customer_pic/week_en.jpg"
+                 alt="Info Image"
+                 class="w-full rounded-[1.35rem] object-cover shadow-xl ring-1 ring-black/5 sm:rounded-[2rem]"
+                 loading="lazy">
+
+            <img
+                 src="/customer_pic/week_vi.jpg"
+                 alt="Info Image"
+                 class="w-full rounded-[1.35rem] object-cover shadow-xl ring-1 ring-black/5 sm:rounded-[2rem]"
+                 loading="lazy">
         </div>
     </section>
     @include('dashboard.partials.check-in-popup')

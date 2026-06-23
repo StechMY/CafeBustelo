@@ -4,6 +4,7 @@ namespace App\Filament\Pages;
 
 use App\Filament\Widgets\PlatformFinanceChart;
 use App\Filament\Widgets\PlatformOverviewStats;
+use App\Filament\Widgets\PlatformOperationStats;
 use App\Filament\Widgets\PlatformRequestStats;
 use App\Filament\Widgets\PlatformUserStats;
 use App\Models\Product;
@@ -43,7 +44,7 @@ class Dashboard extends BaseDashboard
                     ->schema([
                         DatePicker::make('startDate')
                             ->label(__('filament.start_date'))
-                            ->default(now()->startOfMonth())
+                            ->default(now())
                             ->native(false),
 
                         DatePicker::make('endDate')
@@ -72,14 +73,13 @@ class Dashboard extends BaseDashboard
     {
         return [
             'default' => 1,
-            'md' => 2,
-            'xl' => 4,
         ];
     }
 
     public function getWidgets(): array
     {
         return [
+            PlatformOperationStats::class,
             PlatformOverviewStats::class,
             PlatformRequestStats::class,
             PlatformUserStats::class,
