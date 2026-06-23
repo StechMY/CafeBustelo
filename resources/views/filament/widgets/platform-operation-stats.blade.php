@@ -4,7 +4,7 @@
     $selected = $stats['selected'];
     $overview = $stats['overview'];
 
-    $money = fn ($amount) => \App\Support\Filament\Dashboard\PlatformDashboardQuery::money($amount);
+    $money = fn($amount) => \App\Support\Filament\Dashboard\PlatformDashboardQuery::money($amount);
 
     $selectedRows = [
         [
@@ -395,7 +395,7 @@
             background: #f8fafc;
         }
 
-        .ops-section + .ops-section {
+        .ops-section+.ops-section {
             margin-top: 24px;
         }
 
@@ -427,15 +427,15 @@
             border: 1px solid #e5e7eb;
             border-radius: 18px;
             background: #ffffff;
+            position: relative;
+            z-index: 1;
         }
 
         .ops-row {
             display: grid;
             grid-template-columns: repeat(4, minmax(0, 1fr));
-        }
-
-        .ops-row + .ops-row {
-            border-top: 1px solid #e5e7eb;
+            position: relative;
+            z-index: 1;
         }
 
         .ops-cell {
@@ -448,18 +448,26 @@
             border-right: 1px solid #e5e7eb;
             background: #ffffff;
             transition: .16s ease;
+            z-index: 1;
         }
+
+        .ops-cell:hover {
+            z-index: 999;
+            transform: translateY(-2px);
+            background: #f8fafc;
+            box-shadow: 0 18px 36px rgba(15, 23, 42, .14);
+        }
+
+        .ops-row+.ops-row {
+            border-top: 1px solid #e5e7eb;
+        }
+
 
         .ops-cell:nth-child(4n) {
             border-right: 0;
         }
 
-        .ops-cell:hover {
-            z-index: 2;
-            transform: translateY(-1px);
-            background: #f8fafc;
-            box-shadow: 0 12px 26px rgba(15, 23, 42, .08);
-        }
+
 
         .ops-cell-empty {
             background: #fbfdff;
@@ -520,6 +528,7 @@
         }
 
         .ops-value {
+            max-width: 100%;
             font-size: 20px;
             line-height: 1.1;
             font-weight: 950;
@@ -544,27 +553,24 @@
         .ops-desc-tooltip {
             pointer-events: none;
             position: absolute;
-            left: 18px;
-            right: 18px;
-            bottom: calc(100% - 8px);
-            z-index: 20;
+            left: 14px;
+            right: 14px;
+            bottom: calc(100% + 10px);
+            z-index: 9999;
             opacity: 0;
             transform: translateY(8px);
             border-radius: 14px;
             background: #0f172a;
             color: #ffffff;
-            padding: 10px 12px;
-            font-size: 12px;
-            line-height: 1.45;
-            font-weight: 700;
-            box-shadow: 0 18px 35px rgba(15, 23, 42, .22);
+            padding: 11px 13px;
+            box-shadow: 0 18px 35px rgba(15, 23, 42, .24);
             transition: .16s ease;
         }
 
         .ops-desc-tooltip::after {
             content: "";
             position: absolute;
-            left: 22px;
+            left: 24px;
             bottom: -6px;
             width: 12px;
             height: 12px;
@@ -572,10 +578,29 @@
             transform: rotate(45deg);
         }
 
+        .ops-tooltip-value {
+            font-size: 14px;
+            line-height: 1.25;
+            font-weight: 950;
+            color: #ffffff;
+            word-break: break-word;
+        }
+
+        .ops-tooltip-desc {
+            margin-top: 6px;
+            border-top: 1px solid rgba(255, 255, 255, .14);
+            padding-top: 6px;
+            font-size: 12px;
+            line-height: 1.45;
+            font-weight: 700;
+            color: rgba(255, 255, 255, .82);
+        }
+
         .ops-cell:hover .ops-desc-tooltip {
             opacity: 1;
             transform: translateY(0);
         }
+
 
         .ops-mobile-desc {
             display: none;
@@ -594,7 +619,7 @@
                 border-right: 0;
             }
 
-            .ops-row + .ops-row {
+            .ops-row+.ops-row {
                 border-top: 0;
             }
 
@@ -615,6 +640,10 @@
                 flex-basis: 42px;
                 border-radius: 14px;
                 font-size: 21px;
+            }
+
+            .ops-value-tooltip {
+                display: none;
             }
 
             .ops-head-title {
@@ -718,7 +747,9 @@
                     @foreach ($selectedRows as $row)
                         <div class="ops-row">
                             @foreach ($row as $item)
-                                @include('filament.widgets.partials.operation-stat-cell', ['item' => $item])
+                                @include('filament.widgets.partials.operation-stat-cell', [
+                                    'item' => $item,
+                                ])
                             @endforeach
                         </div>
                     @endforeach
@@ -740,7 +771,9 @@
                     @foreach ($overviewRows as $row)
                         <div class="ops-row">
                             @foreach ($row as $item)
-                                @include('filament.widgets.partials.operation-stat-cell', ['item' => $item])
+                                @include('filament.widgets.partials.operation-stat-cell', [
+                                    'item' => $item,
+                                ])
                             @endforeach
                         </div>
                     @endforeach
