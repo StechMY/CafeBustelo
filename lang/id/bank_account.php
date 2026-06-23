@@ -22,4 +22,7 @@ return [
     'locked' => 'Terkunci',
     'bound_at' => 'Waktu Terikat',
     'admin_change_note' => 'Setelah terikat, rekening bank hanya dapat diperbarui oleh admin atau layanan pelanggan setelah pemeriksaan.',
+    'name_already_bound' => 'Nama rekening bank ini sudah terikat.',
+    'account_no_already_bound' => 'Nomor rekening bank ini sudah terikat.',
+    'bind_failed_duplicate' => 'Nama rekening bank atau nomor rekening ini sudah terikat.',
 ];

@@ -22,4 +22,7 @@ return [
     'locked' => 'Đã khóa',
     'bound_at' => 'Thời gian liên kết',
     'admin_change_note' => 'Sau khi liên kết, tài khoản ngân hàng chỉ có thể được cập nhật bởi quản trị viên hoặc CSKH sau khi kiểm tra.',
+    'name_already_bound' => 'Tên tài khoản ngân hàng này đã được liên kết.',
+    'account_no_already_bound' => 'Số tài khoản ngân hàng này đã được liên kết.',
+    'bind_failed_duplicate' => 'Tên tài khoản ngân hàng hoặc số tài khoản này đã được liên kết.',
 ];

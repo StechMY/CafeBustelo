@@ -22,4 +22,7 @@ return [
     'locked' => '已锁定',
     'bound_at' => '绑定时间',
     'admin_change_note' => '银行账户绑定后仅可由管理员或客服审核后修改。',
+    'name_already_bound' => '该银行户名已被绑定。',
+    'account_no_already_bound' => '该银行卡号已被绑定。',
+    'bind_failed_duplicate' => '该银行户名或银行卡号已被绑定。',
 ];
