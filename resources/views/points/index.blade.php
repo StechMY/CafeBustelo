@@ -7,7 +7,7 @@
         $currency = config('app.currency', 'RM');
         $pointsBalance = (float) $user->points_balance;
         $exchangeRate = max(0.01, (float) $rate);
-        $cashPreview = $exchangeRate > 0 ? $pointsBalance / $exchangeRate : 0;
+        $cashPreview = $exchangeRate > 0 ? $pointsBalance * $exchangeRate : 0;
     @endphp
 
     <section class="bg-[#ffd900]">
