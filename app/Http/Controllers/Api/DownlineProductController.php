@@ -24,6 +24,7 @@ class DownlineProductController extends Controller
 
         return ApiResponse::success([
             'summary' => $report['summary'],
+            'commissionRates' => $report['commission_rates']->values(),
             'data' => DownlineProductGroupResource::collection($paginator->getCollection())->resolve($request),
             'meta' => [
                 'current_page' => $paginator->currentPage(),
