@@ -7,16 +7,16 @@
             'short' => 'EN',
             'flag' => '/flags/en.svg',
         ],
-        'zh_CN' => [
-            'label' => '中文',
-            'short' => '中文',
-            'flag' => '/flags/zh_CN.svg',
-        ],
-        'id' => [
-            'label' => 'Indonesia',
-            'short' => 'ID',
-            'flag' => '/flags/id.svg',
-        ],
+        // 'zh_CN' => [
+        //     'label' => '中文',
+        //     'short' => '中文',
+        //     'flag' => '/flags/zh_CN.svg',
+        // ],
+        // 'id' => [
+        //     'label' => 'Indonesia',
+        //     'short' => 'ID',
+        //     'flag' => '/flags/id.svg',
+        // ],
         'vi' => [
             'label' => 'Tiếng Việt',
             'short' => 'VI',
