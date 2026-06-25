@@ -18,7 +18,7 @@ class RegisterRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:255'],
             'username' => ['required', 'string', 'alpha_dash', 'min:4', 'max:32', Rule::unique('users', 'username')],
-            'phone' => ['required', 'string', 'max:40', Rule::unique('users', 'phone')],
+            'phone' => ['required', 'string', 'max:40', Rule::unique('users', 'phone'), 'regex:/^[0-9]+$/'],
             'otp_code' => ['required', 'string', 'digits:6'],
             'referral_code' => ['required', 'string', 'exists:users,referral_code'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],

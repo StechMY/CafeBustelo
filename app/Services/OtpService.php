@@ -13,11 +13,38 @@ class OtpService
 {
     public function __construct(
         protected SmsClient $smsClient,
-    ) {}
+    ) {
+    }
 
-    public function normalizePhone(string $phone): string
+    public function normalizePhone(string $phone, string $defaultCountryCode = '84'): string
     {
-        return preg_replace('/\s+/', '', trim($phone));
+        $phone = trim($phone);
+
+        // Remove spaces, dashes, brackets, plus sign
+        $phone = preg_replace('/[\s\-\(\)]+/', '', $phone);
+        $phone = ltrim($phone, '+');
+
+        // 0084xxxxxxxx -> 84xxxxxxxx
+        if (str_starts_with($phone, '00')) {
+            $phone = substr($phone, 2);
+        }
+
+        // Vietnam local format: 0xxxxxxxxx -> 84xxxxxxxxx
+        if (str_starts_with($phone, '0')) {
+            return $defaultCountryCode . substr($phone, 1);
+        }
+
+        // Already has country code: 84xxxxxxxxx
+        if (str_starts_with($phone, $defaultCountryCode)) {
+            return $phone;
+        }
+
+        // If user enters without leading 0, example: 912345678 -> 84912345678
+        if (preg_match('/^[1-9][0-9]{7,12}$/', $phone)) {
+            return $defaultCountryCode . $phone;
+        }
+
+        return $phone;
     }
 
     public function send(string $phone, string $purpose): void
@@ -53,9 +80,9 @@ class OtpService
             ]);
         }
 
-        if (! $result['success']) {
+        if (!$result['success']) {
             throw ValidationException::withMessages([
-                'phone' => __('otp.sms_send_failed').' '.($result['desc'] ?? ''),
+                'phone' => __('otp.sms_send_failed') . ' ' . ($result['desc'] ?? ''),
             ]);
         }
 
@@ -86,7 +113,7 @@ class OtpService
             ->latest('id')
             ->first();
 
-        if (! $otp) {
+        if (!$otp) {
             throw ValidationException::withMessages([
                 'otp_code' => __('otp.invalid_code'),
             ]);
@@ -104,7 +131,7 @@ class OtpService
             ]);
         }
 
-        if (! Hash::check($code, $otp->code_hash)) {
+        if (!Hash::check($code, $otp->code_hash)) {
             DB::table('phone_otps')
                 ->where('id', $otp->id)
                 ->increment('attempts');

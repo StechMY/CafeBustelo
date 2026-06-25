@@ -32,7 +32,7 @@ return [
 
     'full_name_placeholder' => '请输入姓名',
     'create_username_placeholder' => '创建用户名',
-    'phone_placeholder' => '请输入电话号码',
+    'phone_placeholder' => '例如：0912345678 或 84912345678',
     'referral_code_placeholder' => '可选推荐码',
     'confirm_password_placeholder' => '请再次输入密码',
 

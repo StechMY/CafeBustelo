@@ -67,6 +67,7 @@ class BankAccountController extends Controller
                 'required',
                 'string',
                 'max:40',
+                'regex:/^[0-9]+$/',
             ],
             'otp_code' => [
                 'required',

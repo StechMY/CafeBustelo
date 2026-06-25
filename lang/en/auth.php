@@ -32,7 +32,7 @@ return [
 
     'full_name_placeholder' => 'Your name',
     'create_username_placeholder' => 'Create username',
-    'phone_placeholder' => 'Phone number',
+    'phone_placeholder' => 'Example: 0912345678 or 84912345678',
     'referral_code_placeholder' => 'Optional referral code',
     'confirm_password_placeholder' => 'Confirm password',
 

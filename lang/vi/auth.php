@@ -32,7 +32,7 @@ return [
 
     'full_name_placeholder' => 'Tên của bạn',
     'create_username_placeholder' => 'Tạo tên người dùng',
-    'phone_placeholder' => 'Số điện thoại',
+    'phone_placeholder' => 'Ví dụ: 0912345678 hoặc 84912345678',
     'referral_code_placeholder' => 'Mã giới thiệu tùy chọn',
     'confirm_password_placeholder' => 'Xác nhận mật khẩu',
 
