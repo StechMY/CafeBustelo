@@ -7,6 +7,7 @@ use App\Http\Requests\Api\LoginRequest;
 use App\Http\Requests\Api\RegisterRequest;
 use App\Models\User;
 use App\Models\Wallet;
+use App\Services\OtpService;
 use App\Services\PointService;
 use App\Services\WelcomeBonusService;
 use App\Support\Api\ApiFormatter;
@@ -23,8 +24,11 @@ class AuthController extends Controller
         RegisterRequest $request,
         WelcomeBonusService $welcomeBonusService,
         PointService $pointService,
+        OtpService $otpService,
     ): JsonResponse {
         $data = $request->validated();
+
+        $otpService->verify($data['phone'], 'register', $data['otp_code']);
 
         $referrer = User::query()
             ->where('referral_code', $data['referral_code'])
@@ -46,6 +50,7 @@ class AuthController extends Controller
                 'last_login_at' => now(),
                 'order_status' => true,
                 'withdraw_status' => true,
+                'phone_verified_at' => now(),
             ]);
 
             foreach ([Wallet::TYPE_RECHARGE, Wallet::TYPE_WITHDRAWABLE] as $type) {
@@ -64,7 +69,7 @@ class AuthController extends Controller
             return $user;
         });
 
-        $this->recordLogin($request, $user, 'register_login');
+        $this->recordLogin($request, $user, 'api_register');
 
         $token = $user->createToken($data['device_name'] ?? 'flutter')->plainTextToken;
 

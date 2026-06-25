@@ -8,7 +8,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class UserBankAccount extends Model
 {
     public const STATUS_ACTIVE = 'active';
+
     public const STATUS_INACTIVE = 'inactive';
+
     public const STATUS_SUSPENDED = 'suspended';
 
     public const STATUSES = [
@@ -16,11 +18,14 @@ class UserBankAccount extends Model
         self::STATUS_INACTIVE,
         self::STATUS_SUSPENDED,
     ];
+
     protected $fillable = [
         'user_id',
         'bank_account_name',
         'bank_name',
         'bank_account_no',
+        'phone',
+        'phone_verified_at',
         'status',
         'is_locked',
         'bound_at',
@@ -30,6 +35,7 @@ class UserBankAccount extends Model
     protected $casts = [
         'is_locked' => 'boolean',
         'bound_at' => 'datetime',
+        'phone_verified_at' => 'datetime',
         'meta' => 'array',
     ];
 
@@ -46,10 +52,10 @@ class UserBankAccount extends Model
             return $this->bank_account_no;
         }
 
-        return str_repeat('*', max(strlen($number) - 4, 0)) . substr($number, -4);
+        return str_repeat('*', max(strlen($number) - 4, 0)).substr($number, -4);
     }
 
-     public function isActive(): bool
+    public function isActive(): bool
     {
         return $this->status === self::STATUS_ACTIVE;
     }

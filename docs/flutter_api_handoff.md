@@ -64,7 +64,34 @@ Currency format: numeric values are returned as numbers. Some objects also inclu
 
 Method: `POST`
 
-URL: `/api/v1/register`
+Step 1 URL: `/api/v1/register/send-otp`
+
+Auth required: no
+
+Body:
+
+```json
+{
+  "phone": "60123456789"
+}
+```
+
+Success:
+
+```json
+{
+  "success": true,
+  "message": "OTP has been sent.",
+  "data": {
+    "resend_seconds": 60,
+    "expires_in_minutes": 5
+  }
+}
+```
+
+Flutter should start the resend countdown from `data.resend_seconds`. SMS provider credentials stay only in Laravel.
+
+Step 2 URL: `/api/v1/register`
 
 Auth required: no
 
@@ -74,7 +101,8 @@ Body:
 | --- | --- | --- | --- |
 | name | string | yes | max 255 |
 | username | string | yes | alpha dash, min 4, max 32, unique |
-| phone | string | yes | max 32 |
+| phone | string | yes | max 40, same phone used for OTP |
+| otp_code | string | yes | 6 digits |
 | referral_code | string | yes | must exist |
 | password | string | yes | min 8 |
 | password_confirmation | string | yes | must match password |
@@ -87,6 +115,7 @@ Example:
   "name": "Jane",
   "username": "jane123",
   "phone": "60123456789",
+  "otp_code": "123456",
   "referral_code": "ABCD1234",
   "password": "password123",
   "password_confirmation": "password123",
@@ -108,6 +137,7 @@ Success:
       "username": "jane123",
       "name": "Jane",
       "phone": "60123456789",
+      "phone_verified_at": "2026-06-25T10:00:00.000000Z",
       "status": "inactive",
       "referral_code": "ZXCV1234",
       "points_balance": 0
@@ -407,6 +437,53 @@ Returns recharge wallet, active recharge methods, and request history.
 
 Returns wallet, bank account, VIP withdrawal settings, and request history.
 
+### Bank Account Binding
+
+Step 1:
+
+`POST /api/v1/bank-account/send-otp`
+
+Auth: Bearer token required
+
+```json
+{
+  "phone": "60123456789"
+}
+```
+
+Success:
+
+```json
+{
+  "success": true,
+  "message": "OTP has been sent.",
+  "data": {
+    "resend_seconds": 60,
+    "expires_in_minutes": 5
+  }
+}
+```
+
+If the user already has an active bank account, the API returns 422.
+
+Step 2:
+
+`POST /api/v1/bank-account`
+
+Auth: Bearer token required
+
+```json
+{
+  "bank_account_name": "Customer Name",
+  "bank_name": "Maybank",
+  "bank_account_no": "1234567890",
+  "phone": "60123456789",
+  "otp_code": "123456"
+}
+```
+
+Flutter should not recalculate or bypass OTP state. Laravel verifies purpose `bank_account`, stores the normalized phone, sets `phone_verified_at`, locks the bank account, and returns `bank_account`.
+
 `POST /api/v1/withdraw`
 
 ```json
@@ -657,6 +734,10 @@ The Flutter customer API does not expose the Filament admin dashboard. Admin wid
 
 Flutter can display wallet choices. Backend validates status, stock, active window, max purchase count, wallet balance, and order status. Use `can_purchase` only as UI hint; backend remains source of truth.
 
+### SMS OTP
+
+OTP purpose names are `register` and `bank_account`. Codes are 6 digits, stored hashed in Laravel, expire by backend config, and respect backend resend cooldown/max-attempt rules. Flutter only calls Laravel OTP endpoints and never receives SMS provider credentials.
+
 ### Product claims
 
 Claims may be hourly or daily. Use `claim_interval_hours`, `next_claim_at`, and `is_claimable`. Do not assume one claim per day.
@@ -694,14 +775,14 @@ Refresh wallet/dashboard after purchase, claim, points redeem, recharge, withdra
 | Flutter Screen | Endpoint(s) | Notes |
 | --- | --- | --- |
 | Login | `POST /api/v1/login` | Store token securely |
-| Register | `POST /api/v1/register` | Requires referral code |
+| Register | `POST /api/v1/register/send-otp`, `POST /api/v1/register` | Requires phone OTP and referral code |
 | Dashboard | `GET /api/v1/dashboard` | Pull summary, sliders, popup, check-in state |
 | Products | `GET /api/v1/products` | Show list and purchase buttons |
 | Product Detail | `GET /api/v1/products` | Use selected product object |
 | My Products | `GET /api/v1/user-products`, `POST /api/v1/user-products/{id}/claim` | Claim buttons |
 | Wallet | `GET /api/v1/wallet` | Screen-ready balances, summaries, filters, transactions, and meta |
 | Recharge | `GET /api/v1/recharge`, `POST /api/v1/recharge` | Multipart receipt upload |
-| Withdraw | `GET /api/v1/withdraw`, `POST /api/v1/withdraw` | Bank account must be active |
+| Withdraw | `GET /api/v1/withdraw`, `POST /api/v1/bank-account/send-otp`, `POST /api/v1/bank-account`, `POST /api/v1/withdraw` | Bank account must be active |
 | Team | `GET /api/v1/team` | B/C/D data |
 | Check In | `GET /api/v1/check-in`, `POST /api/v1/check-in` | Daily status |
 | Salary | `GET /api/v1/salary`, `POST /api/v1/salary/claim` | Weekly/monthly/annual |
@@ -732,6 +813,8 @@ Money: prefer numeric fields for calculations. Use backend `formatted_*` only fo
 ## 9. Testing Checklist
 
 - Register
+- Send registration OTP
+- Register with phone OTP
 - Login
 - Logout
 - Load dashboard
@@ -743,6 +826,8 @@ Money: prefer numeric fields for calculations. Use backend `formatted_*` only fo
 - View wallet transactions
 - Submit recharge
 - Submit withdraw
+- Send bank account OTP
+- Bind bank account with phone OTP
 - Redeem points
 - Buy SVIP with recharge wallet
 - Buy SVIP with withdrawable wallet

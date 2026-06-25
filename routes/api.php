@@ -1,7 +1,10 @@
 <?php
 
 use App\Http\Controllers\Api\AppConfigController;
+use App\Http\Controllers\Api\Auth\RegisterOtpController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\BankAccountController;
+use App\Http\Controllers\Api\BankAccountOtpController;
 use App\Http\Controllers\Api\BonusCodeController;
 use App\Http\Controllers\Api\CalculatorController;
 use App\Http\Controllers\Api\CheckInController;
@@ -20,6 +23,9 @@ use App\Http\Controllers\Api\WithdrawController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->name('api.v1.')->group(function (): void {
+    Route::post('/register/send-otp', [RegisterOtpController::class, 'send'])
+        ->middleware('throttle:3,1')
+        ->name('register.otp.send');
     Route::post('/register', [AuthController::class, 'register'])->name('register');
     Route::post('/login', [AuthController::class, 'login'])->name('login');
     Route::get('/app-config', AppConfigController::class)->name('app-config');
@@ -49,6 +55,10 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
 
         Route::get('/withdraw', [WithdrawController::class, 'index'])->name('withdraw.index');
         Route::post('/withdraw', [WithdrawController::class, 'store'])->name('withdraw.store');
+        Route::post('/bank-account/send-otp', [BankAccountOtpController::class, 'send'])
+            ->middleware('throttle:3,1')
+            ->name('bank-account.otp.send');
+        Route::post('/bank-account', [BankAccountController::class, 'store'])->name('bank-account.store');
 
         Route::get('/team', [MyTeamController::class, 'index'])->name('team.index');
 

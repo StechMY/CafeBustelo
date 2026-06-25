@@ -7,6 +7,7 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
+use Throwable;
 
 class OtpService
 {
@@ -42,11 +43,19 @@ class OtpService
             'minutes' => config('sms.otp_expire_minutes'),
         ]);
 
-        $result = $this->smsClient->send($phone, $message);
+        try {
+            $result = $this->smsClient->send($phone, $message);
+        } catch (Throwable $exception) {
+            report($exception);
+
+            throw ValidationException::withMessages([
+                'phone' => __('otp.sms_send_failed'),
+            ]);
+        }
 
         if (! $result['success']) {
             throw ValidationException::withMessages([
-                'phone' => __('otp.sms_send_failed') . ' ' . ($result['desc'] ?? ''),
+                'phone' => __('otp.sms_send_failed').' '.($result['desc'] ?? ''),
             ]);
         }
 

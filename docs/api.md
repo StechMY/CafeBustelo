@@ -38,6 +38,7 @@ Dates are ISO-8601 strings. Money fields are numeric floats and often include a 
 | Method | Endpoint | Auth | Purpose |
 | --- | --- | --- | --- |
 | POST | `/api/v1/register` | No | Register user and return Sanctum token |
+| POST | `/api/v1/register/send-otp` | No | Send registration phone OTP |
 | POST | `/api/v1/login` | No | Login by username/password and return Sanctum token |
 | POST | `/api/v1/logout` | Yes | Delete current Sanctum token |
 | GET | `/api/v1/me` | Yes | Current user |
@@ -57,6 +58,8 @@ Dates are ISO-8601 strings. Money fields are numeric floats and often include a 
 | POST | `/api/v1/recharge` | Yes | Submit recharge request |
 | GET | `/api/v1/withdraw` | Yes | Withdraw wallet, bank account, requests |
 | POST | `/api/v1/withdraw` | Yes | Submit withdraw request |
+| POST | `/api/v1/bank-account/send-otp` | Yes | Send bank account binding phone OTP |
+| POST | `/api/v1/bank-account` | Yes | Bind user bank account after OTP verification |
 | GET | `/api/v1/team` | Yes | B/C/D team data and stats |
 | GET | `/api/v1/check-in` | Yes | Check-in state and records |
 | POST | `/api/v1/check-in` | Yes | Claim daily check-in |
@@ -76,6 +79,33 @@ Dates are ISO-8601 strings. Money fields are numeric floats and often include a 
 
 ### Register
 
+Registration requires SMS OTP. Flutter must first call:
+
+```http
+POST /api/v1/register/send-otp
+```
+
+```json
+{
+  "phone": "60123456789"
+}
+```
+
+Success:
+
+```json
+{
+  "success": true,
+  "message": "OTP has been sent.",
+  "data": {
+    "resend_seconds": 60,
+    "expires_in_minutes": 5
+  }
+}
+```
+
+Then submit registration with `otp_code`:
+
 ```http
 POST /api/v1/register
 ```
@@ -85,6 +115,7 @@ POST /api/v1/register
   "name": "Jane",
   "username": "jane123",
   "phone": "60123456789",
+  "otp_code": "123456",
   "referral_code": "ABCD1234",
   "password": "password123",
   "password_confirmation": "password123",
@@ -92,7 +123,7 @@ POST /api/v1/register
 }
 ```
 
-Creates wallets, welcome bonus, invite-day points, login log, and returns a Sanctum token.
+Verifies OTP purpose `register`, creates wallets, welcome bonus, invite-day points, login log, and returns a Sanctum token.
 
 ### Login
 
@@ -146,6 +177,40 @@ Uses `DailyIncomeClaimService`. Hourly products are supported through `claim_int
 ```
 
 Uses `WithdrawService`. Backend validates withdraw status, active account, active bank account, VIP minimum, fee, and balance lock.
+
+### Bank Account Binding
+
+Bank account binding requires an authenticated user and SMS OTP.
+
+```http
+POST /api/v1/bank-account/send-otp
+```
+
+```json
+{
+  "phone": "60123456789"
+}
+```
+
+Success includes `resend_seconds` for the Flutter countdown and `expires_in_minutes` for UI copy.
+
+Then bind the bank account:
+
+```http
+POST /api/v1/bank-account
+```
+
+```json
+{
+  "bank_account_name": "Customer Name",
+  "bank_name": "Maybank",
+  "bank_account_no": "1234567890",
+  "phone": "60123456789",
+  "otp_code": "123456"
+}
+```
+
+The API normalizes phone and bank account number, verifies OTP purpose `bank_account`, stores `user_bank_accounts.phone`, sets `phone_verified_at`, locks the account, and returns the bound bank account. Duplicate bank account name or number returns 422 validation JSON instead of 500.
 
 ### Salary Claim
 
@@ -307,6 +372,9 @@ Response data:
 ## Business Rules
 
 - Product purchase and SVIP purchase support `wallet_type: recharge|withdrawable`.
+- SMS OTP is server-side only. Flutter never receives `SMS_APP_KEY`, `SMS_APP_CODE`, or `SMS_APP_SECRET`.
+- OTP purpose names are `register` and `bank_account`.
+- OTP codes are 6 digits, stored hashed, expire by `sms.otp_expire_minutes`, enforce resend cooldown by `sms.otp_resend_seconds`, and enforce failed attempts by `sms.otp_max_attempts`.
 - Product commission estimates are based on claim income, not product price.
 - Downline product commission formula:
   `commission_per_claim = income_per_claim * rate / 100`
