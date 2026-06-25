@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
+use App\Services\OtpService;
 
 class BankAccountController extends Controller
 {
@@ -27,7 +28,7 @@ class BankAccountController extends Controller
         ]);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request, OtpService $otpService): RedirectResponse
     {
         $user = $request->user();
 
@@ -41,6 +42,7 @@ class BankAccountController extends Controller
             'bank_account_name' => trim((string) $request->input('bank_account_name')),
             'bank_name' => trim((string) $request->input('bank_name')),
             'bank_account_no' => preg_replace('/\s+/', '', trim((string) $request->input('bank_account_no'))),
+            'phone' => $otpService->normalizePhone((string) $request->input('phone')),
         ]);
 
         $validated = $request->validate([
@@ -61,10 +63,22 @@ class BankAccountController extends Controller
                 'max:100',
                 Rule::unique('user_bank_accounts', 'bank_account_no'),
             ],
+            'phone' => [
+                'required',
+                'string',
+                'max:40',
+            ],
+            'otp_code' => [
+                'required',
+                'string',
+                'digits:6',
+            ],
         ], [
             'bank_account_name.unique' => __('bank_account.name_already_bound'),
             'bank_account_no.unique' => __('bank_account.account_no_already_bound'),
         ]);
+
+        $otpService->verify($validated['phone'], 'bank_account', $validated['otp_code']);
 
         try {
             DB::transaction(function () use ($user, $validated): void {
@@ -73,11 +87,14 @@ class BankAccountController extends Controller
                     'bank_account_name' => $validated['bank_account_name'],
                     'bank_name' => $validated['bank_name'],
                     'bank_account_no' => $validated['bank_account_no'],
+                    'phone' => $validated['phone'],
+                    'phone_verified_at' => now(),
                     'status' => 'active',
                     'is_locked' => true,
                     'bound_at' => now(),
                     'meta' => [
                         'source' => 'first_withdraw_bind',
+                        'phone_verified_at' => now()->toDateTimeString(),
                         'ip' => request()->ip(),
                         'user_agent' => request()->userAgent(),
                     ],

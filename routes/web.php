@@ -2,7 +2,9 @@
 
 use App\Http\Controllers\Admin\ImpersonateUserController;
 use App\Http\Controllers\Auth\CustomerAuthController;
+use App\Http\Controllers\Auth\RegisterOtpController;
 use App\Http\Controllers\BankAccountController;
+use App\Http\Controllers\BankAccountOtpController;
 use App\Http\Controllers\BonusCodeController;
 use App\Http\Controllers\CalculatorController;
 use App\Http\Controllers\CheckInController;
@@ -34,6 +36,14 @@ Route::get('/human-gate', [HumanGateController::class, 'show'])
 Route::post('/human-gate/verify', [HumanGateController::class, 'verify'])
     ->name('human.gate.verify')
     ->middleware(['web', 'throttle:30,1']);
+
+Route::post('/register/send-otp', [RegisterOtpController::class, 'send'])
+    ->middleware('throttle:3,1')
+    ->name('register.otp.send');
+
+Route::post('/bank-account/send-otp', [BankAccountOtpController::class, 'send'])
+    ->middleware(['auth', 'throttle:3,1'])
+    ->name('bank-account.otp.send');
 
 Route::middleware(['guest', 'web', 'human.only'])->group(function (): void {
     Route::get('/login', [CustomerAuthController::class, 'showLogin'])

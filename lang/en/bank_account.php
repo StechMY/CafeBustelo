@@ -25,4 +25,6 @@ return [
     'name_already_bound' => 'This bank account name has already been bound.',
     'account_no_already_bound' => 'This bank account number has already been bound.',
     'bind_failed_duplicate' => 'This bank account name or account number has already been bound.',
+    'phone' => 'Phone Number',
+    'phone_placeholder' => 'Enter phone number for bank verification',
 ];

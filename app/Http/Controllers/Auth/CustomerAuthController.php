@@ -14,6 +14,7 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use App\Services\PointService;
+use App\Services\OtpService;
 
 class CustomerAuthController extends Controller
 {
@@ -64,8 +65,15 @@ class CustomerAuthController extends Controller
         return redirect()->intended(route('dashboard'));
     }
 
-    public function register(Request $request, WelcomeBonusService $welcomeBonusService, PointService $pointService): RedirectResponse
-    {
+    public function register(
+        Request $request,
+        WelcomeBonusService $welcomeBonusService,
+        PointService $pointService,
+        OtpService $otpService
+    ): RedirectResponse {
+        $request->merge([
+            'phone' => $otpService->normalizePhone((string) $request->input('phone')),
+        ]);
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
 
@@ -78,7 +86,18 @@ class CustomerAuthController extends Controller
                 Rule::unique('users', 'username'),
             ],
 
-            'phone' => ['required', 'string', 'max:32'],
+            'phone' => [
+                'required',
+                'string',
+                'max:40',
+                Rule::unique('users', 'phone'),
+            ],
+
+            'otp_code' => [
+                'required',
+                'string',
+                'digits:6',
+            ],
 
             'referral_code' => [
                 'required',
@@ -93,6 +112,7 @@ class CustomerAuthController extends Controller
                 'confirmed',
             ],
         ]);
+        $otpService->verify($data['phone'], 'register', $data['otp_code']);
 
         $referrer = null;
 
@@ -118,6 +138,7 @@ class CustomerAuthController extends Controller
                 'last_login_at' => now(),
                 'order_status' => true,
                 'withdraw_status' => true,
+                'phone_verified_at' => now(),
             ]);
 
             Wallet::query()->firstOrCreate([

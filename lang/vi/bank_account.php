@@ -25,4 +25,6 @@ return [
     'name_already_bound' => 'Tên tài khoản ngân hàng này đã được liên kết.',
     'account_no_already_bound' => 'Số tài khoản ngân hàng này đã được liên kết.',
     'bind_failed_duplicate' => 'Tên tài khoản ngân hàng hoặc số tài khoản này đã được liên kết.',
+    'phone' => 'Số điện thoại',
+    'phone_placeholder' => 'Nhập số điện thoại để xác minh tài khoản ngân hàng',
 ];

@@ -25,4 +25,6 @@ return [
     'name_already_bound' => 'Nama rekening bank ini sudah terikat.',
     'account_no_already_bound' => 'Nomor rekening bank ini sudah terikat.',
     'bind_failed_duplicate' => 'Nama rekening bank atau nomor rekening ini sudah terikat.',
+    'phone' => 'Nomor Telepon',
+    'phone_placeholder' => 'Masukkan nomor telepon untuk verifikasi rekening bank',
 ];

@@ -25,4 +25,6 @@ return [
     'name_already_bound' => '该银行户名已被绑定。',
     'account_no_already_bound' => '该银行卡号已被绑定。',
     'bind_failed_duplicate' => '该银行户名或银行卡号已被绑定。',
+    'phone' => '手机号码',
+    'phone_placeholder' => '请输入用于银行绑定验证的手机号码',
 ];
