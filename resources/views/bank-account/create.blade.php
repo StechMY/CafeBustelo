@@ -97,7 +97,6 @@
                                class="w-full rounded-xl border-2 border-[#003b7a] bg-[#fff8c7] px-4 py-3 text-sm font-bold text-[#003b7a] outline-none focus:bg-white focus:ring-4 focus:ring-[#ffd900] sm:rounded-2xl sm:px-5 sm:py-4 sm:text-base"
                                placeholder="{{ __('bank_account.phone_placeholder') }}"
                                required>
-                        <div data-otp-message class="mt-1.5 hidden text-xs font-bold sm:text-sm"></div>
                         <button
                                 type="button"
                                 data-otp-send
@@ -107,6 +106,8 @@
                             {{ __('otp.send_code') }}
                         </button>
                     </div>
+                    <div data-otp-message class="mt-1.5 hidden text-xs font-bold sm:text-sm"></div>
+
 
                     @error('phone')
                         <div class="mt-1.5 text-xs font-bold text-[#e4003a] sm:text-sm">{{ $message }}</div>
