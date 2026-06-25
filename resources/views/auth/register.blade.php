@@ -79,7 +79,6 @@
                                    required
                                    placeholder="{{ __('auth.phone_placeholder') }}"
                                    class="w-full rounded-2xl border-2 border-[#003b7a] bg-[#fff8c7] px-4 py-3.5 font-bold outline-none focus:bg-white focus:ring-4 focus:ring-[#ffd900] sm:px-5 sm:py-4">
-                            <div data-otp-message class="mt-2 hidden text-sm font-bold"></div>
                             <button
                                     type="button"
                                     data-otp-send
@@ -89,6 +88,7 @@
                                 {{ __('otp.send_code') }}
                             </button>
                         </div>
+                        <div data-otp-message class="mt-2 hidden text-sm font-bold"></div>
 
                         @error('phone')
                             <div class="mt-2 text-sm font-bold text-[#e4003a]">{{ $message }}</div>

@@ -4,6 +4,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <link rel="icon" href="/fav.png" type="image/png">
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="Caf𝑒Bustelᴏ">
@@ -74,6 +75,99 @@
 
         @yield('content')
     </main>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+
+            document.querySelectorAll('[data-otp-send]').forEach((button) => {
+                button.addEventListener('click', async () => {
+                    const url = button.dataset.otpUrl;
+                    const phoneInputId = button.dataset.phoneInput;
+                    const phoneInput = document.getElementById(phoneInputId);
+                    const wrapper = button.closest('div');
+                    const messageBox = wrapper?.parentElement?.querySelector(
+                            '[data-otp-message]') ||
+                        document.querySelector('[data-otp-message]');
+
+                    const phone = phoneInput?.value?.trim();
+
+                    if (!phone) {
+                        showOtpMessage(messageBox, '{{ __('otp.phone_required') }}', false);
+                        return;
+                    }
+
+                    button.disabled = true;
+                    const originalText = button.textContent;
+                    button.textContent = '{{ __('otp.sending') }}';
+
+                    try {
+                        const response = await fetch(url, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json',
+                                'X-CSRF-TOKEN': csrfToken,
+                            },
+                            body: JSON.stringify({
+                                phone
+                            }),
+                        });
+
+                        const data = await response.json();
+
+                        if (!response.ok || !data.success) {
+                            const errorMessage = data.message ||
+                                Object.values(data.errors || {})?.[0]?.[0] ||
+                                '{{ __('otp.sms_send_failed') }}';
+
+                            showOtpMessage(messageBox, errorMessage, false);
+                            button.disabled = false;
+                            button.textContent = originalText;
+                            return;
+                        }
+
+                        showOtpMessage(messageBox, data.message || '{{ __('otp.sent') }}',
+                        true);
+
+                        startOtpCountdown(button, originalText, Number(data.resend_seconds ||
+                            60));
+                    } catch (error) {
+                        showOtpMessage(messageBox, '{{ __('otp.sms_send_failed') }}', false);
+                        button.disabled = false;
+                        button.textContent = originalText;
+                    }
+                });
+            });
+
+            function showOtpMessage(element, message, success) {
+                if (!element) return;
+
+                element.classList.remove('hidden');
+                element.textContent = message;
+                element.classList.toggle('text-[#003b7a]', success);
+                element.classList.toggle('text-[#e4003a]', !success);
+            }
+
+            function startOtpCountdown(button, originalText, seconds) {
+                let remaining = seconds;
+
+                button.textContent = `${remaining}s`;
+
+                const timer = setInterval(() => {
+                    remaining -= 1;
+
+                    if (remaining <= 0) {
+                        clearInterval(timer);
+                        button.disabled = false;
+                        button.textContent = originalText;
+                        return;
+                    }
+
+                    button.textContent = `${remaining}s`;
+                }, 1000);
+            }
+        });
+    </script>
 </body>
 
 </html>
