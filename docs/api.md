@@ -51,8 +51,8 @@ Dates are ISO-8601 strings. Money fields are numeric floats and often include a 
 | POST | `/api/v1/products/{product}/purchase` | Yes | Purchase product |
 | GET | `/api/v1/user-products` | Yes | Purchased products |
 | POST | `/api/v1/user-products/{userProduct}/claim` | Yes | Claim product income |
-| GET | `/api/v1/wallet` | Yes | Wallet balances and summary |
-| GET | `/api/v1/wallet/transactions` | Yes | Paginated wallet transactions |
+| GET | `/api/v1/wallet` | Yes | Screen-ready wallet balances, summaries, filters, and paginated transactions |
+| GET | `/api/v1/wallet/transactions` | Yes | Legacy paginated wallet transactions |
 | GET | `/api/v1/recharge` | Yes | Recharge wallet, methods, requests |
 | POST | `/api/v1/recharge` | Yes | Submit recharge request |
 | GET | `/api/v1/withdraw` | Yes | Withdraw wallet, bank account, requests |
@@ -203,9 +203,94 @@ Paginated sections use:
 
 Supported query filters:
 
-- `GET /wallet/transactions`: `wallet_type`, `direction`, `type`, `page`, `per_page`
+- `GET /wallet`: `wallet_type`, `direction`, `type`, `start_date`, `end_date`, `page`, `per_page`
+- `GET /wallet/transactions`: `wallet_type`, `direction`, `type`, `start_date`, `end_date`, `page`, `per_page`
 - `GET /bonus-codes`: `status`, `type`, `page`, `per_page`
 - Most history endpoints: `page`, `per_page`
+
+## Wallet Response
+
+`GET /api/v1/wallet` is the screen-ready wallet endpoint. Flutter should not recalculate filtered totals or current-page totals.
+
+Supported filters:
+
+- `wallet_type`: `all`, `recharge`, `withdrawable`
+- `direction`: `all`, `credit`, `debit`
+- `type`: transaction type or `all`
+- `start_date`: `YYYY-MM-DD`, applied from start of day
+- `end_date`: `YYYY-MM-DD`, applied through end of day and must be after or equal to `start_date`
+- `page`, `per_page`
+
+Response data:
+
+```json
+{
+  "success": true,
+  "data": {
+    "wallets": {
+      "recharge": {
+        "balance": 100,
+        "formatted_balance": "RM 100.00"
+      },
+      "withdrawable": {
+        "balance": 50,
+        "formatted_balance": "RM 50.00"
+      }
+    },
+    "summary": {
+      "lifetime": {
+        "total_credit": 1000,
+        "display_total_credit": 5000,
+        "is_total_credit_overridden": true,
+        "formatted_total_credit": "RM 5,000.00",
+        "total_debit": 200,
+        "display_total_debit": 900,
+        "is_total_debit_overridden": true,
+        "formatted_total_debit": "RM 900.00"
+      },
+      "all_filtered": {
+        "total": 800,
+        "credit": 1000,
+        "debit": 200,
+        "net": 800,
+        "formatted_total": "RM 800.00",
+        "formatted_credit": "RM 1,000.00",
+        "formatted_debit": "RM 200.00",
+        "formatted_net": "RM 800.00"
+      },
+      "current_page": {
+        "total": 120,
+        "credit": 150,
+        "debit": 30,
+        "net": 120,
+        "formatted_total": "RM 120.00",
+        "formatted_credit": "RM 150.00",
+        "formatted_debit": "RM 30.00",
+        "formatted_net": "RM 120.00"
+      }
+    },
+    "filters": {
+      "wallet_type": "all",
+      "direction": "all",
+      "type": "all",
+      "start_date": "2026-06-01",
+      "end_date": "2026-06-25"
+    },
+    "transactions": [],
+    "meta": {
+      "current_page": 1,
+      "per_page": 15,
+      "total": 100,
+      "last_page": 7
+    }
+  }
+}
+```
+
+- `summary.lifetime` is not affected by wallet table filters and applies `users.display_wallet_total_credit` / `users.display_wallet_total_debit`.
+- `summary.all_filtered` is calculated across every transaction matching the current filters before pagination.
+- `summary.current_page` is calculated only from transactions returned in the current page.
+- `transactions[].created_at_label` is provided for direct display.
 
 ## Reused Services
 
@@ -230,6 +315,86 @@ Supported query filters:
 - Points redemption formula is from `PointService`:
   `cash_amount = points * points_to_cash_rate`.
 - Backend remains source of truth for all availability, balance, claim, salary, withdraw, and SVIP rules.
+
+## Downline Product Response
+
+`GET /api/v1/downline-products` returns one paginated group per B/C/D downline user. Products are nested inside each group. Pagination applies to groups, not individual products.
+
+```json
+{
+  "success": true,
+  "data": {
+    "summary": {
+      "total_users": 1,
+      "total_products": 2,
+      "total_sales": 1000,
+      "total_estimated_commission": 15,
+      "total_claimed_commission_estimate": 5,
+      "b_users": 1,
+      "c_users": 0,
+      "d_users": 0,
+      "b_products": 2,
+      "c_products": 0,
+      "d_products": 0,
+      "b_estimated_commission": 15,
+      "c_estimated_commission": 0,
+      "d_estimated_commission": 0
+    },
+    "data": [
+      {
+        "user_id": 10,
+        "username": "user001",
+        "name": "User Name",
+        "phone": "0123456789",
+        "level": 1,
+        "level_label": "B",
+        "rate": 5,
+        "product_count": 2,
+        "total_sales": 1000,
+        "total_income": 300,
+        "total_estimated_commission": 15,
+        "total_claimed_commission_estimate": 5,
+        "latest_purchase_at": "2026-06-25T02:00:00.000000Z",
+        "latest_purchase_at_label": "25 Jun 2026, 10:00 AM",
+        "products": [
+          {
+            "product_name": "Product A",
+            "product_code": "P001",
+            "status": "active",
+            "price": 500,
+            "income_per_claim": 10,
+            "total_claims": 30,
+            "claimed_count": 10,
+            "claim_interval_hours": 24,
+            "estimated_total_income": 300,
+            "rate": 5,
+            "commission_per_claim": 0.5,
+            "claimed_commission_estimate": 5,
+            "earning": 15,
+            "estimated_full_cycle_commission": 15,
+            "purchased_at": "2026-06-25T02:00:00.000000Z",
+            "purchased_at_label": "25 Jun 2026, 10:00 AM"
+          }
+        ]
+      }
+    ],
+    "meta": {
+      "current_page": 1,
+      "per_page": 12,
+      "total": 1,
+      "last_page": 1
+    }
+  }
+}
+```
+
+- Parse groups from `data.data`.
+- Commission uses claim income (`daily_income_snapshot`), never product price.
+- `earning` equals `estimated_full_cycle_commission`.
+- `claimed_commission_estimate` covers already claimed income only.
+- A positive `total_claims_snapshot` is used directly. Otherwise total claims are derived from duration and effective claim interval.
+- `claim_interval_hours` supports hourly products.
+- Web and API responses use the same `DownlineProductReportService`.
 
 ## Display Overrides
 
@@ -281,8 +446,8 @@ For integer fields, the same structure is returned without a formatted money fie
 | `display_yesterday_recharge` | My Team yesterday recharge | `/team`: `yesterday_recharge` |
 | `display_this_month_recharge` | My Team current-month recharge | `/team`: `this_month_recharge` |
 | `display_last_month_recharge` | My Team previous-month recharge | `/team`: `last_month_recharge` |
-| `display_wallet_total_credit` | Wallet summary total credit | `/wallet`: `total_credit` |
-| `display_wallet_total_debit` | Wallet summary total debit | `/wallet`: `total_debit` |
+| `display_wallet_total_credit` | Wallet lifetime total credit | `/wallet`: `summary.lifetime.total_credit` |
+| `display_wallet_total_debit` | Wallet lifetime total debit | `/wallet`: `summary.lifetime.total_debit` |
 
 No override fields were found for individual products, user products, recharge requests, withdraw requests, points, bonus codes, SVIP purchases, or downline-product rows. Those endpoints continue returning real values.
 

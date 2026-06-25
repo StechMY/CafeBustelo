@@ -200,6 +200,10 @@ class ApiFormatter
 
     public static function walletTransaction(WalletTransaction $transaction): array
     {
+        $createdAt = $transaction->created_at
+            ? $transaction->created_at->copy()->timezone(config('app.timezone'))
+            : null;
+
         return [
             'id' => (int) $transaction->id,
             'wallet_type' => $transaction->wallet_type,
@@ -208,11 +212,13 @@ class ApiFormatter
             'direction' => $transaction->direction,
             'amount' => self::money($transaction->amount),
             'formatted_amount' => self::formattedMoney($transaction->amount),
+            'description' => $transaction->remarks,
             'balance_before' => self::money($transaction->balance_before),
             'balance_after' => self::money($transaction->balance_after),
             'remarks' => $transaction->remarks,
             'meta' => $transaction->meta,
-            'created_at' => self::dateTime($transaction->created_at),
+            'created_at' => $createdAt?->toAtomString(),
+            'created_at_label' => $createdAt?->format('d M Y, h:i A'),
         ];
     }
 

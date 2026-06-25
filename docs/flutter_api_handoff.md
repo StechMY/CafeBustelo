@@ -242,7 +242,7 @@ Fields: `id`, `product_id`, `product_name`, `product_code`, `status`, `price_sna
 
 ### WalletTransaction
 
-Fields: `id`, `wallet_type`, `wallet_type_label`, `type`, `direction`, `amount`, `formatted_amount`, `balance_before`, `balance_after`, `remarks`, `meta`, `created_at`.
+Fields: `id`, `wallet_type`, `wallet_type_label`, `type`, `direction`, `amount`, `formatted_amount`, `description`, `balance_before`, `balance_after`, `remarks`, `meta`, `created_at`, `created_at_label`.
 
 ### RechargeRequest
 
@@ -262,11 +262,11 @@ Fields: `id`, `direction`, `type`, `points`, `balance_before`, `balance_after`, 
 
 ### DownlineProductGroup
 
-Fields: `user_id`, `username`, `name`, `phone`, `level`, `level_label`, `rate`, `product_count`, `total_sales`, `total_income`, `total_estimated_commission`, `total_claimed_commission_estimate`, `latest_purchase_at`, `products`.
+Fields: `user_id`, `username`, `name`, `phone`, `level`, `level_label`, `rate`, `product_count`, `total_sales`, `total_income`, `total_estimated_commission`, `total_claimed_commission_estimate`, `latest_purchase_at`, `latest_purchase_at_label`, `products`.
 
 ### DownlineProductDetail
 
-Fields: `product_name`, `product_code`, `status`, `price`, `income_per_claim`, `total_claims`, `claimed_count`, `claim_interval_hours`, `estimated_total_income`, `rate`, `commission_per_claim`, `claimed_commission_estimate`, `estimated_full_commission`, `purchased_at`.
+Fields: `product_name`, `product_code`, `status`, `price`, `income_per_claim`, `total_claims`, `claimed_count`, `claim_interval_hours`, `estimated_total_income`, `rate`, `commission_per_claim`, `claimed_commission_estimate`, `earning`, `estimated_full_cycle_commission`, `purchased_at`, `purchased_at_label`.
 
 ### SvipPackage
 
@@ -357,13 +357,34 @@ After success, refresh dashboard, wallet, and user-products.
 
 ### Wallet
 
-`GET /api/v1/wallet`
+`GET /api/v1/wallet?wallet_type=all&direction=all&type=all&start_date=2026-06-01&end_date=2026-06-25&page=1&per_page=15`
 
-Returns recharge/withdrawable wallets, totals, transaction types.
+Use this endpoint for the wallet screen. It returns balances, lifetime summary, all-filtered summary, current-page summary, filters, transaction types, transactions, and pagination meta in one response.
 
-`GET /api/v1/wallet/transactions?wallet_type=recharge&direction=credit&type=bonus_code&page=1&per_page=15`
+Parser path:
 
-Paginated.
+```text
+response.data["data"]["wallets"]
+response.data["data"]["summary"]["lifetime"]
+response.data["data"]["summary"]["all_filtered"]
+response.data["data"]["summary"]["current_page"]
+response.data["data"]["transactions"]
+response.data["data"]["meta"]
+```
+
+Rules:
+
+- `summary.lifetime` is not affected by filters and may be display-overridden.
+- Use `summary.lifetime.display_total_credit` and `summary.lifetime.display_total_debit` for customer UI.
+- `summary.all_filtered` is across all rows matching filters before pagination.
+- `summary.current_page` is only the transactions returned in the current page.
+- Do not recalculate `all_filtered` or `current_page` in Flutter.
+- Date filters use `YYYY-MM-DD`; backend applies start of day and end of day.
+- Transaction rows include `formatted_amount`, `description`, `created_at`, and `created_at_label`.
+
+`GET /api/v1/wallet/transactions?wallet_type=recharge&direction=credit&type=bonus_code&start_date=2026-06-01&end_date=2026-06-25&page=1&per_page=15`
+
+Legacy paginated transaction list. Prefer `/wallet` for the wallet screen.
 
 ### Recharge
 
@@ -470,7 +491,91 @@ Returns points balance, exchange rate, estimated cash value, minimum redeem, ena
 
 `GET /api/v1/downline-products`
 
-Returns grouped-by-user rows. Commission is based on downline claim income.
+This endpoint is grouped by user. Do not parse it as a flat product list.
+
+Parser path:
+
+```text
+response.data["data"]["summary"]
+response.data["data"]["data"]       // List<DownlineProductGroup>
+group["products"]                   // List<DownlineProductDetail>
+response.data["data"]["meta"]
+```
+
+```json
+{
+  "success": true,
+  "data": {
+    "summary": {
+      "total_users": 1,
+      "total_products": 2,
+      "total_sales": 1000,
+      "total_estimated_commission": 15,
+      "total_claimed_commission_estimate": 5,
+      "b_users": 1,
+      "c_users": 0,
+      "d_users": 0,
+      "b_products": 2,
+      "c_products": 0,
+      "d_products": 0,
+      "b_estimated_commission": 15,
+      "c_estimated_commission": 0,
+      "d_estimated_commission": 0
+    },
+    "data": [
+      {
+        "user_id": 10,
+        "username": "user001",
+        "level": 1,
+        "level_label": "B",
+        "product_count": 2,
+        "total_sales": 1000,
+        "total_income": 300,
+        "total_estimated_commission": 15,
+        "total_claimed_commission_estimate": 5,
+        "latest_purchase_at": "2026-06-25T02:00:00.000000Z",
+        "latest_purchase_at_label": "25 Jun 2026, 10:00 AM",
+        "products": [
+          {
+            "product_name": "Product A",
+            "product_code": "P001",
+            "price": 500,
+            "income_per_claim": 10,
+            "total_claims": 30,
+            "claimed_count": 10,
+            "claim_interval_hours": 24,
+            "commission_per_claim": 0.5,
+            "claimed_commission_estimate": 5,
+            "earning": 15,
+            "estimated_full_cycle_commission": 15,
+            "purchased_at": "2026-06-25T02:00:00.000000Z",
+            "purchased_at_label": "25 Jun 2026, 10:00 AM"
+          }
+        ]
+      }
+    ],
+    "meta": {
+      "current_page": 1,
+      "per_page": 12,
+      "total": 1,
+      "last_page": 1
+    }
+  }
+}
+```
+
+Flutter implementation requirements:
+
+- Model the page as `summary`, `groups`, and `meta`.
+- Parse groups from nested response key `data.data`.
+- `DownlineProductGroup.products` is a nested list, defaulting to an empty list.
+- Render one user card or expansion section per group.
+- Render product rows from that group's `products`.
+- Pagination appends groups, not products.
+- Use `latest_purchase_at_label` and `purchased_at_label` for display when available.
+- `earning` equals `estimated_full_cycle_commission`.
+- Commission is based on `income_per_claim`, never `price`.
+- Hourly products use returned `claim_interval_hours` and `total_claims`.
 
 ### SVIP
 
@@ -541,8 +646,8 @@ Money responses use:
 | Team | `yesterday_recharge` | `display_yesterday_recharge` | `users.display_yesterday_recharge` | `display_yesterday_recharge` |
 | Team | `this_month_recharge` | `display_this_month_recharge` | `users.display_this_month_recharge` | `display_this_month_recharge` |
 | Team | `last_month_recharge` | `display_last_month_recharge` | `users.display_last_month_recharge` | `display_last_month_recharge` |
-| Wallet | `total_credit` | `display_total_credit` | `users.display_wallet_total_credit` | `display_total_credit` |
-| Wallet | `total_debit` | `display_total_debit` | `users.display_wallet_total_debit` | `display_total_debit` |
+| Wallet lifetime | `summary.lifetime.total_credit` | `summary.lifetime.display_total_credit` | `users.display_wallet_total_credit` | `summary.lifetime.display_total_credit` |
+| Wallet lifetime | `summary.lifetime.total_debit` | `summary.lifetime.display_total_debit` | `users.display_wallet_total_debit` | `summary.lifetime.display_total_debit` |
 
 Individual products, purchased products, wallet transactions, recharge/withdraw requests, points, bonus codes, downline-product rows, and SVIP records have no discovered display override fields and should use their returned real values.
 
@@ -582,7 +687,7 @@ SVIP can be purchased with recharge or withdrawable wallet. Backend prevents dup
 
 ### Wallet
 
-Refresh wallet/dashboard after purchase, claim, points redeem, recharge, withdraw, bonus redeem, or SVIP purchase.
+Refresh wallet/dashboard after purchase, claim, points redeem, recharge, withdraw, bonus redeem, or SVIP purchase. For wallet filters or pagination, request `/api/v1/wallet` again and render the returned `summary.all_filtered`, `summary.current_page`, `transactions`, and `meta` directly.
 
 ## 7. Screen-to-Endpoint Mapping
 
@@ -594,7 +699,7 @@ Refresh wallet/dashboard after purchase, claim, points redeem, recharge, withdra
 | Products | `GET /api/v1/products` | Show list and purchase buttons |
 | Product Detail | `GET /api/v1/products` | Use selected product object |
 | My Products | `GET /api/v1/user-products`, `POST /api/v1/user-products/{id}/claim` | Claim buttons |
-| Wallet | `GET /api/v1/wallet`, `GET /api/v1/wallet/transactions` | Paginated |
+| Wallet | `GET /api/v1/wallet` | Screen-ready balances, summaries, filters, transactions, and meta |
 | Recharge | `GET /api/v1/recharge`, `POST /api/v1/recharge` | Multipart receipt upload |
 | Withdraw | `GET /api/v1/withdraw`, `POST /api/v1/withdraw` | Bank account must be active |
 | Team | `GET /api/v1/team` | B/C/D data |
