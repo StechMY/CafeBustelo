@@ -27,7 +27,7 @@ return [
     'already_have_account' => 'Sudah punya akun?',
     'full_name_placeholder' => 'Nama Anda',
     'create_username_placeholder' => 'Buat username',
-    'phone_placeholder' => 'Contoh: 0912345678 atau 84912345678',
+    'phone_placeholder' => 'Contoh: 912345678',
     'referral_code_placeholder' => 'Kode referral opsional',
     'confirm_password_placeholder' => 'Konfirmasi kata sandi',
     'register_hero_title' => 'Tim Anda, Hadiah Anda',

@@ -26,5 +26,5 @@ return [
     'account_no_already_bound' => 'This bank account number has already been bound.',
     'bind_failed_duplicate' => 'This bank account name or account number has already been bound.',
     'phone' => 'Phone Number',
-    'phone_placeholder' => 'Example: 0912345678 or 84912345678',
+    'phone_placeholder' => 'Example: 912345678',
 ];

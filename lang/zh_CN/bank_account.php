@@ -26,5 +26,5 @@ return [
     'account_no_already_bound' => '该银行卡号已被绑定。',
     'bind_failed_duplicate' => '该银行户名或银行卡号已被绑定。',
     'phone' => '手机号码',
-    'phone_placeholder' => '例如：0912345678 或 84912345678',
+    'phone_placeholder' => '例如：912345678',
 ];

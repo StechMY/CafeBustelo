@@ -71,14 +71,23 @@
                         </label>
 
                         <div class="grid gap-2 sm:grid-cols-[1fr_auto]">
-                            <input
-                                   id="phone"
-                                   name="phone"
-                                   value="{{ old('phone') }}"
-                                   type="text"
-                                   required
-                                   placeholder="{{ __('auth.phone_placeholder') }}"
-                                   class="w-full rounded-2xl border-2 border-[#003b7a] bg-[#fff8c7] px-4 py-3.5 font-bold outline-none focus:bg-white focus:ring-4 focus:ring-[#ffd900] sm:px-5 sm:py-4">
+                            <div
+                                 class="flex overflow-hidden rounded-2xl border-2 border-[#003b7a] bg-[#fff8c7] focus-within:bg-white focus-within:ring-4 focus-within:ring-[#ffd900]">
+                                <div
+                                     class="flex items-center border-r-2 border-[#003b7a] bg-[#003b7a] px-4 text-sm font-black text-white sm:px-5">
+                                    +84
+                                </div>
+
+                                <input
+                                       id="phone"
+                                       name="phone"
+                                       value="{{ old('phone') }}"
+                                       type="text"
+                                       required
+                                       placeholder="{{ __('auth.phone_placeholder') }}"
+                                       class="min-w-0 flex-1 bg-transparent px-4 py-3.5 font-bold text-[#003b7a] outline-none sm:px-5 sm:py-4">
+                            </div>
+
                             <button
                                     type="button"
                                     data-otp-send
@@ -88,7 +97,12 @@
                                 {{ __('otp.send_code') }}
                             </button>
                         </div>
+
                         <div data-otp-message class="mt-2 hidden text-sm font-bold"></div>
+
+                        {{-- <p class="mt-2 text-xs font-bold text-[#003b7a]/60">
+                            {{ __('otp.phone_prefix_hint') }}
+                        </p> --}}
 
                         @error('phone')
                             <div class="mt-2 text-sm font-bold text-[#e4003a]">{{ $message }}</div>

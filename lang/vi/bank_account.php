@@ -26,5 +26,5 @@ return [
     'account_no_already_bound' => 'Số tài khoản ngân hàng này đã được liên kết.',
     'bind_failed_duplicate' => 'Tên tài khoản ngân hàng hoặc số tài khoản này đã được liên kết.',
     'phone' => 'Số điện thoại',
-    'phone_placeholder' => 'Ví dụ: 0912345678 hoặc 84912345678',
+    'phone_placeholder' => 'Ví dụ: 912345678',
 ];
