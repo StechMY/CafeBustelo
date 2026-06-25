@@ -9,6 +9,7 @@ use App\Models\RechargeRequest;
 use App\Models\User;
 use App\Support\Api\ApiFormatter;
 use App\Support\Api\ApiResponse;
+use App\Support\Api\DisplayValue;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -27,22 +28,22 @@ class MyTeamController extends Controller
         $allUserIds = $allUsers->pluck('id')->values();
 
         $stats = [
-            'total_team_commission' => ApiFormatter::money($this->displayOverride($user, 'display_total_team_commission', CommissionRecord::query()->where('earner_user_id', $user->id)->where('status', 'paid')->sum('amount'))),
-            'total_valid_users' => (int) $this->displayOverride($user, 'display_valid_users_count', $allUsers->where('status', 'active')->count()),
-            'total_users' => (int) $this->displayOverride($user, 'display_total_users_count', $allUsers->count()),
-            'team_accumulated_recharge' => ApiFormatter::money($this->displayOverride($user, 'display_total_team_recharge', $allUsers->sum(fn (User $member): float => (float) $member->accumulated_recharge))),
-            'b_count' => (int) $this->displayOverride($user, 'display_b_count', $bUsers->count()),
-            'c_count' => (int) $this->displayOverride($user, 'display_c_count', $cUsers->count()),
-            'd_count' => (int) $this->displayOverride($user, 'display_d_count', $dUsers->count()),
-            'b_active_count' => (int) $this->displayOverride($user, 'display_b_active_count', $bUsers->where('status', 'active')->count()),
-            'c_active_count' => (int) $this->displayOverride($user, 'display_c_active_count', $cUsers->where('status', 'active')->count()),
-            'd_active_count' => (int) $this->displayOverride($user, 'display_d_active_count', $dUsers->where('status', 'active')->count()),
-            'today_joined_count' => (int) $this->displayOverride($user, 'display_today_joined_count', $this->joinedCount($allUsers, today())),
-            'yesterday_joined_count' => (int) $this->displayOverride($user, 'display_yesterday_joined_count', $this->joinedCount($allUsers, today()->subDay())),
-            'today_recharge' => ApiFormatter::money($this->displayOverride($user, 'display_today_recharge', $this->rechargeSumForDate($allUserIds, today()))),
-            'yesterday_recharge' => ApiFormatter::money($this->displayOverride($user, 'display_yesterday_recharge', $this->rechargeSumForDate($allUserIds, today()->subDay()))),
-            'this_month_recharge' => ApiFormatter::money($this->displayOverride($user, 'display_this_month_recharge', $this->rechargeSumForMonth($allUserIds, now()->startOfMonth()))),
-            'last_month_recharge' => ApiFormatter::money($this->displayOverride($user, 'display_last_month_recharge', $this->rechargeSumForMonth($allUserIds, now()->subMonthNoOverflow()->startOfMonth()))),
+            ...DisplayValue::moneyFields($user, 'total_team_commission', 'display_total_team_commission', CommissionRecord::query()->where('earner_user_id', $user->id)->where('status', 'paid')->sum('amount')),
+            ...DisplayValue::integerFields($user, 'total_valid_users', 'display_valid_users_count', $allUsers->where('status', 'active')->count()),
+            ...DisplayValue::integerFields($user, 'total_users', 'display_total_users_count', $allUsers->count()),
+            ...DisplayValue::moneyFields($user, 'team_accumulated_recharge', 'display_total_team_recharge', $allUsers->sum(fn (User $member): float => (float) $member->accumulated_recharge)),
+            ...DisplayValue::integerFields($user, 'b_count', 'display_b_count', $bUsers->count()),
+            ...DisplayValue::integerFields($user, 'c_count', 'display_c_count', $cUsers->count()),
+            ...DisplayValue::integerFields($user, 'd_count', 'display_d_count', $dUsers->count()),
+            ...DisplayValue::integerFields($user, 'b_active_count', 'display_b_active_count', $bUsers->where('status', 'active')->count()),
+            ...DisplayValue::integerFields($user, 'c_active_count', 'display_c_active_count', $cUsers->where('status', 'active')->count()),
+            ...DisplayValue::integerFields($user, 'd_active_count', 'display_d_active_count', $dUsers->where('status', 'active')->count()),
+            ...DisplayValue::integerFields($user, 'today_joined_count', 'display_today_joined_count', $this->joinedCount($allUsers, today())),
+            ...DisplayValue::integerFields($user, 'yesterday_joined_count', 'display_yesterday_joined_count', $this->joinedCount($allUsers, today()->subDay())),
+            ...DisplayValue::moneyFields($user, 'today_recharge', 'display_today_recharge', $this->rechargeSumForDate($allUserIds, today())),
+            ...DisplayValue::moneyFields($user, 'yesterday_recharge', 'display_yesterday_recharge', $this->rechargeSumForDate($allUserIds, today()->subDay())),
+            ...DisplayValue::moneyFields($user, 'this_month_recharge', 'display_this_month_recharge', $this->rechargeSumForMonth($allUserIds, now()->startOfMonth())),
+            ...DisplayValue::moneyFields($user, 'last_month_recharge', 'display_last_month_recharge', $this->rechargeSumForMonth($allUserIds, now()->subMonthNoOverflow()->startOfMonth())),
         ];
 
         return ApiResponse::success([
@@ -122,12 +123,5 @@ class MyTeamController extends Controller
         }
 
         return 'updated_at';
-    }
-
-    private function displayOverride(User $user, string $field, mixed $realValue): mixed
-    {
-        $value = $user->getAttribute($field);
-
-        return $value !== null && $value !== '' ? $value : $realValue;
     }
 }

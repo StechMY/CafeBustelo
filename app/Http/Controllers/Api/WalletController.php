@@ -7,6 +7,7 @@ use App\Models\Wallet;
 use App\Models\WalletTransaction;
 use App\Support\Api\ApiFormatter;
 use App\Support\Api\ApiResponse;
+use App\Support\Api\DisplayValue;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -17,6 +18,14 @@ class WalletController extends Controller
         $user = $request->user();
         $rechargeWallet = Wallet::query()->where('user_id', $user->id)->where('type', Wallet::TYPE_RECHARGE)->first();
         $withdrawableWallet = Wallet::query()->where('user_id', $user->id)->where('type', Wallet::TYPE_WITHDRAWABLE)->first();
+        $totalCredit = WalletTransaction::query()
+            ->where('user_id', $user->id)
+            ->where('direction', WalletTransaction::DIRECTION_CREDIT)
+            ->sum('amount');
+        $totalDebit = WalletTransaction::query()
+            ->where('user_id', $user->id)
+            ->where('direction', WalletTransaction::DIRECTION_DEBIT)
+            ->sum('amount');
 
         return ApiResponse::success([
             'wallets' => [
@@ -24,8 +33,8 @@ class WalletController extends Controller
                 'withdrawable' => ApiFormatter::wallet($withdrawableWallet, Wallet::TYPE_WITHDRAWABLE),
             ],
             'summary' => [
-                'total_credit' => ApiFormatter::money(WalletTransaction::query()->where('user_id', $user->id)->where('direction', WalletTransaction::DIRECTION_CREDIT)->sum('amount')),
-                'total_debit' => ApiFormatter::money(WalletTransaction::query()->where('user_id', $user->id)->where('direction', WalletTransaction::DIRECTION_DEBIT)->sum('amount')),
+                ...DisplayValue::moneyFields($user, 'total_credit', 'display_wallet_total_credit', $totalCredit),
+                ...DisplayValue::moneyFields($user, 'total_debit', 'display_wallet_total_debit', $totalDebit),
             ],
             'transaction_types' => WalletTransaction::query()
                 ->where('user_id', $user->id)

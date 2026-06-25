@@ -47,6 +47,16 @@ class ApiFormatter
 
     public static function user(User $user): array
     {
+        $activeTeamSize = $user->activeTeamSize();
+        $realVipLevel = VipLevel::query()
+            ->where('status', 'active')
+            ->where('required_accumulated_recharge', '<=', $user->accumulated_recharge)
+            ->where('required_active_team_size', '<=', $activeTeamSize)
+            ->orderByDesc('level')
+            ->first();
+        $displayVipLevel = $user->currentVipLevel() ?: $realVipLevel;
+        $vipLevelValue = DisplayValue::resolve($user, 'display_vip_level', $realVipLevel?->level ?? 1);
+
         return [
             'id' => (int) $user->id,
             'username' => $user->username,
@@ -62,9 +72,12 @@ class ApiFormatter
             'referrer_id' => $user->referrer_id ? (int) $user->referrer_id : null,
             'points_balance' => self::money($user->points_balance),
             'profile_photo_url' => $user->profile_photo_url,
-            'current_vip_level_number' => (int) $user->current_vip_level_number,
-            'current_vip_level_name' => $user->current_vip_level_name,
-            'accumulated_recharge' => self::money($user->accumulated_recharge),
+            'current_vip_level_number' => (int) ($displayVipLevel?->level ?? 1),
+            'current_vip_level_name' => $displayVipLevel?->name ?? 'LV1',
+            'raw_current_vip_level_number' => (int) ($realVipLevel?->level ?? 1),
+            'raw_current_vip_level_name' => $realVipLevel?->name ?? 'LV1',
+            'is_vip_level_overridden' => $vipLevelValue['is_overridden'],
+            ...DisplayValue::moneyFields($user, 'accumulated_recharge', 'display_accumulated_recharge', $user->accumulated_recharge),
             'activated_at' => self::dateTime($user->activated_at),
             'created_at' => self::dateTime($user->created_at),
             'updated_at' => self::dateTime($user->updated_at),

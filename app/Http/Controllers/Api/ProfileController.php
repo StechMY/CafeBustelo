@@ -18,6 +18,7 @@ use App\Models\WithdrawRequest;
 use App\Services\SalaryService;
 use App\Support\Api\ApiFormatter;
 use App\Support\Api\ApiResponse;
+use App\Support\Api\DisplayValue;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -29,31 +30,47 @@ class ProfileController extends Controller
         $user = $request->user();
         $rechargeWallet = Wallet::query()->where('user_id', $user->id)->where('type', Wallet::TYPE_RECHARGE)->first();
         $withdrawableWallet = Wallet::query()->where('user_id', $user->id)->where('type', Wallet::TYPE_WITHDRAWABLE)->first();
-        $currentVipLevel = $salaryService->currentVipLevel($user);
         $activeTeamSize = $user->activeTeamSize();
+        $realCurrentVipLevel = VipLevel::query()
+            ->where('status', 'active')
+            ->where('required_accumulated_recharge', '<=', $user->accumulated_recharge)
+            ->where('required_active_team_size', '<=', $activeTeamSize)
+            ->orderByDesc('level')
+            ->first();
+        $displayCurrentVipLevel = $salaryService->currentVipLevel($user) ?: $realCurrentVipLevel;
 
         $todayStart = now()->startOfDay();
         $todayEnd = now()->endOfDay();
         $yesterdayStart = now()->subDay()->startOfDay();
         $yesterdayEnd = now()->subDay()->endOfDay();
 
+        $totalEarning = WalletTransaction::query()->where('user_id', $user->id)->where('wallet_type', Wallet::TYPE_WITHDRAWABLE)->where('direction', WalletTransaction::DIRECTION_CREDIT)->sum('amount');
+        $totalWithdrawals = WithdrawRequest::query()->where('user_id', $user->id)->where('status', 'approved')->sum('net_amount');
+        $teamIncome = CommissionRecord::query()->where('earner_user_id', $user->id)->where('status', 'paid')->sum('amount');
+        $incomeToday = WalletTransaction::query()->where('user_id', $user->id)->where('wallet_type', Wallet::TYPE_WITHDRAWABLE)->where('direction', WalletTransaction::DIRECTION_CREDIT)->whereBetween('created_at', [$todayStart, $todayEnd])->sum('amount');
+        $yesterdayEarnings = WalletTransaction::query()->where('user_id', $user->id)->where('wallet_type', Wallet::TYPE_WITHDRAWABLE)->where('direction', WalletTransaction::DIRECTION_CREDIT)->whereBetween('created_at', [$yesterdayStart, $yesterdayEnd])->sum('amount');
+        $dailyIncomeTotal = DailyIncomeClaim::query()->where('user_id', $user->id)->sum('amount');
+        $salaryIncomeTotal = SalaryClaim::query()->where('user_id', $user->id)->sum('total_amount');
+
         $stats = [
             'recharge_wallet_balance' => ApiFormatter::money($rechargeWallet?->balance),
             'withdrawable_wallet_balance' => ApiFormatter::money($withdrawableWallet?->balance),
-            'accumulated_recharge' => ApiFormatter::money($this->displayOverride($user, 'display_accumulated_recharge', $user->accumulated_recharge)),
-            'total_earning' => ApiFormatter::money($this->displayOverride($user, 'display_total_earning', WalletTransaction::query()->where('user_id', $user->id)->where('wallet_type', Wallet::TYPE_WITHDRAWABLE)->where('direction', WalletTransaction::DIRECTION_CREDIT)->sum('amount'))),
-            'total_withdrawals' => ApiFormatter::money($this->displayOverride($user, 'display_total_withdrawals', WithdrawRequest::query()->where('user_id', $user->id)->where('status', 'approved')->sum('net_amount'))),
+            ...DisplayValue::moneyFields($user, 'accumulated_recharge', 'display_accumulated_recharge', $user->accumulated_recharge),
+            ...DisplayValue::moneyFields($user, 'total_earning', 'display_total_earning', $totalEarning),
+            ...DisplayValue::moneyFields($user, 'total_withdrawals', 'display_total_withdrawals', $totalWithdrawals),
             'pending_withdrawals' => ApiFormatter::money(WithdrawRequest::query()->where('user_id', $user->id)->where('status', 'pending')->sum('amount')),
-            'team_income' => ApiFormatter::money($this->displayOverride($user, 'display_team_income', CommissionRecord::query()->where('earner_user_id', $user->id)->where('status', 'paid')->sum('amount'))),
-            'income_today' => ApiFormatter::money($this->displayOverride($user, 'display_income_today', WalletTransaction::query()->where('user_id', $user->id)->where('wallet_type', Wallet::TYPE_WITHDRAWABLE)->where('direction', WalletTransaction::DIRECTION_CREDIT)->whereBetween('created_at', [$todayStart, $todayEnd])->sum('amount'))),
-            'yesterday_earnings' => ApiFormatter::money($this->displayOverride($user, 'display_yesterday_earnings', WalletTransaction::query()->where('user_id', $user->id)->where('wallet_type', Wallet::TYPE_WITHDRAWABLE)->where('direction', WalletTransaction::DIRECTION_CREDIT)->whereBetween('created_at', [$yesterdayStart, $yesterdayEnd])->sum('amount'))),
-            'daily_income_total' => ApiFormatter::money($this->displayOverride($user, 'display_daily_income_total', DailyIncomeClaim::query()->where('user_id', $user->id)->sum('amount'))),
-            'salary_income_total' => ApiFormatter::money($this->displayOverride($user, 'display_salary_income_total', SalaryClaim::query()->where('user_id', $user->id)->sum('total_amount'))),
+            ...DisplayValue::moneyFields($user, 'team_income', 'display_team_income', $teamIncome),
+            ...DisplayValue::moneyFields($user, 'income_today', 'display_income_today', $incomeToday),
+            ...DisplayValue::moneyFields($user, 'yesterday_earnings', 'display_yesterday_earnings', $yesterdayEarnings),
+            ...DisplayValue::moneyFields($user, 'daily_income_total', 'display_daily_income_total', $dailyIncomeTotal),
+            ...DisplayValue::moneyFields($user, 'salary_income_total', 'display_salary_income_total', $salaryIncomeTotal),
             'approved_recharge_total' => ApiFormatter::money(RechargeRequest::query()->where('user_id', $user->id)->where('status', 'approved')->sum('amount')),
             'unused_bonus_count' => BonusCode::query()->where('owner_user_id', $user->id)->where('status', BonusCode::STATUS_UNUSED)->count(),
         ];
 
-        $displayVipLevelNo = (int) $this->displayOverride($user, 'display_vip_level', $currentVipLevel?->level ?? 1);
+        $vipLevelValue = DisplayValue::resolve($user, 'display_vip_level', $realCurrentVipLevel?->level ?? 1);
+        $displayVipLevelNo = (int) $vipLevelValue['display'];
+        $activeTeamValue = DisplayValue::integerFields($user, 'active_team_size', 'display_active_team_count', $activeTeamSize);
 
         return ApiResponse::success([
             'user' => ApiFormatter::user($user),
@@ -62,9 +79,11 @@ class ProfileController extends Controller
                 'withdrawable' => ApiFormatter::wallet($withdrawableWallet, Wallet::TYPE_WITHDRAWABLE),
             ],
             'stats' => $stats,
-            'current_vip_level' => ApiFormatter::vipLevel(VipLevel::query()->where('level', $displayVipLevelNo)->first() ?: $currentVipLevel),
+            'current_vip_level' => ApiFormatter::vipLevel($realCurrentVipLevel),
+            'display_current_vip_level' => ApiFormatter::vipLevel($displayCurrentVipLevel),
+            'is_vip_level_overridden' => $vipLevelValue['is_overridden'],
             'next_vip_level' => ApiFormatter::vipLevel(VipLevel::query()->where('level', '>', $displayVipLevelNo)->orderBy('level')->first()),
-            'active_team_size' => (int) $this->displayOverride($user, 'display_active_team_count', $activeTeamSize),
+            ...$activeTeamValue,
             'svip_package' => ($package = SvipPackage::query()->active()->orderBy('sort_order')->orderBy('id')->first()) ? ApiFormatter::svipPackage($package) : null,
             'active_svip_purchase' => ApiFormatter::svipPurchase($user->activeSvipPurchase()->with('package')->first()),
             'referral_url' => url('/register?ref='.$user->referral_code),
@@ -111,12 +130,5 @@ class ProfileController extends Controller
         return ApiResponse::success([
             'user' => ApiFormatter::user($user->fresh()),
         ], __('profile.avatar_deleted'));
-    }
-
-    private function displayOverride($user, string $field, mixed $realValue): mixed
-    {
-        $value = $user->getAttribute($field);
-
-        return $value !== null && $value !== '' ? $value : $realValue;
     }
 }

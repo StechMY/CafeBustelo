@@ -10,9 +10,11 @@ use App\Models\DashboardMarquee;
 use App\Models\DashboardPopup;
 use App\Models\DashboardSlide;
 use App\Models\UserProduct;
+use App\Models\VipLevel;
 use App\Models\Wallet;
 use App\Support\Api\ApiFormatter;
 use App\Support\Api\ApiResponse;
+use App\Support\Api\DisplayValue;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -43,6 +45,17 @@ class DashboardController extends Controller
             ->orderBy('sort_order')
             ->orderByDesc('id')
             ->first();
+        $todayDailyIncome = DailyIncomeClaim::query()->where('user_id', $user->id)->whereDate('claimed_at', today())->sum('amount');
+        $totalDailyIncome = DailyIncomeClaim::query()->where('user_id', $user->id)->sum('amount');
+        $totalCommission = CommissionRecord::query()->where('earner_user_id', $user->id)->where('status', 'paid')->sum('amount');
+        $activeTeamSize = $user->activeTeamSize();
+        $realCurrentVipLevel = VipLevel::query()
+            ->where('status', 'active')
+            ->where('required_accumulated_recharge', '<=', $user->accumulated_recharge)
+            ->where('required_active_team_size', '<=', $activeTeamSize)
+            ->orderByDesc('level')
+            ->first();
+        $vipLevelValue = DisplayValue::resolve($user, 'display_vip_level', $realCurrentVipLevel?->level ?? 1);
 
         return ApiResponse::success([
             'user' => ApiFormatter::user($user),
@@ -51,11 +64,18 @@ class DashboardController extends Controller
                 'withdrawable' => ApiFormatter::wallet($withdrawableWallet, Wallet::TYPE_WITHDRAWABLE),
             ],
             'stats' => [
-                'today_daily_income' => ApiFormatter::money(DailyIncomeClaim::query()->where('user_id', $user->id)->whereDate('claimed_at', today())->sum('amount')),
-                'total_daily_income' => ApiFormatter::money(DailyIncomeClaim::query()->where('user_id', $user->id)->sum('amount')),
-                'total_commission' => ApiFormatter::money(CommissionRecord::query()->where('earner_user_id', $user->id)->where('status', 'paid')->sum('amount')),
+                ...DisplayValue::moneyFields($user, 'today_daily_income', 'display_income_today', $todayDailyIncome),
+                ...DisplayValue::moneyFields($user, 'total_daily_income', 'display_daily_income_total', $totalDailyIncome),
+                ...DisplayValue::moneyFields($user, 'total_commission', 'display_team_income', $totalCommission),
                 'direct_team_count' => $user->referrals()->where('status', 'active')->count(),
+                ...DisplayValue::integerFields($user, 'active_team_count', 'display_active_team_count', $activeTeamSize),
                 'active_product_count' => $activeProducts->count(),
+            ],
+            'account_summary' => [
+                ...DisplayValue::moneyFields($user, 'accumulated_recharge', 'display_accumulated_recharge', $user->accumulated_recharge),
+                'current_vip_level' => ApiFormatter::vipLevel($realCurrentVipLevel),
+                'display_current_vip_level' => ApiFormatter::vipLevel($user->currentVipLevel() ?: $realCurrentVipLevel),
+                'is_vip_level_overridden' => $vipLevelValue['is_overridden'],
             ],
             'active_products' => $activeProducts->map(fn (UserProduct $item): array => ApiFormatter::userProduct($item))->values(),
             'slides' => DashboardSlide::query()->visible()->orderBy('sort_order')->orderByDesc('id')->get()->map(fn ($slide): array => [
@@ -83,7 +103,9 @@ class DashboardController extends Controller
             ] : null,
             'today_check_in_record' => $todayCheckInRecord ? ApiFormatter::checkInRecord($todayCheckInRecord) : null,
             'should_show_check_in_popup' => $user->status === 'active' && ! $todayCheckInRecord && (bool) $user->check_in_status,
-            'current_vip_level' => ApiFormatter::vipLevel($user->currentVipLevel()),
+            'current_vip_level' => ApiFormatter::vipLevel($realCurrentVipLevel),
+            'display_current_vip_level' => ApiFormatter::vipLevel($user->currentVipLevel() ?: $realCurrentVipLevel),
+            'is_vip_level_overridden' => $vipLevelValue['is_overridden'],
         ]);
     }
 }

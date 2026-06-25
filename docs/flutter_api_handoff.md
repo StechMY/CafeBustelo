@@ -488,6 +488,66 @@ Returns packages, active purchase, and history.
 
 ## 6. Business Rules for Flutter Developer
 
+## Display Override Rules
+
+Some user-facing totals can be replaced by nullable admin-managed fields on the user record. Flutter must display `display_<field>` when it exists in the response. The API always resolves it, so Flutter can directly use `display_<field>` regardless of whether `is_<field>_overridden` is true.
+
+Raw fields are retained for diagnostics and admin-only comparisons. Do not use raw fields for the normal customer UI when a display field is available.
+
+Money responses use:
+
+```json
+{
+  "total_credit": 1200,
+  "display_total_credit": 5000,
+  "is_total_credit_overridden": true,
+  "formatted_total_credit": "RM 5,000.00"
+}
+```
+
+| Module | Raw Field | Display Field | Override Source | Flutter Should Display |
+| --- | --- | --- | --- | --- |
+| User/VIP | `raw_current_vip_level_number` | `current_vip_level_number` | `users.display_vip_level` | `current_vip_level_number` |
+| Dashboard | `current_vip_level` | `display_current_vip_level` | `users.display_vip_level` | `display_current_vip_level` |
+| Profile | `current_vip_level` | `display_current_vip_level` | `users.display_vip_level` | `display_current_vip_level` |
+| Salary | `current_vip_level` | `display_current_vip_level` | `users.display_vip_level` | `display_current_vip_level` |
+| Dashboard | `active_team_count` | `display_active_team_count` | `users.display_active_team_count` | `display_active_team_count` |
+| Profile | `active_team_size` | `display_active_team_size` | `users.display_active_team_count` | `display_active_team_size` |
+| Salary | `active_team_size` | `display_active_team_size` | `users.display_active_team_count` | `display_active_team_size` |
+| User/Profile/Salary | `accumulated_recharge` | `display_accumulated_recharge` | `users.display_accumulated_recharge` | `display_accumulated_recharge` |
+| Profile | `total_earning` | `display_total_earning` | `users.display_total_earning` | `display_total_earning` |
+| Profile | `total_withdrawals` | `display_total_withdrawals` | `users.display_total_withdrawals` | `display_total_withdrawals` |
+| Team | `total_team_commission` | `display_total_team_commission` | `users.display_total_team_commission` | `display_total_team_commission` |
+| Team | `team_accumulated_recharge` | `display_team_accumulated_recharge` | `users.display_total_team_recharge` | `display_team_accumulated_recharge` |
+| Team | `total_users` | `display_total_users` | `users.display_total_users_count` | `display_total_users` |
+| Team | `total_valid_users` | `display_total_valid_users` | `users.display_valid_users_count` | `display_total_valid_users` |
+| Team | `b_count` | `display_b_count` | `users.display_b_count` | `display_b_count` |
+| Team | `b_active_count` | `display_b_active_count` | `users.display_b_active_count` | `display_b_active_count` |
+| Team | `c_count` | `display_c_count` | `users.display_c_count` | `display_c_count` |
+| Team | `c_active_count` | `display_c_active_count` | `users.display_c_active_count` | `display_c_active_count` |
+| Team | `d_count` | `display_d_count` | `users.display_d_count` | `display_d_count` |
+| Team | `d_active_count` | `display_d_active_count` | `users.display_d_active_count` | `display_d_active_count` |
+| Profile | `income_today` | `display_income_today` | `users.display_income_today` | `display_income_today` |
+| Dashboard | `today_daily_income` | `display_today_daily_income` | `users.display_income_today` | `display_today_daily_income` |
+| Profile | `yesterday_earnings` | `display_yesterday_earnings` | `users.display_yesterday_earnings` | `display_yesterday_earnings` |
+| Profile | `team_income` | `display_team_income` | `users.display_team_income` | `display_team_income` |
+| Dashboard | `total_commission` | `display_total_commission` | `users.display_team_income` | `display_total_commission` |
+| Profile | `daily_income_total` | `display_daily_income_total` | `users.display_daily_income_total` | `display_daily_income_total` |
+| Dashboard | `total_daily_income` | `display_total_daily_income` | `users.display_daily_income_total` | `display_total_daily_income` |
+| Profile | `salary_income_total` | `display_salary_income_total` | `users.display_salary_income_total` | `display_salary_income_total` |
+| Team | `today_joined_count` | `display_today_joined_count` | `users.display_today_joined_count` | `display_today_joined_count` |
+| Team | `yesterday_joined_count` | `display_yesterday_joined_count` | `users.display_yesterday_joined_count` | `display_yesterday_joined_count` |
+| Team | `today_recharge` | `display_today_recharge` | `users.display_today_recharge` | `display_today_recharge` |
+| Team | `yesterday_recharge` | `display_yesterday_recharge` | `users.display_yesterday_recharge` | `display_yesterday_recharge` |
+| Team | `this_month_recharge` | `display_this_month_recharge` | `users.display_this_month_recharge` | `display_this_month_recharge` |
+| Team | `last_month_recharge` | `display_last_month_recharge` | `users.display_last_month_recharge` | `display_last_month_recharge` |
+| Wallet | `total_credit` | `display_total_credit` | `users.display_wallet_total_credit` | `display_total_credit` |
+| Wallet | `total_debit` | `display_total_debit` | `users.display_wallet_total_debit` | `display_total_debit` |
+
+Individual products, purchased products, wallet transactions, recharge/withdraw requests, points, bonus codes, downline-product rows, and SVIP records have no discovered display override fields and should use their returned real values.
+
+The Flutter customer API does not expose the Filament admin dashboard. Admin widget account scoping and virtual-user filters therefore do not change these customer endpoint payloads.
+
 ### Product purchase
 
 Flutter can display wallet choices. Backend validates status, stock, active window, max purchase count, wallet balance, and order status. Use `can_purchase` only as UI hint; backend remains source of truth.

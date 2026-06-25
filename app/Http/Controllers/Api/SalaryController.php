@@ -9,6 +9,7 @@ use App\Models\VipLevel;
 use App\Services\SalaryService;
 use App\Support\Api\ApiFormatter;
 use App\Support\Api\ApiResponse;
+use App\Support\Api\DisplayValue;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use RuntimeException;
@@ -38,11 +39,21 @@ class SalaryController extends Controller
         }
 
         $claims = SalaryClaim::query()->where('user_id', $user->id)->latest('claimed_at')->paginate((int) $request->query('per_page', 10));
+        $activeTeamSize = $user->activeTeamSize();
+        $realCurrentVipLevel = VipLevel::query()
+            ->where('status', 'active')
+            ->where('required_accumulated_recharge', '<=', $user->accumulated_recharge)
+            ->where('required_active_team_size', '<=', $activeTeamSize)
+            ->orderByDesc('level')
+            ->first();
+        $vipLevelValue = DisplayValue::resolve($user, 'display_vip_level', $realCurrentVipLevel?->level ?? 1);
 
         return ApiResponse::success([
-            'current_vip_level' => ApiFormatter::vipLevel($salaryService->currentVipLevel($user)),
-            'active_team_size' => (int) $this->displayOverride($user, 'display_active_team_count', $user->activeTeamSize()),
-            'accumulated_recharge' => ApiFormatter::money($this->displayOverride($user, 'display_accumulated_recharge', $user->accumulated_recharge)),
+            'current_vip_level' => ApiFormatter::vipLevel($realCurrentVipLevel),
+            'display_current_vip_level' => ApiFormatter::vipLevel($salaryService->currentVipLevel($user) ?: $realCurrentVipLevel),
+            'is_vip_level_overridden' => $vipLevelValue['is_overridden'],
+            ...DisplayValue::integerFields($user, 'active_team_size', 'display_active_team_count', $activeTeamSize),
+            ...DisplayValue::moneyFields($user, 'accumulated_recharge', 'display_accumulated_recharge', $user->accumulated_recharge),
             'vip_levels' => VipLevel::query()->where('status', 'active')->orderBy('level')->get()->map(fn (VipLevel $level): ?array => ApiFormatter::vipLevel($level))->values(),
             'claim_states' => $claimStates,
             'claims' => [
@@ -65,12 +76,5 @@ class SalaryController extends Controller
 
             return ApiResponse::error(__('salary.claim_failed'), [], 500);
         }
-    }
-
-    private function displayOverride($user, string $field, mixed $realValue): mixed
-    {
-        $value = $user->getAttribute($field);
-
-        return $value !== null && $value !== '' ? $value : $realValue;
     }
 }
