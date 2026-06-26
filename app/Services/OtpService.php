@@ -82,7 +82,7 @@ class OtpService
 
         if (!$result['success']) {
             throw ValidationException::withMessages([
-                'phone' => __('otp.sms_send_failed') . ' ' . ($result['desc'] ?? ''),
+                'phone' => __('otp.sms_send_failed') . ' ' . (''),
             ]);
         }
 
