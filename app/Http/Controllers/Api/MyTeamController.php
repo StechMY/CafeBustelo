@@ -3,125 +3,179 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\CommissionLevel;
-use App\Models\CommissionRecord;
-use App\Models\RechargeRequest;
 use App\Models\User;
+use App\Services\MyTeamReportService;
 use App\Support\Api\ApiFormatter;
 use App\Support\Api\ApiResponse;
-use App\Support\Api\DisplayValue;
-use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Schema;
 
 class MyTeamController extends Controller
 {
-    public function index(Request $request): JsonResponse
+    public function index(Request $request, MyTeamReportService $myTeamReportService): JsonResponse
     {
-        $user = $request->user();
-        $bUsers = $user->allDownlineUsers(1)->where('team_depth', 1)->values();
-        $cUsers = $user->allDownlineUsers(2)->where('team_depth', 2)->values();
-        $dUsers = $user->allDownlineUsers(3)->where('team_depth', 3)->values();
-        $allUsers = $bUsers->merge($cUsers)->merge($dUsers)->unique('id')->values();
-        $allUserIds = $allUsers->pluck('id')->values();
-
-        $stats = [
-            ...DisplayValue::moneyFields($user, 'total_team_commission', 'display_total_team_commission', CommissionRecord::query()->where('earner_user_id', $user->id)->where('status', 'paid')->sum('amount')),
-            ...DisplayValue::integerFields($user, 'total_valid_users', 'display_valid_users_count', $allUsers->where('status', 'active')->count()),
-            ...DisplayValue::integerFields($user, 'total_users', 'display_total_users_count', $allUsers->count()),
-            ...DisplayValue::moneyFields($user, 'team_accumulated_recharge', 'display_total_team_recharge', $allUsers->sum(fn (User $member): float => (float) $member->accumulated_recharge)),
-            ...DisplayValue::integerFields($user, 'b_count', 'display_b_count', $bUsers->count()),
-            ...DisplayValue::integerFields($user, 'c_count', 'display_c_count', $cUsers->count()),
-            ...DisplayValue::integerFields($user, 'd_count', 'display_d_count', $dUsers->count()),
-            ...DisplayValue::integerFields($user, 'b_active_count', 'display_b_active_count', $bUsers->where('status', 'active')->count()),
-            ...DisplayValue::integerFields($user, 'c_active_count', 'display_c_active_count', $cUsers->where('status', 'active')->count()),
-            ...DisplayValue::integerFields($user, 'd_active_count', 'display_d_active_count', $dUsers->where('status', 'active')->count()),
-            ...DisplayValue::integerFields($user, 'today_joined_count', 'display_today_joined_count', $this->joinedCount($allUsers, today())),
-            ...DisplayValue::integerFields($user, 'yesterday_joined_count', 'display_yesterday_joined_count', $this->joinedCount($allUsers, today()->subDay())),
-            ...DisplayValue::moneyFields($user, 'today_recharge', 'display_today_recharge', $this->rechargeSumForDate($allUserIds, today())),
-            ...DisplayValue::moneyFields($user, 'yesterday_recharge', 'display_yesterday_recharge', $this->rechargeSumForDate($allUserIds, today()->subDay())),
-            ...DisplayValue::moneyFields($user, 'this_month_recharge', 'display_this_month_recharge', $this->rechargeSumForMonth($allUserIds, now()->startOfMonth())),
-            ...DisplayValue::moneyFields($user, 'last_month_recharge', 'display_last_month_recharge', $this->rechargeSumForMonth($allUserIds, now()->subMonthNoOverflow()->startOfMonth())),
-        ];
+        $overview = $myTeamReportService->overview($request->user());
+        $stats = $this->formatStats($overview['stats']);
 
         return ApiResponse::success([
-            'invite_url' => url('/register?ref='.$user->referral_code),
+            'invite_url' => $overview['invite_url'],
             'stats' => $stats,
-            'commission_rates' => CommissionLevel::query()->where('is_active', true)->orderBy('level')->get()->map(fn ($level): array => [
-                'level' => (int) $level->level,
-                'level_label' => match ((int) $level->level) {
-                    1 => 'B', 2 => 'C', 3 => 'D', default => (string) $level->level
-                },
-                'rate' => ApiFormatter::money($level->rate_percent),
-            ])->values(),
+            'summary' => $stats,
+            'commission_rates' => $this->formatCommissionRates($overview['commission_rates']),
             'levels' => [
-                'b' => $this->teamMembers($bUsers),
-                'c' => $this->teamMembers($cUsers),
-                'd' => $this->teamMembers($dUsers),
+                'b' => $this->formatLevelOverview('b', $overview),
+                'c' => $this->formatLevelOverview('c', $overview),
+                'd' => $this->formatLevelOverview('d', $overview),
             ],
         ]);
     }
 
-    private function teamMembers(Collection $users): array
+    public function level(Request $request, string $level, MyTeamReportService $myTeamReportService): JsonResponse
     {
-        return $users->map(fn (User $user): array => [
+        $validated = $request->validate([
+            'status' => ['nullable', 'string', 'in:all,active,inactive'],
+            'page' => ['nullable', 'integer', 'min:1'],
+        ]);
+
+        $report = $myTeamReportService->level(
+            user: $request->user(),
+            level: $level,
+            status: $validated['status'] ?? 'all',
+            page: (int) ($validated['page'] ?? 1),
+            path: url('/api/v1/my-team/'.$level),
+            query: $request->query(),
+        );
+        $users = $report['downline_users'];
+
+        return ApiResponse::success([
+            'level' => $report['level'],
+            'level_number' => $report['level_number'],
+            'level_label' => $report['level_label'],
+            'status' => $report['status'],
+            'commission_rate' => $report['commission_rate']
+                ? $this->formatCommissionRate($report['commission_rate'])
+                : null,
+            'summary' => $report['summary'],
+            'data' => $users->getCollection()
+                ->map(fn (User $user): array => $this->formatLevelMember($user))
+                ->values(),
+            'meta' => [
+                'current_page' => $users->currentPage(),
+                'per_page' => $users->perPage(),
+                'total' => $users->total(),
+                'last_page' => $users->lastPage(),
+            ],
+        ]);
+    }
+
+    private function formatLevelOverview(string $level, array $overview): array
+    {
+        $levelNumber = match ($level) {
+            'b' => 1,
+            'c' => 2,
+            'd' => 3,
+        };
+        $users = $overview['levels'][$level];
+        $rate = $overview['commission_rates']->get($levelNumber);
+
+        return [
+            'level' => $level,
+            'level_number' => $levelNumber,
+            'label' => strtoupper($level),
+            'rate' => ApiFormatter::money($rate?->rate_percent),
+            'formatted_rate' => number_format((float) ($rate?->rate_percent ?? 0), 2).'%',
+            'count' => (int) $overview['stats'][$level.'_count'],
+            'active_count' => (int) $overview['stats'][$level.'_active_count'],
+            'real_count' => $users->count(),
+            'real_active_count' => $users->where('status', 'active')->count(),
+            'url' => url('/api/v1/my-team/'.$level),
+        ];
+    }
+
+    private function formatCommissionRates(mixed $commissionRates): array
+    {
+        return $commissionRates
+            ->map(fn ($commissionRate): array => $this->formatCommissionRate($commissionRate))
+            ->values()
+            ->all();
+    }
+
+    private function formatCommissionRate(mixed $commissionRate): array
+    {
+        return [
+            'level' => (int) $commissionRate->level,
+            'level_label' => match ((int) $commissionRate->level) {
+                1 => 'B',
+                2 => 'C',
+                3 => 'D',
+                default => (string) $commissionRate->level,
+            },
+            'rate' => ApiFormatter::money($commissionRate->rate_percent),
+            'formatted_rate' => number_format((float) $commissionRate->rate_percent, 2).'%',
+        ];
+    }
+
+    private function formatLevelMember(User $user): array
+    {
+        $phone = preg_replace('/\D+/', '', (string) $user->phone);
+        $lastFivePhone = $phone ? substr($phone, -5) : '-';
+        $highestProduct = $user->highest_product_snapshot;
+
+        return [
             'id' => (int) $user->id,
             'username' => $user->username,
             'name' => $user->name,
             'phone' => $user->phone,
+            'phone_last_5' => $lastFivePhone,
+            'masked_phone' => $lastFivePhone === '-' ? '-' : '*****'.$lastFivePhone,
             'status' => $user->status,
-            'accumulated_recharge' => ApiFormatter::money($user->accumulated_recharge),
+            'status_label' => __('status.'.$user->status),
+            'team_depth' => (int) $user->team_depth,
+            'highest_product' => $highestProduct ? [
+                'id' => (int) $highestProduct->id,
+                'product_id' => (int) $highestProduct->product_id,
+                'product_code' => $highestProduct->product_code,
+                'product_name' => $highestProduct->product_name,
+                'status' => $highestProduct->status,
+                'price_snapshot' => ApiFormatter::money($highestProduct->price_snapshot),
+                'formatted_price_snapshot' => ApiFormatter::formattedMoney($highestProduct->price_snapshot),
+            ] : null,
             'created_at' => ApiFormatter::dateTime($user->created_at),
-        ])->values()->all();
+            'created_at_label' => $user->created_at
+                ? $user->created_at->copy()->timezone(config('app.timezone'))->format('d M Y')
+                : null,
+        ];
     }
 
-    private function joinedCount(Collection $users, mixed $date): int
+    private function formatStats(array $stats): array
     {
-        $date = CarbonImmutable::parse($date)->toDateString();
-
-        return $users->filter(fn (User $user): bool => $user->created_at?->toDateString() === $date)->count();
-    }
-
-    private function rechargeSumForDate(Collection $userIds, mixed $date): float
-    {
-        if ($userIds->isEmpty()) {
-            return 0;
+        foreach ([
+            'total_team_commission',
+            'team_accumulated_recharge',
+            'today_recharge',
+            'yesterday_recharge',
+            'this_month_recharge',
+            'last_month_recharge',
+        ] as $key) {
+            $stats[$key] = ApiFormatter::money($stats[$key]);
+            $stats['formatted_'.$key] = ApiFormatter::formattedMoney($stats[$key]);
         }
 
-        return (float) RechargeRequest::query()
-            ->whereIn('user_id', $userIds)
-            ->where('status', 'approved')
-            ->whereDate($this->rechargeDateColumn(), CarbonImmutable::parse($date)->toDateString())
-            ->sum('amount');
-    }
-
-    private function rechargeSumForMonth(Collection $userIds, mixed $month): float
-    {
-        if ($userIds->isEmpty()) {
-            return 0;
+        foreach ([
+            'total_valid_users',
+            'total_users',
+            'b_count',
+            'c_count',
+            'd_count',
+            'b_active_count',
+            'c_active_count',
+            'd_active_count',
+            'today_joined_count',
+            'yesterday_joined_count',
+        ] as $key) {
+            $stats[$key] = (int) $stats[$key];
         }
 
-        $start = CarbonImmutable::parse($month)->startOfMonth();
-
-        return (float) RechargeRequest::query()
-            ->whereIn('user_id', $userIds)
-            ->where('status', 'approved')
-            ->whereBetween($this->rechargeDateColumn(), [$start, $start->endOfMonth()])
-            ->sum('amount');
-    }
-
-    private function rechargeDateColumn(): string
-    {
-        if (Schema::hasColumn('recharge_requests', 'approved_at')) {
-            return 'approved_at';
-        }
-
-        if (Schema::hasColumn('recharge_requests', 'processed_at')) {
-            return 'processed_at';
-        }
-
-        return 'updated_at';
+        return $stats;
     }
 }

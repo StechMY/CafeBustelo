@@ -60,7 +60,8 @@ Dates are ISO-8601 strings. Money fields are numeric floats and often include a 
 | POST | `/api/v1/withdraw` | Yes | Submit withdraw request |
 | POST | `/api/v1/bank-account/send-otp` | Yes | Send bank account binding phone OTP |
 | POST | `/api/v1/bank-account` | Yes | Bind user bank account after OTP verification |
-| GET | `/api/v1/team` | Yes | B/C/D team data and stats |
+| GET | `/api/v1/my-team` | Yes | Web-aligned My Team B/C/D overview |
+| GET | `/api/v1/my-team/{level}` | Yes | Web-aligned My Team level members for `b`, `c`, or `d` |
 | GET | `/api/v1/check-in` | Yes | Check-in state and records |
 | POST | `/api/v1/check-in` | Yes | Claim daily check-in |
 | GET | `/api/v1/salary` | Yes | Salary claim state and records |
@@ -357,6 +358,109 @@ Response data:
 - `summary.current_page` is calculated only from transactions returned in the current page.
 - `transactions[].created_at_label` is provided for direct display.
 
+## My Team Response
+
+The My Team API follows the web routes `/my-team` and `/my-team/{level}`. It only exposes B/C/D because the web route only allows `b`, `c`, and `d`.
+
+- B = direct referrals of the current user.
+- C = referrals under B users.
+- D = referrals under C users.
+- Do not use dashboard transfer-referral/deeper-level logic for this screen.
+
+`GET /api/v1/my-team` returns the same overview data used by the web My Team index: invite URL, effective display-overridden stats, active commission rates, and B/C/D card counts.
+
+```json
+{
+  "success": true,
+  "data": {
+    "invite_url": "https://example.com/register?ref=ABCDEFGH",
+    "stats": {
+      "total_team_commission": 0,
+      "formatted_total_team_commission": "RM 0.00",
+      "total_valid_users": 0,
+      "total_users": 0,
+      "team_accumulated_recharge": 0,
+      "formatted_team_accumulated_recharge": "RM 0.00",
+      "b_count": 0,
+      "c_count": 0,
+      "d_count": 0,
+      "b_active_count": 0,
+      "c_active_count": 0,
+      "d_active_count": 0,
+      "today_joined_count": 0,
+      "yesterday_joined_count": 0,
+      "today_recharge": 0,
+      "formatted_today_recharge": "RM 0.00",
+      "yesterday_recharge": 0,
+      "formatted_yesterday_recharge": "RM 0.00",
+      "this_month_recharge": 0,
+      "formatted_this_month_recharge": "RM 0.00",
+      "last_month_recharge": 0,
+      "formatted_last_month_recharge": "RM 0.00"
+    },
+    "levels": {
+      "b": {
+        "level": "b",
+        "level_number": 1,
+        "label": "B",
+        "rate": 5,
+        "formatted_rate": "5.00%",
+        "count": 0,
+        "active_count": 0,
+        "url": "https://example.com/api/v1/my-team/b"
+      }
+    }
+  }
+}
+```
+
+`GET /api/v1/my-team/{level}` supports `level=b|c|d`, `status=all|active|inactive`, and `page`. Pagination matches web at 30 members per page.
+
+The member payload mirrors the web level page: username, masked phone last five digits, status, highest product, and joined date.
+
+```json
+{
+  "success": true,
+  "data": {
+    "level": "b",
+    "level_number": 1,
+    "level_label": "B",
+    "status": "all",
+    "commission_rate": {
+      "level": 1,
+      "level_label": "B",
+      "rate": 5,
+      "formatted_rate": "5.00%"
+    },
+    "summary": {
+      "count": 1,
+      "active_count": 1,
+      "inactive_count": 0
+    },
+    "data": [
+      {
+        "id": 10,
+        "username": "user001",
+        "name": "User Name",
+        "phone_last_5": "45678",
+        "masked_phone": "*****45678",
+        "status": "active",
+        "highest_product": null,
+        "created_at_label": "25 Jun 2026"
+      }
+    ],
+    "meta": {
+      "current_page": 1,
+      "per_page": 30,
+      "total": 1,
+      "last_page": 1
+    }
+  }
+}
+```
+
+`GET /api/v1/my-team/e` is not a valid route.
+
 ## Reused Services
 
 - `ProductPurchaseService`
@@ -493,27 +597,27 @@ For integer fields, the same structure is returned without a formatted money fie
 | `display_accumulated_recharge` | Profile and Salary accumulated recharge | `/me`, `/dashboard`, `/profile`, `/salary`: `accumulated_recharge` |
 | `display_total_earning` | Profile total earning | `/profile`: `total_earning` |
 | `display_total_withdrawals` | Profile total withdrawals | `/profile`: `total_withdrawals` |
-| `display_total_team_commission` | My Team total commission | `/team`: `total_team_commission` |
-| `display_total_team_recharge` | My Team accumulated recharge | `/team`: `team_accumulated_recharge` |
-| `display_total_users_count` | My Team total users | `/team`: `total_users` |
-| `display_valid_users_count` | My Team valid users | `/team`: `total_valid_users` |
-| `display_b_count` | My Team B count | `/team`: `b_count` |
-| `display_b_active_count` | My Team active B count | `/team`: `b_active_count` |
-| `display_c_count` | My Team C count | `/team`: `c_count` |
-| `display_c_active_count` | My Team active C count | `/team`: `c_active_count` |
-| `display_d_count` | My Team D count | `/team`: `d_count` |
-| `display_d_active_count` | My Team active D count | `/team`: `d_active_count` |
+| `display_total_team_commission` | My Team total commission | `/my-team`: `stats.total_team_commission` |
+| `display_total_team_recharge` | My Team accumulated recharge | `/my-team`: `stats.team_accumulated_recharge` |
+| `display_total_users_count` | My Team total users | `/my-team`: `stats.total_users` |
+| `display_valid_users_count` | My Team valid users | `/my-team`: `stats.total_valid_users` |
+| `display_b_count` | My Team B count | `/my-team`: `stats.b_count` |
+| `display_b_active_count` | My Team active B count | `/my-team`: `stats.b_active_count` |
+| `display_c_count` | My Team C count | `/my-team`: `stats.c_count` |
+| `display_c_active_count` | My Team active C count | `/my-team`: `stats.c_active_count` |
+| `display_d_count` | My Team D count | `/my-team`: `stats.d_count` |
+| `display_d_active_count` | My Team active D count | `/my-team`: `stats.d_active_count` |
 | `display_income_today` | Profile income today | `/profile`: `income_today`; `/dashboard`: `today_daily_income` |
 | `display_yesterday_earnings` | Profile yesterday earnings | `/profile`: `yesterday_earnings` |
 | `display_team_income` | Profile team income | `/profile`: `team_income`; `/dashboard`: `total_commission` |
 | `display_daily_income_total` | Profile daily-income total | `/profile`: `daily_income_total`; `/dashboard`: `total_daily_income` |
 | `display_salary_income_total` | Profile salary-income total | `/profile`: `salary_income_total` |
-| `display_today_joined_count` | My Team today joined | `/team`: `today_joined_count` |
-| `display_yesterday_joined_count` | My Team yesterday joined | `/team`: `yesterday_joined_count` |
-| `display_today_recharge` | My Team today recharge | `/team`: `today_recharge` |
-| `display_yesterday_recharge` | My Team yesterday recharge | `/team`: `yesterday_recharge` |
-| `display_this_month_recharge` | My Team current-month recharge | `/team`: `this_month_recharge` |
-| `display_last_month_recharge` | My Team previous-month recharge | `/team`: `last_month_recharge` |
+| `display_today_joined_count` | My Team today joined | `/my-team`: `stats.today_joined_count` |
+| `display_yesterday_joined_count` | My Team yesterday joined | `/my-team`: `stats.yesterday_joined_count` |
+| `display_today_recharge` | My Team today recharge | `/my-team`: `stats.today_recharge` |
+| `display_yesterday_recharge` | My Team yesterday recharge | `/my-team`: `stats.yesterday_recharge` |
+| `display_this_month_recharge` | My Team current-month recharge | `/my-team`: `stats.this_month_recharge` |
+| `display_last_month_recharge` | My Team previous-month recharge | `/my-team`: `stats.last_month_recharge` |
 | `display_wallet_total_credit` | Wallet lifetime total credit | `/wallet`: `summary.lifetime.total_credit` |
 | `display_wallet_total_debit` | Wallet lifetime total debit | `/wallet`: `summary.lifetime.total_debit` |
 

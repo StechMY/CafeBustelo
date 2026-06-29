@@ -492,11 +492,40 @@ Flutter should not recalculate or bypass OTP state. Laravel verifies purpose `ba
 }
 ```
 
-### Team
+### My Team
 
-`GET /api/v1/team`
+`GET /api/v1/my-team`
 
-Returns invite URL, stats, commission rates, and B/C/D member arrays.
+Use for the My Team overview screen. This follows the web `/my-team` page, not the dashboard transfer-referral statistic.
+
+Parser path:
+
+```text
+response.data["data"]["stats"]
+response.data["data"]["levels"]["b"]
+response.data["data"]["levels"]["c"]
+response.data["data"]["levels"]["d"]
+response.data["data"]["commission_rates"]
+```
+
+Rules:
+
+- B = direct referrals of current user.
+- C = referrals under B users.
+- D = referrals under C users.
+- Only B/C/D are valid for My Team.
+- Do not parse or display E/F/G/H here unless the web My Team page is changed.
+- `stats` values already apply the same display overrides as the web page.
+
+`GET /api/v1/my-team/b?status=all&page=1`
+
+`GET /api/v1/my-team/c?status=active&page=1`
+
+`GET /api/v1/my-team/d?status=inactive&page=1`
+
+Use these for level detail screens. Valid levels are only `b`, `c`, and `d`. Valid `status` values are `all`, `active`, and `inactive`. Pagination is fixed to the web behavior of 30 members per page.
+
+Level member rows mirror the web level page: user id/username, masked phone last five digits, status, highest product, and joined date.
 
 ### Check In
 
@@ -699,16 +728,16 @@ Money responses use:
 | User/Profile/Salary | `accumulated_recharge` | `display_accumulated_recharge` | `users.display_accumulated_recharge` | `display_accumulated_recharge` |
 | Profile | `total_earning` | `display_total_earning` | `users.display_total_earning` | `display_total_earning` |
 | Profile | `total_withdrawals` | `display_total_withdrawals` | `users.display_total_withdrawals` | `display_total_withdrawals` |
-| Team | `total_team_commission` | `display_total_team_commission` | `users.display_total_team_commission` | `display_total_team_commission` |
-| Team | `team_accumulated_recharge` | `display_team_accumulated_recharge` | `users.display_total_team_recharge` | `display_team_accumulated_recharge` |
-| Team | `total_users` | `display_total_users` | `users.display_total_users_count` | `display_total_users` |
-| Team | `total_valid_users` | `display_total_valid_users` | `users.display_valid_users_count` | `display_total_valid_users` |
-| Team | `b_count` | `display_b_count` | `users.display_b_count` | `display_b_count` |
-| Team | `b_active_count` | `display_b_active_count` | `users.display_b_active_count` | `display_b_active_count` |
-| Team | `c_count` | `display_c_count` | `users.display_c_count` | `display_c_count` |
-| Team | `c_active_count` | `display_c_active_count` | `users.display_c_active_count` | `display_c_active_count` |
-| Team | `d_count` | `display_d_count` | `users.display_d_count` | `display_d_count` |
-| Team | `d_active_count` | `display_d_active_count` | `users.display_d_active_count` | `display_d_active_count` |
+| My Team | `stats.total_team_commission` | same field, effective value | `users.display_total_team_commission` | `stats.total_team_commission` |
+| My Team | `stats.team_accumulated_recharge` | same field, effective value | `users.display_total_team_recharge` | `stats.team_accumulated_recharge` |
+| My Team | `stats.total_users` | same field, effective value | `users.display_total_users_count` | `stats.total_users` |
+| My Team | `stats.total_valid_users` | same field, effective value | `users.display_valid_users_count` | `stats.total_valid_users` |
+| My Team | `stats.b_count` | same field, effective value | `users.display_b_count` | `stats.b_count` |
+| My Team | `stats.b_active_count` | same field, effective value | `users.display_b_active_count` | `stats.b_active_count` |
+| My Team | `stats.c_count` | same field, effective value | `users.display_c_count` | `stats.c_count` |
+| My Team | `stats.c_active_count` | same field, effective value | `users.display_c_active_count` | `stats.c_active_count` |
+| My Team | `stats.d_count` | same field, effective value | `users.display_d_count` | `stats.d_count` |
+| My Team | `stats.d_active_count` | same field, effective value | `users.display_d_active_count` | `stats.d_active_count` |
 | Profile | `income_today` | `display_income_today` | `users.display_income_today` | `display_income_today` |
 | Dashboard | `today_daily_income` | `display_today_daily_income` | `users.display_income_today` | `display_today_daily_income` |
 | Profile | `yesterday_earnings` | `display_yesterday_earnings` | `users.display_yesterday_earnings` | `display_yesterday_earnings` |
@@ -717,12 +746,12 @@ Money responses use:
 | Profile | `daily_income_total` | `display_daily_income_total` | `users.display_daily_income_total` | `display_daily_income_total` |
 | Dashboard | `total_daily_income` | `display_total_daily_income` | `users.display_daily_income_total` | `display_total_daily_income` |
 | Profile | `salary_income_total` | `display_salary_income_total` | `users.display_salary_income_total` | `display_salary_income_total` |
-| Team | `today_joined_count` | `display_today_joined_count` | `users.display_today_joined_count` | `display_today_joined_count` |
-| Team | `yesterday_joined_count` | `display_yesterday_joined_count` | `users.display_yesterday_joined_count` | `display_yesterday_joined_count` |
-| Team | `today_recharge` | `display_today_recharge` | `users.display_today_recharge` | `display_today_recharge` |
-| Team | `yesterday_recharge` | `display_yesterday_recharge` | `users.display_yesterday_recharge` | `display_yesterday_recharge` |
-| Team | `this_month_recharge` | `display_this_month_recharge` | `users.display_this_month_recharge` | `display_this_month_recharge` |
-| Team | `last_month_recharge` | `display_last_month_recharge` | `users.display_last_month_recharge` | `display_last_month_recharge` |
+| My Team | `stats.today_joined_count` | same field, effective value | `users.display_today_joined_count` | `stats.today_joined_count` |
+| My Team | `stats.yesterday_joined_count` | same field, effective value | `users.display_yesterday_joined_count` | `stats.yesterday_joined_count` |
+| My Team | `stats.today_recharge` | same field, effective value | `users.display_today_recharge` | `stats.today_recharge` |
+| My Team | `stats.yesterday_recharge` | same field, effective value | `users.display_yesterday_recharge` | `stats.yesterday_recharge` |
+| My Team | `stats.this_month_recharge` | same field, effective value | `users.display_this_month_recharge` | `stats.this_month_recharge` |
+| My Team | `stats.last_month_recharge` | same field, effective value | `users.display_last_month_recharge` | `stats.last_month_recharge` |
 | Wallet lifetime | `summary.lifetime.total_credit` | `summary.lifetime.display_total_credit` | `users.display_wallet_total_credit` | `summary.lifetime.display_total_credit` |
 | Wallet lifetime | `summary.lifetime.total_debit` | `summary.lifetime.display_total_debit` | `users.display_wallet_total_debit` | `summary.lifetime.display_total_debit` |
 
@@ -783,7 +812,7 @@ Refresh wallet/dashboard after purchase, claim, points redeem, recharge, withdra
 | Wallet | `GET /api/v1/wallet` | Screen-ready balances, summaries, filters, transactions, and meta |
 | Recharge | `GET /api/v1/recharge`, `POST /api/v1/recharge` | Multipart receipt upload |
 | Withdraw | `GET /api/v1/withdraw`, `POST /api/v1/bank-account/send-otp`, `POST /api/v1/bank-account`, `POST /api/v1/withdraw` | Bank account must be active |
-| Team | `GET /api/v1/team` | B/C/D data |
+| My Team | `GET /api/v1/my-team`, `GET /api/v1/my-team/b`, `GET /api/v1/my-team/c`, `GET /api/v1/my-team/d` | Web-aligned B/C/D only |
 | Check In | `GET /api/v1/check-in`, `POST /api/v1/check-in` | Daily status |
 | Salary | `GET /api/v1/salary`, `POST /api/v1/salary/claim` | Weekly/monthly/annual |
 | Bonus Codes | `GET /api/v1/bonus-codes`, `POST /api/v1/bonus-codes/redeem` | Redeem code |
@@ -831,6 +860,9 @@ Money: prefer numeric fields for calculations. Use backend `formatted_*` only fo
 - Redeem points
 - Buy SVIP with recharge wallet
 - Buy SVIP with withdrawable wallet
+- Load My Team overview
+- Load My Team B/C/D level pages
+- Confirm My Team does not show E/F/G/H
 - Load downline product groups
 - Open downline product details
 - Handle insufficient balance

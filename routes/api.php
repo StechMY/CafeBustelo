@@ -61,6 +61,10 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
         Route::post('/bank-account', [BankAccountController::class, 'store'])->name('bank-account.store');
 
         Route::get('/team', [MyTeamController::class, 'index'])->name('team.index');
+        Route::get('/my-team', [MyTeamController::class, 'index'])->name('my-team.index');
+        Route::get('/my-team/{level}', [MyTeamController::class, 'level'])
+            ->whereIn('level', ['b', 'c', 'd'])
+            ->name('my-team.level');
 
         Route::get('/check-in', [CheckInController::class, 'index'])->name('check-in.index');
         Route::post('/check-in', [CheckInController::class, 'claim'])->name('check-in.claim');

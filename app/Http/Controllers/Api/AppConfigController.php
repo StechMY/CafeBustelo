@@ -17,7 +17,7 @@ class AppConfigController extends Controller
             'app_name' => config('app.name'),
             'currency' => config('app.currency'),
             'locale' => app()->getLocale(),
-            'supported_locales' => ['en', 'zh_CN'],
+            'supported_locales' => ['en', 'vi'],
             'wallet_types' => [
                 Wallet::TYPE_RECHARGE => ApiFormatter::walletTypeLabel(Wallet::TYPE_RECHARGE),
                 Wallet::TYPE_WITHDRAWABLE => ApiFormatter::walletTypeLabel(Wallet::TYPE_WITHDRAWABLE),
