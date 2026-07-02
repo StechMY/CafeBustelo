@@ -18,6 +18,13 @@
             ['label' => __('navigation.calculator'), 'route' => 'calculator.index', 'icon' => 'calculator'],
             ['label' => __('navigation.downline_products'), 'route' => 'downline-products.index', 'icon' => 'team'],
             ['label' => __('navigation.points'), 'route' => 'points.index', 'icon' => 'bonus'],
+            [
+                'label' => __('navigation.app_download'),
+                'url' => $appDownloadUrl,
+                'icon' => 'download',
+                'external' => true,
+                'enabled' => filled($appDownloadUrl),
+            ],
         ];
 
         $walletCards = [
@@ -288,7 +295,10 @@
                         <div class="mt-4 grid grid-cols-3 gap-2 sm:mt-5 sm:grid-cols-4 sm:gap-3">
                             @foreach ($quickActions as $action)
                                 <a
-                                   href="{{ route($action['route']) }}"
+                                   href="{{ isset($action['url']) ? $action['url'] : route($action['route']) }}"
+                                   @if ($action['external'] ?? false) target="_blank"
+                                    rel="noopener noreferrer" @endif
+
                                    class="group rounded-[1rem] bg-[#fff8c7] p-3 text-center shadow-sm ring-1 ring-[#003b7a]/10 transition hover:-translate-y-0.5 hover:bg-[#ffd900] hover:shadow-lg sm:rounded-[1.5rem] sm:p-4 sm:text-left">
                                     <div
                                          class="mx-auto grid h-10 w-10 place-items-center rounded-xl bg-[#003b7a] text-white transition group-hover:bg-white group-hover:text-[#003b7a] sm:mx-0 sm:h-11 sm:w-11 sm:rounded-2xl">

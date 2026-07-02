@@ -90,6 +90,31 @@ class Dashboard extends BaseDashboard
     protected function getHeaderActions(): array
     {
         return [
+            Action::make('appDownloadSettings')
+            ->label(__('filament.app_download_settings'))
+            ->icon('heroicon-o-arrow-down-tray')
+            ->color('info')
+            ->modalHeading(__('filament.app_download_settings'))
+            ->form([
+                TextInput::make('app_download_url')
+                    ->label(__('filament.app_download_url'))
+                    ->url()
+                    ->maxLength(1000)
+                    ->placeholder('https://example.com/app.apk')
+                    ->default(fn (): ?string => Setting::getValue('app_download_url'))
+                    ->helperText(__('filament.app_download_url_help')),
+            ])
+            ->action(function (array $data): void {
+                Setting::setValue(
+                    'app_download_url',
+                    trim((string) ($data['app_download_url'] ?? ''))
+                );
+
+                Notification::make()
+                    ->title(__('filament.app_download_settings_saved'))
+                    ->success()
+                    ->send();
+            }),
             Action::make('welcomeBonusSettings')
                 ->label(__('filament.welcome_bonus_settings'))
                 ->icon('heroicon-o-gift')

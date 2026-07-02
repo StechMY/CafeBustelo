@@ -588,4 +588,8 @@ return [
     'operation_yesterday_same_time_desc' => '按昨日相同时间范围统计。',
     'operation_before_yesterday_same_time_desc' => '按前天相同时间范围统计。',
     'operation_invalid_members_desc' => '状态不是启用，或当前没有有效产品的用户。',
+    'app_download_settings' => 'App 下载设置',
+    'app_download_url' => 'App 下载链接',
+    'app_download_url_help' => '请输入 APK、Play Store、App Store 或下载页面链接。',
+    'app_download_settings_saved' => 'App 下载设置已保存。',
 ];

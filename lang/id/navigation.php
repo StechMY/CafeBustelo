@@ -26,4 +26,5 @@ return [
     'calculator' => 'Kalkulator',
     'downline_products' => 'Produk Downline',
     'points' => 'Poin',
+    'app_download' => 'Unduh Aplikasi',
 ];

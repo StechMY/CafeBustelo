@@ -28,4 +28,5 @@ return [
     'calculator' => 'Calculator',
     'downline_products' => 'Downline Products',
     'points' => 'Points',
+    'app_download' => 'App Download',
 ];

@@ -7,6 +7,7 @@ use App\Models\CommissionRecord;
 use App\Models\DailyIncomeClaim;
 use App\Models\RechargeRequest;
 use App\Models\SalaryClaim;
+use App\Models\Setting;
 use App\Models\SvipPackage;
 use App\Models\User;
 use App\Models\VipLevel;
@@ -183,6 +184,7 @@ class ProfileController extends Controller
             ->first();
 
         $activeSvipPurchase = $user->activeSvipPurchase()->first();
+        $appDownloadUrl = Setting::getValue('app_download_url');
 
         return view('profile.index', [
             'user' => $user,
@@ -193,6 +195,7 @@ class ProfileController extends Controller
             'activeTeamSize' => $activeTeamSize,
             'svipPackage' => $svipPackage,
             'activeSvipPurchase' => $activeSvipPurchase,
+            'appDownloadUrl' => $appDownloadUrl,
         ]);
     }
 

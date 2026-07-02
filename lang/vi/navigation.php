@@ -28,4 +28,5 @@ return [
     'calculator' => 'Máy tính',
     'downline_products' => 'Sản phẩm tuyến dưới',
     'points' => 'Điểm',
+    'app_download' => 'Tải ứng dụng',
 ];
