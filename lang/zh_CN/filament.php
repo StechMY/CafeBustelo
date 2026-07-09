@@ -542,7 +542,7 @@ return [
     'operation_first_recharge_users' => '总首充',
     'operation_first_recharge_users_desc' => '首次成功充值时间在筛选范围内的用户人数',
     'operation_transfer_referral_users' => '转介绍',
-    'operation_transfer_referral_users_desc' => '筛选范围内注册的间接下线用户人数',
+    'operation_transfer_referral_users_desc' => '首次成功购买产品时间在筛选范围内的推荐用户人数',
     'operation_valid_members' => '有效会员',
     'operation_valid_members_desc' => '状态为启用并且当前拥有有效产品的用户',
     'operation_transfer_referral_rate' => '转介绍率',

@@ -86,12 +86,12 @@ class PlatformOperationStats extends Widget
 
         $pendingWithdrawAmount = WithdrawRequest::query()
             ->where('status', 'pending')
-            ->tap(fn(Builder $query) => PlatformDashboardQuery::applyUserVirtualFilter($query, $filters))
+            ->tap(fn (Builder $query) => PlatformDashboardQuery::applyUserVirtualFilter($query, $filters))
             ->sum('amount');
 
         $expiredProductMemberCount = UserProduct::query()
             ->where('status', 'expired')
-            ->tap(fn(Builder $query) => PlatformDashboardQuery::applyUserVirtualFilter($query, $filters))
+            ->tap(fn (Builder $query) => PlatformDashboardQuery::applyUserVirtualFilter($query, $filters))
             ->distinct('user_id')
             ->count('user_id');
 
@@ -100,14 +100,14 @@ class PlatformOperationStats extends Widget
 
         $invalidRecharge = RechargeRequest::query()
             ->where('status', 'approved')
-            ->tap(fn(Builder $query) => PlatformDashboardQuery::applyUserVirtualFilter($query, $filters))
-            ->whereHas('user', fn(Builder $query) => $this->applyInvalidMemberScope($query))
+            ->tap(fn (Builder $query) => PlatformDashboardQuery::applyUserVirtualFilter($query, $filters))
+            ->whereHas('user', fn (Builder $query) => $this->applyInvalidMemberScope($query))
             ->sum('amount');
 
         $invalidWithdraw = WithdrawRequest::query()
             ->where('status', 'approved')
-            ->tap(fn(Builder $query) => PlatformDashboardQuery::applyUserVirtualFilter($query, $filters))
-            ->whereHas('user', fn(Builder $query) => $this->applyInvalidMemberScope($query))
+            ->tap(fn (Builder $query) => PlatformDashboardQuery::applyUserVirtualFilter($query, $filters))
+            ->whereHas('user', fn (Builder $query) => $this->applyInvalidMemberScope($query))
             ->sum('amount');
 
         return [
@@ -165,8 +165,8 @@ class PlatformOperationStats extends Widget
     {
         return (float) RechargeRequest::query()
             ->where('status', 'approved')
-            ->tap(fn(Builder $query) => $this->applyOptionalDateRange($query, 'reviewed_at', $start, $end))
-            ->tap(fn(Builder $query) => PlatformDashboardQuery::applyUserVirtualFilter($query, $filters))
+            ->tap(fn (Builder $query) => $this->applyOptionalDateRange($query, 'reviewed_at', $start, $end))
+            ->tap(fn (Builder $query) => PlatformDashboardQuery::applyUserVirtualFilter($query, $filters))
             ->sum('amount');
     }
 
@@ -174,24 +174,24 @@ class PlatformOperationStats extends Widget
     {
         return (float) WithdrawRequest::query()
             ->where('status', 'approved')
-            ->tap(fn(Builder $query) => $this->applyOptionalDateRange($query, 'reviewed_at', $start, $end))
-            ->tap(fn(Builder $query) => PlatformDashboardQuery::applyUserVirtualFilter($query, $filters))
+            ->tap(fn (Builder $query) => $this->applyOptionalDateRange($query, 'reviewed_at', $start, $end))
+            ->tap(fn (Builder $query) => PlatformDashboardQuery::applyUserVirtualFilter($query, $filters))
             ->sum('amount');
     }
 
     private function productPurchaseAmount(array $filters, ?Carbon $start = null, ?Carbon $end = null): float
     {
         return (float) UserProduct::query()
-            ->tap(fn(Builder $query) => $this->applyOptionalDateRange($query, 'purchased_at', $start, $end))
-            ->tap(fn(Builder $query) => PlatformDashboardQuery::applyUserVirtualFilter($query, $filters))
+            ->tap(fn (Builder $query) => $this->applyOptionalDateRange($query, 'purchased_at', $start, $end))
+            ->tap(fn (Builder $query) => PlatformDashboardQuery::applyUserVirtualFilter($query, $filters))
             ->sum('price_snapshot');
     }
 
     private function productOrderCount(array $filters, ?Carbon $start = null, ?Carbon $end = null): int
     {
         return (int) UserProduct::query()
-            ->tap(fn(Builder $query) => $this->applyOptionalDateRange($query, 'purchased_at', $start, $end))
-            ->tap(fn(Builder $query) => PlatformDashboardQuery::applyUserVirtualFilter($query, $filters))
+            ->tap(fn (Builder $query) => $this->applyOptionalDateRange($query, 'purchased_at', $start, $end))
+            ->tap(fn (Builder $query) => PlatformDashboardQuery::applyUserVirtualFilter($query, $filters))
             ->count();
     }
 
@@ -199,29 +199,29 @@ class PlatformOperationStats extends Widget
     {
         return (float) CommissionRecord::query()
             ->where('status', 'paid')
-            ->tap(fn(Builder $query) => PlatformDashboardQuery::applyUserVirtualFilter($query, $filters, 'earner'))
+            ->tap(fn (Builder $query) => PlatformDashboardQuery::applyUserVirtualFilter($query, $filters, 'earner'))
             ->sum('amount');
     }
 
     private function totalWalletBalance(array $filters): float
     {
         return (float) Wallet::query()
-            ->tap(fn(Builder $query) => PlatformDashboardQuery::applyUserVirtualFilter($query, $filters))
+            ->tap(fn (Builder $query) => PlatformDashboardQuery::applyUserVirtualFilter($query, $filters))
             ->sum('balance');
     }
 
     private function totalMembers(array $filters): int
     {
         return (int) User::query()
-            ->tap(fn(Builder $query) => PlatformDashboardQuery::applyDirectUserVirtualFilter($query, $filters))
+            ->tap(fn (Builder $query) => PlatformDashboardQuery::applyDirectUserVirtualFilter($query, $filters))
             ->count();
     }
 
     private function registeredCount(array $filters, Carbon $start, Carbon $end): int
     {
         return (int) User::query()
-            ->tap(fn(Builder $query) => $this->applyOptionalDateRange($query, 'created_at', $start, $end))
-            ->tap(fn(Builder $query) => PlatformDashboardQuery::applyDirectUserVirtualFilter($query, $filters))
+            ->tap(fn (Builder $query) => $this->applyOptionalDateRange($query, 'created_at', $start, $end))
+            ->tap(fn (Builder $query) => PlatformDashboardQuery::applyDirectUserVirtualFilter($query, $filters))
             ->count();
     }
 
@@ -230,7 +230,7 @@ class PlatformOperationStats extends Widget
         return (int) User::query()
             ->where('status', 'active')
             ->whereHas('activeProducts')
-            ->tap(fn(Builder $query) => PlatformDashboardQuery::applyDirectUserVirtualFilter($query, $filters))
+            ->tap(fn (Builder $query) => PlatformDashboardQuery::applyDirectUserVirtualFilter($query, $filters))
             ->count();
     }
 
@@ -240,7 +240,7 @@ class PlatformOperationStats extends Widget
             ->selectRaw('user_id, MIN(reviewed_at) as first_reviewed_at')
             ->where('status', 'approved')
             ->whereNotNull('reviewed_at')
-            ->tap(fn(Builder $query) => PlatformDashboardQuery::applyUserVirtualFilter($query, $filters))
+            ->tap(fn (Builder $query) => PlatformDashboardQuery::applyUserVirtualFilter($query, $filters))
             ->groupBy('user_id');
 
         return (int) DB::query()
@@ -252,19 +252,29 @@ class PlatformOperationStats extends Widget
 
     private function transferReferralUsers(array $filters, Carbon $start, Carbon $end): int
     {
+        $firstPurchaseSubQuery = UserProduct::query()
+            ->selectRaw('user_id, MIN(purchased_at) as first_purchased_at')
+            ->whereIn('status', ['active', 'expired', 'completed'])
+            ->whereNotNull('purchased_at')
+            ->groupBy('user_id');
+
         return (int) User::query()
-            ->tap(fn(Builder $query) => $this->applyOptionalDateRange($query, 'created_at', $start, $end))
-            ->tap(fn(Builder $query) => PlatformDashboardQuery::applyDirectUserVirtualFilter($query, $filters))
-            ->where(fn(Builder $query) => $this->applyIndirectDownlineScope($query))
-            ->count();
+            ->joinSub($firstPurchaseSubQuery, 'first_product_purchases', function ($join): void {
+                $join->on('first_product_purchases.user_id', '=', 'users.id');
+            })
+            ->tap(fn (Builder $query) => PlatformDashboardQuery::applyDirectUserVirtualFilter($query, $filters))
+            ->whereNotNull('users.referrer_id')
+            ->where('first_product_purchases.first_purchased_at', '>=', $start)
+            ->where('first_product_purchases.first_purchased_at', '<=', $end)
+            ->count('users.id');
     }
 
     private function bcdUpgradePurchaseAmount(array $filters, Carbon $start, Carbon $end): float
     {
         return (float) UserProduct::query()
-            ->tap(fn(Builder $query) => $this->applyOptionalDateRange($query, 'purchased_at', $start, $end))
-            ->tap(fn(Builder $query) => PlatformDashboardQuery::applyUserVirtualFilter($query, $filters))
-            ->whereHas('user', fn(Builder $query) => $this->applyIndirectDownlineScope($query))
+            ->tap(fn (Builder $query) => $this->applyOptionalDateRange($query, 'purchased_at', $start, $end))
+            ->tap(fn (Builder $query) => PlatformDashboardQuery::applyUserVirtualFilter($query, $filters))
+            ->whereHas('user', fn (Builder $query) => $this->applyIndirectDownlineScope($query))
             ->whereHas('product', function (Builder $query): void {
                 $query->whereRaw('LOWER(code) <> ?', ['t1']);
             })
@@ -274,8 +284,8 @@ class PlatformOperationStats extends Widget
     private function bonusAmount(array $filters, Carbon $start, Carbon $end): float
     {
         return (float) BonusClaim::query()
-            ->tap(fn(Builder $query) => $this->applyOptionalDateRange($query, 'claimed_at', $start, $end))
-            ->tap(fn(Builder $query) => PlatformDashboardQuery::applyUserVirtualFilter($query, $filters))
+            ->tap(fn (Builder $query) => $this->applyOptionalDateRange($query, 'claimed_at', $start, $end))
+            ->tap(fn (Builder $query) => PlatformDashboardQuery::applyUserVirtualFilter($query, $filters))
             ->sum('amount');
     }
 
@@ -286,8 +296,8 @@ class PlatformOperationStats extends Widget
         ?Carbon $end,
     ): Builder {
         return $query
-            ->when($start, fn(Builder $query): Builder => $query->where($column, '>=', $start))
-            ->when($end, fn(Builder $query): Builder => $query->where($column, '<=', $end));
+            ->when($start, fn (Builder $query): Builder => $query->where($column, '>=', $start))
+            ->when($end, fn (Builder $query): Builder => $query->where($column, '<=', $end));
     }
 
     private function applyIndirectDownlineScope(Builder $query): Builder

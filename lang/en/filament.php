@@ -541,7 +541,7 @@ return [
     'operation_first_recharge_users' => 'First Recharge Users',
     'operation_first_recharge_users_desc' => 'Users whose first approved recharge is in selected range',
     'operation_transfer_referral_users' => 'Transfer Referral Users',
-    'operation_transfer_referral_users_desc' => 'Indirect downline users registered in the selected range.',
+    'operation_transfer_referral_users_desc' => 'Referred users whose first successful product purchase is in the selected range.',
     'operation_valid_members' => 'Valid Members',
     'operation_valid_members_desc' => 'Active users with active products',
     'operation_transfer_referral_rate' => 'Transfer Referral Rate',
