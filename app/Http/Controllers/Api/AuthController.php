@@ -7,6 +7,7 @@ use App\Http\Requests\Api\LoginRequest;
 use App\Http\Requests\Api\RegisterRequest;
 use App\Models\User;
 use App\Models\Wallet;
+use App\Services\InviteDayBonusService;
 use App\Services\OtpService;
 use App\Services\PointService;
 use App\Services\WelcomeBonusService;
@@ -24,6 +25,7 @@ class AuthController extends Controller
         RegisterRequest $request,
         WelcomeBonusService $welcomeBonusService,
         PointService $pointService,
+        InviteDayBonusService $inviteDayBonusService,
         OtpService $otpService,
     ): JsonResponse {
         $data = $request->validated();
@@ -34,7 +36,7 @@ class AuthController extends Controller
             ->where('referral_code', $data['referral_code'])
             ->firstOrFail();
 
-        $user = DB::transaction(function () use ($data, $request, $referrer, $welcomeBonusService, $pointService): User {
+        $user = DB::transaction(function () use ($data, $request, $referrer, $welcomeBonusService, $pointService, $inviteDayBonusService): User {
             $user = User::query()->create([
                 'name' => $data['name'],
                 'username' => $data['username'],
@@ -63,7 +65,9 @@ class AuthController extends Controller
                 ]);
             }
 
-            $pointService->giveInviteDayRegisterPoints($referrer, $user);
+            if ($inviteDayBonusService->shouldGiveOnRegistration()) {
+                $pointService->giveInviteDayRegisterPoints($referrer, $user);
+            }
             $welcomeBonusService->give($user);
 
             return $user;

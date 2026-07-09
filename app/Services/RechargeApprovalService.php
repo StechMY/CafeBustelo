@@ -12,6 +12,7 @@ class RechargeApprovalService
 {
     public function __construct(
         private readonly WalletService $walletService,
+        private readonly InviteDayBonusService $inviteDayBonusService,
     ) {}
 
     public function approve(
@@ -19,7 +20,7 @@ class RechargeApprovalService
         ?AdminUser $adminUser,
         ?string $adminRemark = null,
     ): RechargeRequest {
-        return DB::transaction(function () use ($rechargeRequest, $adminUser, $adminRemark): RechargeRequest {
+        $approvedRechargeRequest = DB::transaction(function () use ($rechargeRequest, $adminUser, $adminRemark): RechargeRequest {
             $lockedRequest = RechargeRequest::query()
                 ->whereKey($rechargeRequest->id)
                 ->lockForUpdate()
@@ -57,6 +58,10 @@ class RechargeApprovalService
 
             return $lockedRequest;
         });
+
+        $this->inviteDayBonusService->handleApprovedRecharge($approvedRechargeRequest);
+
+        return $approvedRechargeRequest;
     }
 
     public function reject(

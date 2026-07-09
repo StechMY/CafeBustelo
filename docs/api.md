@@ -124,7 +124,7 @@ POST /api/v1/register
 }
 ```
 
-Verifies OTP purpose `register`, creates wallets, welcome bonus, invite-day points, login log, and returns a Sanctum token.
+Verifies OTP purpose `register`, creates wallets, welcome bonus, login log, and returns a Sanctum token. Invite-day points are given on registration unless the admin setting requires a qualifying first approved recharge.
 
 ### Login
 
@@ -168,6 +168,8 @@ Uses `DailyIncomeClaimService`. Hourly products are supported through `claim_int
 | recharge_method_id | integer | yes |
 | reference_no | string | no |
 | receipt | image file | yes |
+
+When the admin setting `invite_day_require_first_deposit` is enabled, approving the invited user's first recharge can give invite-day points to the referrer. The first approved recharge must be at least `invite_day_first_deposit_min_amount`; if the first approved recharge is below the minimum, later recharges do not trigger the invite-day bonus.
 
 ### Withdraw
 

@@ -2,19 +2,20 @@
 
 namespace App\Http\Controllers\Auth;
 
-use App\Services\WelcomeBonusService;
-use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Wallet;
+use App\Services\InviteDayBonusService;
+use App\Services\OtpService;
+use App\Services\PointService;
+use App\Services\WelcomeBonusService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
-use App\Services\PointService;
-use App\Services\OtpService;
 
 class CustomerAuthController extends Controller
 {
@@ -37,7 +38,7 @@ class CustomerAuthController extends Controller
             'password' => ['required', 'string'],
         ]);
 
-        if (!Auth::attempt($credentials, $request->boolean('remember'))) {
+        if (! Auth::attempt($credentials, $request->boolean('remember'))) {
             return back()
                 ->withErrors([
                     'username' => 'Invalid username or password.',
@@ -69,6 +70,7 @@ class CustomerAuthController extends Controller
         Request $request,
         WelcomeBonusService $welcomeBonusService,
         PointService $pointService,
+        InviteDayBonusService $inviteDayBonusService,
         OtpService $otpService
     ): RedirectResponse {
         $request->merge([
@@ -116,13 +118,13 @@ class CustomerAuthController extends Controller
 
         $referrer = null;
 
-        if (!empty($data['referral_code'])) {
+        if (! empty($data['referral_code'])) {
             $referrer = User::query()
                 ->where('referral_code', $data['referral_code'])
                 ->first();
         }
 
-        $user = DB::transaction(function () use ($data, $referrer, $request, $welcomeBonusService, $pointService): User {
+        $user = DB::transaction(function () use ($data, $referrer, $request, $welcomeBonusService, $pointService, $inviteDayBonusService): User {
             $user = User::query()->create([
                 'name' => $data['name'],
                 'username' => $data['username'],
@@ -157,7 +159,7 @@ class CustomerAuthController extends Controller
                 'locked_balance' => 0,
             ]);
 
-            if ($referrer) {
+            if ($referrer && $inviteDayBonusService->shouldGiveOnRegistration()) {
                 $pointService->giveInviteDayRegisterPoints($referrer, $user);
             }
             $welcomeBonusService->give($user);

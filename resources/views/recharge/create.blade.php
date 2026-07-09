@@ -96,7 +96,7 @@
                             step="0.01"
                             min="1"
                             class="w-full rounded-xl border-2 border-[#003b7a] bg-[#fff8c7] px-4 py-3 text-sm font-bold text-[#003b7a] outline-none focus:bg-white focus:ring-4 focus:ring-[#ffd900] sm:rounded-2xl sm:px-5 sm:py-4 sm:text-base"
-                            placeholder="100.00"
+                            placeholder="450000.00"
                             required
                         >
 
@@ -222,7 +222,7 @@
                         </div>
                     </div>
 
-                    <div>
+                    {{-- <div>
                         <label class="mb-1.5 block text-xs font-black uppercase text-[#003b7a] sm:mb-2 sm:text-sm">
                             {{ __('recharge.reference_no') }}
                         </label>
@@ -238,7 +238,7 @@
                         @error('reference_no')
                             <div class="mt-1.5 text-xs font-bold text-[#e4003a] sm:text-sm">{{ $message }}</div>
                         @enderror
-                    </div>
+                    </div> --}}
 
                     <div>
                         <label class="mb-1.5 block text-xs font-black uppercase text-[#003b7a] sm:mb-2 sm:text-sm">

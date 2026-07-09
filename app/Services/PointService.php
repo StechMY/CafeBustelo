@@ -16,16 +16,25 @@ class PointService
     public const SETTING_POINTS_ENABLED = 'points_enabled';
 
     public const SETTING_UPGRADE_DAY_ENABLED = 'upgrade_day_points_enabled';
+
     public const SETTING_UPGRADE_DAY_AMOUNT = 'upgrade_day_points_amount';
 
     public const SETTING_INVITE_DAY_ENABLED = 'invite_day_points_enabled';
+
     public const SETTING_INVITE_DAY_AMOUNT = 'invite_day_points_amount';
 
+    public const SETTING_INVITE_DAY_REQUIRE_FIRST_DEPOSIT = 'invite_day_require_first_deposit';
+
+    public const SETTING_INVITE_DAY_FIRST_DEPOSIT_MIN_AMOUNT = 'invite_day_first_deposit_min_amount';
+
     public const SETTING_REDEEM_ENABLED = 'points_cash_exchange_enabled';
+
     public const SETTING_POINTS_TO_CASH_RATE = 'points_to_cash_rate';
+
     public const SETTING_MINIMUM_REDEEM_POINTS = 'minimum_points_to_redeem';
 
     public const SETTING_UPGRADE_DAY_WEEKDAYS = 'upgrade_day_points_weekdays';
+
     public const SETTING_INVITE_DAY_WEEKDAYS = 'invite_day_points_weekdays';
 
     public function __construct(
@@ -90,7 +99,7 @@ class PointService
         );
     }
 
-    public function giveInviteDayRegisterPoints(User $referrer, User $newUser): void
+    public function giveInviteDayRegisterPoints(User $referrer, User $newUser, array $meta = []): void
     {
         if (!$this->pointsEnabled()) {
             return;
@@ -105,7 +114,17 @@ class PointService
             [4, 5]
         );
 
-        if (!in_array((int) now()->isoWeekday(), $inviteWeekdays, true)) {
+        // if (! in_array((int) now()->isoWeekday(), $inviteWeekdays, true)) {
+        //     return;
+        // }
+
+        $registeredAt = $newUser->created_at;
+
+        if (!$registeredAt) {
+            return;
+        }
+
+        if (!in_array((int) $registeredAt->isoWeekday(), $inviteWeekdays, true)) {
             return;
         }
 
@@ -132,10 +151,12 @@ class PointService
             points: $points,
             reference: $newUser,
             remarks: 'Invite day new registration points',
-            meta: [
+            meta: array_merge([
                 'new_user_id' => $newUser->id,
                 'new_username' => $newUser->username,
-            ],
+                'registered_at' => $registeredAt->toDateTimeString(),
+                'invite_day_weekday' => (int) $registeredAt->isoWeekday(),
+            ], $meta),
         );
     }
 

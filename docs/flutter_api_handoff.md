@@ -146,6 +146,8 @@ Success:
 }
 ```
 
+Invite-day points may be credited immediately during registration or later when the invited user's first recharge is approved, depending on the backend admin setting. Flutter should not assume the referrer receives invite-day points at registration time.
+
 ### Login
 
 Method: `POST`
@@ -430,6 +432,8 @@ Returns recharge wallet, active recharge methods, and request history.
 | recharge_method_id | integer | yes |
 | reference_no | string | no |
 | receipt | image | yes |
+
+If the backend requires first-deposit qualification for invite-day points, the referrer can receive those points only when this user's first approved recharge meets the configured minimum. A first approved recharge below the minimum does not qualify later on a second recharge.
 
 ### Withdraw
 

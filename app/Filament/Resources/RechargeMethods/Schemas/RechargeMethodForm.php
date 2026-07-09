@@ -4,6 +4,7 @@ namespace App\Filament\Resources\RechargeMethods\Schemas;
 
 use App\Models\RechargeMethod;
 use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -49,11 +50,9 @@ class RechargeMethodForm
                                     ->maxLength(100)
                                     ->placeholder('123456789'),
 
-                                TextInput::make('sort_order')
+                                Hidden::make('sort_order')
                                     ->label(__('filament.sort_order'))
-                                    ->numeric()
-                                    ->default(0)
-                                    ->minValue(0),
+                                    ->default(0),
 
                                 FileUpload::make('qr_image_path')
                                     ->label(__('filament.qr_image'))
