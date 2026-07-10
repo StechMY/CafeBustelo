@@ -20,6 +20,9 @@ class PointsController extends Controller
     {
         $user = $request->user();
         $rate = (float) Setting::decimal(PointService::SETTING_POINTS_TO_CASH_RATE, 100);
+        $pointsEnabled = Setting::bool(PointService::SETTING_POINTS_ENABLED, false);
+        $redeemEnabled = Setting::bool(PointService::SETTING_REDEEM_ENABLED, false);
+        $hasApprovedDeposit = $user->hasApprovedDeposit();
         $transactions = PointTransaction::query()
             ->where('user_id', $user->id)
             ->latest()
@@ -30,8 +33,10 @@ class PointsController extends Controller
             'exchange_rate' => $rate,
             'estimated_cash_value' => ApiFormatter::money((float) $user->points_balance * $rate),
             'minimum_redeem_points' => ApiFormatter::money(Setting::decimal(PointService::SETTING_MINIMUM_REDEEM_POINTS, 0)),
-            'points_enabled' => Setting::bool(PointService::SETTING_POINTS_ENABLED, false),
-            'redeem_enabled' => Setting::bool(PointService::SETTING_REDEEM_ENABLED, false),
+            'points_enabled' => $pointsEnabled,
+            'redeem_enabled' => $redeemEnabled,
+            'has_approved_deposit' => $hasApprovedDeposit,
+            'can_redeem' => $pointsEnabled && $redeemEnabled && $hasApprovedDeposit,
             'formula' => 'cash_amount = points * exchange_rate',
             'transactions' => [
                 'items' => $transactions->getCollection()->map(fn (PointTransaction $item): array => ApiFormatter::pointTransaction($item))->values(),
@@ -49,7 +54,9 @@ class PointsController extends Controller
                 'user' => ApiFormatter::user($request->user()->fresh()),
             ], __('points.redeem_success'));
         } catch (RuntimeException $exception) {
-            return ApiResponse::error($exception->getMessage(), [], 400);
+            return ApiResponse::error($exception->getMessage(), [
+                'points' => [$exception->getMessage()],
+            ], 422);
         } catch (Throwable $exception) {
             report($exception);
 

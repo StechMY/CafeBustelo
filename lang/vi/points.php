@@ -15,6 +15,7 @@ return [
     'invalid_exchange_rate' => 'Tỷ lệ quy đổi điểm không hợp lệ.',
     'invalid_redeem_amount' => 'Số lượng quy đổi không hợp lệ.',
     'insufficient_points' => 'Số dư điểm không đủ.',
+    'approved_deposit_required' => 'Bạn cần hoàn tất ít nhất một lần nạp tiền thành công trước khi chuyển đổi điểm.',
     'points_claim_desc' => 'Quy đổi điểm của bạn thành số dư ví có thể rút.',
     'estimated_cash_value' => 'Giá trị tiền mặt ước tính',
     'redeem_points_desc' => 'Nhập số điểm bạn muốn quy đổi.',

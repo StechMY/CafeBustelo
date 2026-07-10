@@ -106,6 +106,10 @@
                         <div class="mt-5 rounded-2xl bg-red-100 p-4 text-sm font-black text-red-700">
                             {{ __('points.redeem_disabled') }}
                         </div>
+                    @elseif (!$hasApprovedDeposit)
+                        <div class="mt-5 rounded-2xl bg-red-100 p-4 text-sm font-black text-red-700">
+                            {{ __('points.approved_deposit_required') }}
+                        </div>
                     @else
                         <form
                               method="POST"
@@ -115,6 +119,7 @@
                                   balance: @js($pointsBalance),
                                   rate: @js($exchangeRate),
                                   minimumPoints: @js((float) $minimumPoints),
+                                  hasApprovedDeposit: @js($hasApprovedDeposit),
                                   currency: @js($currency),
                               })">
                             @csrf
@@ -368,6 +373,7 @@
                 balance: Number(config.balance || 0),
                 rate: Number(config.rate || 100),
                 minimumPoints: Number(config.minimumPoints || 0),
+                hasApprovedDeposit: Boolean(config.hasApprovedDeposit),
                 currency: config.currency || 'RM',
                 points: 0,
 
@@ -379,6 +385,10 @@
                     const cleanPoints = Number(this.points || 0);
 
                     if (cleanPoints <= 0) {
+                        return false;
+                    }
+
+                    if (!this.hasApprovedDeposit) {
                         return false;
                     }
 

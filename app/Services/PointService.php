@@ -39,8 +39,7 @@ class PointService
 
     public function __construct(
         private readonly WalletService $walletService,
-    ) {
-    }
+    ) {}
 
     public function pointsEnabled(): bool
     {
@@ -49,11 +48,11 @@ class PointService
 
     public function giveUpgradeDayPurchasePoints(User $user, UserProduct $userProduct): void
     {
-        if (!$this->pointsEnabled()) {
+        if (! $this->pointsEnabled()) {
             return;
         }
 
-        if (!Setting::bool(self::SETTING_UPGRADE_DAY_ENABLED, false)) {
+        if (! Setting::bool(self::SETTING_UPGRADE_DAY_ENABLED, false)) {
             return;
         }
 
@@ -62,7 +61,7 @@ class PointService
             [1, 2]
         );
 
-        if (!in_array((int) now()->isoWeekday(), $upgradeWeekdays, true)) {
+        if (! in_array((int) now()->isoWeekday(), $upgradeWeekdays, true)) {
             return;
         }
 
@@ -101,11 +100,11 @@ class PointService
 
     public function giveInviteDayRegisterPoints(User $referrer, User $newUser, array $meta = []): void
     {
-        if (!$this->pointsEnabled()) {
+        if (! $this->pointsEnabled()) {
             return;
         }
 
-        if (!Setting::bool(self::SETTING_INVITE_DAY_ENABLED, false)) {
+        if (! Setting::bool(self::SETTING_INVITE_DAY_ENABLED, false)) {
             return;
         }
 
@@ -120,11 +119,11 @@ class PointService
 
         $registeredAt = $newUser->created_at;
 
-        if (!$registeredAt) {
+        if (! $registeredAt) {
             return;
         }
 
-        if (!in_array((int) $registeredAt->isoWeekday(), $inviteWeekdays, true)) {
+        if (! in_array((int) $registeredAt->isoWeekday(), $inviteWeekdays, true)) {
             return;
         }
 
@@ -162,12 +161,16 @@ class PointService
 
     public function redeemToWithdrawableWallet(User $user, float $points): void
     {
-        if (!$this->pointsEnabled()) {
+        if (! $this->pointsEnabled()) {
             throw new RuntimeException(__('points.points_disabled'));
         }
 
-        if (!Setting::bool(self::SETTING_REDEEM_ENABLED, false)) {
+        if (! Setting::bool(self::SETTING_REDEEM_ENABLED, false)) {
             throw new RuntimeException(__('points.redeem_disabled'));
+        }
+
+        if (! $user->hasApprovedDeposit()) {
+            throw new RuntimeException(__('points.approved_deposit_required'));
         }
 
         $minimumPoints = (float) Setting::decimal(self::SETTING_MINIMUM_REDEEM_POINTS, 0);
@@ -321,13 +324,13 @@ class PointService
 
         $decoded = json_decode((string) $value, true);
 
-        if (!is_array($decoded)) {
+        if (! is_array($decoded)) {
             return $default;
         }
 
         return collect($decoded)
-            ->map(fn($day) => (int) $day)
-            ->filter(fn($day) => $day >= 1 && $day <= 7)
+            ->map(fn ($day) => (int) $day)
+            ->filter(fn ($day) => $day >= 1 && $day <= 7)
             ->unique()
             ->values()
             ->all();

@@ -70,7 +70,7 @@ Dates are ISO-8601 strings. Money fields are numeric floats and often include a 
 | POST | `/api/v1/bonus-codes/redeem` | Yes | Redeem bonus code by code |
 | GET | `/api/v1/contact` | No | Active support contacts |
 | GET | `/api/v1/calculator` | Yes | Product and commission calculator data |
-| GET | `/api/v1/points` | Yes | Points state and transactions |
+| GET | `/api/v1/points` | Yes | Points state, redeem eligibility, and transactions |
 | POST | `/api/v1/points/redeem` | Yes | Redeem points to withdrawable wallet |
 | GET | `/api/v1/downline-products` | Yes | Downline product groups |
 | GET | `/api/v1/svip` | Yes | SVIP packages, active purchase, history |
@@ -137,6 +137,24 @@ Verifies OTP purpose `register`, creates wallets, welcome bonus, login log, and 
 ```
 
 ### Product Purchase
+
+`GET /api/v1/products` returns currently purchasable products grouped by available product type. Empty product types are omitted. Each product includes `type`, `type_label`, `product_type`, `product_type_label`, `available_until`, and `available_until_label`; the stored `weekend_special` type displays as `Crazy Weekend`.
+
+```json
+{
+  "tabs": [
+    {
+      "key": "normal",
+      "label": "Normal",
+      "count": 2
+    }
+  ],
+  "products_by_type": {
+    "normal": []
+  },
+  "items": []
+}
+```
 
 ```http
 POST /api/v1/products/1/purchase
@@ -241,7 +259,7 @@ Valid types: `weekly`, `monthly`, `annual`.
 }
 ```
 
-Uses `PointService`. Formula: `cash_amount = points * points_to_cash_rate`.
+Uses `PointService`. Formula: `cash_amount = points * points_to_cash_rate`. The user must have at least one approved recharge before redeeming points; otherwise the API returns 422 validation JSON.
 
 ### SVIP Purchase
 

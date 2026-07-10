@@ -132,6 +132,8 @@ class ApiFormatter
             'id' => (int) $product->id,
             'code' => $product->code,
             'name' => $product->name,
+            'type' => $product->product_type,
+            'type_label' => self::productTypeLabel($product->product_type),
             'product_type' => $product->product_type,
             'product_type_label' => self::productTypeLabel($product->product_type),
             'price' => $price,
@@ -149,6 +151,9 @@ class ApiFormatter
             'available_days_label' => self::availableDaysLabel($product),
             'available_from' => self::dateTime($product->available_from),
             'available_until' => self::dateTime($product->available_until),
+            'available_until_label' => $product->available_until
+                ? $product->available_until->copy()->timezone(config('app.timezone'))->format('d M Y, h:i A')
+                : null,
             'stock_quantity' => $product->stock_quantity,
             'sold_quantity' => (int) ($product->sold_quantity ?? 0),
             'remaining_stock' => $product->stock_quantity === null ? null : max(0, (int) $product->stock_quantity - (int) $product->sold_quantity),
@@ -425,10 +430,7 @@ class ApiFormatter
             return '';
         }
 
-        $key = 'products.types.'.$type;
-        $label = __($key);
-
-        return $label !== $key ? $label : Str::of($type)->headline()->toString();
+        return Product::typeLabel($type);
     }
 
     public static function availableDaysLabel(Product $product): string

@@ -7,16 +7,22 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class Product extends Model
 {
     use SoftDeletes;
 
     public const TYPE_NORMAL = 'normal';
+
     public const TYPE_UPGRADE_DAY = 'upgrade_day';
+
     public const TYPE_LIMITED_TIME = 'limited_time';
+
     public const TYPE_INVITE_DAY = 'invite_day';
+
     public const TYPE_WEEKEND_SPECIAL = 'weekend_special';
+
     public const TYPE_HOURLY = 'hourly';
 
     protected $fillable = [
@@ -95,6 +101,18 @@ class Product extends Model
             self::TYPE_WEEKEND_SPECIAL => __('filament.product_type_weekend_special'),
             self::TYPE_HOURLY => __('filament.product_type_hourly'),
         ];
+    }
+
+    public static function typeLabel(?string $type): string
+    {
+        if (! $type) {
+            return '';
+        }
+
+        $key = 'products.types.'.$type;
+        $label = __($key);
+
+        return $label !== $key ? $label : Str::of($type)->headline()->toString();
     }
 
     public static function weekdayOptions(): array
@@ -182,7 +200,7 @@ class Product extends Model
 
     public function getImageUrlAttribute(): ?string
     {
-        if (!$this->image_path) {
+        if (! $this->image_path) {
             return null;
         }
 

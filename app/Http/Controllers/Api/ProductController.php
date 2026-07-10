@@ -7,6 +7,7 @@ use App\Http\Requests\Api\PurchaseRequest;
 use App\Models\Product;
 use App\Models\UserProduct;
 use App\Services\DailyIncomeClaimService;
+use App\Services\ProductCatalogService;
 use App\Services\ProductPurchaseService;
 use App\Support\Api\ApiFormatter;
 use App\Support\Api\ApiResponse;
@@ -17,16 +18,18 @@ use Throwable;
 
 class ProductController extends Controller
 {
-    public function index(Request $request): JsonResponse
+    public function index(Request $request, ProductCatalogService $productCatalogService): JsonResponse
     {
-        $products = Product::query()
-            ->where('status', 'active')
-            ->orderBy('price')
-            ->orderBy('sort_order')
-            ->get();
+        $catalog = $productCatalogService->groupedAvailableProducts();
 
         return ApiResponse::success([
-            'items' => $products->map(fn (Product $product): array => ApiFormatter::product($product, $request->user()))->values(),
+            'tabs' => $catalog['productTypeTabs'],
+            'products_by_type' => $catalog['productsByType']
+                ->map(fn ($products) => $products
+                    ->map(fn (Product $product): array => ApiFormatter::product($product, $request->user()))
+                    ->values())
+                ->all(),
+            'items' => $catalog['products']->map(fn (Product $product): array => ApiFormatter::product($product, $request->user()))->values(),
         ]);
     }
 

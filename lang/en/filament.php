@@ -479,7 +479,7 @@ return [
     'product_type_upgrade_day' => 'Upgrade Day',
     'product_type_limited_time' => 'Limited Time',
     'product_type_invite_day' => 'Invite Day',
-    'product_type_weekend_special' => 'Weekend Special',
+    'product_type_weekend_special' => 'Crazy Weekend',
     'product_type_hourly' => 'Hourly',
     'available_days' => 'Available Days',
     'available_days_help' => 'Leave empty to allow purchase every day.',

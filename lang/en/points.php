@@ -15,6 +15,7 @@ return [
     'invalid_exchange_rate' => 'Invalid points exchange rate.',
     'invalid_redeem_amount' => 'Invalid redeem amount.',
     'insufficient_points' => 'Insufficient points balance.',
+    'approved_deposit_required' => 'You must complete at least one successful deposit before converting points.',
     'points_claim_desc' => 'Redeem your points into withdrawable wallet balance.',
     'estimated_cash_value' => 'Estimated Cash Value',
     'redeem_points_desc' => 'Enter the number of points you want to redeem.',

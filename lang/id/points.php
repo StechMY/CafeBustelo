@@ -15,6 +15,7 @@ return [
     'invalid_exchange_rate' => 'Kurs penukaran poin tidak valid.',
     'invalid_redeem_amount' => 'Jumlah penukaran tidak valid.',
     'insufficient_points' => 'Saldo poin tidak mencukupi.',
+    'approved_deposit_required' => 'Anda harus menyelesaikan setidaknya satu deposit yang berhasil sebelum menukar poin.',
     'points_claim_desc' => 'Tukarkan poin Anda menjadi saldo dompet penarikan.',
     'estimated_cash_value' => 'Estimasi Nilai Tunai',
     'redeem_points_desc' => 'Masukkan jumlah poin yang ingin Anda tukarkan.',

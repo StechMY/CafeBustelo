@@ -184,6 +184,13 @@ class User extends Authenticatable
         return $this->hasMany(RechargeRequest::class);
     }
 
+    public function hasApprovedDeposit(): bool
+    {
+        return $this->rechargeRequests()
+            ->where('status', 'approved')
+            ->exists();
+    }
+
     public function withdrawRequests(): HasMany
     {
         return $this->hasMany(WithdrawRequest::class);

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Product;
 use App\Models\UserProduct;
 use App\Models\Wallet;
+use App\Services\ProductCatalogService;
 use App\Services\ProductPurchaseService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -14,15 +15,11 @@ use Throwable;
 
 class ProductController extends Controller
 {
-    public function index(Request $request): View
+    public function index(Request $request, ProductCatalogService $productCatalogService): View
     {
         $user = $request->user();
 
-        $products = Product::query()
-            ->where('status', 'active')
-            ->orderBy('price')
-            ->orderBy('sort_order')
-            ->get();
+        $catalog = $productCatalogService->groupedAvailableProducts();
 
         $rechargeWallet = Wallet::query()
             ->where('user_id', $user->id)
@@ -48,18 +45,20 @@ class ProductController extends Controller
             ->values()
             ->all();
 
-        $userProductPurchaseCounts = \App\Models\UserProduct::query()
+        $userProductPurchaseCounts = UserProduct::query()
             ->where('user_id', $request->user()->id)
             ->whereIn('status', ['active', 'expired'])
             ->selectRaw('product_id, COUNT(*) as total')
             ->groupBy('product_id')
             ->pluck('total', 'product_id')
-            ->map(fn($value) => (int) $value)
+            ->map(fn ($value) => (int) $value)
             ->all();
 
         return view('products.index', [
             'user' => $user,
-            'products' => $products,
+            'products' => $catalog['products'],
+            'productsByType' => $catalog['productsByType'],
+            'productTypeTabs' => $catalog['productTypeTabs'],
             'rechargeBalance' => $rechargeWallet?->balance ?? 0,
             'withdrawableBalance' => $withdrawableWallet?->balance ?? 0,
             'activeUserProducts' => $activeUserProducts,

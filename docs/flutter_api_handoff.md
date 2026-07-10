@@ -367,7 +367,9 @@ Body:
 
 `GET /api/v1/products`
 
-Returns product objects with wallet affordability and `can_purchase`.
+Returns currently purchasable products grouped by product type. Use `tabs` for product category tabs and `products_by_type[tab.key]` for the visible product list. Empty product types are omitted. `items` is still included as a flat compatibility list.
+
+Each product includes `type`, `type_label`, `product_type`, `product_type_label`, `available_until`, and `available_until_label`. The stored type remains `weekend_special`, but the display label is `Crazy Weekend`.
 
 `POST /api/v1/products/{product}/purchase`
 
@@ -587,7 +589,7 @@ Returns products and B/C/D rates. Formula is `commission = income_per_claim * ra
 
 `GET /api/v1/points`
 
-Returns points balance, exchange rate, estimated cash value, minimum redeem, enable flags, formula, and transactions.
+Returns points balance, exchange rate, estimated cash value, minimum redeem, enable flags, `has_approved_deposit`, `can_redeem`, formula, and transactions.
 
 `POST /api/v1/points/redeem`
 
@@ -596,6 +598,8 @@ Returns points balance, exchange rate, estimated cash value, minimum redeem, ena
   "points": 10
 }
 ```
+
+Requires at least one approved recharge/deposit. If the user has only pending/rejected/no recharge records, Laravel returns 422 with `errors.points`.
 
 ### Downline Products
 
@@ -810,7 +814,7 @@ Refresh wallet/dashboard after purchase, claim, points redeem, recharge, withdra
 | Login | `POST /api/v1/login` | Store token securely |
 | Register | `POST /api/v1/register/send-otp`, `POST /api/v1/register` | Requires phone OTP and referral code |
 | Dashboard | `GET /api/v1/dashboard` | Pull summary, sliders, popup, check-in state |
-| Products | `GET /api/v1/products` | Show list and purchase buttons |
+| Products | `GET /api/v1/products` | Show grouped product tabs and purchase buttons |
 | Product Detail | `GET /api/v1/products` | Use selected product object |
 | My Products | `GET /api/v1/user-products`, `POST /api/v1/user-products/{id}/claim` | Claim buttons |
 | Wallet | `GET /api/v1/wallet` | Screen-ready balances, summaries, filters, transactions, and meta |

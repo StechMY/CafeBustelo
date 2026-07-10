@@ -236,8 +236,32 @@
         </div>
 
         @if ($products->isNotEmpty())
-            <div class="grid grid-cols-2 gap-2 sm:gap-5 md:grid-cols-3 xl:grid-cols-4">
-                @foreach ($products as $product)
+            <div x-data="{ activeType: @js(data_get($productTypeTabs->first(), 'key')) }">
+                <div class="mb-3 flex gap-2 overflow-x-auto pb-1 sm:mb-5 sm:flex-wrap sm:overflow-visible">
+                    @foreach ($productTypeTabs as $tab)
+                        <button
+                                type="button"
+                                class="shrink-0 rounded-full px-3 py-2 text-[10px] font-black uppercase transition sm:px-4 sm:text-xs"
+                                :class="activeType === @js($tab['key'])
+                                    ? 'bg-[#003b7a] text-white shadow-lg'
+                                    : 'bg-white text-[#003b7a] ring-1 ring-[#003b7a]/15'"
+                                @click="activeType = @js($tab['key'])">
+                            {{ $tab['label'] }}
+                            <span class="ml-1 opacity-70">({{ $tab['count'] }})</span>
+                        </button>
+                    @endforeach
+                </div>
+
+                <p class="mb-3 text-xs font-bold text-[#003b7a]/60 sm:mb-5 sm:text-sm">
+                    {{ __('products.choose_product_type') }}
+                </p>
+
+                @foreach ($productsByType as $type => $typeProducts)
+                    <div
+                         x-show="activeType === @js($type)"
+                         x-cloak
+                         class="grid grid-cols-2 gap-2 sm:gap-5 md:grid-cols-3 xl:grid-cols-4">
+                        @foreach ($typeProducts as $product)
                     @php
                         $canAffordRecharge = (float) $rechargeBalance >= (float) $product->price;
                         $canAffordWithdrawable = (float) $withdrawableBalance >= (float) $product->price;
@@ -383,6 +407,19 @@
                                 </div>
                             </div>
 
+                            @if ($product->available_until)
+                                <div class="mt-1.5 rounded-[0.75rem] bg-[#fff8c7] p-1.5 sm:mt-2 sm:rounded-xl sm:p-2.5">
+                                    <div
+                                         class="text-[7px] font-black uppercase leading-tight text-[#003b7a]/55 sm:text-[9px]">
+                                        {{ __('products.ends_at') }}
+                                    </div>
+
+                                    <div class="mt-0.5 text-[10px] font-black text-[#003b7a] sm:mt-1 sm:text-xs">
+                                        {{ $product->available_until->format('d M Y, h:i A') }}
+                                    </div>
+                                </div>
+                            @endif
+
                             <div class="mt-1.5 grid grid-cols-2 gap-1.5 sm:mt-2 sm:gap-2">
                                 <div class="rounded-[0.75rem] bg-[#fff8c7] p-1.5 sm:rounded-xl sm:p-2.5">
                                     <div
@@ -503,6 +540,8 @@
                             </div>
                         </div>
                     </article>
+                        @endforeach
+                    </div>
                 @endforeach
             </div>
         @else

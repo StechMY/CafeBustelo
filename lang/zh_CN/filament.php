@@ -479,7 +479,7 @@ return [
     'product_type_upgrade_day' => '升级日产品',
     'product_type_limited_time' => '限时产品',
     'product_type_invite_day' => '邀请日产品',
-    'product_type_weekend_special' => '周末特别产品',
+    'product_type_weekend_special' => '疯狂周末',
     'product_type_hourly' => '小时产品',
     'available_days' => '可购买星期',
     'available_days_help' => '留空则每天都可以购买。',

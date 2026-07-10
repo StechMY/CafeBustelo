@@ -29,6 +29,7 @@ class PointClaimController extends Controller
             'redeemEnabled' => Setting::bool(PointService::SETTING_REDEEM_ENABLED, false),
             'rate' => Setting::decimal(PointService::SETTING_POINTS_TO_CASH_RATE, 100),
             'minimumPoints' => Setting::decimal(PointService::SETTING_MINIMUM_REDEEM_POINTS, 0),
+            'hasApprovedDeposit' => $user->hasApprovedDeposit(),
         ]);
     }
 

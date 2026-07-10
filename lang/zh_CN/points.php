@@ -15,6 +15,7 @@ return [
     'invalid_exchange_rate' => '积分兑换比例无效。',
     'invalid_redeem_amount' => '兑换金额无效。',
     'insufficient_points' => '积分余额不足。',
+    'approved_deposit_required' => '您必须先完成至少一笔成功充值，才可以转换积分。',
     'points_claim_desc' => '将你的积分兑换成提现钱包余额。',
     'estimated_cash_value' => '预计现金价值',
     'redeem_points_desc' => '请输入你要兑换的积分数量。',
