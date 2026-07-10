@@ -339,12 +339,12 @@
                                             : str($product->product_type)->headline() }}
                                     </span>
 
-                                    @if ($remainingStock !== null)
+                                    {{-- @if ($remainingStock !== null)
                                         <span
                                               class="rounded-full bg-[#e4003a] px-2 py-0.5 text-[8px] font-black uppercase text-white">
                                             {{ $remainingStock }} {{ __('products.left') }}
                                         </span>
-                                    @endif
+                                    @endif --}}
 
                                     @if (!$isAvailableToday)
                                         <span
