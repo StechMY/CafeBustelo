@@ -7,6 +7,7 @@ use App\Filament\Widgets\PlatformOperationStats;
 use App\Filament\Widgets\PlatformOverviewStats;
 use App\Filament\Widgets\PlatformRequestStats;
 use App\Filament\Widgets\PlatformUserStats;
+use App\Models\PhoneOtp;
 use App\Models\Product;
 use App\Models\Setting;
 use App\Services\PointService;
@@ -89,6 +90,22 @@ class Dashboard extends BaseDashboard
     protected function getHeaderActions(): array
     {
         return [
+            Action::make('phoneOtpRecords')
+                ->label(__('filament.phone_otp_records'))
+                ->icon('heroicon-o-device-phone-mobile')
+                ->color('gray')
+                ->modalHeading(__('filament.phone_otp_records'))
+                ->modalSubmitAction(false)
+                ->modalCancelActionLabel(__('filament.close'))
+                ->slideOver()
+                ->modalContent(function () {
+                    return view('filament.dashboard.phone-otp-records', [
+                        'records' => PhoneOtp::query()
+                            ->latest('id')
+                            ->limit(50)
+                            ->get(),
+                    ]);
+                }),
             Action::make('appDownloadSettings')
                 ->label(__('filament.app_download_settings'))
                 ->icon('heroicon-o-arrow-down-tray')
@@ -100,7 +117,7 @@ class Dashboard extends BaseDashboard
                         ->url()
                         ->maxLength(1000)
                         ->placeholder('https://example.com/app.apk')
-                        ->default(fn (): ?string => Setting::getValue('app_download_url'))
+                        ->default(fn(): ?string => Setting::getValue('app_download_url'))
                         ->helperText(__('filament.app_download_url_help')),
                 ])
                 ->action(function (array $data): void {
@@ -122,7 +139,7 @@ class Dashboard extends BaseDashboard
                 ->form([
                     Toggle::make('enabled')
                         ->label(__('filament.enable_welcome_bonus'))
-                        ->default(fn (): bool => Setting::bool(
+                        ->default(fn(): bool => Setting::bool(
                             WelcomeBonusService::SETTING_ENABLED,
                             false
                         )),
@@ -174,39 +191,39 @@ class Dashboard extends BaseDashboard
                 ->form([
                     Toggle::make('points_enabled')
                         ->label(__('filament.points_enabled'))
-                        ->default(fn (): bool => Setting::bool(PointService::SETTING_POINTS_ENABLED, false)),
+                        ->default(fn(): bool => Setting::bool(PointService::SETTING_POINTS_ENABLED, false)),
 
                     Toggle::make('upgrade_day_points_enabled')
                         ->label(__('filament.upgrade_day_points_enabled'))
-                        ->default(fn (): bool => Setting::bool(PointService::SETTING_UPGRADE_DAY_ENABLED, false)),
+                        ->default(fn(): bool => Setting::bool(PointService::SETTING_UPGRADE_DAY_ENABLED, false)),
 
                     TextInput::make('upgrade_day_points_amount')
                         ->label(__('filament.upgrade_day_points_amount'))
                         ->numeric()
-                        ->default(fn (): float => Setting::decimal(PointService::SETTING_UPGRADE_DAY_AMOUNT, 0))
+                        ->default(fn(): float => Setting::decimal(PointService::SETTING_UPGRADE_DAY_AMOUNT, 0))
                         ->minValue(0)
                         ->step('0.01'),
 
                     Toggle::make('invite_day_points_enabled')
                         ->label(__('filament.invite_day_points_enabled'))
-                        ->default(fn (): bool => Setting::bool(PointService::SETTING_INVITE_DAY_ENABLED, false)),
+                        ->default(fn(): bool => Setting::bool(PointService::SETTING_INVITE_DAY_ENABLED, false)),
 
                     TextInput::make('invite_day_points_amount')
                         ->label(__('filament.invite_day_points_amount'))
                         ->numeric()
-                        ->default(fn (): float => Setting::decimal(PointService::SETTING_INVITE_DAY_AMOUNT, 0))
+                        ->default(fn(): float => Setting::decimal(PointService::SETTING_INVITE_DAY_AMOUNT, 0))
                         ->minValue(0)
                         ->step('0.01'),
 
                     Toggle::make('invite_day_require_first_deposit')
                         ->label(__('filament.invite_day_require_first_deposit'))
-                        ->default(fn (): bool => Setting::bool(PointService::SETTING_INVITE_DAY_REQUIRE_FIRST_DEPOSIT, false))
+                        ->default(fn(): bool => Setting::bool(PointService::SETTING_INVITE_DAY_REQUIRE_FIRST_DEPOSIT, false))
                         ->helperText(__('filament.invite_day_require_first_deposit_help')),
 
                     TextInput::make('invite_day_first_deposit_min_amount')
                         ->label(__('filament.invite_day_first_deposit_min_amount'))
                         ->numeric()
-                        ->default(fn (): float => Setting::decimal(PointService::SETTING_INVITE_DAY_FIRST_DEPOSIT_MIN_AMOUNT, 0))
+                        ->default(fn(): float => Setting::decimal(PointService::SETTING_INVITE_DAY_FIRST_DEPOSIT_MIN_AMOUNT, 0))
                         ->minValue(0)
                         ->prefix(config('app.currency'))
                         ->step('0.01')
@@ -214,12 +231,12 @@ class Dashboard extends BaseDashboard
 
                     Toggle::make('points_cash_exchange_enabled')
                         ->label(__('filament.points_cash_exchange_enabled'))
-                        ->default(fn (): bool => Setting::bool(PointService::SETTING_REDEEM_ENABLED, false)),
+                        ->default(fn(): bool => Setting::bool(PointService::SETTING_REDEEM_ENABLED, false)),
 
                     TextInput::make('points_to_cash_rate')
                         ->label(__('filament.points_to_cash_rate'))
                         ->numeric()
-                        ->default(fn (): float => Setting::decimal(PointService::SETTING_POINTS_TO_CASH_RATE, 100))
+                        ->default(fn(): float => Setting::decimal(PointService::SETTING_POINTS_TO_CASH_RATE, 100))
                         ->minValue(0.01)
                         ->step('0.01')
                         ->helperText(__('filament.points_to_cash_rate_help')),
@@ -227,7 +244,7 @@ class Dashboard extends BaseDashboard
                     TextInput::make('minimum_points_to_redeem')
                         ->label(__('filament.minimum_points_to_redeem'))
                         ->numeric()
-                        ->default(fn (): float => Setting::decimal(PointService::SETTING_MINIMUM_REDEEM_POINTS, 0))
+                        ->default(fn(): float => Setting::decimal(PointService::SETTING_MINIMUM_REDEEM_POINTS, 0))
                         ->minValue(0)
                         ->step('0.01'),
                     CheckboxList::make('upgrade_day_points_weekdays')

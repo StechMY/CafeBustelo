@@ -596,4 +596,13 @@ return [
     'app_download_url' => 'App 下载链接',
     'app_download_url_help' => '请输入 APK、Play Store、App Store 或下载页面链接。',
     'app_download_settings_saved' => 'App 下载设置已保存。',
+    'phone_otp_records' => '手机验证码记录',
+    'phone_otp_records_notice' => '这里只显示最近的验证码记录。已过期或已使用的验证码可能已经不能使用。',
+    'purpose' => '用途',
+    'otp_code' => '验证码',
+    'not_available' => '无法显示',
+    'no_records_found' => '没有记录',
+    'otp_status_valid' => '有效',
+    'otp_status_used' => '已使用',
+    'otp_status_expired' => '已过期',
 ];

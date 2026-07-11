@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 use Throwable;
+use Illuminate\Support\Facades\Crypt;
 
 class OtpService
 {
@@ -90,6 +91,7 @@ class OtpService
             'phone' => $phone,
             'purpose' => $purpose,
             'code_hash' => Hash::make($code),
+            'code_encrypted' => Crypt::encryptString($code),
             'attempts' => 0,
             'expires_at' => now()->addMinutes(config('sms.otp_expire_minutes')),
             'sms_uid' => $result['uid'] ?? null,

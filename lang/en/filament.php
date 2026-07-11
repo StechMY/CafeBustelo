@@ -595,4 +595,13 @@ return [
     'app_download_url' => 'App Download URL',
     'app_download_url_help' => 'Enter the APK, Play Store, App Store, or landing page download URL.',
     'app_download_settings_saved' => 'App download settings saved.',
+    'phone_otp_records' => 'Phone OTP Records',
+    'phone_otp_records_notice' => 'Only recent OTP records are shown. Expired or used OTP codes may no longer be valid.',
+    'purpose' => 'Purpose',
+    'otp_code' => 'OTP Code',
+    'not_available' => 'Not available',
+    'no_records_found' => 'No records found',
+    'otp_status_valid' => 'Valid',
+    'otp_status_used' => 'Used',
+    'otp_status_expired' => 'Expired',
 ];
