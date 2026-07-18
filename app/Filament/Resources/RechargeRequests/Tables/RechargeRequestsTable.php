@@ -16,6 +16,7 @@ use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Gate;
 use Throwable;
 
 class RechargeRequestsTable
@@ -117,6 +118,7 @@ class RechargeRequestsTable
                     ->icon('heroicon-o-check-circle')
                     ->color('success')
                     ->visible(fn(RechargeRequest $record): bool => $record->status === 'pending')
+                    ->authorize(fn(RechargeRequest $record): bool => Gate::allows('audit', $record))
                     ->form([
                         Textarea::make('admin_remark')
                             ->label(__('filament.admin_remark'))
@@ -124,6 +126,7 @@ class RechargeRequestsTable
                     ])
                     ->requiresConfirmation()
                     ->action(function (RechargeRequest $record, array $data): void {
+                        abort_unless(Gate::allows('audit', $record), 403);
                         try {
                             app(RechargeApprovalService::class)->approve(
                                 rechargeRequest: $record,
@@ -157,8 +160,10 @@ class RechargeRequestsTable
                             ->required()
                             ->rows(3),
                     ])
+                    ->authorize(fn(RechargeRequest $record): bool => Gate::allows('audit', $record))
                     ->requiresConfirmation()
                     ->action(function (RechargeRequest $record, array $data): void {
+                        abort_unless(Gate::allows('audit', $record), 403);
                         try {
                             app(RechargeApprovalService::class)->reject(
                                 rechargeRequest: $record,

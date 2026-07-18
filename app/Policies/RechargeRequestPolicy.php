@@ -12,6 +12,11 @@ class RechargeRequestPolicy
 {
     use HandlesAuthorization;
     
+    public function audit(AuthUser $user, RechargeRequest $rechargeRequest): bool
+    {
+        return $user->can('Audit:Recharge');
+    }
+
     public function viewAny(AuthUser $authUser): bool
     {
         return $authUser->can('ViewAny:RechargeRequest');

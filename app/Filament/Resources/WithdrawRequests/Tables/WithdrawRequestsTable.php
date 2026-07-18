@@ -17,6 +17,7 @@ use Filament\Notifications\Notification;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Gate;
 use Throwable;
 
 class WithdrawRequestsTable
@@ -38,17 +39,17 @@ class WithdrawRequestsTable
 
                 TextColumn::make('amount')
                     ->label(__('filament.amount'))
-                    ->prefix(config('app.currency')." ")
+                    ->prefix(config('app.currency') . " ")
                     ->sortable(),
 
                 TextColumn::make('fee_amount')
                     ->label(__('filament.fee'))
-                    ->prefix(config('app.currency')." ")
+                    ->prefix(config('app.currency') . " ")
                     ->toggleable(),
 
                 TextColumn::make('net_amount')
                     ->label(__('filament.net'))
-                    ->prefix(config('app.currency')." ")
+                    ->prefix(config('app.currency') . " ")
                     ->sortable(),
 
                 TextColumn::make('vip_level_snapshot')
@@ -118,6 +119,7 @@ class WithdrawRequestsTable
                     ->icon('heroicon-o-check-circle')
                     ->color('success')
                     ->visible(fn(WithdrawRequest $record): bool => $record->status === 'pending')
+                    ->authorize(fn(WithdrawRequest $record): bool => Gate::allows('audit', $record))
                     ->form([
                         Textarea::make('admin_remark')
                             ->label(__('filament.admin_remark'))
@@ -125,6 +127,7 @@ class WithdrawRequestsTable
                     ])
                     ->requiresConfirmation()
                     ->action(function (WithdrawRequest $record, array $data): void {
+                        abort_unless(Gate::allows('audit', $record), 403);
                         try {
                             app(WithdrawService::class)->approve(
                                 withdrawRequest: $record,
@@ -152,6 +155,7 @@ class WithdrawRequestsTable
                     ->icon('heroicon-o-x-circle')
                     ->color('danger')
                     ->visible(fn(WithdrawRequest $record): bool => $record->status === 'pending')
+                    ->authorize(fn(WithdrawRequest $record): bool => Gate::allows('audit', $record))
                     ->form([
                         Textarea::make('admin_remark')
                             ->label(__('filament.reject_reason'))
@@ -160,6 +164,7 @@ class WithdrawRequestsTable
                     ])
                     ->requiresConfirmation()
                     ->action(function (WithdrawRequest $record, array $data): void {
+                        abort_unless(Gate::allows('audit', $record), 403);
                         try {
                             app(WithdrawService::class)->reject(
                                 withdrawRequest: $record,
