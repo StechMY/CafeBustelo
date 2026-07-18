@@ -12,6 +12,7 @@ use Filament\Facades\Filament;
 use Filament\Forms\Components\Textarea;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
+use Illuminate\Support\Facades\Gate;
 use Throwable;
 
 class ViewRechargeRequest extends ViewRecord
@@ -38,6 +39,7 @@ class ViewRechargeRequest extends ViewRecord
                 ->icon('heroicon-o-check-circle')
                 ->color('success')
                 ->visible(fn(RechargeRequest $record): bool => $record->status === 'pending')
+                ->authorize(fn(RechargeRequest $record): bool => Gate::allows('audit', $record))
                 ->form([
                     Textarea::make('admin_remark')
                         ->label(__('filament.admin_remark'))
@@ -45,6 +47,7 @@ class ViewRechargeRequest extends ViewRecord
                 ])
                 ->requiresConfirmation()
                 ->action(function (array $data): void {
+                    abort_unless(Gate::allows('audit', $this->record), 403);
                     try {
                         app(RechargeApprovalService::class)->approve(
                             rechargeRequest: $this->record,
@@ -76,6 +79,7 @@ class ViewRechargeRequest extends ViewRecord
                 ->icon('heroicon-o-x-circle')
                 ->color('danger')
                 ->visible(fn(RechargeRequest $record): bool => $record->status === 'pending')
+                ->authorize(fn(RechargeRequest $record): bool => Gate::allows('audit', $record))
                 ->form([
                     Textarea::make('admin_remark')
                         ->label(__('filament.reject_reason'))
@@ -84,6 +88,7 @@ class ViewRechargeRequest extends ViewRecord
                 ])
                 ->requiresConfirmation()
                 ->action(function (array $data): void {
+                    abort_unless(Gate::allows('audit', $this->record), 403);
                     try {
                         app(RechargeApprovalService::class)->reject(
                             rechargeRequest: $this->record,

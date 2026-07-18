@@ -12,6 +12,7 @@ use Filament\Facades\Filament;
 use Filament\Forms\Components\Textarea;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
+use Illuminate\Support\Facades\Gate;
 use Throwable;
 
 class ViewWithdrawRequest extends ViewRecord
@@ -36,6 +37,7 @@ class ViewWithdrawRequest extends ViewRecord
                 ->icon('heroicon-o-check-circle')
                 ->color('success')
                 ->visible(fn(WithdrawRequest $record): bool => $record->status === 'pending')
+                ->authorize(fn(WithdrawRequest $record): bool => Gate::allows('audit', $record))
                 ->form([
                     Textarea::make('admin_remark')
                         ->label(__('filament.admin_remark'))
@@ -43,6 +45,7 @@ class ViewWithdrawRequest extends ViewRecord
                 ])
                 ->requiresConfirmation()
                 ->action(function (array $data): void {
+                    abort_unless(Gate::allows('audit', $this->record), 403);
                     try {
                         app(WithdrawService::class)->approve(
                             withdrawRequest: $this->record,
@@ -74,6 +77,7 @@ class ViewWithdrawRequest extends ViewRecord
                 ->icon('heroicon-o-x-circle')
                 ->color('danger')
                 ->visible(fn(WithdrawRequest $record): bool => $record->status === 'pending')
+                ->authorize(fn(WithdrawRequest $record): bool => Gate::allows('audit', $record))
                 ->form([
                     Textarea::make('admin_remark')
                         ->label(__('filament.reject_reason'))
@@ -82,6 +86,7 @@ class ViewWithdrawRequest extends ViewRecord
                 ])
                 ->requiresConfirmation()
                 ->action(function (array $data): void {
+                    abort_unless(Gate::allows('audit', $this->record), 403);
                     try {
                         app(WithdrawService::class)->reject(
                             withdrawRequest: $this->record,
