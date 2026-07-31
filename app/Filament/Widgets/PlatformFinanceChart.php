@@ -2,14 +2,12 @@
 
 namespace App\Filament\Widgets;
 
-use App\Models\RechargeRequest;
-use App\Models\WithdrawRequest;
+use App\Data\Dashboard\DashboardFilterData;
+use App\Services\Dashboard\CafeDashboardMetricsService;
 use App\Support\Filament\Dashboard\PlatformDashboardQuery;
-use Carbon\CarbonPeriod;
+use Carbon\CarbonImmutable;
 use Filament\Widgets\ChartWidget;
 use Filament\Widgets\Concerns\InteractsWithPageFilters;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Carbon;
 
 class PlatformFinanceChart extends ChartWidget
 {
@@ -22,65 +20,46 @@ class PlatformFinanceChart extends ChartWidget
 
     protected static ?int $sort = 4;
 
-    protected int | string | array $columnSpan = 'full';
+    protected int|string|array $columnSpan = 'full';
 
     protected ?string $pollingInterval = null;
 
     protected function getData(): array
     {
-        $filters = $this->pageFilters;
+        $filters = DashboardFilterData::fromFilamentFilters($this->pageFilters);
 
-        $start = PlatformDashboardQuery::startDate($filters) ?? now()->startOfMonth();
-        $end = PlatformDashboardQuery::endDate($filters) ?? now()->endOfDay();
-
-        if ($start->greaterThan($end)) {
-            [$start, $end] = [$end->copy()->startOfDay(), $start->copy()->endOfDay()];
+        if ($filters->dateFrom->greaterThan($filters->dateTo)) {
+            $filters = new DashboardFilterData(
+                $filters->dateTo->startOfDay(),
+                $filters->dateFrom->endOfDay(),
+                $filters->virtualMode,
+            );
         }
 
-        $labels = [];
-        $rechargeData = [];
-        $withdrawData = [];
-        $netData = [];
-
-        foreach (CarbonPeriod::create($start->copy()->startOfDay(), $end->copy()->startOfDay()) as $date) {
-            /** @var Carbon $date */
-            $dayStart = $date->copy()->startOfDay();
-            $dayEnd = $date->copy()->endOfDay();
-
-            $approvedRecharge = RechargeRequest::query()
-                ->where('status', 'approved')
-                ->whereBetween('reviewed_at', [$dayStart, $dayEnd])
-                ->tap(fn (Builder $query) => PlatformDashboardQuery::applyUserVirtualFilter($query, $filters))
-                ->sum('amount');
-
-            $approvedWithdraw = WithdrawRequest::query()
-                ->where('status', 'approved')
-                ->whereBetween('reviewed_at', [$dayStart, $dayEnd])
-                ->tap(fn (Builder $query) => PlatformDashboardQuery::applyUserVirtualFilter($query, $filters))
-                ->sum('amount');
-
-            $labels[] = $date->format('d M');
-            $rechargeData[] = round((float) $approvedRecharge, 2);
-            $withdrawData[] = round((float) $approvedWithdraw, 2);
-            $netData[] = round((float) $approvedRecharge - (float) $approvedWithdraw, 2);
-        }
+        $metrics = app(CafeDashboardMetricsService::class)->financeChart(
+            $filters,
+            PlatformDashboardQuery::supportDownlineUserIds(),
+        );
 
         return [
             'datasets' => [
                 [
                     'label' => __('filament.approved_recharge'),
-                    'data' => $rechargeData,
+                    'data' => $metrics['approved_recharge'],
                 ],
                 [
                     'label' => __('filament.approved_withdraw'),
-                    'data' => $withdrawData,
+                    'data' => $metrics['approved_withdraw'],
                 ],
                 [
                     'label' => __('filament.net'),
-                    'data' => $netData,
+                    'data' => $metrics['net'],
                 ],
             ],
-            'labels' => $labels,
+            'labels' => array_map(
+                fn (string $date): string => CarbonImmutable::parse($date)->format('d M'),
+                $metrics['labels'],
+            ),
         ];
     }
 

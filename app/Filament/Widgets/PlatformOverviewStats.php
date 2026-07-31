@@ -2,18 +2,12 @@
 
 namespace App\Filament\Widgets;
 
-use App\Models\BonusClaim;
-use App\Models\CommissionRecord;
-use App\Models\DailyIncomeClaim;
-use App\Models\RechargeRequest;
-use App\Models\SalaryClaim;
-use App\Models\UserProduct;
-use App\Models\WithdrawRequest;
+use App\Data\Dashboard\DashboardFilterData;
+use App\Services\Dashboard\CafeDashboardMetricsService;
 use App\Support\Filament\Dashboard\PlatformDashboardQuery;
 use Filament\Widgets\Concerns\InteractsWithPageFilters;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
-use Illuminate\Database\Eloquent\Builder;
 
 class PlatformOverviewStats extends StatsOverviewWidget
 {
@@ -28,59 +22,23 @@ class PlatformOverviewStats extends StatsOverviewWidget
 
     protected ?string $pollingInterval = null;
 
-    protected int | string | array $columnSpan = 'full';
+    protected int|string|array $columnSpan = 'full';
 
     protected function getStats(): array
     {
-        $filters = $this->pageFilters;
-
-        $approvedRecharge = RechargeRequest::query()
-            ->where('status', 'approved')
-            ->tap(fn (Builder $query) => PlatformDashboardQuery::applyDateRange($query, $filters, 'reviewed_at'))
-            ->tap(fn (Builder $query) => PlatformDashboardQuery::applyUserVirtualFilter($query, $filters))
-            ->sum('amount');
-
-        $approvedWithdraw = WithdrawRequest::query()
-            ->where('status', 'approved')
-            ->tap(fn (Builder $query) => PlatformDashboardQuery::applyDateRange($query, $filters, 'reviewed_at'))
-            ->tap(fn (Builder $query) => PlatformDashboardQuery::applyUserVirtualFilter($query, $filters))
-            ->sum('amount');
-
-        $netRevenue = (float) $approvedRecharge - (float) $approvedWithdraw;
-
-        $productPurchaseAmount = UserProduct::query()
-            ->tap(fn (Builder $query) => PlatformDashboardQuery::applyDateRange($query, $filters, 'purchased_at'))
-            ->tap(fn (Builder $query) => PlatformDashboardQuery::applyUserVirtualFilter($query, $filters))
-            ->sum('price_snapshot');
-
-        $dailyIncomePaid = DailyIncomeClaim::query()
-            ->tap(fn (Builder $query) => PlatformDashboardQuery::applyDateRange($query, $filters, 'claimed_at'))
-            ->tap(fn (Builder $query) => PlatformDashboardQuery::applyUserVirtualFilter($query, $filters))
-            ->sum('amount');
-
-        $commissionsPaid = CommissionRecord::query()
-            ->where('status', 'paid')
-            ->tap(fn (Builder $query) => PlatformDashboardQuery::applyDateRange($query, $filters, 'created_at'))
-            ->tap(fn (Builder $query) => PlatformDashboardQuery::applyUserVirtualFilter($query, $filters, 'earner'))
-            ->sum('amount');
-
-        $bonusPaid = BonusClaim::query()
-            ->tap(fn (Builder $query) => PlatformDashboardQuery::applyDateRange($query, $filters, 'claimed_at'))
-            ->tap(fn (Builder $query) => PlatformDashboardQuery::applyUserVirtualFilter($query, $filters))
-            ->sum('amount');
-
-        $salaryPaid = SalaryClaim::query()
-            ->tap(fn (Builder $query) => PlatformDashboardQuery::applyDateRange($query, $filters, 'claimed_at'))
-            ->tap(fn (Builder $query) => PlatformDashboardQuery::applyUserVirtualFilter($query, $filters))
-            ->sum('total_amount');
+        $metrics = app(CafeDashboardMetricsService::class)->financeOverview(
+            DashboardFilterData::fromFilamentFilters($this->pageFilters),
+            PlatformDashboardQuery::supportDownlineUserIds(),
+        );
+        $netRevenue = $metrics['revenue_cash_gap'];
 
         return [
-            Stat::make(__('filament.approved_recharge'), PlatformDashboardQuery::money($approvedRecharge))
+            Stat::make(__('filament.approved_recharge'), PlatformDashboardQuery::money($metrics['approved_recharge']))
                 ->description(__('filament.approved_deposits_in_selected_range'))
                 ->descriptionIcon('heroicon-m-arrow-down-tray')
                 ->color('success'),
 
-            Stat::make(__('filament.approved_withdraw'), PlatformDashboardQuery::money($approvedWithdraw))
+            Stat::make(__('filament.approved_withdraw'), PlatformDashboardQuery::money($metrics['approved_withdraw']))
                 ->description(__('filament.approved_withdrawals_in_selected_range'))
                 ->descriptionIcon('heroicon-m-arrow-up-tray')
                 ->color('danger'),
@@ -90,27 +48,27 @@ class PlatformOverviewStats extends StatsOverviewWidget
                 ->descriptionIcon($netRevenue >= 0 ? 'heroicon-m-arrow-trending-up' : 'heroicon-m-arrow-trending-down')
                 ->color($netRevenue >= 0 ? 'success' : 'danger'),
 
-            Stat::make(__('filament.product_purchase_volume'), PlatformDashboardQuery::money($productPurchaseAmount))
+            Stat::make(__('filament.product_purchase_volume'), PlatformDashboardQuery::money($metrics['product_purchase_volume']))
                 ->description(__('filament.recharge_wallet_spent_on_products'))
                 ->descriptionIcon('heroicon-m-shopping-bag')
                 ->color('info'),
 
-            Stat::make(__('filament.daily_income_paid'), PlatformDashboardQuery::money($dailyIncomePaid))
+            Stat::make(__('filament.daily_income_paid'), PlatformDashboardQuery::money($metrics['daily_income_paid']))
                 ->description(__('filament.user_daily_income_claims'))
                 ->descriptionIcon('heroicon-m-banknotes')
                 ->color('warning'),
 
-            Stat::make(__('filament.commissions_paid'), PlatformDashboardQuery::money($commissionsPaid))
+            Stat::make(__('filament.commissions_paid'), PlatformDashboardQuery::money($metrics['commissions_paid']))
                 ->description(__('filament.b_c_d_commission_payouts'))
                 ->descriptionIcon('heroicon-m-users')
                 ->color('warning'),
 
-            Stat::make(__('filament.bonus_paid'), PlatformDashboardQuery::money($bonusPaid))
+            Stat::make(__('filament.bonus_paid'), PlatformDashboardQuery::money($metrics['bonus_paid']))
                 ->description(__('filament.invite_upgrade_bonus_claims'))
                 ->descriptionIcon('heroicon-m-gift')
                 ->color('gray'),
 
-            Stat::make(__('filament.salary_subsidy_paid'), PlatformDashboardQuery::money($salaryPaid))
+            Stat::make(__('filament.salary_subsidy_paid'), PlatformDashboardQuery::money($metrics['salary_subsidy_paid']))
                 ->description(__('filament.weekly_monthly_salary_claims'))
                 ->descriptionIcon('heroicon-m-calendar-days')
                 ->color('gray'),

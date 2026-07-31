@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\CheckInController;
 use App\Http\Controllers\Api\ContactController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\DownlineProductController;
+use App\Http\Controllers\Api\Internal\ManagementDashboardController;
 use App\Http\Controllers\Api\MyTeamController;
 use App\Http\Controllers\Api\PointsController;
 use App\Http\Controllers\Api\ProductController;
@@ -21,6 +22,19 @@ use App\Http\Controllers\Api\SvipController;
 use App\Http\Controllers\Api\WalletController;
 use App\Http\Controllers\Api\WithdrawController;
 use Illuminate\Support\Facades\Route;
+
+Route::prefix('internal/v1')
+    ->name('api.internal.v1.')
+    ->middleware([
+        'auth:sanctum',
+        'abilities:dashboard:read',
+        'dashboard.api-client',
+        'throttle:management-dashboard',
+    ])
+    ->group(function (): void {
+        Route::get('/management-dashboard', ManagementDashboardController::class)
+            ->name('management-dashboard');
+    });
 
 Route::prefix('v1')->name('api.v1.')->group(function (): void {
     Route::post('/register/send-otp', [RegisterOtpController::class, 'send'])

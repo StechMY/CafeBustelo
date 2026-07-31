@@ -2,13 +2,12 @@
 
 namespace App\Filament\Widgets;
 
-use App\Models\RechargeRequest;
-use App\Models\WithdrawRequest;
+use App\Data\Dashboard\DashboardFilterData;
+use App\Services\Dashboard\CafeDashboardMetricsService;
 use App\Support\Filament\Dashboard\PlatformDashboardQuery;
 use Filament\Widgets\Concerns\InteractsWithPageFilters;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
-use Illuminate\Database\Eloquent\Builder;
 
 class PlatformRequestStats extends StatsOverviewWidget
 {
@@ -23,65 +22,32 @@ class PlatformRequestStats extends StatsOverviewWidget
 
     protected ?string $pollingInterval = null;
 
-    protected int | string | array $columnSpan = 'full';
+    protected int|string|array $columnSpan = 'full';
 
     protected function getStats(): array
     {
-        $filters = $this->pageFilters;
-
-        $pendingRechargeCount = RechargeRequest::query()
-            ->where('status', 'pending')
-            ->tap(fn (Builder $query) => PlatformDashboardQuery::applyDateRange($query, $filters, 'created_at'))
-            ->tap(fn (Builder $query) => PlatformDashboardQuery::applyUserVirtualFilter($query, $filters))
-            ->count();
-
-        $pendingRechargeAmount = RechargeRequest::query()
-            ->where('status', 'pending')
-            ->tap(fn (Builder $query) => PlatformDashboardQuery::applyDateRange($query, $filters, 'created_at'))
-            ->tap(fn (Builder $query) => PlatformDashboardQuery::applyUserVirtualFilter($query, $filters))
-            ->sum('amount');
-
-        $pendingWithdrawCount = WithdrawRequest::query()
-            ->where('status', 'pending')
-            ->tap(fn (Builder $query) => PlatformDashboardQuery::applyDateRange($query, $filters, 'created_at'))
-            ->tap(fn (Builder $query) => PlatformDashboardQuery::applyUserVirtualFilter($query, $filters))
-            ->count();
-
-        $pendingWithdrawAmount = WithdrawRequest::query()
-            ->where('status', 'pending')
-            ->tap(fn (Builder $query) => PlatformDashboardQuery::applyDateRange($query, $filters, 'created_at'))
-            ->tap(fn (Builder $query) => PlatformDashboardQuery::applyUserVirtualFilter($query, $filters))
-            ->sum('amount');
-
-        $rejectedRechargeCount = RechargeRequest::query()
-            ->where('status', 'rejected')
-            ->tap(fn (Builder $query) => PlatformDashboardQuery::applyDateRange($query, $filters, 'reviewed_at'))
-            ->tap(fn (Builder $query) => PlatformDashboardQuery::applyUserVirtualFilter($query, $filters))
-            ->count();
-
-        $rejectedWithdrawCount = WithdrawRequest::query()
-            ->where('status', 'rejected')
-            ->tap(fn (Builder $query) => PlatformDashboardQuery::applyDateRange($query, $filters, 'reviewed_at'))
-            ->tap(fn (Builder $query) => PlatformDashboardQuery::applyUserVirtualFilter($query, $filters))
-            ->count();
+        $metrics = app(CafeDashboardMetricsService::class)->requestOverview(
+            DashboardFilterData::fromFilamentFilters($this->pageFilters),
+            PlatformDashboardQuery::supportDownlineUserIds(),
+        );
 
         return [
-            Stat::make(__('filament.pending_recharge_requests'), number_format($pendingRechargeCount))
-                ->description(PlatformDashboardQuery::money($pendingRechargeAmount))
+            Stat::make(__('filament.pending_recharge_requests'), number_format($metrics['pending_recharge_count']))
+                ->description(PlatformDashboardQuery::money($metrics['pending_recharge_amount']))
                 ->descriptionIcon('heroicon-m-clock')
                 ->color('warning'),
 
-            Stat::make(__('filament.pending_withdraw_requests'), number_format($pendingWithdrawCount))
-                ->description(PlatformDashboardQuery::money($pendingWithdrawAmount))
+            Stat::make(__('filament.pending_withdraw_requests'), number_format($metrics['pending_withdraw_count']))
+                ->description(PlatformDashboardQuery::money($metrics['pending_withdraw_amount']))
                 ->descriptionIcon('heroicon-m-clock')
                 ->color('warning'),
 
-            Stat::make(__('filament.rejected_recharge_requests'), number_format($rejectedRechargeCount))
+            Stat::make(__('filament.rejected_recharge_requests'), number_format($metrics['rejected_recharge_count']))
                 ->description(__('filament.rejected_deposits_in_selected_range'))
                 ->descriptionIcon('heroicon-m-x-circle')
                 ->color('danger'),
 
-            Stat::make(__('filament.rejected_withdraw_requests'), number_format($rejectedWithdrawCount))
+            Stat::make(__('filament.rejected_withdraw_requests'), number_format($metrics['rejected_withdraw_count']))
                 ->description(__('filament.rejected_withdrawals_in_selected_range'))
                 ->descriptionIcon('heroicon-m-x-circle')
                 ->color('danger'),

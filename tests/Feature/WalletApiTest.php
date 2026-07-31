@@ -84,14 +84,14 @@ class WalletApiTest extends TestCase
             ->assertOk()
             ->json('data');
 
-        $this->assertSame(300.0, $pageOne['summary']['lifetime']['total_credit']);
-        $this->assertSame(5000.0, $pageOne['summary']['lifetime']['display_total_credit']);
+        $this->assertEquals(300.0, $pageOne['summary']['lifetime']['total_credit']);
+        $this->assertEquals(5000.0, $pageOne['summary']['lifetime']['display_total_credit']);
         $this->assertTrue($pageOne['summary']['lifetime']['is_total_credit_overridden']);
-        $this->assertSame(80.0, $pageOne['summary']['lifetime']['total_debit']);
-        $this->assertSame(900.0, $pageOne['summary']['lifetime']['display_total_debit']);
+        $this->assertEquals(80.0, $pageOne['summary']['lifetime']['total_debit']);
+        $this->assertEquals(900.0, $pageOne['summary']['lifetime']['display_total_debit']);
         $this->assertTrue($pageOne['summary']['lifetime']['is_total_debit_overridden']);
 
-        $this->assertSame([
+        $this->assertEquals([
             'total' => 130.0,
             'credit' => 100.0,
             'debit' => 30.0,
@@ -102,10 +102,10 @@ class WalletApiTest extends TestCase
             'formatted_net' => 'RM 70.00',
         ], $pageOne['summary']['all_filtered']);
 
-        $this->assertSame(30.0, $pageOne['summary']['current_page']['total']);
-        $this->assertSame(0.0, $pageOne['summary']['current_page']['credit']);
-        $this->assertSame(30.0, $pageOne['summary']['current_page']['debit']);
-        $this->assertSame(-30.0, $pageOne['summary']['current_page']['net']);
+        $this->assertEquals(30.0, $pageOne['summary']['current_page']['total']);
+        $this->assertEquals(0.0, $pageOne['summary']['current_page']['credit']);
+        $this->assertEquals(30.0, $pageOne['summary']['current_page']['debit']);
+        $this->assertEquals(-30.0, $pageOne['summary']['current_page']['net']);
         $this->assertSame(2, $pageOne['meta']['total']);
         $this->assertSame(1, $pageOne['meta']['current_page']);
         $this->assertSame('product_purchase', $pageOne['transactions'][0]['type']);
@@ -116,10 +116,10 @@ class WalletApiTest extends TestCase
             ->json('data');
 
         $this->assertSame($pageOne['summary']['all_filtered'], $pageTwo['summary']['all_filtered']);
-        $this->assertSame(100.0, $pageTwo['summary']['current_page']['total']);
-        $this->assertSame(100.0, $pageTwo['summary']['current_page']['credit']);
-        $this->assertSame(0.0, $pageTwo['summary']['current_page']['debit']);
-        $this->assertSame(100.0, $pageTwo['summary']['current_page']['net']);
+        $this->assertEquals(100.0, $pageTwo['summary']['current_page']['total']);
+        $this->assertEquals(100.0, $pageTwo['summary']['current_page']['credit']);
+        $this->assertEquals(0.0, $pageTwo['summary']['current_page']['debit']);
+        $this->assertEquals(100.0, $pageTwo['summary']['current_page']['net']);
         $this->assertSame(2, $pageTwo['meta']['current_page']);
     }
 
@@ -147,7 +147,7 @@ class WalletApiTest extends TestCase
         string $type,
         string $createdAt,
     ): void {
-        WalletTransaction::query()->create([
+        $transaction = WalletTransaction::query()->create([
             'user_id' => $user->id,
             'wallet_id' => $wallet->id,
             'wallet_type' => $walletType,
@@ -157,8 +157,10 @@ class WalletApiTest extends TestCase
             'balance_before' => 0,
             'balance_after' => $amount,
             'remarks' => ucfirst(str_replace('_', ' ', $type)),
+        ]);
+        $transaction->forceFill([
             'created_at' => Carbon::parse($createdAt, 'Asia/Kuala_Lumpur'),
             'updated_at' => Carbon::parse($createdAt, 'Asia/Kuala_Lumpur'),
-        ]);
+        ])->saveQuietly();
     }
 }

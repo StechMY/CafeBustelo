@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\EnsureDashboardApiClient;
 use App\Http\Middleware\HumanOnly;
 use App\Http\Middleware\SetLocale;
 use App\Support\Api\ApiResponse;
@@ -9,8 +10,12 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Exceptions\ThrottleRequestsException;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
+use Laravel\Sanctum\Http\Middleware\CheckAbilities;
+use Laravel\Sanctum\Http\Middleware\CheckForAnyAbility;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -32,7 +37,12 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             SetLocale::class,
         ]);
-        $middleware->alias(['human.only' => HumanOnly::class]);
+        $middleware->alias([
+            'abilities' => CheckAbilities::class,
+            'ability' => CheckForAnyAbility::class,
+            'dashboard.api-client' => EnsureDashboardApiClient::class,
+            'human.only' => HumanOnly::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         $exceptions->render(function (ValidationException $exception, Request $request) {
@@ -51,9 +61,21 @@ return Application::configure(basePath: dirname(__DIR__))
             return null;
         });
 
-        $exceptions->render(function (AuthorizationException $exception, Request $request) {
+        $exceptions->render(function (
+            AuthorizationException|AccessDeniedHttpException $exception,
+            Request $request,
+        ) {
             if ($request->is('api/*')) {
                 return ApiResponse::error($exception->getMessage() ?: 'Forbidden.', [], 403);
+            }
+
+            return null;
+        });
+
+        $exceptions->render(function (ThrottleRequestsException $exception, Request $request) {
+            if ($request->is('api/*')) {
+                return ApiResponse::error('Too many requests.', [], 429)
+                    ->withHeaders($exception->getHeaders());
             }
 
             return null;
