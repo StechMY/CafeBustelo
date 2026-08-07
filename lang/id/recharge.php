@@ -34,4 +34,6 @@ return [
     'account_no' => 'Nomor Rekening',
     'no_qr_image' => 'Gambar QR belum tersedia',
     'no_recharge_method_available' => 'Tidak ada metode deposit yang tersedia saat ini. Silakan hubungi layanan pelanggan.',
+    'choose_file' => 'Pilih file',
+    'no_file_selected' => 'Belum ada file yang dipilih',
 ];

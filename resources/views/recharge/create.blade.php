@@ -240,27 +240,70 @@
                         @enderror
                     </div> --}}
 
-                    <div>
-                        <label class="mb-1.5 block text-xs font-black uppercase text-[#003b7a] sm:mb-2 sm:text-sm">
-                            {{ __('recharge.receipt') }}
-                        </label>
+                   <div>
+    <label
+        for="receipt"
+        class="mb-2 block text-xs font-black text-[#003b7a] sm:text-sm"
+    >
+        {{ __('recharge.receipt') }}
+    </label>
 
-                        <input
-                            name="receipt"
-                            type="file"
-                            accept="image/jpeg,image/png,image/webp"
-                            class="w-full rounded-xl border-2 border-dashed border-[#003b7a] bg-[#fff8c7] px-4 py-3 text-xs font-bold text-[#003b7a] file:mr-3 file:rounded-full file:border-0 file:bg-[#003b7a] file:px-3 file:py-1.5 file:text-xs file:font-black file:text-white sm:rounded-2xl sm:px-5 sm:py-4 sm:text-sm sm:file:mr-4 sm:file:px-4 sm:file:py-2 sm:file:text-sm"
-                            required
-                        >
+    <div
+        class="flex items-center gap-3 rounded-xl border-2 border-dashed border-[#003b7a]
+               bg-[#fff8c7] px-4 py-3 sm:rounded-2xl sm:px-5 sm:py-4"
+    >
+        <input
+            id="receipt"
+            name="receipt"
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            class="hidden"
+            required
+        >
 
-                        <p class="mt-1.5 text-[10px] font-bold text-[#003b7a]/60 sm:mt-2 sm:text-xs">
-                            {{ __('recharge.receipt_help') }}
-                        </p>
+        <label
+            for="receipt"
+            class="shrink-0 cursor-pointer rounded-full bg-[#003b7a]
+                   px-3 py-1.5 text-xs font-black text-white
+                   transition hover:bg-[#002d5d]
+                   sm:px-4 sm:py-2 sm:text-sm"
+        >
+            {{ __('recharge.choose_file') }}
+        </label>
 
-                        @error('receipt')
-                            <div class="mt-1.5 text-xs font-bold text-[#e4003a] sm:text-sm">{{ $message }}</div>
-                        @enderror
-                    </div>
+        <span
+            id="receipt-file-name"
+            class="min-w-0 truncate text-xs font-bold text-[#003b7a]/70 sm:text-sm"
+        >
+            {{ __('recharge.no_file_selected') }}
+        </span>
+    </div>
+
+    <p class="mt-1.5 text-[10px] font-bold text-[#003b7a]/60 sm:mt-2 sm:text-xs">
+        {{ __('recharge.receipt_help') }}
+    </p>
+
+    @error('receipt')
+        <div class="mt-1.5 text-xs font-bold text-[#e4003a] sm:text-sm">
+            {{ $message }}
+        </div>
+    @enderror
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const input = document.getElementById('receipt');
+        const fileName = document.getElementById('receipt-file-name');
+
+        if (!input || !fileName) return;
+
+        const emptyText = @json(__('recharge.no_file_selected'));
+
+        input.addEventListener('change', function () {
+            fileName.textContent = this.files?.[0]?.name || emptyText;
+        });
+    });
+</script>
 
                     <div class="rounded-xl bg-[#ffd900] p-3 text-xs font-bold leading-relaxed text-[#003b7a] sm:rounded-2xl sm:p-4 sm:text-sm">
                         {{ __('recharge.warning_desc') }}

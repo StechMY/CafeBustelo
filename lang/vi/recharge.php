@@ -34,4 +34,6 @@ return [
     'account_no' => 'Số tài khoản',
     'no_qr_image' => 'Chưa có hình QR',
     'no_recharge_method_available' => 'Hiện không có phương thức nạp tiền khả dụng. Vui lòng liên hệ CSKH.',
+    'choose_file' => 'Chọn tệp',
+    'no_file_selected' => 'Chưa chọn tệp',
 ];

@@ -34,4 +34,6 @@ return [
     'account_no' => 'Account No.',
     'no_qr_image' => 'No QR image available',
     'no_recharge_method_available' => 'No recharge method is available now. Please contact customer service.',
+    'choose_file' => 'Choose File',
+    'no_file_selected' => 'No file selected',
 ];

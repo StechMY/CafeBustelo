@@ -34,4 +34,6 @@ return [
     'account_no' => '账户号码',
     'no_qr_image' => '暂无二维码图片',
     'no_recharge_method_available' => '当前暂无可用充值方式，请联系客服。',
+    'choose_file' => '选择文件',
+    'no_file_selected' => '尚未选择文件',
 ];
