@@ -26,5 +26,6 @@ return [
     'calculator' => 'Kalkulator',
     'downline_products' => 'Produk Downline',
     'points' => 'Poin',
+    'change_password' => 'Ubah Kata Sandi',
     'app_download' => 'Unduh Aplikasi',
 ];

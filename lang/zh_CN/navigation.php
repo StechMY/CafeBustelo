@@ -28,5 +28,6 @@ return [
     'calculator' => '计算器',
     'downline_products' => '下线产品明细',
     'points' => '积分',
+    'change_password' => '更改密码',
     'app_download' => 'app下载',
 ];

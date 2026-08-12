@@ -363,6 +363,28 @@ Body:
 
 `DELETE /api/v1/profile/avatar` removes avatar.
 
+### Change Password
+
+Step 1 URL: `/api/v1/account/password/send-otp`
+
+Auth required: yes
+
+Laravel sends OTP purpose `change_password` to the authenticated user's saved phone number. Flutter must not send a phone number for this flow.
+
+Step 2 URL: `/api/v1/account/password`
+
+Auth required: yes
+
+```json
+{
+  "otp_code": "123456",
+  "password": "newpassword123",
+  "password_confirmation": "newpassword123"
+}
+```
+
+If the user has no saved phone, the API returns 422 with `errors.phone`.
+
 ### Products
 
 `GET /api/v1/products`
@@ -773,7 +795,7 @@ Flutter can display wallet choices. Backend validates status, stock, active wind
 
 ### SMS OTP
 
-OTP purpose names are `register` and `bank_account`. Codes are 6 digits, stored hashed in Laravel, expire by backend config, and respect backend resend cooldown/max-attempt rules. Flutter only calls Laravel OTP endpoints and never receives SMS provider credentials.
+OTP purpose names are `register`, `bank_account`, and `change_password`. Codes are 6 digits, stored hashed in Laravel, expire by backend config, and respect backend resend cooldown/max-attempt rules. Flutter only calls Laravel OTP endpoints and never receives SMS provider credentials.
 
 ### Product claims
 
@@ -814,6 +836,7 @@ Refresh wallet/dashboard after purchase, claim, points redeem, recharge, withdra
 | Login | `POST /api/v1/login` | Store token securely |
 | Register | `POST /api/v1/register/send-otp`, `POST /api/v1/register` | Requires phone OTP and referral code |
 | Dashboard | `GET /api/v1/dashboard` | Pull summary, sliders, popup, check-in state |
+| Change Password | `POST /api/v1/account/password/send-otp`, `POST /api/v1/account/password` | Uses authenticated user's saved phone only |
 | Products | `GET /api/v1/products` | Show grouped product tabs and purchase buttons |
 | Product Detail | `GET /api/v1/products` | Use selected product object |
 | My Products | `GET /api/v1/user-products`, `POST /api/v1/user-products/{id}/claim` | Claim buttons |
@@ -879,5 +902,5 @@ Money: prefer numeric fields for calculations. Use backend `formatted_*` only fo
 
 ## 10. Open Questions
 
-- Current web profile page does not include password/security-password editing. API profile update only supports `name` and `phone`.
+- Change password is a separate OTP flow. API profile update only supports `name` and `phone`; Flutter must use `/account/password/send-otp` and `/account/password` for password changes.
 - Current withdraw flow does not validate a security password. API follows existing `WithdrawService`.

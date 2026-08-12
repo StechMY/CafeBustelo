@@ -48,6 +48,8 @@ Dates are ISO-8601 strings. Money fields are numeric floats and often include a 
 | POST | `/api/v1/profile` | Yes | Update `name` and/or `phone` |
 | POST | `/api/v1/profile/avatar` | Yes | Upload avatar file |
 | DELETE | `/api/v1/profile/avatar` | Yes | Delete avatar |
+| POST | `/api/v1/account/password/send-otp` | Yes | Send change-password OTP to authenticated user's phone |
+| POST | `/api/v1/account/password` | Yes | Change login password after phone OTP verification |
 | GET | `/api/v1/products` | Yes | Product list with purchase state |
 | POST | `/api/v1/products/{product}/purchase` | Yes | Purchase product |
 | GET | `/api/v1/user-products` | Yes | Purchased products |
@@ -232,6 +234,32 @@ POST /api/v1/bank-account
 ```
 
 The API normalizes phone and bank account number, verifies OTP purpose `bank_account`, stores `user_bank_accounts.phone`, sets `phone_verified_at`, locks the account, and returns the bound bank account. Duplicate bank account name or number returns 422 validation JSON instead of 500.
+
+### Change Password
+
+Change password uses SMS OTP purpose `change_password`. The backend always sends OTP to the authenticated user's saved `users.phone`; clients must not send or collect a phone number for this flow.
+
+```http
+POST /api/v1/account/password/send-otp
+```
+
+Success returns `resend_seconds` and `expires_in_minutes`.
+
+Then submit the new password with OTP:
+
+```http
+POST /api/v1/account/password
+```
+
+```json
+{
+  "otp_code": "123456",
+  "password": "newpassword123",
+  "password_confirmation": "newpassword123"
+}
+```
+
+If the authenticated user has no phone bound, the API returns 422 validation JSON under `errors.phone`.
 
 ### Salary Claim
 
@@ -497,7 +525,7 @@ The member payload mirrors the web level page: username, masked phone last five 
 
 - Product purchase and SVIP purchase support `wallet_type: recharge|withdrawable`.
 - SMS OTP is server-side only. Flutter never receives `SMS_APP_KEY`, `SMS_APP_CODE`, or `SMS_APP_SECRET`.
-- OTP purpose names are `register` and `bank_account`.
+- OTP purpose names are `register`, `bank_account`, and `change_password`.
 - OTP codes are 6 digits, stored hashed, expire by `sms.otp_expire_minutes`, enforce resend cooldown by `sms.otp_resend_seconds`, and enforce failed attempts by `sms.otp_max_attempts`.
 - Product commission estimates are based on claim income, not product price.
 - Downline product commission formula:
@@ -647,5 +675,5 @@ The current `/api/v1` surface does not expose the Filament admin dashboard. Exis
 
 ## Open Questions
 
-- The current web profile page only supports avatar updates. The API `POST /profile` safely supports `name` and `phone`; no web password/security-password profile update flow exists.
+- The web profile page links to change-password settings. API `POST /profile` safely supports `name` and `phone`; password updates use `/account/password/send-otp` and `/account/password`.
 - No existing web security password rule was found for withdraw. The API follows current `WithdrawService`.

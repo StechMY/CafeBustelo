@@ -28,5 +28,6 @@ return [
     'calculator' => 'Máy tính',
     'downline_products' => 'Sản phẩm tuyến dưới',
     'points' => 'Điểm',
+    'change_password' => 'Đổi mật khẩu',
     'app_download' => 'Tải ứng dụng',
 ];

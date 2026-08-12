@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AccountPasswordController;
 use App\Http\Controllers\Admin\ImpersonateUserController;
 use App\Http\Controllers\Auth\CustomerAuthController;
 use App\Http\Controllers\Auth\RegisterOtpController;
@@ -27,7 +28,6 @@ use App\Http\Controllers\WithdrawController;
 use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', '/dashboard');
-
 
 Route::get('/human-gate', [HumanGateController::class, 'show'])
     ->name('human.gate')
@@ -112,7 +112,6 @@ Route::middleware('auth')->group(function (): void {
     Route::get('/wallet/transactions/{walletTransaction}', [WalletController::class, 'show'])
         ->name('wallet.transactions.show');
 
-
     Route::get('/bonus-codes', [BonusCodeController::class, 'index'])
         ->name('bonus-codes.index');
 
@@ -134,6 +133,16 @@ Route::middleware('auth')->group(function (): void {
 
     Route::delete('/profile/avatar', [ProfileController::class, 'deleteAvatar'])
         ->name('profile.avatar.delete');
+
+    Route::get('/settings/password', [AccountPasswordController::class, 'edit'])
+        ->name('settings.password.edit');
+
+    Route::post('/settings/password/send-otp', [AccountPasswordController::class, 'sendOtp'])
+        ->middleware('throttle:3,1')
+        ->name('settings.password.otp.send');
+
+    Route::post('/settings/password', [AccountPasswordController::class, 'update'])
+        ->name('settings.password.update');
 
     Route::get('/check-in', [CheckInController::class, 'index'])
         ->name('check-in.index');

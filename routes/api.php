@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\AccountPasswordController;
 use App\Http\Controllers\Api\AppConfigController;
 use App\Http\Controllers\Api\Auth\RegisterOtpController;
 use App\Http\Controllers\Api\AuthController;
@@ -55,6 +56,10 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
         Route::post('/profile', [ProfileController::class, 'update'])->name('profile.update');
         Route::post('/profile/avatar', [ProfileController::class, 'updateAvatar'])->name('profile.avatar.update');
         Route::delete('/profile/avatar', [ProfileController::class, 'deleteAvatar'])->name('profile.avatar.delete');
+        Route::post('/account/password/send-otp', [AccountPasswordController::class, 'sendOtp'])
+            ->middleware('throttle:3,1')
+            ->name('account.password.otp.send');
+        Route::post('/account/password', [AccountPasswordController::class, 'update'])->name('account.password.update');
 
         Route::get('/products', [ProductController::class, 'index'])->name('products.index');
         Route::post('/products/{product}/purchase', [ProductController::class, 'purchase'])->name('products.purchase');

@@ -18,6 +18,7 @@
             ['label' => __('navigation.calculator'), 'route' => 'calculator.index', 'icon' => 'calculator'],
             ['label' => __('navigation.downline_products'), 'route' => 'downline-products.index', 'icon' => 'team'],
             ['label' => __('navigation.points'), 'route' => 'points.index', 'icon' => 'bonus'],
+            ['label' => __('navigation.change_password'), 'route' => 'settings.password.edit', 'icon' => 'profile'],
             [
                 'label' => __('navigation.app_download'),
                 'url' => $appDownloadUrl,
