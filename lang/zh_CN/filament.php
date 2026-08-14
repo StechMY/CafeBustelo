@@ -83,6 +83,7 @@ return [
     'counts_recharge' => '计入充值',
     'created' => '已创建',
     'created_at' => '创建时间',
+    'register_date' => '注册日期',
     'current_lv' => '当前 LV',
     'customer_service_1' => '客服 1',
     'd_team' => 'D 团队',

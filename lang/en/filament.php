@@ -75,6 +75,7 @@ return [
     'counts_recharge' => 'Counts Recharge',
     'created' => 'Created',
     'created_at' => 'Created At',
+    'register_date' => 'Register Date',
     'current_lv' => 'Current LV',
     'customer_service_1' => 'Customer Service 1',
     'd_team' => 'D Team',

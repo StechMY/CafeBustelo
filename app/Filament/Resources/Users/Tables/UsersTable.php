@@ -12,6 +12,7 @@ use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\Checkbox;
+use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
@@ -45,7 +46,9 @@ class UsersTable
                     ->sortable()
                     ->weight('bold')
                     ->copyable()
-                    ->description(fn(User $record): string => $record->name),
+                    ->description(fn(User $record): string => ($record->name ? "{$record->name} · " : '')
+                        . __('filament.register_date') . ': '
+                        . ($record->created_at?->format('Y-m-d H:i') ?? '-')),
 
                 TextColumn::make('phone')
                     ->label(__('filament.phone'))
@@ -227,6 +230,24 @@ class UsersTable
                         1 => __('filament.virtual'),
                         0 => __('filament.real'),
                     ]),
+
+                Filter::make('register_date')
+                    ->label(__('filament.register_date'))
+                    ->form([
+                        DatePicker::make('from')
+                            ->label(__('filament.start_date')),
+                        DatePicker::make('until')
+                            ->label(__('filament.end_date')),
+                    ])
+                    ->query(fn(Builder $query, array $data): Builder => $query
+                        ->when(
+                            $data['from'] ?? null,
+                            fn(Builder $query, string $date): Builder => $query->whereDate('users.created_at', '>=', $date),
+                        )
+                        ->when(
+                            $data['until'] ?? null,
+                            fn(Builder $query, string $date): Builder => $query->whereDate('users.created_at', '<=', $date),
+                        )),
 
                 Filter::make('ip_address')
                     ->label(__('filament.search_ip_history'))
