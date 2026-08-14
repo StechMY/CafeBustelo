@@ -7,13 +7,14 @@ use App\Filament\Resources\Users\Pages\EditUser;
 use App\Filament\Resources\Users\Pages\ListUsers;
 use App\Filament\Resources\Users\Pages\ViewUser;
 use App\Filament\Resources\Users\RelationManagers\AdminTopUpsRelationManager;
+use App\Filament\Resources\Users\RelationManagers\BankAccountRelationManager;
+use App\Filament\Resources\Users\RelationManagers\CheckInRecordsRelationManager;
 use App\Filament\Resources\Users\RelationManagers\EarnedCommissionsRelationManager;
 use App\Filament\Resources\Users\RelationManagers\LoginLogsRelationManager;
 use App\Filament\Resources\Users\RelationManagers\ReferralsRelationManager;
-use App\Filament\Resources\Users\RelationManagers\WalletTransactionsRelationManager;
-use App\Filament\Resources\Users\RelationManagers\CheckInRecordsRelationManager;
 use App\Filament\Resources\Users\RelationManagers\SvipPurchasesRelationManager;
-use App\Filament\Resources\Users\RelationManagers\BankAccountRelationManager;
+use App\Filament\Resources\Users\RelationManagers\UserProductsRelationManager;
+use App\Filament\Resources\Users\RelationManagers\WalletTransactionsRelationManager;
 use App\Filament\Resources\Users\Schemas\UserForm;
 use App\Filament\Resources\Users\Schemas\UserInfolist;
 use App\Filament\Resources\Users\Tables\UsersTable;
@@ -81,6 +82,7 @@ class UserResource extends Resource
             WalletTransactionsRelationManager::class,
             EarnedCommissionsRelationManager::class,
             CheckInRecordsRelationManager::class,
+            UserProductsRelationManager::class,
             SvipPurchasesRelationManager::class,
             BankAccountRelationManager::class,
         ];
