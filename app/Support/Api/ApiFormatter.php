@@ -195,10 +195,11 @@ class ApiFormatter
             'remaining_claims' => max(0, $totalClaims - $claimed - $missed),
             'next_claim_at' => self::dateTime($userProduct->next_claim_at),
             'purchased_at' => self::dateTime($userProduct->purchased_at),
-            'expires_at' => self::dateTime($userProduct->expires_at),
+            'expires_at' => self::dateTime($userProduct->effectiveExpiresAt()),
             'is_claimable' => $userProduct->status === 'active'
                 && $userProduct->next_claim_at
-                && now()->greaterThanOrEqualTo($userProduct->next_claim_at),
+                && now()->greaterThanOrEqualTo($userProduct->next_claim_at)
+                && now()->lt($userProduct->effectiveExpiresAt()),
             'is_completed' => ($claimed + $missed) >= $totalClaims,
             'meta' => $userProduct->meta,
         ];

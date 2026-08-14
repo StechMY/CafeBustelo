@@ -241,7 +241,8 @@
                                 $canClaim =
                                     $userProduct->status === 'active' &&
                                     $nextClaimAt &&
-                                    $nextClaimAt->lessThanOrEqualTo(now());
+                                    $nextClaimAt->lessThanOrEqualTo(now()) &&
+                                    now()->lt($userProduct->effectiveExpiresAt());
 
                                 $isWaiting =
                                     $userProduct->status === 'active' &&

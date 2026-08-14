@@ -20,15 +20,19 @@ class SyncUserProductStatus extends Command
         UserProduct::query()
             ->where('status', 'active')
             ->where('expires_at', '<=', $now)
-            ->chunkById(500, function ($products): void {
+            ->chunkById(500, function ($products) use ($now): void {
                 foreach ($products as $product) {
-                    DB::transaction(function () use ($product): void {
+                    DB::transaction(function () use ($product, $now): void {
                         $locked = UserProduct::query()
                             ->whereKey($product->id)
                             ->lockForUpdate()
                             ->first();
 
                         if (! $locked || $locked->status !== 'active') {
+                            return;
+                        }
+
+                        if ($locked->effectiveExpiresAt()->gt($now)) {
                             return;
                         }
 

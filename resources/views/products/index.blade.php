@@ -108,7 +108,10 @@
 
                             $isCompleted = (int) $userProduct->claimed_days >= $totalClaims;
                             $isClaimable =
-                                !$isCompleted && $userProduct->next_claim_at && $userProduct->next_claim_at->lte(now());
+                                !$isCompleted &&
+                                $userProduct->next_claim_at &&
+                                $userProduct->next_claim_at->lte(now()) &&
+                                now()->lt($userProduct->effectiveExpiresAt());
                         @endphp
 
                         <div

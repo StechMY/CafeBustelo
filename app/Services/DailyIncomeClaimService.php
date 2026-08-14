@@ -42,7 +42,7 @@ class DailyIncomeClaimService
             $totalClaims = $lockedUserProduct->effectiveTotalClaims();
             $claimIntervalHours = $lockedUserProduct->effectiveClaimIntervalHours();
 
-            if ($lockedUserProduct->expires_at && $now->greaterThanOrEqualTo($lockedUserProduct->expires_at)) {
+            if ($now->greaterThanOrEqualTo($lockedUserProduct->effectiveExpiresAt())) {
                 $lockedUserProduct->forceFill([
                     'status' => 'expired',
                     'next_claim_at' => null,
@@ -135,22 +135,18 @@ class DailyIncomeClaimService
                 ],
             );
 
+            $newClaimedCount = $lockedUserProduct->claimed_days + 1;
+            $isFinalClaim = ($newClaimedCount + $lockedUserProduct->missed_days) >= $totalClaims;
+
             $lockedUserProduct->forceFill([
-                'claimed_days' => $lockedUserProduct->claimed_days + 1,
-                'next_claim_at' => $lockedUserProduct->next_claim_at->copy()->addHours($claimIntervalHours),
+                'claimed_days' => $newClaimedCount,
+                'next_claim_at' => $isFinalClaim
+                    ? null
+                    : $lockedUserProduct->next_claim_at->copy()->addHours($claimIntervalHours),
+                'status' => $isFinalClaim ? 'expired' : $lockedUserProduct->status,
             ])->save();
 
-            $lockedUserProduct->refresh();
-
-            if (
-                ($lockedUserProduct->claimed_days + $lockedUserProduct->missed_days)
-                >= $totalClaims
-            ) {
-                $lockedUserProduct->forceFill([
-                    'status' => 'expired',
-                    'next_claim_at' => null,
-                ])->save();
-
+            if ($isFinalClaim) {
                 $this->deactivateUserIfNoActiveProducts($user);
             }
 

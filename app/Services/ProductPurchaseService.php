@@ -6,7 +6,6 @@ use App\Models\Product;
 use App\Models\User;
 use App\Models\UserProduct;
 use App\Models\Wallet;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
@@ -81,7 +80,7 @@ class ProductPurchaseService
                 'missed_days' => 0,
                 'purchased_at' => $now,
                 'next_claim_at' => $now->copy()->addHours($claimIntervalHours),
-                'expires_at' => $this->calculateExpiresAt($now, $claimIntervalHours, $totalClaims),
+                'expires_at' => UserProduct::calculateExpiresAt($now, $claimIntervalHours, $totalClaims),
                 'status' => 'active',
                 'meta' => [
                     'product_name_snapshot' => $lockedProduct->name,
@@ -123,10 +122,5 @@ class ProductPurchaseService
 
             return $userProduct;
         });
-    }
-
-    private function calculateExpiresAt(Carbon $purchasedAt, int $claimIntervalHours, int $totalClaims): Carbon
-    {
-        return $purchasedAt->copy()->addHours($claimIntervalHours * $totalClaims);
     }
 }

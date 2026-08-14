@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
 
 class UserProduct extends Model
 {
@@ -88,6 +89,46 @@ class UserProduct extends Model
         $claimIntervalHours = $this->effectiveClaimIntervalHours();
 
         return max(1, (int) floor(($durationDays * 24) / $claimIntervalHours));
+    }
+
+    public static function calculateFinalClaimUnlockAt(
+        Carbon $purchasedAt,
+        int $claimIntervalHours,
+        int $totalClaims,
+    ): Carbon {
+        return $purchasedAt->copy()->addHours($claimIntervalHours * $totalClaims);
+    }
+
+    public static function calculateExpiresAt(
+        Carbon $purchasedAt,
+        int $claimIntervalHours,
+        int $totalClaims,
+    ): Carbon {
+        return self::calculateFinalClaimUnlockAt(
+            $purchasedAt,
+            $claimIntervalHours,
+            $totalClaims,
+        )->endOfDay();
+    }
+
+    public function finalClaimUnlockAt(): Carbon
+    {
+        return self::calculateFinalClaimUnlockAt(
+            $this->purchased_at,
+            $this->effectiveClaimIntervalHours(),
+            $this->effectiveTotalClaims(),
+        );
+    }
+
+    public function effectiveExpiresAt(): Carbon
+    {
+        $finalClaimDayExpiry = $this->finalClaimUnlockAt()->endOfDay();
+
+        if (! $this->expires_at || $this->expires_at->lt($finalClaimDayExpiry)) {
+            return $finalClaimDayExpiry;
+        }
+
+        return $this->expires_at->copy();
     }
 
     public function isHourlyClaimProduct(): bool
