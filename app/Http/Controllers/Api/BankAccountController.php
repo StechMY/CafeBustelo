@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\UserBankAccount;
+use App\Rules\UniqueBankAccountName;
 use App\Services\OtpService;
 use App\Support\Api\ApiFormatter;
 use App\Support\Api\ApiResponse;
@@ -35,7 +36,7 @@ class BankAccountController extends Controller
                 'required',
                 'string',
                 'max:150',
-                Rule::unique('user_bank_accounts', 'bank_account_name'),
+                new UniqueBankAccountName,
             ],
             'bank_name' => ['required', 'string', 'max:100'],
             'bank_account_no' => [

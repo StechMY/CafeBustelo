@@ -3,13 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\UserBankAccount;
+use App\Rules\UniqueBankAccountName;
+use App\Services\OtpService;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
-use App\Services\OtpService;
 
 class BankAccountController extends Controller
 {
@@ -50,7 +51,7 @@ class BankAccountController extends Controller
                 'required',
                 'string',
                 'max:150',
-                Rule::unique('user_bank_accounts', 'bank_account_name'),
+                new UniqueBankAccountName,
             ],
             'bank_name' => [
                 'required',

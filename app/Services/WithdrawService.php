@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\AdminUser;
 use App\Models\User;
+use App\Models\UserBankAccount;
 use App\Models\Wallet;
 use App\Models\WithdrawRequest;
 use Illuminate\Support\Facades\DB;
@@ -50,6 +51,10 @@ class WithdrawService
 
             if (!$bankAccount->isActive()) {
                 throw new RuntimeException(__('bank_account.unavailable'));
+            }
+
+            if ($bankAccount->hasSimilarNameOnAnotherUser()) {
+                throw new RuntimeException(__('bank_account.similar_name_withdraw_blocked'));
             }
 
             $vipLevel = $lockedUser->currentVipLevel();
@@ -129,6 +134,13 @@ class WithdrawService
 
             if (!$lockedRequest->isPending()) {
                 throw new RuntimeException('Only pending withdraw requests can be approved.');
+            }
+
+            if (UserBankAccount::isNameUsedByAnotherUser(
+                (string) $lockedRequest->bank_account_name,
+                (int) $lockedRequest->user_id,
+            )) {
+                throw new RuntimeException(__('bank_account.similar_name_withdraw_blocked'));
             }
 
             $user = $lockedRequest->user()

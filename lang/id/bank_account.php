@@ -27,4 +27,5 @@ return [
     'bind_failed_duplicate' => 'Nama rekening bank atau nomor rekening ini sudah terikat.',
     'phone' => 'Nomor Telepon',
     'phone_placeholder' => 'Contoh: 912345678',
+    'similar_name_withdraw_blocked' => 'Penarikan diblokir karena nama rekening bank ini juga digunakan oleh akun lain. Silakan hubungi layanan pelanggan.',
 ];

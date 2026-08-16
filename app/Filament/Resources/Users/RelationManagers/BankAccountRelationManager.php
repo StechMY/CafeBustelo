@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Users\RelationManagers;
 
+use App\Rules\UniqueBankAccountName;
 use Filament\Actions\CreateAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
@@ -39,7 +40,11 @@ class BankAccountRelationManager extends RelationManager
                                 TextInput::make('bank_account_name')
                                     ->label(__('bank_account.real_name'))
                                     ->required()
-                                    ->maxLength(150),
+                                    ->maxLength(150)
+                                    ->rule(fn (?Model $record): UniqueBankAccountName => new UniqueBankAccountName(
+                                        ignoreAccountId: $record?->getKey(),
+                                        currentMatchHash: $record?->bank_account_name_match_hash,
+                                    )),
 
                                 TextInput::make('bank_name')
                                     ->label(__('bank_account.bank_name'))

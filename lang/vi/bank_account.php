@@ -27,4 +27,5 @@ return [
     'bind_failed_duplicate' => 'Tên tài khoản ngân hàng hoặc số tài khoản này đã được liên kết.',
     'phone' => 'Số điện thoại',
     'phone_placeholder' => 'Ví dụ: 912345678',
+    'similar_name_withdraw_blocked' => 'Chức năng rút tiền bị chặn vì tên tài khoản ngân hàng này cũng được dùng bởi tài khoản khác. Vui lòng liên hệ chăm sóc khách hàng.',
 ];

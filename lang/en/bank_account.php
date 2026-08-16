@@ -27,4 +27,5 @@ return [
     'bind_failed_duplicate' => 'This bank account name or account number has already been bound.',
     'phone' => 'Phone Number',
     'phone_placeholder' => 'Example: 912345678',
+    'similar_name_withdraw_blocked' => 'Withdrawal is blocked because this bank account name is also used by another account. Please contact customer service.',
 ];

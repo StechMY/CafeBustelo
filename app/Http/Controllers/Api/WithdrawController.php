@@ -21,6 +21,7 @@ class WithdrawController extends Controller
         $user = $request->user();
         $wallet = Wallet::query()->where('user_id', $user->id)->where('type', Wallet::TYPE_WITHDRAWABLE)->first();
         $bankAccount = $user->bankAccount()->where('status', 'active')->first();
+        $hasSimilarBankAccountName = $bankAccount?->hasSimilarNameOnAnotherUser() === true;
         $vipLevel = $user->currentVipLevel();
         $requests = WithdrawRequest::query()
             ->where('user_id', $user->id)
@@ -33,7 +34,10 @@ class WithdrawController extends Controller
             'vip_level' => ApiFormatter::vipLevel($vipLevel),
             'min_withdraw_amount' => ApiFormatter::money($vipLevel?->min_withdraw_amount),
             'withdraw_fee_percent' => ApiFormatter::money($vipLevel?->withdraw_fee_percent),
-            'can_withdraw' => (bool) $user->canWithdraw() && $user->status === 'active' && $bankAccount !== null,
+            'can_withdraw' => (bool) $user->canWithdraw()
+                && $user->status === 'active'
+                && $bankAccount !== null
+                && ! $hasSimilarBankAccountName,
             'requests' => [
                 'items' => $requests->getCollection()->map(fn (WithdrawRequest $item): array => ApiFormatter::withdrawRequest($item))->values(),
                 'pagination' => [

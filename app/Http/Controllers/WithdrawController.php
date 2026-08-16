@@ -44,12 +44,18 @@ class WithdrawController extends Controller
             ->where('type', Wallet::TYPE_WITHDRAWABLE)
             ->first();
 
-        $bankAccount = $user->bankAccount()->where('status','active')->first();
+        $bankAccount = $user->bankAccount()->where('status', 'active')->first();
 
         if (! $bankAccount) {
             return redirect()
                 ->route('bank-account.create')
                 ->with('warning', __('bank_account.bind_required_first'));
+        }
+
+        if ($bankAccount->hasSimilarNameOnAnotherUser()) {
+            return redirect()
+                ->route('withdraw.index')
+                ->with('error', __('bank_account.similar_name_withdraw_blocked'));
         }
 
         $vipLevel = $user->currentVipLevel();

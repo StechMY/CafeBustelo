@@ -27,4 +27,5 @@ return [
     'bind_failed_duplicate' => '该银行户名或银行卡号已被绑定。',
     'phone' => '手机号码',
     'phone_placeholder' => '例如：912345678',
+    'similar_name_withdraw_blocked' => '该银行户名也被其他账户使用，提款功能已被阻止，请联系客服处理。',
 ];
