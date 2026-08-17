@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Policies;
 
 use App\Models\UserProduct;
+use App\Support\FilamentSupportScope;
 use Illuminate\Auth\Access\HandlesAuthorization;
 use Illuminate\Foundation\Auth\User as AuthUser;
 
@@ -19,6 +20,7 @@ class UserProductPolicy
 
     public function view(AuthUser $authUser, UserProduct $userProduct): bool
     {
-        return $authUser->can('View:UserProduct');
+        return $authUser->can('View:UserProduct')
+            && FilamentSupportScope::canAccessUserId($userProduct->user_id);
     }
 }
