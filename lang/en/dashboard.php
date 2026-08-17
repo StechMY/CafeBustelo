@@ -71,4 +71,27 @@ return [
     'open' => 'Open',
     'scan_to_register' => 'Scan to Register',
     'invite_link' => 'Invite Link',
+    'account_policy_badge' => 'Important Notice',
+
+    'account_policy_title' => 'Account Management Notice',
+
+    'account_policy_subtitle' => 'Please read the following account management regulations carefully before continuing.',
+
+    'account_policy_agree' => 'I Agree',
+
+    'account_policy_processing' => 'Processing...',
+
+    'account_policy_warning' => 'By clicking "I Agree", you confirm that you have read and understood this account management notice.',
+
+    'account_policy_paragraphs' => [
+        'To ensure standardized company account management, capital security, and fairness in regulations, the company strictly prohibits any employee or team member from arbitrarily opening, owning, or operating sub-accounts, duplicate accounts, or any unauthorized accounts not registered under the rightful owner.',
+
+        'The system and risk control department will conduct periodic account linkage checks, including but not limited to login devices, operation history, account linkage information, and abnormal transaction behaviors. If any violation related to the creation or use of sub-accounts is discovered, the company will regard it as a serious breach of account management regulations and reserves the right to immediately freeze the relevant accounts.',
+
+        'For violating accounts involving balances, commissions, bonuses, accumulated points, and other benefits, the company has the right to confiscate or appropriate them in accordance with internal management policies; in severe cases, the company may further suspend or revoke the related accounts and business qualifications.',
+
+        'All members are required to strictly comply with the company’s account management regulations. One person, one account; only the real-name account may be used. It is strictly prohibited to open accounts on behalf of others, borrow accounts, transfer accounts, or engage in any form of evasion of system monitoring. Any losses and responsibilities arising from personal violations shall be borne solely by the violator.',
+
+        'Please do not take risks or rely on luck to avoid unnecessary losses.',
+    ],
 ];

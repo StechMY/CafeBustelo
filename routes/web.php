@@ -63,6 +63,9 @@ Route::middleware('auth')->group(function (): void {
     Route::get('/dashboard', DashboardController::class)
         ->name('dashboard');
 
+    Route::post('/dashboard/account-policy/agree', [DashboardController::class, 'agreeAccountPolicy'])
+        ->name('dashboard.account-policy.agree');
+
     Route::get('/products', [ProductController::class, 'index'])
         ->name('products.index');
 

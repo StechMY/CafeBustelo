@@ -473,6 +473,7 @@
                  loading="lazy">
         </div>
     </section>
+    @include('dashboard.partials.account-policy-popup')
     @include('dashboard.partials.check-in-popup')
 @endsection
 

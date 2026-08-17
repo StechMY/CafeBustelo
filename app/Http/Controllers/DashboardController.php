@@ -10,14 +10,30 @@ use App\Models\DashboardPopup;
 use App\Models\DashboardSlide;
 use App\Models\UserProduct;
 use App\Models\Wallet;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class DashboardController extends Controller
 {
+    private const ACCOUNT_POLICY_SESSION_KEY = 'account_policy_agreed_v1';
+
     public function __invoke(Request $request): View
     {
         $user = $request->user();
+
+        /*
+        |--------------------------------------------------------------------------
+        | Mandatory Account Policy
+        |--------------------------------------------------------------------------
+        |
+        | Show once per login session.
+        |
+        */
+        $showAccountPolicy = ! (bool) $request->session()->get(
+            self::ACCOUNT_POLICY_SESSION_KEY,
+            false
+        );
 
         $rechargeWallet = Wallet::query()
             ->where('user_id', $user->id)
@@ -73,16 +89,28 @@ class DashboardController extends Controller
             ->orderByDesc('id')
             ->first();
 
+        /*
+        |--------------------------------------------------------------------------
+        | Normal Dashboard Popup
+        |--------------------------------------------------------------------------
+        |
+        | Do NOT process / mark normal popup as seen while the mandatory
+        | account policy is covering the dashboard.
+        |
+        */
         $showDashboardPopup = false;
 
-        if ($dashboardPopup) {
+        if (! $showAccountPolicy && $dashboardPopup) {
             $sessionKey = 'dashboard_popup_seen_' . $dashboardPopup->id;
 
-            if ($dashboardPopup->show_every_visit || !session()->has($sessionKey)) {
+            if (
+                $dashboardPopup->show_every_visit
+                || ! $request->session()->has($sessionKey)
+            ) {
                 $showDashboardPopup = true;
 
-                if (!$dashboardPopup->show_every_visit) {
-                    session()->put($sessionKey, true);
+                if (! $dashboardPopup->show_every_visit) {
+                    $request->session()->put($sessionKey, true);
                 }
             }
         }
@@ -92,8 +120,19 @@ class DashboardController extends Controller
             ->whereDate('claim_date', today())
             ->first();
 
-        $shouldShowCheckInPopup = $user->status === 'active'
-            && !$todayCheckInRecord && $user->check_in_status;
+        /*
+        |--------------------------------------------------------------------------
+        | Check-in Popup
+        |--------------------------------------------------------------------------
+        |
+        | Mandatory account policy has higher priority.
+        |
+        */
+        $shouldShowCheckInPopup =
+            ! $showAccountPolicy
+            && $user->status === 'active'
+            && ! $todayCheckInRecord
+            && $user->check_in_status;
 
         return view('dashboard.index', [
             'user' => $user,
@@ -116,9 +155,23 @@ class DashboardController extends Controller
             'dashboardMarquees' => $dashboardMarquees,
             'dashboardPopup' => $dashboardPopup,
             'showDashboardPopup' => $showDashboardPopup,
+
             'todayCheckInRecord' => $todayCheckInRecord,
             'shouldShowCheckInPopup' => $shouldShowCheckInPopup,
+
+            'showAccountPolicy' => $showAccountPolicy,
+
             'currentVipLevel' => $user->currentVipLevel(),
         ]);
+    }
+
+    public function agreeAccountPolicy(Request $request): RedirectResponse
+    {
+        $request->session()->put(
+            self::ACCOUNT_POLICY_SESSION_KEY,
+            true
+        );
+
+        return redirect()->route('dashboard');
     }
 }

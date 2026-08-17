@@ -61,4 +61,27 @@ return [
     'open' => 'Buka',
     'scan_to_register' => 'Pindai untuk Daftar',
     'invite_link' => 'Tautan Undangan',
+    'account_policy_badge' => 'Pemberitahuan Penting',
+
+'account_policy_title' => 'Peraturan Pengelolaan Akun',
+
+'account_policy_subtitle' => 'Harap baca dengan teliti peraturan pengelolaan akun berikut sebelum melanjutkan menggunakan platform.',
+
+'account_policy_agree' => 'Saya Setuju',
+
+'account_policy_processing' => 'Sedang diproses...',
+
+'account_policy_warning' => 'Dengan mengklik "Saya Setuju", Anda menyatakan bahwa Anda telah membaca dan memahami peraturan pengelolaan akun di atas.',
+
+'account_policy_paragraphs' => [
+    'Untuk memastikan pengelolaan akun perusahaan yang terstandarisasi, keamanan dana, dan keadilan dalam penerapan peraturan, perusahaan dengan tegas melarang setiap karyawan atau anggota tim untuk membuka, memiliki, atau mengoperasikan akun tambahan, akun duplikat, atau akun yang tidak memiliki izin dari pemilik yang sah.',
+
+    'Sistem dan tim pengendalian risiko akan melakukan pemeriksaan keterkaitan akun secara berkala, termasuk namun tidak terbatas pada perangkat login, riwayat aktivitas, informasi keterkaitan akun, dan aktivitas transaksi yang tidak normal. Apabila ditemukan pelanggaran terkait pembuatan atau penggunaan akun tambahan, perusahaan akan menganggapnya sebagai pelanggaran serius terhadap peraturan pengelolaan akun dan berhak untuk segera membekukan akun terkait.',
+
+    'Untuk akun yang melanggar dan memiliki saldo, komisi, bonus, poin, maupun keuntungan lainnya, perusahaan berhak menyita atau mengambil alih manfaat tersebut sesuai dengan peraturan internal perusahaan. Dalam kasus yang serius, perusahaan juga dapat menangguhkan atau membatalkan akun serta hak atau kelayakan bisnis terkait.',
+
+    'Seluruh anggota wajib mematuhi peraturan pengelolaan akun perusahaan dengan ketat. Satu orang hanya diperbolehkan memiliki dan menggunakan satu akun milik sendiri. Dilarang keras membuka akun atas nama orang lain, meminjam atau meminjamkan akun, memindahtangankan akun, atau menggunakan cara apa pun untuk menghindari pengawasan sistem. Segala kerugian dan tanggung jawab yang timbul akibat pelanggaran pribadi sepenuhnya menjadi tanggung jawab pihak yang melakukan pelanggaran.',
+
+    'Jangan mengambil risiko atau mengandalkan keberuntungan untuk menghindari kerugian yang tidak perlu.',
+],
 ];
