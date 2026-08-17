@@ -632,4 +632,8 @@ return [
     'user_id' => '用户 ID',
     'product_id' => '产品 ID',
     'customer_status' => '用户状态',
+    'bank_account_review_request' => '银行账户审核申请',
+    'bank_account_review_requests' => '银行账户审核',
+    'bank_account_review_approved' => '银行账户审核已批准。',
+    'bank_account_review_rejected' => '银行账户审核已拒绝。',
 ];

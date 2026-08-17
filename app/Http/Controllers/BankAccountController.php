@@ -2,15 +2,15 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\UserBankAccount;
-use App\Rules\UniqueBankAccountName;
+use App\Models\BankAccountReviewRequest;
+use App\Services\BankAccountReviewService;
 use App\Services\OtpService;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
+use RuntimeException;
 
 class BankAccountController extends Controller
 {
@@ -26,11 +26,15 @@ class BankAccountController extends Controller
 
         return view('bank-account.create', [
             'user' => $user,
+            'reviewRequest' => $user->bankAccountReviewRequests()->latest('id')->first(),
         ]);
     }
 
-    public function store(Request $request, OtpService $otpService): RedirectResponse
-    {
+    public function store(
+        Request $request,
+        OtpService $otpService,
+        BankAccountReviewService $reviewService,
+    ): RedirectResponse {
         $user = $request->user();
 
         if ($user->bankAccount()->where('status', 'active')->exists()) {
@@ -46,12 +50,17 @@ class BankAccountController extends Controller
             'phone' => $otpService->normalizePhone((string) $request->input('phone')),
         ]);
 
+        $latestReview = $user->bankAccountReviewRequests()->latest('id')->first();
+
+        if ($latestReview?->isPending()) {
+            return redirect()
+                ->route('bank-account.create')
+                ->with('warning', __('bank_account.under_review'));
+        }
+
         $validated = $request->validate([
             'bank_account_name' => [
-                'required',
-                'string',
-                'max:150',
-                new UniqueBankAccountName,
+                'required', 'string', 'max:150',
             ],
             'bank_name' => [
                 'required',
@@ -63,6 +72,9 @@ class BankAccountController extends Controller
                 'string',
                 'max:100',
                 Rule::unique('user_bank_accounts', 'bank_account_no'),
+                Rule::unique('bank_account_review_requests', 'bank_account_no')
+                    ->where(fn ($query) => $query->where('status', BankAccountReviewRequest::STATUS_PENDING))
+                    ->ignore($latestReview?->id),
             ],
             'phone' => [
                 'required',
@@ -75,45 +87,45 @@ class BankAccountController extends Controller
                 'string',
                 'digits:6',
             ],
+            'id_photos' => [
+                Rule::requiredIf(! $latestReview?->isRejected()),
+                'array',
+                'min:1',
+                'max:5',
+            ],
+            'id_photos.*' => ['file', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
         ], [
-            'bank_account_name.unique' => __('bank_account.name_already_bound'),
             'bank_account_no.unique' => __('bank_account.account_no_already_bound'),
         ]);
 
         $otpService->verify($validated['phone'], 'bank_account', $validated['otp_code']);
 
         try {
-            DB::transaction(function () use ($user, $validated): void {
-                UserBankAccount::query()->create([
-                    'user_id' => $user->id,
-                    'bank_account_name' => $validated['bank_account_name'],
-                    'bank_name' => $validated['bank_name'],
-                    'bank_account_no' => $validated['bank_account_no'],
-                    'phone' => $validated['phone'],
-                    'phone_verified_at' => now(),
-                    'status' => 'active',
-                    'is_locked' => true,
-                    'bound_at' => now(),
-                    'meta' => [
-                        'source' => 'first_withdraw_bind',
-                        'phone_verified_at' => now()->toDateTimeString(),
-                        'ip' => request()->ip(),
-                        'user_agent' => request()->userAgent(),
-                    ],
-                ]);
-            });
+            $reviewService->submit($user, [
+                ...$validated,
+                'phone_verified_at' => now(),
+                'meta' => [
+                    'source' => 'web_bank_account_review',
+                    'ip' => $request->ip(),
+                    'user_agent' => $request->userAgent(),
+                ],
+            ], $request->file('id_photos', []));
+        } catch (RuntimeException $exception) {
+            return back()
+                ->withInput()
+                ->with('error', $exception->getMessage());
         } catch (QueryException $exception) {
             report($exception);
 
             return back()
                 ->withInput()
                 ->withErrors([
-                    'bank_account_no' => __('bank_account.bind_failed_duplicate'),
+                    'bank_account_no' => __('bank_account.account_no_already_bound'),
                 ]);
         }
 
         return redirect()
-            ->route('withdraw.create')
-            ->with('success', __('bank_account.bind_success'));
+            ->route('bank-account.create')
+            ->with('success', __('bank_account.submitted_for_review'));
     }
 }

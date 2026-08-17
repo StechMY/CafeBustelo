@@ -1,7 +1,9 @@
 <?php
 
 use App\Models\RechargeRequest;
+use App\Models\BankAccountReviewRequest;
 use App\Models\WithdrawRequest;
+use App\Support\FilamentSupportScope;
 use Filament\Notifications\Notification;
 use Livewire\Component;
 
@@ -11,16 +13,20 @@ new class extends Component
 
     public int $lastWithdrawCount = 0;
 
+    public int $lastBankAccountReviewCount = 0;
+
     public function mount(): void
     {
         $this->lastRechargeCount = $this->pendingRechargeCount();
         $this->lastWithdrawCount = $this->pendingWithdrawCount();
+        $this->lastBankAccountReviewCount = $this->pendingBankAccountReviewCount();
     }
 
     public function poll(): void
     {
         $rechargeCount = $this->pendingRechargeCount();
         $withdrawCount = $this->pendingWithdrawCount();
+        $bankAccountReviewCount = $this->pendingBankAccountReviewCount();
 
         $hasNewRequest = false;
 
@@ -46,25 +52,44 @@ new class extends Component
                 ->send();
         }
 
+        if ($bankAccountReviewCount > $this->lastBankAccountReviewCount) {
+            $hasNewRequest = true;
+
+            Notification::make()
+                ->title('New bank account review request')
+                ->body(($bankAccountReviewCount - $this->lastBankAccountReviewCount) . ' new pending bank account review request(s).')
+                ->warning()
+                ->persistent()
+                ->send();
+        }
+
         if ($hasNewRequest) {
             $this->dispatch('admin-request-alert');
         }
 
         $this->lastRechargeCount = $rechargeCount;
         $this->lastWithdrawCount = $withdrawCount;
+        $this->lastBankAccountReviewCount = $bankAccountReviewCount;
     }
 
     private function pendingRechargeCount(): int
     {
-        return RechargeRequest::query()
+        return FilamentSupportScope::applyToUserOwnedQuery(RechargeRequest::query())
             ->where('status', 'pending')
             ->count();
     }
 
     private function pendingWithdrawCount(): int
     {
-        return WithdrawRequest::query()
+        return FilamentSupportScope::applyToUserOwnedQuery(WithdrawRequest::query())
             ->where('status', 'pending')
+            ->count();
+    }
+
+    private function pendingBankAccountReviewCount(): int
+    {
+        return FilamentSupportScope::applyToUserOwnedQuery(BankAccountReviewRequest::query())
+            ->where('status', BankAccountReviewRequest::STATUS_PENDING)
             ->count();
     }
 };
@@ -77,30 +102,63 @@ new class extends Component
             wire:ignore
             x-data="{
                 soundEnabled: localStorage.getItem('adminAlertSoundEnabled') === '1',
+                audioContext: null,
 
-                async playSound() {
-                    const sound = this.$refs.sound;
+                init() {
+                    const unlockSavedPreference = () => {
+                        if (this.soundEnabled) this.unlockAudio();
+                    };
 
-                    if (!sound) return false;
+                    window.addEventListener('pointerdown', unlockSavedPreference, { once: true, capture: true });
+                    window.addEventListener('keydown', unlockSavedPreference, { once: true, capture: true });
+                },
 
+                async unlockAudio() {
                     try {
-                        sound.volume = 1;
-                        sound.muted = false;
-                        sound.currentTime = 0;
+                        const AudioContext = window.AudioContext || window.webkitAudioContext;
 
-                        await sound.play();
+                        if (!AudioContext) return false;
 
-                        return true;
+                        this.audioContext ??= new AudioContext();
+                        await this.audioContext.resume();
+
+                        return this.audioContext.state === 'running';
                     } catch (error) {
-                        console.warn('Admin alert sound failed:', error);
+                        console.warn('Admin alert audio could not be unlocked:', error);
 
                         return false;
                     }
                 },
 
+                playSound() {
+                    if (!this.audioContext || this.audioContext.state !== 'running') return false;
+
+                    const now = this.audioContext.currentTime;
+
+                    [
+                        { frequency: 880, start: 0, duration: 0.16 },
+                        { frequency: 1175, start: 0.20, duration: 0.22 },
+                    ].forEach(({ frequency, start, duration }) => {
+                        const oscillator = this.audioContext.createOscillator();
+                        const gain = this.audioContext.createGain();
+
+                        oscillator.type = 'sine';
+                        oscillator.frequency.value = frequency;
+                        gain.gain.setValueAtTime(0.0001, now + start);
+                        gain.gain.exponentialRampToValueAtTime(0.35, now + start + 0.02);
+                        gain.gain.exponentialRampToValueAtTime(0.0001, now + start + duration);
+                        oscillator.connect(gain);
+                        gain.connect(this.audioContext.destination);
+                        oscillator.start(now + start);
+                        oscillator.stop(now + start + duration);
+                    });
+
+                    return true;
+                },
+
                 async enableSound() {
-                    if (!await this.playSound()) {
-                        alert('Browser blocked sound. Please click again or allow sound for this site.');
+                    if (!await this.unlockAudio() || !this.playSound()) {
+                        alert('Browser blocked sound. Please allow audio for this site and try again.');
 
                         return;
                     }
@@ -109,10 +167,10 @@ new class extends Component
                     localStorage.setItem('adminAlertSoundEnabled', '1');
                 },
 
-                async playAlert() {
+                playAlert() {
                     if (!this.soundEnabled) return;
 
-                    if (await this.playSound()) return;
+                    if (this.playSound()) return;
 
                     this.soundEnabled = false;
                     localStorage.removeItem('adminAlertSoundEnabled');
@@ -131,10 +189,6 @@ new class extends Component
             >
                 🔊 Turn On Notification Sound
             </button>
-
-            <audio x-ref="sound" id="admin-request-alert-sound" preload="auto">
-                <source src="{{ asset('sounds/notification.wav') }}" type="audio/wav">
-            </audio>
         </div>
     @endonce
 </div>

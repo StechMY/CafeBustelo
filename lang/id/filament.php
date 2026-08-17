@@ -64,4 +64,8 @@ return [
     'customer_status' => 'Status Pelanggan',
     'active' => 'Aktif',
     'inactive' => 'Tidak Aktif',
+    'bank_account_review_request' => 'Permintaan Tinjauan Rekening Bank',
+    'bank_account_review_requests' => 'Tinjauan Rekening Bank',
+    'bank_account_review_approved' => 'Tinjauan rekening bank disetujui.',
+    'bank_account_review_rejected' => 'Tinjauan rekening bank ditolak.',
 ];

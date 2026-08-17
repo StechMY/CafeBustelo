@@ -2,6 +2,7 @@
 
 namespace App\Support\Api;
 
+use App\Models\BankAccountReviewRequest;
 use App\Models\BonusCode;
 use App\Models\CheckInRecord;
 use App\Models\Contact;
@@ -298,6 +299,26 @@ class ApiFormatter
             'status' => $account->status,
             'is_locked' => (bool) $account->is_locked,
             'bound_at' => self::dateTime($account->bound_at),
+        ];
+    }
+
+    public static function bankAccountReview(?BankAccountReviewRequest $review): ?array
+    {
+        if (! $review) {
+            return null;
+        }
+
+        return [
+            'id' => (int) $review->id,
+            'bank_account_name' => $review->bank_account_name,
+            'bank_name' => $review->bank_name,
+            'bank_account_no_masked' => $review->maskedAccountNo(),
+            'phone' => $review->phone,
+            'id_photo_count' => count($review->id_photo_paths ?? []),
+            'status' => $review->status,
+            'admin_remark' => $review->admin_remark,
+            'submitted_at' => self::dateTime($review->submitted_at),
+            'reviewed_at' => self::dateTime($review->reviewed_at),
         ];
     }
 

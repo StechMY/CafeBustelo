@@ -6,6 +6,7 @@ use App\Http\Controllers\Auth\CustomerAuthController;
 use App\Http\Controllers\Auth\RegisterOtpController;
 use App\Http\Controllers\BankAccountController;
 use App\Http\Controllers\BankAccountOtpController;
+use App\Http\Controllers\BankAccountReviewDocumentController;
 use App\Http\Controllers\BonusCodeController;
 use App\Http\Controllers\CalculatorController;
 use App\Http\Controllers\CheckInController;
@@ -185,3 +186,11 @@ Route::middleware(['web', 'human.only'])->group(function (): void {
 Route::middleware(['web', 'signed'])
     ->get('/admin/users/{user}/impersonate', ImpersonateUserController::class)
     ->name('admin.users.impersonate');
+
+Route::middleware(['web', 'auth:admin'])
+    ->get(
+        '/admin/bank-account-review-requests/{bankAccountReviewRequest}/id-photos/{photo}',
+        BankAccountReviewDocumentController::class,
+    )
+    ->whereNumber('photo')
+    ->name('admin.bank-account-review-requests.id-photo');

@@ -47,15 +47,15 @@ class WithdrawController extends Controller
         $bankAccount = $user->bankAccount()->where('status', 'active')->first();
 
         if (! $bankAccount) {
+            $isUnderReview = $user->bankAccountReviewRequests()
+                ->where('status', 'pending')
+                ->exists();
+
             return redirect()
                 ->route('bank-account.create')
-                ->with('warning', __('bank_account.bind_required_first'));
-        }
-
-        if ($bankAccount->hasSimilarNameOnAnotherUser()) {
-            return redirect()
-                ->route('withdraw.index')
-                ->with('error', __('bank_account.similar_name_withdraw_blocked'));
+                ->with('warning', $isUnderReview
+                    ? __('bank_account.under_review')
+                    : __('bank_account.bind_required_first'));
         }
 
         $vipLevel = $user->currentVipLevel();

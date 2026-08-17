@@ -64,4 +64,8 @@ return [
     'customer_status' => 'Trạng thái khách hàng',
     'active' => 'Đang hoạt động',
     'inactive' => 'Không hoạt động',
+    'bank_account_review_request' => 'Yêu cầu xét duyệt tài khoản ngân hàng',
+    'bank_account_review_requests' => 'Xét duyệt tài khoản ngân hàng',
+    'bank_account_review_approved' => 'Đã phê duyệt tài khoản ngân hàng.',
+    'bank_account_review_rejected' => 'Đã từ chối tài khoản ngân hàng.',
 ];

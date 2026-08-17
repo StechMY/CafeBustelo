@@ -26,7 +26,27 @@
                 ⚠️ {{ __('bank_account.security_warning') }}
             </div>
 
-            <form method="POST" action="{{ route('bank-account.store') }}" class="space-y-3 sm:space-y-4">
+            @if ($reviewRequest?->isPending())
+                <div class="rounded-2xl border-2 border-[#003b7a] bg-[#fff8c7] p-5 text-center sm:p-7">
+                    <div class="text-4xl">⏳</div>
+                    <h2 class="mt-3 text-xl font-black uppercase text-[#003b7a]">
+                        {{ __('bank_account.review_pending_title') }}
+                    </h2>
+                    <p class="mt-2 text-sm font-bold leading-relaxed text-[#003b7a]/70">
+                        {{ __('bank_account.review_pending_desc') }}
+                    </p>
+                </div>
+            @else
+                @if ($reviewRequest?->isRejected())
+                    <div class="mb-4 rounded-2xl border-2 border-[#e4003a] bg-red-50 p-4 sm:mb-5">
+                        <h2 class="font-black text-[#e4003a]">{{ __('bank_account.review_rejected_title') }}</h2>
+                        <p class="mt-1 text-sm font-bold text-red-700">
+                            {{ $reviewRequest->admin_remark ?: __('bank_account.review_rejected_desc') }}
+                        </p>
+                    </div>
+                @endif
+
+            <form method="POST" action="{{ route('bank-account.store') }}" enctype="multipart/form-data" class="space-y-3 sm:space-y-4">
                 @csrf
 
                 <div>
@@ -36,7 +56,7 @@
 
                     <input
                            name="bank_account_name"
-                           value="{{ old('bank_account_name', $user->name) }}"
+                           value="{{ old('bank_account_name', $reviewRequest?->bank_account_name ?: $user->name) }}"
                            type="text"
                            class="w-full rounded-xl border-2 border-[#003b7a] bg-[#fff8c7] px-4 py-3 text-sm font-bold text-[#003b7a] outline-none focus:bg-white focus:ring-4 focus:ring-[#ffd900] sm:rounded-2xl sm:px-5 sm:py-4 sm:text-base"
                            placeholder="{{ __('bank_account.real_name_placeholder') }}"
@@ -54,7 +74,7 @@
 
                     <input
                            name="bank_name"
-                           value="{{ old('bank_name') }}"
+                           value="{{ old('bank_name', $reviewRequest?->bank_name) }}"
                            type="text"
                            class="w-full rounded-xl border-2 border-[#003b7a] bg-[#fff8c7] px-4 py-3 text-sm font-bold text-[#003b7a] outline-none focus:bg-white focus:ring-4 focus:ring-[#ffd900] sm:rounded-2xl sm:px-5 sm:py-4 sm:text-base"
                            placeholder="{{ __('bank_account.bank_name_placeholder') }}"
@@ -72,7 +92,7 @@
 
                     <input
                            name="bank_account_no"
-                           value="{{ old('bank_account_no') }}"
+                           value="{{ old('bank_account_no', $reviewRequest?->bank_account_no) }}"
                            type="text"
                            inputmode="numeric"
                            class="w-full rounded-xl border-2 border-[#003b7a] bg-[#fff8c7] px-4 py-3 text-sm font-bold text-[#003b7a] outline-none focus:bg-white focus:ring-4 focus:ring-[#ffd900] sm:rounded-2xl sm:px-5 sm:py-4 sm:text-base"
@@ -99,7 +119,7 @@
                             <input
                                    id="bank_phone"
                                    name="phone"
-                                   value="{{ old('phone', $user->phone) }}"
+                                   value="{{ old('phone', $reviewRequest?->phone ?: $user->phone) }}"
                                    type="text"
                                    class="min-w-0 flex-1 bg-transparent px-4 py-3 text-sm font-bold text-[#003b7a] outline-none sm:px-5 sm:py-4 sm:text-base"
                                    placeholder="{{ __('bank_account.phone_placeholder') }}"
@@ -146,6 +166,36 @@
                         <div class="mt-1.5 text-xs font-bold text-[#e4003a] sm:text-sm">{{ $message }}</div>
                     @enderror
                 </div>
+                <div>
+                    <label class="mb-1.5 block text-xs font-black uppercase text-[#003b7a] sm:mb-2 sm:text-sm">
+                        {{ __('bank_account.id_photos') }}
+                    </label>
+
+                    <input
+                           name="id_photos[]"
+                           type="file"
+                           accept="image/jpeg,image/png,image/webp"
+                           multiple
+                           @required(! $reviewRequest?->isRejected())
+                           class="w-full rounded-xl border-2 border-[#003b7a] bg-[#fff8c7] px-4 py-3 text-sm font-bold text-[#003b7a] file:mr-3 file:rounded-lg file:border-0 file:bg-[#003b7a] file:px-3 file:py-2 file:font-black file:text-white sm:rounded-2xl sm:px-5 sm:py-4">
+
+                    <p class="mt-2 text-xs font-bold text-[#003b7a]/60">
+                        {{ __('bank_account.id_photos_hint') }}
+                    </p>
+
+                    @if ($reviewRequest?->isRejected())
+                        <p class="mt-1 text-xs font-bold text-[#003b7a]/60">
+                            {{ __('bank_account.existing_id_photos', ['count' => count($reviewRequest->id_photo_paths ?? [])]) }}
+                        </p>
+                    @endif
+
+                    @error('id_photos')
+                        <div class="mt-1.5 text-xs font-bold text-[#e4003a] sm:text-sm">{{ $message }}</div>
+                    @enderror
+                    @error('id_photos.*')
+                        <div class="mt-1.5 text-xs font-bold text-[#e4003a] sm:text-sm">{{ $message }}</div>
+                    @enderror
+                </div>
                 <div
                      class="rounded-xl bg-[#fff8c7] p-3 text-xs font-bold leading-relaxed text-[#003b7a]/75 ring-1 ring-[#003b7a]/10 sm:rounded-2xl sm:p-4 sm:text-sm">
                     {{ __('bank_account.change_notice') }}
@@ -161,10 +211,11 @@
                     <button
                             type="submit"
                             class="rounded-xl bg-[#e4003a] px-4 py-3 text-xs font-black uppercase text-white shadow-[0_4px_0_#9e0028] sm:rounded-2xl sm:px-5 sm:py-4 sm:text-sm sm:shadow-[0_6px_0_#9e0028]">
-                        {{ __('bank_account.bind_now') }}
+                        {{ __('bank_account.submit_for_review') }}
                     </button>
                 </div>
             </form>
+            @endif
         </div>
     </section>
 @endsection

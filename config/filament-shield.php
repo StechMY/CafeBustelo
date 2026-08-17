@@ -1,6 +1,7 @@
 <?php
 
 declare(strict_types=1);
+use App\Filament\Resources\BankAccountReviewRequests\BankAccountReviewRequestResource;
 use App\Filament\Resources\UserProducts\UserProductResource;
 use BezhanSalleh\FilamentShield\Resources\Roles\RoleResource;
 use Filament\Pages\Dashboard;
@@ -190,6 +191,11 @@ return [
             UserProductResource::class => [
                 'viewAny',
                 'view',
+            ],
+            BankAccountReviewRequestResource::class => [
+                'viewAny',
+                'view',
+                'update',
             ],
         ],
         'exclude' => [

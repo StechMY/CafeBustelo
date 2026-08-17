@@ -4,19 +4,14 @@ declare(strict_types=1);
 
 namespace App\Policies;
 
-use Illuminate\Foundation\Auth\User as AuthUser;
 use App\Models\WithdrawRequest;
 use Illuminate\Auth\Access\HandlesAuthorization;
+use Illuminate\Foundation\Auth\User as AuthUser;
 
 class WithdrawRequestPolicy
 {
     use HandlesAuthorization;
 
-    public function audit(AuthUser $user, WithdrawRequest $withdrawRequest): bool
-    {
-        return $user->can('Audit:Withdraw');
-    }
-    
     public function viewAny(AuthUser $authUser): bool
     {
         return $authUser->can('ViewAny:WithdrawRequest');
@@ -76,5 +71,4 @@ class WithdrawRequestPolicy
     {
         return $authUser->can('Reorder:WithdrawRequest');
     }
-
 }

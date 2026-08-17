@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Models\AdminUser;
 use App\Models\User;
-use App\Models\UserBankAccount;
 use App\Models\Wallet;
 use App\Models\WithdrawRequest;
 use Illuminate\Support\Facades\DB;
@@ -14,14 +13,13 @@ class WithdrawService
 {
     public function __construct(
         private readonly WalletService $walletService,
-    ) {
-    }
+    ) {}
 
     public function submit(
         User $user,
         float|string $amount,
     ): WithdrawRequest {
-        if (!$user->canWithdraw()) {
+        if (! $user->canWithdraw()) {
             throw new RuntimeException(__('withdraw.withdraw_disabled'));
         }
 
@@ -45,16 +43,16 @@ class WithdrawService
                 ->lockForUpdate()
                 ->first();
 
-            if (!$bankAccount) {
+            if (! $bankAccount) {
+                if ($lockedUser->bankAccountReviewRequests()->where('status', 'pending')->exists()) {
+                    throw new RuntimeException(__('bank_account.under_review'));
+                }
+
                 throw new RuntimeException(__('bank_account.bind_required_first'));
             }
 
-            if (!$bankAccount->isActive()) {
+            if (! $bankAccount->isActive()) {
                 throw new RuntimeException(__('bank_account.unavailable'));
-            }
-
-            if ($bankAccount->hasSimilarNameOnAnotherUser()) {
-                throw new RuntimeException(__('bank_account.similar_name_withdraw_blocked'));
             }
 
             $vipLevel = $lockedUser->currentVipLevel();
@@ -132,16 +130,9 @@ class WithdrawService
                 ->lockForUpdate()
                 ->firstOrFail();
 
-            if (!$lockedRequest->isPending()) {
+            if (! $lockedRequest->isPending()) {
                 throw new RuntimeException('Only pending withdraw requests can be approved.');
             }
-
-            // if (UserBankAccount::isNameUsedByAnotherUser(
-            //     (string) $lockedRequest->bank_account_name,
-            //     (int) $lockedRequest->user_id,
-            // )) {
-            //     throw new RuntimeException(__('bank_account.similar_name_withdraw_blocked'));
-            // }
 
             $user = $lockedRequest->user()
                 ->lockForUpdate()
@@ -175,7 +166,7 @@ class WithdrawService
                 ->lockForUpdate()
                 ->firstOrFail();
 
-            if (!$lockedRequest->isPending()) {
+            if (! $lockedRequest->isPending()) {
                 throw new RuntimeException('Only pending withdraw requests can be rejected.');
             }
 

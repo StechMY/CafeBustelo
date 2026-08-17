@@ -631,4 +631,8 @@ return [
     'user_id' => 'User ID',
     'product_id' => 'Product ID',
     'customer_status' => 'Customer Status',
+    'bank_account_review_request' => 'Bank Account Review Request',
+    'bank_account_review_requests' => 'Bank Account Reviews',
+    'bank_account_review_approved' => 'Bank account review approved.',
+    'bank_account_review_rejected' => 'Bank account review rejected.',
 ];

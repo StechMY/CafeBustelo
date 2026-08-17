@@ -4,18 +4,13 @@ declare(strict_types=1);
 
 namespace App\Policies;
 
-use Illuminate\Foundation\Auth\User as AuthUser;
 use App\Models\RechargeRequest;
 use Illuminate\Auth\Access\HandlesAuthorization;
+use Illuminate\Foundation\Auth\User as AuthUser;
 
 class RechargeRequestPolicy
 {
     use HandlesAuthorization;
-    
-    public function audit(AuthUser $user, RechargeRequest $rechargeRequest): bool
-    {
-        return $user->can('Audit:Recharge');
-    }
 
     public function viewAny(AuthUser $authUser): bool
     {
@@ -76,5 +71,4 @@ class RechargeRequestPolicy
     {
         return $authUser->can('Reorder:RechargeRequest');
     }
-
 }

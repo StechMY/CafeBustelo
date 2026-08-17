@@ -2,7 +2,6 @@
 
 namespace App\Filament\Resources\Users\RelationManagers;
 
-use App\Rules\UniqueBankAccountName;
 use Filament\Actions\CreateAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
@@ -40,11 +39,7 @@ class BankAccountRelationManager extends RelationManager
                                 TextInput::make('bank_account_name')
                                     ->label(__('bank_account.real_name'))
                                     ->required()
-                                    ->maxLength(150)
-                                    ->rule(fn (?Model $record): UniqueBankAccountName => new UniqueBankAccountName(
-                                        ignoreAccountId: $record?->getKey(),
-                                        currentMatchHash: $record?->bank_account_name_match_hash,
-                                    )),
+                                    ->maxLength(150),
 
                                 TextInput::make('bank_name')
                                     ->label(__('bank_account.bank_name'))
@@ -109,14 +104,14 @@ class BankAccountRelationManager extends RelationManager
                             return $state ?: '-';
                         }
 
-                        return str_repeat('*', max(strlen($number) - 4, 0)) . substr($number, -4);
+                        return str_repeat('*', max(strlen($number) - 4, 0)).substr($number, -4);
                     })
                     ->copyable(),
 
                 TextColumn::make('status')
                     ->label(__('filament.status'))
                     ->badge()
-                    ->color(fn(string $state): string => match ($state) {
+                    ->color(fn (string $state): string => match ($state) {
                         'active' => 'success',
                         'inactive' => 'gray',
                         'suspended' => 'danger',
@@ -139,7 +134,7 @@ class BankAccountRelationManager extends RelationManager
             ->headerActions([
                 CreateAction::make()
                     ->label(__('bank_account.bind_bank_account'))
-                    ->visible(fn(): bool => !$this->getOwnerRecord()->bankAccount()->where('status','active')->exists())
+                    ->visible(fn (): bool => ! $this->getOwnerRecord()->bankAccount()->where('status', 'active')->exists())
                     ->mutateDataUsing(function (array $data): array {
                         $data['user_id'] = $this->getOwnerRecord()->id;
                         $data['is_locked'] = true;
