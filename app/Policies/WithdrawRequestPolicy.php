@@ -12,6 +12,11 @@ class WithdrawRequestPolicy
 {
     use HandlesAuthorization;
 
+    public function audit(AuthUser $user, WithdrawRequest $withdrawRequest): bool
+    {
+        return $user->can('Audit:Withdraw');
+    }
+
     public function viewAny(AuthUser $authUser): bool
     {
         return $authUser->can('ViewAny:WithdrawRequest');
