@@ -136,12 +136,12 @@ class WithdrawService
                 throw new RuntimeException('Only pending withdraw requests can be approved.');
             }
 
-            if (UserBankAccount::isNameUsedByAnotherUser(
-                (string) $lockedRequest->bank_account_name,
-                (int) $lockedRequest->user_id,
-            )) {
-                throw new RuntimeException(__('bank_account.similar_name_withdraw_blocked'));
-            }
+            // if (UserBankAccount::isNameUsedByAnotherUser(
+            //     (string) $lockedRequest->bank_account_name,
+            //     (int) $lockedRequest->user_id,
+            // )) {
+            //     throw new RuntimeException(__('bank_account.similar_name_withdraw_blocked'));
+            // }
 
             $user = $lockedRequest->user()
                 ->lockForUpdate()
