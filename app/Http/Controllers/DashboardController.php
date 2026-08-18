@@ -10,7 +10,6 @@ use App\Models\DashboardPopup;
 use App\Models\DashboardSlide;
 use App\Models\UserProduct;
 use App\Models\Wallet;
-use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -38,13 +37,7 @@ class DashboardController extends Controller
             false
         );
 
-        // $maintenanceStartsAt = CarbonImmutable::create(2026, 8, 18, 0, 0, 0, 'Asia/Kuala_Lumpur');
-        // $maintenanceEndsAt = CarbonImmutable::create(2026, 8, 19, 0, 0, 0, 'Asia/Kuala_Lumpur');
-        // $maintenanceNow = CarbonImmutable::now('Asia/Kuala_Lumpur');
-
         $showMaintenanceNotice = ! $showAccountPolicy
-            // && $maintenanceNow->greaterThanOrEqualTo($maintenanceStartsAt)
-            // && $maintenanceNow->lessThan($maintenanceEndsAt)
             && ! $request->session()->has(self::MAINTENANCE_NOTICE_SESSION_KEY);
 
         if ($showMaintenanceNotice) {

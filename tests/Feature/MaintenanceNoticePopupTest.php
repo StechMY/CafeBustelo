@@ -3,7 +3,6 @@
 namespace Tests\Feature;
 
 use App\Models\User;
-use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
@@ -12,16 +11,8 @@ class MaintenanceNoticePopupTest extends TestCase
 {
     use RefreshDatabase;
 
-    protected function tearDown(): void
-    {
-        CarbonImmutable::setTestNow();
-
-        parent::tearDown();
-    }
-
     public function test_notice_uses_only_the_selected_language_and_shows_once_per_login_session(): void
     {
-        CarbonImmutable::setTestNow(CarbonImmutable::parse('2026-08-18 10:00:00', 'Asia/Kuala_Lumpur'));
         config(['app.supported_locales' => [
             'en' => [],
             'zh_CN' => [],
@@ -51,8 +42,6 @@ class MaintenanceNoticePopupTest extends TestCase
 
     public function test_notice_waits_until_the_mandatory_account_policy_is_accepted(): void
     {
-        CarbonImmutable::setTestNow(CarbonImmutable::parse('2026-08-18 10:00:00', 'Asia/Kuala_Lumpur'));
-
         $this->actingAs($this->createUser())
             ->withSession(['locale' => 'en'])
             ->get(route('dashboard'))
@@ -61,23 +50,24 @@ class MaintenanceNoticePopupTest extends TestCase
             ->assertDontSee('maintenance-notice-popup', false);
     }
 
-    public function test_notice_contains_an_indonesian_translation_and_expires_after_maintenance(): void
+    public function test_notice_uses_the_indonesian_translation_when_selected(): void
     {
-        $this->assertSame(
-            'Malam ini, mulai pukul 19.00 waktu Malaysia, sistem perusahaan akan dinonaktifkan sementara untuk pemeliharaan dan peningkatan sistem.',
-            trans('dashboard.maintenance_notice_intro', locale: 'id'),
-        );
-
-        CarbonImmutable::setTestNow(CarbonImmutable::parse('2026-08-19 00:00:00', 'Asia/Kuala_Lumpur'));
+        config(['app.supported_locales' => [
+            'en' => [],
+            'zh_CN' => [],
+            'vi' => [],
+            'id' => [],
+        ]]);
 
         $this->actingAs($this->createUser())
             ->withSession([
                 'account_policy_agreed_v1' => true,
-                'locale' => 'en',
+                'locale' => 'id',
             ])
             ->get(route('dashboard'))
             ->assertOk()
-            ->assertDontSee('maintenance-notice-popup', false);
+            ->assertSee('Malam ini, mulai pukul 19.00 waktu Malaysia')
+            ->assertDontSee('Tonight, starting from 7:00 PM Malaysia Time');
     }
 
     private function createUser(): User
