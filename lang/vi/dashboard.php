@@ -74,25 +74,30 @@ return [
 
     'account_policy_badge' => 'Thông báo quan trọng',
 
-'account_policy_title' => 'Quy định quản lý tài khoản',
+    'account_policy_title' => 'Quy định quản lý tài khoản',
 
-'account_policy_subtitle' => 'Vui lòng đọc kỹ các quy định quản lý tài khoản dưới đây trước khi tiếp tục sử dụng nền tảng.',
+    'account_policy_subtitle' => 'Vui lòng đọc kỹ các quy định quản lý tài khoản dưới đây trước khi tiếp tục sử dụng nền tảng.',
 
-'account_policy_agree' => 'Tôi đồng ý',
+    'account_policy_agree' => 'Tôi đồng ý',
 
-'account_policy_processing' => 'Đang xử lý...',
+    'account_policy_processing' => 'Đang xử lý...',
 
-'account_policy_warning' => 'Bằng cách nhấn "Tôi đồng ý", bạn xác nhận rằng bạn đã đọc và hiểu thông báo quản lý tài khoản này.',
+    'account_policy_warning' => 'Bằng cách nhấn "Tôi đồng ý", bạn xác nhận rằng bạn đã đọc và hiểu thông báo quản lý tài khoản này.',
 
-'account_policy_paragraphs' => [
-    'Để đảm bảo việc quản lý tài khoản của công ty được chuẩn hóa, an toàn vốn và công bằng trong quy định, công ty nghiêm cấm bất kỳ nhân viên hoặc thành viên nhóm nào tự ý mở, sở hữu hoặc vận hành tài khoản phụ, tài khoản trùng lặp hoặc tài khoản không được ủy quyền bởi chính chủ.',
+    'account_policy_paragraphs' => [
+        'Để đảm bảo việc quản lý tài khoản của công ty được chuẩn hóa, an toàn vốn và công bằng trong quy định, công ty nghiêm cấm bất kỳ nhân viên hoặc thành viên nhóm nào tự ý mở, sở hữu hoặc vận hành tài khoản phụ, tài khoản trùng lặp hoặc tài khoản không được ủy quyền bởi chính chủ.',
 
-    'Bộ phận hệ thống và kiểm soát rủi ro sẽ tiến hành kiểm tra liên kết tài khoản định kỳ, bao gồm nhưng không giới hạn ở thiết bị đăng nhập, lịch sử thao tác, thông tin liên kết tài khoản và các hành vi giao dịch bất thường. Nếu phát hiện có hành vi vi phạm liên quan đến việc mở hoặc sử dụng tài khoản phụ, công ty sẽ xem đây là vi phạm nghiêm trọng quy định quản lý tài khoản và có quyền ngay lập tức phong tỏa các tài khoản liên quan.',
+        'Bộ phận hệ thống và kiểm soát rủi ro sẽ tiến hành kiểm tra liên kết tài khoản định kỳ, bao gồm nhưng không giới hạn ở thiết bị đăng nhập, lịch sử thao tác, thông tin liên kết tài khoản và các hành vi giao dịch bất thường. Nếu phát hiện có hành vi vi phạm liên quan đến việc mở hoặc sử dụng tài khoản phụ, công ty sẽ xem đây là vi phạm nghiêm trọng quy định quản lý tài khoản và có quyền ngay lập tức phong tỏa các tài khoản liên quan.',
 
-    'Đối với các tài khoản vi phạm có liên quan đến số dư, hoa hồng, tiền thưởng, điểm tích lũy và các lợi ích khác, công ty có quyền tịch thu/xung công theo quy định quản lý nội bộ; trong trường hợp nghiêm trọng, công ty có thể tiếp tục đình chỉ hoặc hủy bỏ các tài khoản và tư cách kinh doanh liên quan.',
+        'Đối với các tài khoản vi phạm có liên quan đến số dư, hoa hồng, tiền thưởng, điểm tích lũy và các lợi ích khác, công ty có quyền tịch thu/xung công theo quy định quản lý nội bộ; trong trường hợp nghiêm trọng, công ty có thể tiếp tục đình chỉ hoặc hủy bỏ các tài khoản và tư cách kinh doanh liên quan.',
 
-    'Đề nghị tất cả thành viên tuân thủ nghiêm ngặt quy định quản lý tài khoản của công ty, mỗi người một tài khoản, chỉ sử dụng tài khoản chính chủ, nghiêm cấm việc mở hộ, mượn, chuyển nhượng hoặc bất kỳ hình thức nào nhằm né tránh sự giám sát của hệ thống. Mọi tổn thất và trách nhiệm phát sinh do hành vi vi phạm cá nhân sẽ do người vi phạm tự chịu trách nhiệm.',
+        'Đề nghị tất cả thành viên tuân thủ nghiêm ngặt quy định quản lý tài khoản của công ty, mỗi người một tài khoản, chỉ sử dụng tài khoản chính chủ, nghiêm cấm việc mở hộ, mượn, chuyển nhượng hoặc bất kỳ hình thức nào nhằm né tránh sự giám sát của hệ thống. Mọi tổn thất và trách nhiệm phát sinh do hành vi vi phạm cá nhân sẽ do người vi phạm tự chịu trách nhiệm.',
 
-    'Vui lòng không có tâm lý may rủi để tránh gây ra những tổn thất không đáng có.',
-],
+        'Vui lòng không có tâm lý may rủi để tránh gây ra những tổn thất không đáng có.',
+    ],
+    'maintenance_notice_title' => '📢 THÔNG BÁO',
+    'maintenance_notice_intro' => 'Tối nay, từ 19:00 theo giờ Malaysia, hệ thống công ty sẽ tạm ngừng hoạt động để tiến hành bảo trì và nâng cấp.',
+    'maintenance_notice_period' => 'Thời gian bảo trì: 19:00 – 00:00',
+    'maintenance_notice_resume' => 'Hệ thống dự kiến hoạt động trở lại sau 00:00.',
+    'maintenance_notice_reminder' => 'Mọi người vui lòng sắp xếp các thao tác cần thiết trước thời gian bảo trì. Cảm ơn mọi người đã thông cảm và hợp tác!',
 ];

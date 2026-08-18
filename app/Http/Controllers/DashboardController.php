@@ -10,6 +10,7 @@ use App\Models\DashboardPopup;
 use App\Models\DashboardSlide;
 use App\Models\UserProduct;
 use App\Models\Wallet;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -17,6 +18,8 @@ use Illuminate\View\View;
 class DashboardController extends Controller
 {
     private const ACCOUNT_POLICY_SESSION_KEY = 'account_policy_agreed_v1';
+
+    private const MAINTENANCE_NOTICE_SESSION_KEY = 'maintenance_notice_seen_2026_08_18';
 
     public function __invoke(Request $request): View
     {
@@ -34,6 +37,19 @@ class DashboardController extends Controller
             self::ACCOUNT_POLICY_SESSION_KEY,
             false
         );
+
+        // $maintenanceStartsAt = CarbonImmutable::create(2026, 8, 18, 0, 0, 0, 'Asia/Kuala_Lumpur');
+        // $maintenanceEndsAt = CarbonImmutable::create(2026, 8, 19, 0, 0, 0, 'Asia/Kuala_Lumpur');
+        // $maintenanceNow = CarbonImmutable::now('Asia/Kuala_Lumpur');
+
+        $showMaintenanceNotice = ! $showAccountPolicy
+            // && $maintenanceNow->greaterThanOrEqualTo($maintenanceStartsAt)
+            // && $maintenanceNow->lessThan($maintenanceEndsAt)
+            && ! $request->session()->has(self::MAINTENANCE_NOTICE_SESSION_KEY);
+
+        if ($showMaintenanceNotice) {
+            $request->session()->put(self::MAINTENANCE_NOTICE_SESSION_KEY, true);
+        }
 
         $rechargeWallet = Wallet::query()
             ->where('user_id', $user->id)
@@ -100,8 +116,8 @@ class DashboardController extends Controller
         */
         $showDashboardPopup = false;
 
-        if (! $showAccountPolicy && $dashboardPopup) {
-            $sessionKey = 'dashboard_popup_seen_' . $dashboardPopup->id;
+        if (! $showAccountPolicy && ! $showMaintenanceNotice && $dashboardPopup) {
+            $sessionKey = 'dashboard_popup_seen_'.$dashboardPopup->id;
 
             if (
                 $dashboardPopup->show_every_visit
@@ -130,6 +146,8 @@ class DashboardController extends Controller
         */
         $shouldShowCheckInPopup =
             ! $showAccountPolicy
+            && ! $showMaintenanceNotice
+            && ! $showDashboardPopup
             && $user->status === 'active'
             && ! $todayCheckInRecord
             && $user->check_in_status;
@@ -160,6 +178,7 @@ class DashboardController extends Controller
             'shouldShowCheckInPopup' => $shouldShowCheckInPopup,
 
             'showAccountPolicy' => $showAccountPolicy,
+            'showMaintenanceNotice' => $showMaintenanceNotice,
 
             'currentVipLevel' => $user->currentVipLevel(),
         ]);
