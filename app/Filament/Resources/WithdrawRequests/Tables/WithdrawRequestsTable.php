@@ -12,11 +12,14 @@ use Filament\Actions\RestoreAction;
 use Filament\Actions\RestoreBulkAction;
 use Filament\Actions\ViewAction;
 use Filament\Facades\Filament;
+use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Textarea;
 use Filament\Notifications\Notification;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Gate;
 use Throwable;
 
@@ -110,6 +113,29 @@ class WithdrawRequestsTable
                         'approved' => __('filament.approved'),
                         'rejected' => __('filament.rejected'),
                     ]),
+
+                Filter::make('created_at')
+                    ->label(__('filament.submitted_at'))
+                    ->form([
+                        DatePicker::make('created_from')
+                            ->label('Created from'),
+
+                        DatePicker::make('created_until')
+                            ->label('Created until'),
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        return $query
+                            ->when(
+                                $data['created_from'],
+                                fn(Builder $query, $date) =>
+                                $query->whereDate('created_at', '>=', $date)
+                            )
+                            ->when(
+                                $data['created_until'],
+                                fn(Builder $query, $date) =>
+                                $query->whereDate('created_at', '<=', $date)
+                            );
+                    }),
             ])
             ->recordActions([
                 ViewAction::make(),
