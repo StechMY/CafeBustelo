@@ -39,7 +39,8 @@ class WithdrawService
                 ->lockForUpdate()
                 ->firstOrFail();
 
-            $bankAccount = $lockedUser->bankAccount()
+            $bankAccount = $lockedUser->bankAccounts()
+                ->where('status', 'active')
                 ->lockForUpdate()
                 ->first();
 
