@@ -29,11 +29,21 @@ class BonusCodeForm
                                 Select::make('owner_user_ids')
                                     ->label(__('filament.distribute_to_users'))
                                     ->multiple()
-                                    ->options(function (): array {
+                                    ->searchable()
+                                    ->getSearchResultsUsing(function (string $search): array {
                                         return User::query()
-                                            ->tap(fn(Builder $query) => FilamentSupportScope::applyToUsersQuery($query))
+                                            ->tap(
+                                                fn(Builder $query) => FilamentSupportScope::applyToUsersQuery($query)
+                                            )
+                                            ->where(function (Builder $query) use ($search): void {
+                                                $query
+                                                    ->where('username', 'like', "%{$search}%")
+                                                    ->orWhere('name', 'like', "%{$search}%")
+                                                    ->orWhere('phone', 'like', "%{$search}%")
+                                                    ->orWhere('referral_code', 'like', "%{$search}%");
+                                            })
                                             ->orderBy('username')
-                                            ->limit(200)
+                                            ->limit(50)
                                             ->get()
                                             ->mapWithKeys(function (User $user): array {
                                                 return [
@@ -42,12 +52,26 @@ class BonusCodeForm
                                             })
                                             ->all();
                                     })
-                                    ->searchable()
+                                    ->getOptionLabelsUsing(function (array $values): array {
+                                        return User::query()
+                                            ->tap(
+                                                fn(Builder $query) => FilamentSupportScope::applyToUsersQuery($query)
+                                            )
+                                            ->whereIn('id', $values)
+                                            ->get()
+                                            ->mapWithKeys(function (User $user): array {
+                                                return [
+                                                    $user->id => "{$user->username} - {$user->name}",
+                                                ];
+                                            })
+                                            ->all();
+                                    })
                                     ->required()
                                     ->dehydrated(false)
                                     ->visible(fn(string $operation): bool => $operation === 'create')
-                                    ->helperText(__('filament.select_one_or_more_users_the_system_will_generate_one_bonus_code_for_e')),
-
+                                    ->helperText(
+                                        __('filament.select_one_or_more_users_the_system_will_generate_one_bonus_code_for_e')
+                                    ),
                                 Select::make('owner_user_id')
                                     ->label(__('filament.owner_user'))
                                     ->relationship(
