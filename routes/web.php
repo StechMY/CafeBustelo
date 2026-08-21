@@ -26,6 +26,8 @@ use App\Http\Controllers\SvipController;
 use App\Http\Controllers\TeamController;
 use App\Http\Controllers\WalletController;
 use App\Http\Controllers\WithdrawController;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 
 Route::match(['GET', 'POST'], '/debug/request-info', function (Request $request) {
