@@ -30,34 +30,34 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 
-Route::match(['GET', 'POST'], '/debug/request-info', function (Request $request) {
-    $data = [
-        // Raw TCP/source IP seen by PHP/web server
-        'remote_addr' => $_SERVER['REMOTE_ADDR'] ?? null,
+// Route::match(['GET', 'POST'], '/debug/request-info', function (Request $request) {
+//     $data = [
+//         // Raw TCP/source IP seen by PHP/web server
+//         'remote_addr' => $_SERVER['REMOTE_ADDR'] ?? null,
 
-        // Laravel interpreted IP
-        'laravel_ip' => $request->ip(),
+//         // Laravel interpreted IP
+//         'laravel_ip' => $request->ip(),
 
-        // Laravel IP chain
-        'laravel_ips' => $request->ips(),
+//         // Laravel IP chain
+//         'laravel_ips' => $request->ips(),
 
-        // Headers that may leak/provide IP information
-        'x_forwarded_for' => $request->header('X-Forwarded-For'),
-        'x_real_ip' => $request->header('X-Real-IP'),
-        'forwarded' => $request->header('Forwarded'),
-        'via' => $request->header('Via'),
-        'cf_connecting_ip' => $request->header('CF-Connecting-IP'),
-        'true_client_ip' => $request->header('True-Client-IP'),
+//         // Headers that may leak/provide IP information
+//         'x_forwarded_for' => $request->header('X-Forwarded-For'),
+//         'x_real_ip' => $request->header('X-Real-IP'),
+//         'forwarded' => $request->header('Forwarded'),
+//         'via' => $request->header('Via'),
+//         'cf_connecting_ip' => $request->header('CF-Connecting-IP'),
+//         'true_client_ip' => $request->header('True-Client-IP'),
 
-        'user_agent' => $request->userAgent(),
+//         'user_agent' => $request->userAgent(),
 
-        'all_headers' => $request->headers->all(),
-    ];
+//         'all_headers' => $request->headers->all(),
+//     ];
 
-    Log::info('DEBUG INCOMING REQUEST', $data);
+//     Log::info('DEBUG INCOMING REQUEST', $data);
 
-    return response()->json($data);
-});
+//     return response()->json($data);
+// });
 
 Route::redirect('/', '/dashboard');
 
