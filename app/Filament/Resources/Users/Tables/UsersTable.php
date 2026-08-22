@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Users\Tables;
 use App\Models\User;
 use App\Models\Wallet;
 use App\Services\AdminTopUpService;
+use App\Services\AdminWalletDecreaseService;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
@@ -364,6 +365,61 @@ class UsersTable
 
                             Notification::make()
                                 ->title(__('filament.top_up_failed'))
+                                ->body($exception->getMessage())
+                                ->danger()
+                                ->send();
+                        }
+                    }),
+
+                Action::make('decreaseWallet')
+                    ->label(__('filament.decrease_wallet'))
+                    ->icon('heroicon-o-minus-circle')
+                    ->color('danger')
+                    ->form([
+                        Select::make('wallet_type')
+                            ->label(__('filament.wallet'))
+                            ->required()
+                            ->default(Wallet::TYPE_RECHARGE)
+                            ->options([
+                                Wallet::TYPE_RECHARGE => __('filament.recharge_wallet'),
+                                Wallet::TYPE_WITHDRAWABLE => __('filament.withdrawable_wallet'),
+                            ])
+                            ->native(false),
+
+                        TextInput::make('amount')
+                            ->label(__('filament.amount'))
+                            ->prefix('RM')
+                            ->required()
+                            ->numeric()
+                            ->minValue(0.01)
+                            ->step('0.01'),
+
+                        TextInput::make('remarks')
+                            ->label(__('filament.remarks'))
+                            ->required()
+                            ->maxLength(255),
+                    ])
+                    ->requiresConfirmation()
+                    ->modalDescription(__('filament.decrease_wallet_confirmation'))
+                    ->action(function (User $record, array $data): void {
+                        try {
+                            app(AdminWalletDecreaseService::class)->decrease(
+                                user: $record,
+                                adminUser: Filament::auth()->user(),
+                                walletType: $data['wallet_type'],
+                                amount: $data['amount'],
+                                remarks: $data['remarks'],
+                            );
+
+                            Notification::make()
+                                ->title(__('filament.wallet_decrease_completed'))
+                                ->success()
+                                ->send();
+                        } catch (Throwable $exception) {
+                            report($exception);
+
+                            Notification::make()
+                                ->title(__('filament.wallet_decrease_failed'))
                                 ->body($exception->getMessage())
                                 ->danger()
                                 ->send();

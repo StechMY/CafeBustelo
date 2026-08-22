@@ -68,4 +68,10 @@ return [
     'bank_account_review_requests' => 'Xét duyệt tài khoản ngân hàng',
     'bank_account_review_approved' => 'Đã phê duyệt tài khoản ngân hàng.',
     'bank_account_review_rejected' => 'Đã từ chối tài khoản ngân hàng.',
+    'decrease_wallet' => 'Trừ số dư ví',
+    'decrease_wallet_confirmation' => 'Số tiền này sẽ bị trừ khỏi ví đã chọn và không thể hoàn tác.',
+    'wallet_decrease_completed' => 'Đã trừ số dư ví',
+    'wallet_decrease_failed' => 'Không thể trừ số dư ví',
+    'wallet' => 'Ví',
+    'remarks' => 'Ghi chú',
 ];

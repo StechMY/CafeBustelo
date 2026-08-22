@@ -68,4 +68,10 @@ return [
     'bank_account_review_requests' => 'Tinjauan Rekening Bank',
     'bank_account_review_approved' => 'Tinjauan rekening bank disetujui.',
     'bank_account_review_rejected' => 'Tinjauan rekening bank ditolak.',
+    'decrease_wallet' => 'Kurangi Saldo Dompet',
+    'decrease_wallet_confirmation' => 'Jumlah ini akan dikurangi dari dompet yang dipilih dan tidak dapat dibatalkan.',
+    'wallet_decrease_completed' => 'Saldo dompet berhasil dikurangi',
+    'wallet_decrease_failed' => 'Gagal mengurangi saldo dompet',
+    'wallet' => 'Dompet',
+    'remarks' => 'Catatan',
 ];
