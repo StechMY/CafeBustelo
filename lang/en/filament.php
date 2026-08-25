@@ -639,4 +639,10 @@ return [
     'bank_account_review_requests' => 'Bank Account Reviews',
     'bank_account_review_approved' => 'Bank account review approved.',
     'bank_account_review_rejected' => 'Bank account review rejected.',
+    'maintenance_notice_settings' => 'Maintenance Notice Settings',
+    'maintenance_notice_settings_help' => 'Controls the maintenance notice popup shown on the user dashboard. This does not place the website into maintenance mode.',
+    'enable_maintenance_notice' => 'Show maintenance notice',
+    'maintenance_starts_at' => 'Maintenance Starts At',
+    'maintenance_ends_at' => 'Maintenance Ends At',
+    'maintenance_notice_settings_saved' => 'Maintenance notice settings saved.',
 ];

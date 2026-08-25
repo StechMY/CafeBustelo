@@ -74,4 +74,10 @@ return [
     'wallet_decrease_failed' => 'Gagal mengurangi saldo dompet',
     'wallet' => 'Dompet',
     'remarks' => 'Catatan',
+    'maintenance_notice_settings' => 'Pengaturan Pemberitahuan Pemeliharaan',
+    'maintenance_notice_settings_help' => 'Mengontrol pemberitahuan pemeliharaan di dasbor pengguna. Pengaturan ini tidak mengaktifkan mode pemeliharaan situs.',
+    'enable_maintenance_notice' => 'Tampilkan pemberitahuan pemeliharaan',
+    'maintenance_starts_at' => 'Pemeliharaan Dimulai',
+    'maintenance_ends_at' => 'Pemeliharaan Berakhir',
+    'maintenance_notice_settings_saved' => 'Pengaturan pemberitahuan pemeliharaan disimpan.',
 ];

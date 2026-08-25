@@ -2,7 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Models\Setting;
 use App\Models\User;
+use App\Services\MaintenanceNoticeService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
@@ -13,6 +15,7 @@ class MaintenanceNoticePopupTest extends TestCase
 
     public function test_notice_uses_only_the_selected_language_and_shows_once_per_login_session(): void
     {
+        $this->enableNotice();
         config(['app.supported_locales' => [
             'en' => [],
             'zh_CN' => [],
@@ -31,9 +34,10 @@ class MaintenanceNoticePopupTest extends TestCase
         $response
             ->assertOk()
             ->assertSee('maintenance-notice-popup', false)
-            ->assertSee('Tối nay, từ 19:00 theo giờ Malaysia')
-            ->assertDontSee('Tonight, starting from 7:00 PM Malaysia Time')
-            ->assertDontSee('今晚马来西亚时间');
+            ->assertSee('Từ 25/08/2026 19:30 theo giờ Malaysia')
+            ->assertSee('25/08/2026 19:30 – 26/08/2026 00:30')
+            ->assertDontSee('Starting at 25/08/2026 19:30')
+            ->assertDontSee('马来西亚时间 25/08/2026 19:30');
 
         $this->get(route('dashboard'))
             ->assertOk()
@@ -42,6 +46,8 @@ class MaintenanceNoticePopupTest extends TestCase
 
     public function test_notice_waits_until_the_mandatory_account_policy_is_accepted(): void
     {
+        $this->enableNotice();
+
         $this->actingAs($this->createUser())
             ->withSession(['locale' => 'en'])
             ->get(route('dashboard'))
@@ -52,6 +58,7 @@ class MaintenanceNoticePopupTest extends TestCase
 
     public function test_notice_uses_the_indonesian_translation_when_selected(): void
     {
+        $this->enableNotice();
         config(['app.supported_locales' => [
             'en' => [],
             'zh_CN' => [],
@@ -66,8 +73,50 @@ class MaintenanceNoticePopupTest extends TestCase
             ])
             ->get(route('dashboard'))
             ->assertOk()
-            ->assertSee('Malam ini, mulai pukul 19.00 waktu Malaysia')
-            ->assertDontSee('Tonight, starting from 7:00 PM Malaysia Time');
+            ->assertSee('Mulai 25/08/2026 19:30 waktu Malaysia')
+            ->assertDontSee('Starting at 25/08/2026 19:30');
+    }
+
+    public function test_notice_is_hidden_when_admin_switch_is_off(): void
+    {
+        Setting::setValue(MaintenanceNoticeService::SETTING_ENABLED, false);
+
+        $this->actingAs($this->createUser())
+            ->withSession([
+                'account_policy_agreed_v1' => true,
+                'locale' => 'en',
+            ])
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertDontSee('maintenance-notice-popup', false);
+    }
+
+    public function test_a_new_admin_saved_revision_is_shown_once_again(): void
+    {
+        $this->enableNotice(revision: 'revision-one');
+        $this->actingAs($this->createUser())
+            ->withSession([
+                'account_policy_agreed_v1' => true,
+                'locale' => 'en',
+            ])
+            ->get(route('dashboard'))
+            ->assertSee('maintenance-notice-popup', false);
+
+        $this->get(route('dashboard'))
+            ->assertDontSee('maintenance-notice-popup', false);
+
+        Setting::setValue(MaintenanceNoticeService::SETTING_REVISION, 'revision-two');
+
+        $this->get(route('dashboard'))
+            ->assertSee('maintenance-notice-popup', false);
+    }
+
+    private function enableNotice(string $revision = 'test-revision'): void
+    {
+        Setting::setValue(MaintenanceNoticeService::SETTING_ENABLED, true);
+        Setting::setValue(MaintenanceNoticeService::SETTING_STARTS_AT, '2026-08-25 19:30:00');
+        Setting::setValue(MaintenanceNoticeService::SETTING_ENDS_AT, '2026-08-26 00:30:00');
+        Setting::setValue(MaintenanceNoticeService::SETTING_REVISION, $revision);
     }
 
     private function createUser(): User

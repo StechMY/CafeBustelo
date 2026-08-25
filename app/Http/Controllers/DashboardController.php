@@ -10,6 +10,7 @@ use App\Models\DashboardPopup;
 use App\Models\DashboardSlide;
 use App\Models\UserProduct;
 use App\Models\Wallet;
+use App\Services\MaintenanceNoticeService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -18,9 +19,7 @@ class DashboardController extends Controller
 {
     private const ACCOUNT_POLICY_SESSION_KEY = 'account_policy_agreed_v1';
 
-    private const MAINTENANCE_NOTICE_SESSION_KEY = 'maintenance_notice_seen_2026_08_18';
-
-    public function __invoke(Request $request): View
+    public function __invoke(Request $request, MaintenanceNoticeService $maintenanceNoticeService): View
     {
         $user = $request->user();
 
@@ -37,11 +36,14 @@ class DashboardController extends Controller
             false
         );
 
+        $maintenanceNotice = $maintenanceNoticeService->schedule();
+        $maintenanceNoticeSessionKey = $maintenanceNoticeService->sessionKey();
         $showMaintenanceNotice = ! $showAccountPolicy
-            && ! $request->session()->has(self::MAINTENANCE_NOTICE_SESSION_KEY);
+            && $maintenanceNotice !== null
+            && ! $request->session()->has($maintenanceNoticeSessionKey);
 
         if ($showMaintenanceNotice) {
-            $request->session()->put(self::MAINTENANCE_NOTICE_SESSION_KEY, true);
+            $request->session()->put($maintenanceNoticeSessionKey, true);
         }
 
         $rechargeWallet = Wallet::query()
@@ -172,6 +174,7 @@ class DashboardController extends Controller
 
             'showAccountPolicy' => $showAccountPolicy,
             'showMaintenanceNotice' => $showMaintenanceNotice,
+            'maintenanceNotice' => $maintenanceNotice,
 
             'currentVipLevel' => $user->currentVipLevel(),
         ]);

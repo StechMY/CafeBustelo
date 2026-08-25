@@ -10,11 +10,13 @@ use App\Filament\Widgets\PlatformUserStats;
 use App\Models\PhoneOtp;
 use App\Models\Product;
 use App\Models\Setting;
+use App\Services\MaintenanceNoticeService;
 use App\Services\PointService;
 use App\Services\WelcomeBonusService;
 use Filament\Actions\Action;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -23,6 +25,7 @@ use Filament\Pages\Dashboard as BaseDashboard;
 use Filament\Pages\Dashboard\Concerns\HasFiltersForm;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Illuminate\Support\Str;
 
 class Dashboard extends BaseDashboard
 {
@@ -128,6 +131,64 @@ class Dashboard extends BaseDashboard
 
                     Notification::make()
                         ->title(__('filament.app_download_settings_saved'))
+                        ->success()
+                        ->send();
+                }),
+            Action::make('maintenanceNoticeSettings')
+                ->label(__('filament.maintenance_notice_settings'))
+                ->icon('heroicon-o-wrench-screwdriver')
+                ->color('warning')
+                ->modalHeading(__('filament.maintenance_notice_settings'))
+                ->modalDescription(__('filament.maintenance_notice_settings_help'))
+                ->form([
+                    Toggle::make('enabled')
+                        ->label(__('filament.enable_maintenance_notice'))
+                        ->default(fn(): bool => Setting::bool(
+                            MaintenanceNoticeService::SETTING_ENABLED,
+                            false
+                        )),
+
+                    DateTimePicker::make('starts_at')
+                        ->label(__('filament.maintenance_starts_at'))
+                        ->required()
+                        ->seconds(false)
+                        ->native(false)
+                        ->default(fn(): string => (string) Setting::getValue(
+                            MaintenanceNoticeService::SETTING_STARTS_AT,
+                            today()->setTime(19, 0)->format('Y-m-d H:i:s')
+                        )),
+
+                    DateTimePicker::make('ends_at')
+                        ->label(__('filament.maintenance_ends_at'))
+                        ->required()
+                        ->after('starts_at')
+                        ->seconds(false)
+                        ->native(false)
+                        ->default(fn(): string => (string) Setting::getValue(
+                            MaintenanceNoticeService::SETTING_ENDS_AT,
+                            today()->addDay()->startOfDay()->format('Y-m-d H:i:s')
+                        )),
+                ])
+                ->action(function (array $data): void {
+                    Setting::setValue(
+                        MaintenanceNoticeService::SETTING_ENABLED,
+                        (bool) ($data['enabled'] ?? false)
+                    );
+                    Setting::setValue(
+                        MaintenanceNoticeService::SETTING_STARTS_AT,
+                        $data['starts_at']
+                    );
+                    Setting::setValue(
+                        MaintenanceNoticeService::SETTING_ENDS_AT,
+                        $data['ends_at']
+                    );
+                    Setting::setValue(
+                        MaintenanceNoticeService::SETTING_REVISION,
+                        (string) Str::uuid()
+                    );
+
+                    Notification::make()
+                        ->title(__('filament.maintenance_notice_settings_saved'))
                         ->success()
                         ->send();
                 }),

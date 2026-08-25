@@ -74,4 +74,10 @@ return [
     'wallet_decrease_failed' => 'Không thể trừ số dư ví',
     'wallet' => 'Ví',
     'remarks' => 'Ghi chú',
+    'maintenance_notice_settings' => 'Cài đặt thông báo bảo trì',
+    'maintenance_notice_settings_help' => 'Điều khiển thông báo bảo trì trên trang chính của người dùng. Cài đặt này không đưa trang web vào chế độ bảo trì.',
+    'enable_maintenance_notice' => 'Hiển thị thông báo bảo trì',
+    'maintenance_starts_at' => 'Thời gian bắt đầu bảo trì',
+    'maintenance_ends_at' => 'Thời gian kết thúc bảo trì',
+    'maintenance_notice_settings_saved' => 'Đã lưu cài đặt thông báo bảo trì.',
 ];

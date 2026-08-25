@@ -640,4 +640,10 @@ return [
     'bank_account_review_requests' => '银行账户审核',
     'bank_account_review_approved' => '银行账户审核已批准。',
     'bank_account_review_rejected' => '银行账户审核已拒绝。',
+    'maintenance_notice_settings' => '系统维护公告',
+    'maintenance_notice_settings_help' => '控制用户首页的维护公告弹窗，不会让网站进入维护模式。',
+    'enable_maintenance_notice' => '显示维护公告',
+    'maintenance_starts_at' => '维护开始时间',
+    'maintenance_ends_at' => '维护结束时间',
+    'maintenance_notice_settings_saved' => '系统维护公告设置已保存。',
 ];
