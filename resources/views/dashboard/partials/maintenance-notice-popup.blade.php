@@ -24,16 +24,16 @@
 
             <div class="space-y-4 px-5 py-5 text-sm font-bold leading-7 text-[#003b7a]/85 sm:px-7 sm:py-6 sm:text-base">
                 <p>{{ __('dashboard.maintenance_notice_intro', [
-                    'start' => $maintenanceNotice['starts_at']->format('d/m/Y H:i'),
+                    'start' => $maintenanceNotice['starts_at']->format('j F Y g:iA'),
                 ]) }}</p>
 
                 <div class="space-y-3 rounded-2xl bg-[#fff8c7] p-4 ring-1 ring-[#ffd900] sm:p-5">
                     <p>⏰ {{ __('dashboard.maintenance_notice_period', [
-                        'start' => $maintenanceNotice['starts_at']->format('d/m/Y H:i'),
-                        'end' => $maintenanceNotice['ends_at']->format('d/m/Y H:i'),
+                        'start' => $maintenanceNotice['starts_at']->format('j F Y g:iA'),
+                        'end' => $maintenanceNotice['ends_at']->format('j F Y g:iA'),
                     ]) }}</p>
                     <p>✅ {{ __('dashboard.maintenance_notice_resume', [
-                        'end' => $maintenanceNotice['ends_at']->format('d/m/Y H:i'),
+                        'end' => $maintenanceNotice['ends_at']->format('j F Y g:iA'),
                     ]) }}</p>
                 </div>
 

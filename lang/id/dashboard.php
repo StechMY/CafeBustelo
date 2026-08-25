@@ -85,7 +85,7 @@ return [
         'Jangan mengambil risiko atau mengandalkan keberuntungan untuk menghindari kerugian yang tidak perlu.',
     ],
     'maintenance_notice_title' => '📢 PEMBERITAHUAN',
-    'maintenance_notice_intro' => 'Mulai :start waktu Malaysia, sistem perusahaan akan dinonaktifkan sementara untuk pemeliharaan dan peningkatan.',
+    'maintenance_notice_intro' => 'Mulai :start, sistem perusahaan akan dinonaktifkan sementara untuk pemeliharaan dan peningkatan.',
     'maintenance_notice_period' => 'Waktu pemeliharaan: :start – :end',
     'maintenance_notice_resume' => 'Sistem diperkirakan kembali beroperasi normal setelah :end.',
     'maintenance_notice_reminder' => 'Harap selesaikan transaksi atau aktivitas yang diperlukan sebelum pemeliharaan dimulai. Terima kasih atas pengertian dan kerja samanya!',

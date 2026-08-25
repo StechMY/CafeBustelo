@@ -95,7 +95,7 @@ return [
         '请勿抱有侥幸心理，以免造成不必要的损失。',
     ],
     'maintenance_notice_title' => '📢 通知',
-    'maintenance_notice_intro' => '马来西亚时间 :start 起，公司系统将暂时停止运行，以进行系统维护和升级。',
+    'maintenance_notice_intro' => ':start 起，公司系统将暂时停止运行，以进行系统维护和升级。',
     'maintenance_notice_period' => '维护时间：:start – :end',
     'maintenance_notice_resume' => '预计 :end 后恢复正常运行。',
     'maintenance_notice_reminder' => '请大家在系统维护开始前提前安排好需要进行的操作。感谢大家的理解与配合！',

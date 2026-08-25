@@ -96,7 +96,7 @@ return [
         'Vui lòng không có tâm lý may rủi để tránh gây ra những tổn thất không đáng có.',
     ],
     'maintenance_notice_title' => '📢 THÔNG BÁO BẢO TRÌ HỆ THỐNG',
-    'maintenance_notice_intro' => 'Từ :start theo giờ Malaysia, hệ thống công ty sẽ tạm ngừng hoạt động để tiến hành bảo trì và nâng cấp.',
+    'maintenance_notice_intro' => 'Bắt đầu lúc :start, hệ thống công ty sẽ tạm ngừng hoạt động để tiến hành bảo trì và nâng cấp.',
     'maintenance_notice_period' => 'Thời gian bảo trì: :start – :end',
     'maintenance_notice_resume' => 'Hệ thống dự kiến hoạt động trở lại sau :end.',
     'maintenance_notice_reminder' => 'Mọi người vui lòng sắp xếp các thao tác cần thiết trước thời gian bảo trì. Cảm ơn mọi người đã thông cảm và hợp tác!',

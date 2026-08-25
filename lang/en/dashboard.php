@@ -95,7 +95,7 @@ return [
         'Please do not take risks or rely on luck to avoid unnecessary losses.',
     ],
     'maintenance_notice_title' => '📢 SYSTEM MAINTENANCE NOTICE',
-    'maintenance_notice_intro' => 'Starting at :start (Malaysia Time), the company’s system will be temporarily unavailable for maintenance and upgrades.',
+    'maintenance_notice_intro' => 'Starting at :start, the company’s system will be temporarily unavailable for maintenance and upgrades.',
     'maintenance_notice_period' => 'Maintenance Period: :start – :end',
     'maintenance_notice_resume' => 'The system is expected to resume normal operations after :end.',
     'maintenance_notice_reminder' => 'Please complete any necessary transactions or operations before the maintenance begins. Thank you for your understanding and cooperation!',
