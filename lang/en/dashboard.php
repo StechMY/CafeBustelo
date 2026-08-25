@@ -94,9 +94,11 @@ return [
 
         'Please do not take risks or rely on luck to avoid unnecessary losses.',
     ],
-    'maintenance_notice_title' => '📢 NOTICE',
-    'maintenance_notice_intro' => 'Tonight, starting from 7:00 PM Malaysia Time, the company’s system will be temporarily unavailable for maintenance and upgrades.',
+    'maintenance_notice_title' => '📢 SYSTEM MAINTENANCE NOTICE',
+    'maintenance_notice_intro' => 'Starting tonight at 7:00 PM (19:00), the company’s system will be temporarily unavailable for scheduled maintenance and system upgrades.',
     'maintenance_notice_period' => 'Maintenance Period: 7:00 PM – 12:00 AM',
-    'maintenance_notice_resume' => 'The system is expected to resume normal operations after 12:00 AM.',
+    'maintenance_notice_resume' => 'The system is expected to resume normal operations after 12:00 AM.
+Please complete or arrange any necessary operations before the maintenance begins.
+Thank you for your understanding and cooperation! ',
     'maintenance_notice_reminder' => 'Please complete any necessary transactions or operations before the maintenance begins. Thank you for your understanding and cooperation!',
 ];
