@@ -228,6 +228,7 @@ class Qc168Gateway
             Log::warning('QC168 returned a non-success HTTP response.', [
                 'endpoint' => $endpoint,
                 'http_status' => $response->status(),
+                'http_body' => $response->body(),
             ]);
 
             $exceptionClass = $response->serverError()
