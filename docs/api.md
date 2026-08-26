@@ -57,7 +57,9 @@ Dates are ISO-8601 strings. Money fields are numeric floats and often include a 
 | GET | `/api/v1/wallet` | Yes | Screen-ready wallet balances, summaries, filters, and paginated transactions |
 | GET | `/api/v1/wallet/transactions` | Yes | Legacy paginated wallet transactions |
 | GET | `/api/v1/recharge` | Yes | Recharge wallet, methods, requests |
-| POST | `/api/v1/recharge` | Yes | Submit recharge request |
+| POST | `/api/v1/recharge` | Yes | Submit manual recharge request |
+| POST | `/api/v1/recharge/gateway` | Yes | Create QC168 gateway recharge and return payment URL |
+| GET | `/api/v1/recharge/{rechargeRequest}/status` | Yes | Poll an owned gateway recharge status |
 | GET | `/api/v1/withdraw` | Yes | Withdraw wallet, bank account, requests |
 | POST | `/api/v1/withdraw` | Yes | Submit withdraw request |
 | POST | `/api/v1/bank-account/send-otp` | Yes | Send bank account binding phone OTP |
@@ -180,7 +182,9 @@ Uses `DailyIncomeClaimService`. Hourly products are supported through `claim_int
 
 ### Recharge
 
-`POST /api/v1/recharge` uses multipart form data:
+`GET /api/v1/recharge` returns `deposit_methods` as well as the existing manual bank methods and request history. A gateway item contains only availability and provider identity; credentials are never returned.
+
+`POST /api/v1/recharge` remains the backward-compatible manual flow and uses multipart form data:
 
 | Field | Type | Required |
 | --- | --- | --- |
@@ -188,6 +192,20 @@ Uses `DailyIncomeClaimService`. Hourly products are supported through `claim_int
 | recharge_method_id | integer | yes |
 | reference_no | string | no |
 | receipt | image file | yes |
+
+Create an automatic gateway deposit with JSON:
+
+```http
+POST /api/v1/recharge/gateway
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{"amount":"1000.00"}
+```
+
+The response contains `recharge_request` and `payment_url`. The client opens `payment_url`; it must never call QC168 with merchant credentials. Poll `GET /api/v1/recharge/{id}/status` until `recharge_request.approved` is true or `gateway_status` is a final failure state. A browser redirect or query parameter cannot approve a recharge.
+
+Recharge request responses now include `deposit_method`, `approved`, `gateway_provider`, `merchant_order_id`, `gateway_status`, and (for a gateway request) `payment_url`. They never include `OC-Key`, the signing secret, or merchant UID.
 
 When the admin setting `invite_day_require_first_deposit` is enabled, approving the invited user's first recharge can give invite-day points to the referrer. The first approved recharge must be at least `invite_day_first_deposit_min_amount`; if the first approved recharge is below the minimum, later recharges do not trigger the invite-day bonus.
 
@@ -200,6 +218,10 @@ When the admin setting `invite_day_require_first_deposit` is enabled, approving 
 ```
 
 Uses `WithdrawService`. Backend validates withdraw status, active account, active bank account, VIP minimum, fee, and balance lock.
+
+The request immediately reserves the full `amount`. Admin approval is unavailable while automated QC168 withdrawals are disabled. After approval, `payout_status=waiting_release` until the exact 24-hour release timestamp; only a verified provider `completed` state consumes the locked reserve. `failed`, `reject`, and `overdue` remain locked for controlled retry or cancellation.
+
+`GET /api/v1/withdraw` also returns `supported_banks` as `{name, bank_code}` records. `bank_code` is QC168's numeric Vietnam code (for example Vietcombank `970436`), not an alphabetic abbreviation. Each withdrawal response includes `bank_code`, `payout_status`, `payout_status_label`, `gateway_release_at`, `gateway_submitted_at`, and `gateway_completed_at`. Gateway credentials and merchant authentication values are never returned.
 
 ### Bank Account Binding
 
@@ -226,14 +248,14 @@ POST /api/v1/bank-account
 ```json
 {
   "bank_account_name": "Customer Name",
-  "bank_name": "Maybank",
+  "bank_name": "Vietcombank",
   "bank_account_no": "1234567890",
   "phone": "60123456789",
   "otp_code": "123456"
 }
 ```
 
-The API normalizes phone and bank account number, verifies OTP purpose `bank_account`, stores `user_bank_accounts.phone`, sets `phone_verified_at`, locks the account, and returns the bound bank account. Duplicate bank account name or number returns 422 validation JSON instead of 500.
+The API normalizes phone and bank account number, verifies OTP purpose `bank_account`, derives and stores the corresponding numeric QC168 `bank_code`, stores `user_bank_accounts.phone`, sets `phone_verified_at`, locks the account, and returns the bound bank account. `bank_name` must be one of the names returned by `supported_banks`. Duplicate bank account name or number returns 422 validation JSON instead of 500.
 
 ### Change Password
 

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Users\RelationManagers;
 
+use App\Support\Qc168VietnamBank;
 use Filament\Actions\CreateAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
@@ -28,6 +29,11 @@ class BankAccountRelationManager extends RelationManager
         return __('bank_account.bound_bank_account');
     }
 
+    public function isReadOnly(): bool
+    {
+        return false;
+    }
+
     public function form(Schema $schema): Schema
     {
         return $schema
@@ -41,10 +47,13 @@ class BankAccountRelationManager extends RelationManager
                                     ->required()
                                     ->maxLength(150),
 
-                                TextInput::make('bank_name')
+                                Select::make('bank_name')
                                     ->label(__('bank_account.bank_name'))
+                                    ->options(Qc168VietnamBank::options())
+                                    ->searchable()
+                                    ->native(false)
                                     ->required()
-                                    ->maxLength(100),
+                                    ->live(),
 
                                 TextInput::make('bank_account_no')
                                     ->label(__('bank_account.bank_account_no'))
@@ -95,6 +104,10 @@ class BankAccountRelationManager extends RelationManager
                     ->label(__('bank_account.bank_name'))
                     ->searchable(),
 
+                TextColumn::make('bank_code')
+                    ->label(__('withdraw.bank_code'))
+                    ->placeholder(__('withdraw.missing_bank_code')),
+
                 TextColumn::make('bank_account_no')
                     ->label(__('bank_account.bank_account_no'))
                     ->formatStateUsing(function (?string $state): string {
@@ -104,14 +117,14 @@ class BankAccountRelationManager extends RelationManager
                             return $state ?: '-';
                         }
 
-                        return str_repeat('*', max(strlen($number) - 4, 0)).substr($number, -4);
+                        return str_repeat('*', max(strlen($number) - 4, 0)) . substr($number, -4);
                     })
                     ->copyable(),
 
                 TextColumn::make('status')
                     ->label(__('filament.status'))
                     ->badge()
-                    ->color(fn (string $state): string => match ($state) {
+                    ->color(fn(string $state): string => match ($state) {
                         'active' => 'success',
                         'inactive' => 'gray',
                         'suspended' => 'danger',
@@ -134,11 +147,12 @@ class BankAccountRelationManager extends RelationManager
             ->headerActions([
                 CreateAction::make()
                     ->label(__('bank_account.bind_bank_account'))
-                    ->visible(fn (): bool => ! $this->getOwnerRecord()->bankAccount()->where('status', 'active')->exists())
+                    ->visible(fn(): bool => !$this->getOwnerRecord()->bankAccount()->where('status', 'active')->exists())
                     ->mutateDataUsing(function (array $data): array {
                         $data['user_id'] = $this->getOwnerRecord()->id;
                         $data['is_locked'] = true;
                         $data['bound_at'] ??= now();
+                        $data['bank_code'] = Qc168VietnamBank::codeForName($data['bank_name'] ?? null);
 
                         $data['meta']['source'] = 'admin_bind';
                         $data['meta']['admin_user_id'] = auth('admin')->id();
@@ -153,6 +167,7 @@ class BankAccountRelationManager extends RelationManager
                     ->label(__('filament.edit'))
                     ->mutateDataUsing(function (array $data): array {
                         $data['is_locked'] = true;
+                        $data['bank_code'] = Qc168VietnamBank::codeForName($data['bank_name'] ?? null);
 
                         $data['meta']['last_changed_by_admin_user_id'] = auth('admin')->id();
                         $data['meta']['last_changed_at'] = now()->toDateTimeString();

@@ -8,6 +8,7 @@ use App\Services\BankAccountReviewService;
 use App\Services\OtpService;
 use App\Support\Api\ApiFormatter;
 use App\Support\Api\ApiResponse;
+use App\Support\Qc168VietnamBank;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -44,7 +45,12 @@ class BankAccountController extends Controller
             'bank_account_name' => [
                 'required', 'string', 'max:150',
             ],
-            'bank_name' => ['required', 'string', 'max:100'],
+            'bank_name' => [
+                'required',
+                'string',
+                'max:100',
+                Rule::in(array_keys(Qc168VietnamBank::options())),
+            ],
             'bank_account_no' => [
                 'required',
                 'string',

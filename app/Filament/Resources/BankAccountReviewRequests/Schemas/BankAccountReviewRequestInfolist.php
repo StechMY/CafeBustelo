@@ -31,6 +31,9 @@ class BankAccountReviewRequestInfolist
                             ->copyable(),
                         TextEntry::make('bank_name')
                             ->label(__('bank_account.bank_name')),
+                        TextEntry::make('bank_code')
+                            ->label(__('withdraw.bank_code'))
+                            ->placeholder(__('withdraw.missing_bank_code')),
                         TextEntry::make('bank_account_no')
                             ->label(__('bank_account.bank_account_no'))
                             ->copyable(),

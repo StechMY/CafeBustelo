@@ -6,6 +6,7 @@ use App\Models\AdminUser;
 use App\Models\BankAccountReviewRequest;
 use App\Models\User;
 use App\Models\UserBankAccount;
+use App\Support\Qc168VietnamBank;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -120,6 +121,7 @@ class BankAccountReviewService
                 'user_id' => $user->id,
                 'bank_account_name' => $lockedRequest->bank_account_name,
                 'bank_name' => $lockedRequest->bank_name,
+                'bank_code' => $lockedRequest->bank_code,
                 'bank_account_no' => $lockedRequest->bank_account_no,
                 'phone' => $lockedRequest->phone,
                 'phone_verified_at' => $lockedRequest->phone_verified_at,
@@ -175,6 +177,7 @@ class BankAccountReviewService
         return [
             'bank_account_name' => $data['bank_account_name'],
             'bank_name' => $data['bank_name'],
+            'bank_code' => Qc168VietnamBank::codeForName($data['bank_name']),
             'bank_account_no' => $data['bank_account_no'],
             'phone' => $data['phone'],
             'phone_verified_at' => $data['phone_verified_at'] ?? now(),

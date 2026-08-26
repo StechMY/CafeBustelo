@@ -278,11 +278,11 @@ Fields: `id`, `wallet_type`, `wallet_type_label`, `type`, `direction`, `amount`,
 
 ### RechargeRequest
 
-Fields: `id`, `amount`, `formatted_amount`, `status`, `reference_no`, `receipt_url`, `payment_method_name`, `payment_bank_name`, `payment_account_name`, `payment_account_no`, `admin_remark`, `reviewed_at`, `created_at`.
+Fields: `id`, `amount`, `formatted_amount`, `deposit_method`, `status`, `approved`, `gateway_provider`, `merchant_order_id`, `gateway_status`, `payment_url`, `reference_no`, `receipt_url`, `payment_method_name`, `payment_bank_name`, `payment_account_name`, `payment_account_no`, `admin_remark`, `reviewed_at`, `created_at`.
 
 ### WithdrawRequest
 
-Fields: `id`, `amount`, `fee_amount`, `net_amount`, `status`, `vip_level_snapshot`, `min_withdraw_amount_snapshot`, `withdraw_fee_percent_snapshot`, `bank_name`, `bank_account_name`, `bank_account_no`, `admin_remark`, `reviewed_at`, `created_at`.
+Fields: `id`, `amount`, `fee_amount`, `net_amount`, `status`, `vip_level_snapshot`, `min_withdraw_amount_snapshot`, `withdraw_fee_percent_snapshot`, `bank_name`, `bank_code`, `bank_account_name`, `bank_account_no`, `payout_status`, `payout_status_label`, `gateway_release_at`, `gateway_submitted_at`, `gateway_completed_at`, `admin_remark`, `reviewed_at`, `created_at`.
 
 ### TeamMember
 
@@ -446,9 +446,9 @@ Legacy paginated transaction list. Prefer `/wallet` for the wallet screen.
 
 `GET /api/v1/recharge`
 
-Returns recharge wallet, active recharge methods, and request history.
+Returns recharge wallet, `deposit_methods`, active manual recharge methods, and request history. Render the gateway option only when its `enabled` value is true.
 
-`POST /api/v1/recharge` multipart:
+`POST /api/v1/recharge` remains the manual deposit endpoint and uses multipart form data:
 
 | Field | Type | Required |
 | --- | --- | --- |
@@ -457,13 +457,22 @@ Returns recharge wallet, active recharge methods, and request history.
 | reference_no | string | no |
 | receipt | image | yes |
 
+For QC168 automatic deposit:
+
+1. Send `POST /api/v1/recharge/gateway` with JSON `{"amount":"1000.00"}`.
+2. Open the returned `data.payment_url` in the app's approved external-browser/WebView flow.
+3. After the provider returns, poll `GET /api/v1/recharge/{id}/status` every 3–5 seconds.
+4. Treat local `approved: true` as success. Treat `failed`, `reject`, `refund`, `overdue`, or `create_failed` as unsuccessful. Other gateway states are still processing.
+
+Flutter must not send a user ID and must never receive or store `QC168_OC_KEY`, `QC168_SECRET`, or `QC168_MERCHANT_UID`. The provider may return to the Laravel web status page; no custom mobile deep link is assumed.
+
 If the backend requires first-deposit qualification for invite-day points, the referrer can receive those points only when this user's first approved recharge meets the configured minimum. A first approved recharge below the minimum does not qualify later on a second recharge.
 
 ### Withdraw
 
 `GET /api/v1/withdraw`
 
-Returns wallet, bank account, VIP withdrawal settings, and request history.
+Returns wallet, bank account, VIP withdrawal settings, request history, and `supported_banks` records containing `name` plus the numeric QC168 `bank_code`. Render the server-provided payout status label and timestamps; do not infer payout completion from the legacy approval status alone.
 
 ### Bank Account Binding
 
@@ -503,14 +512,14 @@ Auth: Bearer token required
 ```json
 {
   "bank_account_name": "Customer Name",
-  "bank_name": "Maybank",
+  "bank_name": "Vietcombank",
   "bank_account_no": "1234567890",
   "phone": "60123456789",
   "otp_code": "123456"
 }
 ```
 
-Flutter should not recalculate or bypass OTP state. Laravel verifies purpose `bank_account`, stores the normalized phone, sets `phone_verified_at`, locks the bank account, and returns `bank_account`.
+Flutter should not recalculate or bypass OTP state. Laravel verifies purpose `bank_account`, derives the numeric QC168 bank code from the selected `supported_banks` name, stores the normalized phone, sets `phone_verified_at`, locks the bank account, and returns `bank_account`. Do not send abbreviations such as `VCB` as a bank code.
 
 `POST /api/v1/withdraw`
 
@@ -519,6 +528,8 @@ Flutter should not recalculate or bypass OTP state. Laravel verifies purpose `ba
   "amount": 100
 }
 ```
+
+The full amount is reserved immediately. After admin approval, the automatic payout waits exactly 24 hours and sends `net_amount`; the existing app withdrawal fee is already reflected in that value. Only `payout_status=completed` is final. Provider `failed`, `rejected`, and `overdue` states remain locked while an authorized admin investigates, retries, or safely cancels. The QC168 merchant fee is never a client-side deduction.
 
 ### My Team
 
@@ -841,7 +852,7 @@ Refresh wallet/dashboard after purchase, claim, points redeem, recharge, withdra
 | Product Detail | `GET /api/v1/products` | Use selected product object |
 | My Products | `GET /api/v1/user-products`, `POST /api/v1/user-products/{id}/claim` | Claim buttons |
 | Wallet | `GET /api/v1/wallet` | Screen-ready balances, summaries, filters, transactions, and meta |
-| Recharge | `GET /api/v1/recharge`, `POST /api/v1/recharge` | Multipart receipt upload |
+| Recharge | `GET /api/v1/recharge`, `POST /api/v1/recharge`, `POST /api/v1/recharge/gateway`, `GET /api/v1/recharge/{id}/status` | Manual receipt upload or QC168 browser payment/polling |
 | Withdraw | `GET /api/v1/withdraw`, `POST /api/v1/bank-account/send-otp`, `POST /api/v1/bank-account`, `POST /api/v1/withdraw` | Bank account must be active |
 | My Team | `GET /api/v1/my-team`, `GET /api/v1/my-team/b`, `GET /api/v1/my-team/c`, `GET /api/v1/my-team/d` | Web-aligned B/C/D only |
 | Check In | `GET /api/v1/check-in`, `POST /api/v1/check-in` | Daily status |

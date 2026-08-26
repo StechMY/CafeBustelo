@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Api;
 
 use App\Models\RechargeMethod;
+use App\Support\RechargeAmountRules;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -16,7 +17,7 @@ class RechargeStoreRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'amount' => ['required', 'numeric', 'min:1', 'max:99999999'],
+            'amount' => RechargeAmountRules::rules(),
             'recharge_method_id' => [
                 'required',
                 'integer',

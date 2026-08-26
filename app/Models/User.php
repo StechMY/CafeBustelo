@@ -386,7 +386,7 @@ class User extends Authenticatable
     public function getTotalApprovedWithdrawAttribute(): float
     {
         return (float) $this->withdrawRequests()
-            ->where('status', 'approved')
+            ->paid()
             ->sum('amount');
     }
 

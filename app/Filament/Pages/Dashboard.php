@@ -7,13 +7,16 @@ use App\Filament\Widgets\PlatformOperationStats;
 use App\Filament\Widgets\PlatformOverviewStats;
 use App\Filament\Widgets\PlatformRequestStats;
 use App\Filament\Widgets\PlatformUserStats;
+use App\Models\AdminUser;
 use App\Models\PhoneOtp;
 use App\Models\Product;
 use App\Models\Setting;
 use App\Services\MaintenanceNoticeService;
 use App\Services\PointService;
+use App\Services\Settings\Qc168Settings;
 use App\Services\WelcomeBonusService;
 use Filament\Actions\Action;
+use Filament\Facades\Filament;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
@@ -120,7 +123,7 @@ class Dashboard extends BaseDashboard
                         ->url()
                         ->maxLength(1000)
                         ->placeholder('https://example.com/app.apk')
-                        ->default(fn(): ?string => Setting::getValue('app_download_url'))
+                        ->default(fn (): ?string => Setting::getValue('app_download_url'))
                         ->helperText(__('filament.app_download_url_help')),
                 ])
                 ->action(function (array $data): void {
@@ -134,6 +137,50 @@ class Dashboard extends BaseDashboard
                         ->success()
                         ->send();
                 }),
+            Action::make('paymentGatewaySettings')
+                ->label(__('filament.payment_gateway_settings'))
+                ->icon('heroicon-o-banknotes')
+                ->color('info')
+                ->visible(fn (): bool => Filament::auth()->user()?->can(Qc168Settings::MANAGE_PERMISSION) ?? false)
+                ->authorize(fn (): bool => Filament::auth()->user()?->can(Qc168Settings::MANAGE_PERMISSION) ?? false)
+                ->modalHeading(__('filament.payment_gateway_settings'))
+                ->fillForm(fn (): array => app(Qc168Settings::class)->formData())
+                ->form([
+                    Toggle::make('deposit_enabled')
+                        ->label(__('filament.qc168_automatic_deposit'))
+                        ->required(),
+
+                    Toggle::make('withdraw_enabled')
+                        ->label(__('filament.qc168_automatic_withdrawal'))
+                        ->required(),
+
+                    TextInput::make('withdraw_release_hours')
+                        ->label(__('filament.qc168_withdraw_release_hours'))
+                        ->helperText(__('filament.qc168_withdraw_release_hours_help'))
+                        ->suffix(__('filament.hours'))
+                        ->numeric()
+                        ->integer()
+                        ->minValue(1)
+                        ->maxValue(720)
+                        ->step(1)
+                        ->required(),
+                ])
+                ->action(function (array $data): void {
+                    $adminUser = Filament::auth()->user();
+
+                    abort_unless($adminUser instanceof AdminUser, 403);
+
+                    app(Qc168Settings::class)->save(
+                        data: $data,
+                        actor: $adminUser,
+                        ip: request()->ip(),
+                    );
+
+                    Notification::make()
+                        ->title(__('filament.payment_gateway_settings_saved'))
+                        ->success()
+                        ->send();
+                }),
             Action::make('maintenanceNoticeSettings')
                 ->label(__('filament.maintenance_notice_settings'))
                 ->icon('heroicon-o-wrench-screwdriver')
@@ -143,7 +190,7 @@ class Dashboard extends BaseDashboard
                 ->form([
                     Toggle::make('enabled')
                         ->label(__('filament.enable_maintenance_notice'))
-                        ->default(fn(): bool => Setting::bool(
+                        ->default(fn (): bool => Setting::bool(
                             MaintenanceNoticeService::SETTING_ENABLED,
                             false
                         )),
@@ -153,7 +200,7 @@ class Dashboard extends BaseDashboard
                         ->required()
                         ->seconds(false)
                         ->native(false)
-                        ->default(fn(): string => (string) Setting::getValue(
+                        ->default(fn (): string => (string) Setting::getValue(
                             MaintenanceNoticeService::SETTING_STARTS_AT,
                             today()->setTime(19, 0)->format('Y-m-d H:i:s')
                         )),
@@ -164,7 +211,7 @@ class Dashboard extends BaseDashboard
                         ->after('starts_at')
                         ->seconds(false)
                         ->native(false)
-                        ->default(fn(): string => (string) Setting::getValue(
+                        ->default(fn (): string => (string) Setting::getValue(
                             MaintenanceNoticeService::SETTING_ENDS_AT,
                             today()->addDay()->startOfDay()->format('Y-m-d H:i:s')
                         )),
@@ -200,7 +247,7 @@ class Dashboard extends BaseDashboard
                 ->form([
                     Toggle::make('enabled')
                         ->label(__('filament.enable_welcome_bonus'))
-                        ->default(fn(): bool => Setting::bool(
+                        ->default(fn (): bool => Setting::bool(
                             WelcomeBonusService::SETTING_ENABLED,
                             false
                         )),
@@ -252,39 +299,39 @@ class Dashboard extends BaseDashboard
                 ->form([
                     Toggle::make('points_enabled')
                         ->label(__('filament.points_enabled'))
-                        ->default(fn(): bool => Setting::bool(PointService::SETTING_POINTS_ENABLED, false)),
+                        ->default(fn (): bool => Setting::bool(PointService::SETTING_POINTS_ENABLED, false)),
 
                     Toggle::make('upgrade_day_points_enabled')
                         ->label(__('filament.upgrade_day_points_enabled'))
-                        ->default(fn(): bool => Setting::bool(PointService::SETTING_UPGRADE_DAY_ENABLED, false)),
+                        ->default(fn (): bool => Setting::bool(PointService::SETTING_UPGRADE_DAY_ENABLED, false)),
 
                     TextInput::make('upgrade_day_points_amount')
                         ->label(__('filament.upgrade_day_points_amount'))
                         ->numeric()
-                        ->default(fn(): float => Setting::decimal(PointService::SETTING_UPGRADE_DAY_AMOUNT, 0))
+                        ->default(fn (): float => Setting::decimal(PointService::SETTING_UPGRADE_DAY_AMOUNT, 0))
                         ->minValue(0)
                         ->step('0.01'),
 
                     Toggle::make('invite_day_points_enabled')
                         ->label(__('filament.invite_day_points_enabled'))
-                        ->default(fn(): bool => Setting::bool(PointService::SETTING_INVITE_DAY_ENABLED, false)),
+                        ->default(fn (): bool => Setting::bool(PointService::SETTING_INVITE_DAY_ENABLED, false)),
 
                     TextInput::make('invite_day_points_amount')
                         ->label(__('filament.invite_day_points_amount'))
                         ->numeric()
-                        ->default(fn(): float => Setting::decimal(PointService::SETTING_INVITE_DAY_AMOUNT, 0))
+                        ->default(fn (): float => Setting::decimal(PointService::SETTING_INVITE_DAY_AMOUNT, 0))
                         ->minValue(0)
                         ->step('0.01'),
 
                     Toggle::make('invite_day_require_first_deposit')
                         ->label(__('filament.invite_day_require_first_deposit'))
-                        ->default(fn(): bool => Setting::bool(PointService::SETTING_INVITE_DAY_REQUIRE_FIRST_DEPOSIT, false))
+                        ->default(fn (): bool => Setting::bool(PointService::SETTING_INVITE_DAY_REQUIRE_FIRST_DEPOSIT, false))
                         ->helperText(__('filament.invite_day_require_first_deposit_help')),
 
                     TextInput::make('invite_day_first_deposit_min_amount')
                         ->label(__('filament.invite_day_first_deposit_min_amount'))
                         ->numeric()
-                        ->default(fn(): float => Setting::decimal(PointService::SETTING_INVITE_DAY_FIRST_DEPOSIT_MIN_AMOUNT, 0))
+                        ->default(fn (): float => Setting::decimal(PointService::SETTING_INVITE_DAY_FIRST_DEPOSIT_MIN_AMOUNT, 0))
                         ->minValue(0)
                         ->prefix(config('app.currency'))
                         ->step('0.01')
@@ -292,12 +339,12 @@ class Dashboard extends BaseDashboard
 
                     Toggle::make('points_cash_exchange_enabled')
                         ->label(__('filament.points_cash_exchange_enabled'))
-                        ->default(fn(): bool => Setting::bool(PointService::SETTING_REDEEM_ENABLED, false)),
+                        ->default(fn (): bool => Setting::bool(PointService::SETTING_REDEEM_ENABLED, false)),
 
                     TextInput::make('points_to_cash_rate')
                         ->label(__('filament.points_to_cash_rate'))
                         ->numeric()
-                        ->default(fn(): float => Setting::decimal(PointService::SETTING_POINTS_TO_CASH_RATE, 100))
+                        ->default(fn (): float => Setting::decimal(PointService::SETTING_POINTS_TO_CASH_RATE, 100))
                         ->minValue(0.01)
                         ->step('0.01')
                         ->helperText(__('filament.points_to_cash_rate_help')),
@@ -305,7 +352,7 @@ class Dashboard extends BaseDashboard
                     TextInput::make('minimum_points_to_redeem')
                         ->label(__('filament.minimum_points_to_redeem'))
                         ->numeric()
-                        ->default(fn(): float => Setting::decimal(PointService::SETTING_MINIMUM_REDEEM_POINTS, 0))
+                        ->default(fn (): float => Setting::decimal(PointService::SETTING_MINIMUM_REDEEM_POINTS, 0))
                         ->minValue(0)
                         ->step('0.01'),
                     CheckboxList::make('upgrade_day_points_weekdays')

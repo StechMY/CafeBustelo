@@ -16,3 +16,18 @@ Schedule::command('svip:auto-claim-daily-income')
     ->everyFiveMinutes()
     ->withoutOverlapping()
     ->runInBackground();
+
+Schedule::command('qc168:sync-pending-recharges')
+    ->everyFiveMinutes()
+    ->withoutOverlapping()
+    ->runInBackground();
+
+Schedule::command('qc168:dispatch-approved-withdrawals')
+    ->everyMinute()
+    ->withoutOverlapping()
+    ->runInBackground();
+
+Schedule::command('qc168:sync-pending-withdrawals')
+    ->everyFiveMinutes()
+    ->withoutOverlapping()
+    ->runInBackground();

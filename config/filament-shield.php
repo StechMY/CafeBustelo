@@ -256,6 +256,14 @@ return [
     'custom_permissions' => [
         'Audit:Recharge' => 'Audit Recharge',
         'Audit:Withdraw' => 'Audit Withdraw',
+        'ApproveManual:Withdrawal' => 'Approve Withdrawal Manually',
+        'ApproveScheduledGateway:Withdrawal' => 'Approve Scheduled Gateway Withdrawal',
+        'ApproveInstantGateway:Withdrawal' => 'Approve Instant Gateway Withdrawal',
+        'SyncGateway:Recharge' => 'Sync QC168 Recharge Status',
+        'RetryGateway:Withdrawal' => 'Retry QC168 Withdrawal Payout',
+        'CancelGateway:Withdrawal' => 'Cancel QC168 Withdrawal Payout',
+        'SyncGateway:Withdrawal' => 'Sync QC168 Withdrawal Status',
+        'ManagePaymentGateway:Settings' => 'Manage Payment Gateway Settings',
     ],
 
     /*

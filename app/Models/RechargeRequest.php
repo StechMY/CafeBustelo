@@ -8,6 +8,12 @@ use Illuminate\Support\Facades\Storage;
 
 class RechargeRequest extends Model
 {
+    public const METHOD_MANUAL = 'manual';
+
+    public const METHOD_GATEWAY = 'gateway';
+
+    public const GATEWAY_QC168 = 'qc168';
+
     protected $fillable = [
         'user_id',
         'recharge_method_id',
@@ -20,6 +26,22 @@ class RechargeRequest extends Model
         'payment_bank_name',
         'payment_account_name',
         'payment_account_no',
+
+        'deposit_method',
+        'gateway_provider',
+        'merchant_order_id',
+        'gateway_order_uid',
+        'gateway_payment_uid',
+        'gateway_payment_status',
+        'gateway_payment_url',
+        'gateway_final_amount',
+        'gateway_currency',
+        'gateway_channel',
+        'gateway_fail_reason',
+        'gateway_completed_at',
+        'gateway_last_callback_at',
+        'gateway_last_synced_at',
+        'gateway_meta',
 
         // keep these for backward compatibility
         'bank_name',
@@ -36,6 +58,11 @@ class RechargeRequest extends Model
     {
         return [
             'amount' => 'decimal:2',
+            'gateway_final_amount' => 'decimal:2',
+            'gateway_completed_at' => 'datetime',
+            'gateway_last_callback_at' => 'datetime',
+            'gateway_last_synced_at' => 'datetime',
+            'gateway_meta' => 'array',
             'submitted_at' => 'datetime',
             'reviewed_at' => 'datetime',
         ];
@@ -79,5 +106,15 @@ class RechargeRequest extends Model
     public function isRejected(): bool
     {
         return $this->status === 'rejected';
+    }
+
+    public function isManualDeposit(): bool
+    {
+        return $this->deposit_method === self::METHOD_MANUAL;
+    }
+
+    public function isGatewayDeposit(): bool
+    {
+        return $this->deposit_method === self::METHOD_GATEWAY;
     }
 }

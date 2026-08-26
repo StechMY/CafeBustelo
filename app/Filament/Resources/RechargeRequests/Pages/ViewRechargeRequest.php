@@ -4,6 +4,7 @@ namespace App\Filament\Resources\RechargeRequests\Pages;
 
 use App\Filament\Resources\RechargeRequests\RechargeRequestResource;
 use App\Models\RechargeRequest;
+use App\Services\PaymentGateway\Qc168CallbackService;
 use App\Services\RechargeApprovalService;
 use App\Support\FilamentSupportScope;
 use Filament\Actions\Action;
@@ -34,12 +35,52 @@ class ViewRechargeRequest extends ViewRecord
         return [
             // EditAction::make(),
 
+            Action::make('syncGateway')
+                ->label(__('filament.sync_gateway_status'))
+                ->icon('heroicon-o-arrow-path')
+                ->color('info')
+                ->visible(fn (RechargeRequest $record): bool => $record->isGatewayDeposit())
+                ->authorize(fn (RechargeRequest $record): bool => Gate::allows('syncGateway', $record))
+                ->requiresConfirmation()
+                ->action(function (): void {
+                    abort_unless(Gate::allows('syncGateway', $this->record), 403);
+
+                    try {
+                        $result = app(Qc168CallbackService::class)->sync($this->record);
+
+                        if (! $result['accepted']) {
+                            Notification::make()
+                                ->title(__('filament.gateway_sync_failed'))
+                                ->body($result['result'])
+                                ->danger()
+                                ->send();
+
+                            return;
+                        }
+
+                        Notification::make()
+                            ->title(__('filament.gateway_status_synced'))
+                            ->body($result['result'])
+                            ->success()
+                            ->send();
+
+                        $this->redirect($this->getResource()::getUrl('view', ['record' => $this->record]));
+                    } catch (Throwable $exception) {
+                        report($exception);
+
+                        Notification::make()
+                            ->title(__('filament.gateway_sync_failed'))
+                            ->danger()
+                            ->send();
+                    }
+                }),
+
             Action::make('approve')
                 ->label(__('filament.approve'))
                 ->icon('heroicon-o-check-circle')
                 ->color('success')
-                ->visible(fn(RechargeRequest $record): bool => $record->status === 'pending')
-                ->authorize(fn(RechargeRequest $record): bool => Gate::allows('audit', $record))
+                ->visible(fn (RechargeRequest $record): bool => $record->status === 'pending' && $record->isManualDeposit())
+                ->authorize(fn (RechargeRequest $record): bool => Gate::allows('audit', $record))
                 ->form([
                     Textarea::make('admin_remark')
                         ->label(__('filament.admin_remark'))
@@ -78,8 +119,8 @@ class ViewRechargeRequest extends ViewRecord
                 ->label(__('filament.reject'))
                 ->icon('heroicon-o-x-circle')
                 ->color('danger')
-                ->visible(fn(RechargeRequest $record): bool => $record->status === 'pending')
-                ->authorize(fn(RechargeRequest $record): bool => Gate::allows('audit', $record))
+                ->visible(fn (RechargeRequest $record): bool => $record->status === 'pending' && $record->isManualDeposit())
+                ->authorize(fn (RechargeRequest $record): bool => Gate::allows('audit', $record))
                 ->form([
                     Textarea::make('admin_remark')
                         ->label(__('filament.reject_reason'))

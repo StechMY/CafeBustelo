@@ -175,7 +175,7 @@ class CafeDashboardMetricsService
             ->sum('amount');
 
         $invalidWithdraw = WithdrawRequest::query()
-            ->where('status', 'approved')
+            ->paid()
             ->tap(fn (Builder $query) => $this->applyRelatedUserScope(
                 $query,
                 $filters->virtualMode,
@@ -522,16 +522,16 @@ class CafeDashboardMetricsService
             ->all();
 
         $withdrawByDate = WithdrawRequest::query()
-            ->where('status', 'approved')
-            ->whereBetween('reviewed_at', [$filters->dateFrom, $filters->dateTo])
+            ->paid()
+            ->whereBetween(DB::raw('COALESCE(gateway_completed_at, reviewed_at)'), [$filters->dateFrom, $filters->dateTo])
             ->tap(fn (Builder $query) => $this->applyRelatedUserScope(
                 $query,
                 $filters->virtualMode,
                 'user',
                 $visibleUserIds,
             ))
-            ->selectRaw('DATE(reviewed_at) AS aggregate_date, SUM(amount) AS aggregate_amount')
-            ->groupByRaw('DATE(reviewed_at)')
+            ->selectRaw('DATE(COALESCE(gateway_completed_at, reviewed_at)) AS aggregate_date, SUM(amount) AS aggregate_amount')
+            ->groupByRaw('DATE(COALESCE(gateway_completed_at, reviewed_at))')
             ->pluck('aggregate_amount', 'aggregate_date')
             ->map(fn ($amount): float => $this->money($amount))
             ->all();
@@ -594,12 +594,14 @@ class CafeDashboardMetricsService
         ?array $visibleUserIds = null,
     ): float {
         return (float) WithdrawRequest::query()
-            ->where('status', 'approved')
-            ->tap(fn (Builder $query) => $this->applyOptionalDateRange(
-                $query,
-                'reviewed_at',
-                $start,
-                $end,
+            ->paid()
+            ->when($start, fn (Builder $query): Builder => $query->whereRaw(
+                'COALESCE(gateway_completed_at, reviewed_at) >= ?',
+                [$start],
+            ))
+            ->when($end, fn (Builder $query): Builder => $query->whereRaw(
+                'COALESCE(gateway_completed_at, reviewed_at) <= ?',
+                [$end],
             ))
             ->tap(fn (Builder $query) => $this->applyRelatedUserScope(
                 $query,

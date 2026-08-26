@@ -33,12 +33,12 @@ class RechargeRequestInfolist
 
                                 TextEntry::make('amount')
                                     ->label(__('filament.amount'))
-                                    ->prefix(config('app.currency') . " "),
+                                    ->prefix(config('app.currency').' '),
 
                                 TextEntry::make('status')
                                     ->label(__('filament.status'))
                                     ->badge()
-                                    ->color(fn(?string $state): string => match ($state) {
+                                    ->color(fn (?string $state): string => match ($state) {
                                         'pending' => 'warning',
                                         'approved' => 'success',
                                         'rejected' => 'danger',
@@ -53,6 +53,7 @@ class RechargeRequestInfolist
                     ]),
 
                 Section::make(__('filament.payment_detail'))
+                    ->visible(fn ($record): bool => $record->isManualDeposit())
                     ->schema([
                         Grid::make(2)
                             ->schema([
@@ -67,7 +68,29 @@ class RechargeRequestInfolist
                             ]),
                     ]),
 
+                Section::make(__('filament.gateway_details'))
+                    ->visible(fn ($record): bool => $record->isGatewayDeposit())
+                    ->columnSpanFull()
+                    ->schema([
+                        Grid::make(3)
+                            ->schema([
+                                TextEntry::make('gateway_provider')->label(__('filament.gateway_provider'))->placeholder('-'),
+                                TextEntry::make('merchant_order_id')->label(__('filament.merchant_order_id'))->copyable()->placeholder('-'),
+                                TextEntry::make('gateway_payment_status')->label(__('filament.gateway_status'))->badge()->placeholder('-'),
+                                TextEntry::make('gateway_order_uid')->label(__('filament.gateway_order_uid'))->copyable()->placeholder('-'),
+                                TextEntry::make('gateway_payment_uid')->label(__('filament.gateway_payment_uid'))->copyable()->placeholder('-'),
+                                TextEntry::make('gateway_final_amount')->label(__('filament.gateway_final_amount'))->placeholder('-'),
+                                TextEntry::make('gateway_currency')->label(__('filament.gateway_currency'))->placeholder('-'),
+                                TextEntry::make('gateway_channel')->label(__('filament.gateway_channel'))->placeholder('-'),
+                                TextEntry::make('gateway_fail_reason')->label(__('filament.gateway_fail_reason'))->placeholder('-'),
+                                TextEntry::make('gateway_completed_at')->label(__('filament.gateway_completed_at'))->dateTime()->placeholder('-'),
+                                TextEntry::make('gateway_last_callback_at')->label(__('filament.gateway_last_callback_at'))->dateTime()->placeholder('-'),
+                                TextEntry::make('gateway_last_synced_at')->label(__('filament.gateway_last_synced_at'))->dateTime()->placeholder('-'),
+                            ]),
+                    ]),
+
                 Section::make(__('filament.payment_information'))
+                    ->visible(fn ($record): bool => $record->isManualDeposit())
                     ->schema([
                         Grid::make(2)
                             ->schema([
@@ -101,13 +124,13 @@ class RechargeRequestInfolist
                     ->schema([
                         ImageEntry::make('receipt_path')
                             ->label(__('filament.receipt_preview'))
-                            ->disk(fn($record): string => $record->receipt_disk ?: 'do_spaces')
+                            ->disk(fn ($record): string => $record->receipt_disk ?: 'do_spaces')
                             ->height(360)
                             ->extraAttributes([
                                 'class' => 'w-full overflow-hidden rounded-xl bg-gray-50',
                             ])
-                            ->visible(fn($record): bool => filled($record->receipt_path)
-                                && !str_ends_with(strtolower($record->receipt_path), '.pdf')),
+                            ->visible(fn ($record): bool => filled($record->receipt_path)
+                                && ! str_ends_with(strtolower($record->receipt_path), '.pdf')),
                     ]),
 
                 Section::make(__('filament.review'))

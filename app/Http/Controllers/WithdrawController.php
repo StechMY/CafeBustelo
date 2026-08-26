@@ -97,10 +97,9 @@ class WithdrawController extends Controller
                 ->with('error', $exception->getMessage());
         } catch (Throwable $exception) {
             report($exception);
-
             return back()
                 ->withInput()
-                ->with('error', __('withdraw.submit_failed'));
+                ->with('error', $exception->getMessage());
         }
     }
 

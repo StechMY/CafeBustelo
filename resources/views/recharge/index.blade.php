@@ -86,6 +86,13 @@
                                         {{ $requestItem->submitted_at?->format('d M Y, h:i A') ?? $requestItem->created_at->format('d M Y, h:i A') }}
                                     </div>
 
+                                    <div class="mt-1 text-[10px] font-black uppercase text-[#003b7a]/70 sm:text-xs">
+                                        {{ $requestItem->isGatewayDeposit() ? __('recharge.payment_gateway') : __('recharge.manual_deposit') }}
+                                        @if ($requestItem->isGatewayDeposit() && $requestItem->gateway_payment_status)
+                                            · {{ __('recharge.gateway_status') }}: {{ $requestItem->gateway_payment_status }}
+                                        @endif
+                                    </div>
+
                                     @if ($requestItem->reference_no)
                                         <div class="mt-0.5 truncate text-[10px] font-bold text-[#003b7a]/60 sm:text-xs">
                                             {{ __('recharge.reference_no') }}: {{ $requestItem->reference_no }}

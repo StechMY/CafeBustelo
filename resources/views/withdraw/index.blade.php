@@ -104,8 +104,17 @@
                                         'bg-red-100 text-red-700' => $requestItem->status === 'rejected',
                                     ])"
                                 >
-                                    {{ __('status.' . $requestItem->status) }}
+                                    {{ $requestItem->status === 'approved'
+                                        ? $requestItem->payoutStatusLabel()
+                                        : __('status.' . $requestItem->status) }}
                                 </span>
+
+                                @if ($requestItem->payout_status === \App\Models\WithdrawRequest::PAYOUT_WAITING_RELEASE && $requestItem->gateway_release_at)
+                                    <div class="mt-1 text-right text-[10px] font-bold text-[#003b7a]/60 sm:text-xs">
+                                        {{ __('withdraw.eligible_after') }}:
+                                        {{ $requestItem->gateway_release_at->format('d M Y, h:i A') }}
+                                    </div>
+                                @endif
                             </div>
                         </a>
                     @endforeach

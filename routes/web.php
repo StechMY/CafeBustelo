@@ -14,9 +14,12 @@ use App\Http\Controllers\ContactController;
 use App\Http\Controllers\DailyIncomeClaimController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DownlineProductController;
+use App\Http\Controllers\GatewayRechargeController;
 use App\Http\Controllers\HumanGateController;
 use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\MyTeamController;
+use App\Http\Controllers\PaymentGateway\Qc168CallbackController;
+use App\Http\Controllers\PaymentGateway\Qc168WithdrawalCallbackController;
 use App\Http\Controllers\PointClaimController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProfileController;
@@ -60,6 +63,14 @@ use Illuminate\Support\Facades\Route;
 // });
 
 Route::redirect('/', '/dashboard');
+
+Route::post('/payment-gateway/qc168/callback', Qc168CallbackController::class)
+    ->middleware('throttle:120,1')
+    ->name('payment-gateway.qc168.callback');
+
+Route::post('/payment-gateway/qc168/withdrawal/callback', Qc168WithdrawalCallbackController::class)
+    ->middleware('throttle:120,1')
+    ->name('payment-gateway.qc168.withdrawal.callback');
 
 Route::get('/human-gate', [HumanGateController::class, 'show'])
     ->name('human.gate')
@@ -115,6 +126,15 @@ Route::middleware('auth')->group(function (): void {
 
     Route::post('/recharge', [RechargeController::class, 'store'])
         ->name('recharge.store');
+
+    Route::post('/recharge/gateway', [GatewayRechargeController::class, 'store'])
+        ->name('recharge.gateway.store');
+
+    Route::get('/recharge/gateway/return/{rechargeRequest}', [GatewayRechargeController::class, 'showReturn'])
+        ->name('recharge.gateway.return');
+
+    Route::get('/recharge/gateway/{rechargeRequest}/status', [GatewayRechargeController::class, 'status'])
+        ->name('recharge.gateway.status');
 
     Route::get('/recharge/{rechargeRequest}', [RechargeController::class, 'show'])
         ->name('recharge.show');

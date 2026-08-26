@@ -5,14 +5,25 @@ namespace App\Services;
 use App\Models\AdminUser;
 use App\Models\User;
 use App\Models\Wallet;
+use App\Models\WithdrawalPayoutAttempt;
 use App\Models\WithdrawRequest;
+use App\Services\PaymentGateway\PaymentGatewayEventRecorder;
+use App\Services\PaymentGateway\Qc168Gateway;
+use App\Services\PaymentGateway\Qc168WithdrawalPayoutService;
+use App\Services\Settings\Qc168Settings;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\ValidationException;
 use RuntimeException;
+use Throwable;
 
 class WithdrawService
 {
     public function __construct(
         private readonly WalletService $walletService,
+        private readonly Qc168Settings $qc168Settings,
+        private readonly Qc168Gateway $qc168Gateway,
+        private readonly PaymentGatewayEventRecorder $eventRecorder,
     ) {}
 
     public function submit(
@@ -92,6 +103,7 @@ class WithdrawService
 
                 // snapshot bank info, so future admin changes do not modify old request history
                 'bank_name' => $bankAccount->bank_name,
+                'bank_code' => $bankAccount->bank_code,
                 'bank_account_name' => $bankAccount->bank_account_name,
                 'bank_account_no' => $bankAccount->bank_account_no,
 
@@ -120,21 +132,24 @@ class WithdrawService
         });
     }
 
-    public function approve(
+    public function approveManually(
         WithdrawRequest $withdrawRequest,
-        ?AdminUser $adminUser,
+        AdminUser $adminUser,
         ?string $adminRemark = null,
+        string $source = 'filament',
+        ?string $ip = null,
     ): WithdrawRequest {
-        return DB::transaction(function () use ($withdrawRequest, $adminUser, $adminRemark): WithdrawRequest {
+        Gate::forUser($adminUser)->authorize('approveManual', $withdrawRequest);
+
+        return DB::transaction(function () use ($withdrawRequest, $adminUser, $adminRemark, $source, $ip): WithdrawRequest {
             $lockedRequest = WithdrawRequest::query()
                 ->whereKey($withdrawRequest->id)
                 ->lockForUpdate()
                 ->firstOrFail();
 
-            if (! $lockedRequest->isPending()) {
-                throw new RuntimeException('Only pending withdraw requests can be approved.');
-            }
+            $this->ensurePending($lockedRequest);
 
+            $approvedAt = now();
             $user = $lockedRequest->user()
                 ->lockForUpdate()
                 ->firstOrFail();
@@ -146,22 +161,123 @@ class WithdrawService
             );
 
             $lockedRequest->forceFill([
-                'status' => 'approved',
-                'reviewed_by' => $adminUser?->id,
-                'reviewed_at' => now(),
+                'status' => WithdrawRequest::STATUS_APPROVED,
+                'approval_mode' => WithdrawRequest::APPROVAL_MODE_MANUAL,
+                'reviewed_by' => $adminUser->id,
+                'reviewed_at' => $approvedAt,
                 'admin_remark' => $adminRemark,
+                'gateway_provider' => null,
+                'payout_status' => WithdrawRequest::PAYOUT_COMPLETED,
+                'gateway_release_at' => null,
+                'gateway_release_delay_hours_snapshot' => null,
+                'gateway_submitted_at' => null,
+                'gateway_completed_at' => null,
+                'gateway_current_merchant_order_id' => null,
+                'gateway_payment_status' => null,
+                'gateway_final_amount' => null,
+                'gateway_fail_reason' => null,
+                'gateway_meta' => null,
             ])->save();
+
+            $this->eventRecorder->recordWithdrawal(
+                'withdrawal.approved_manual',
+                $lockedRequest,
+                actor: $adminUser,
+                source: $source,
+                reason: $adminRemark,
+                paymentStatus: WithdrawRequest::PAYOUT_COMPLETED,
+                payload: array_filter([
+                    'ip' => $ip,
+                    'approval_mode' => WithdrawRequest::APPROVAL_MODE_MANUAL,
+                    'approved_at' => $approvedAt->toAtomString(),
+                    'reserved_amount_consumed' => (string) $lockedRequest->amount,
+                ], fn ($value): bool => $value !== null),
+            );
 
             return $lockedRequest;
         });
+    }
+
+    public function approveWithScheduledGateway(
+        WithdrawRequest $withdrawRequest,
+        AdminUser $adminUser,
+        ?string $adminRemark = null,
+        string $source = 'filament',
+        ?string $ip = null,
+    ): WithdrawRequest {
+        Gate::forUser($adminUser)->authorize('approveScheduledGateway', $withdrawRequest);
+
+        return $this->approveForGateway(
+            $withdrawRequest,
+            $adminUser,
+            WithdrawRequest::APPROVAL_MODE_GATEWAY_SCHEDULED,
+            $this->qc168Settings->withdrawReleaseHours(),
+            'withdrawal.approved_gateway_scheduled',
+            $adminRemark,
+            $source,
+            $ip,
+        );
+    }
+
+    public function approveWithInstantGateway(
+        WithdrawRequest $withdrawRequest,
+        AdminUser $adminUser,
+        ?string $adminRemark = null,
+        string $source = 'filament',
+        ?string $ip = null,
+    ): WithdrawRequest {
+        Gate::forUser($adminUser)->authorize('approveInstantGateway', $withdrawRequest);
+
+        $approvedRequest = $this->approveForGateway(
+            $withdrawRequest,
+            $adminUser,
+            WithdrawRequest::APPROVAL_MODE_GATEWAY_INSTANT,
+            0,
+            'withdrawal.approved_gateway_instant',
+            $adminRemark,
+            $source,
+            $ip,
+        );
+
+        try {
+            $attempt = app(Qc168WithdrawalPayoutService::class)->dispatch(
+                $approvedRequest,
+                'filament_instant',
+            );
+
+            if (! $attempt) {
+                throw new RuntimeException(__('withdraw.instant_submission_not_created'));
+            }
+
+            $this->recordInstantAttempt($approvedRequest, $attempt, $adminUser, $source, $ip);
+        } catch (Throwable $exception) {
+            $attempt = $approvedRequest->payoutAttempts()->latest('attempt_no')->first();
+
+            if ($attempt) {
+                $this->recordInstantAttempt(
+                    $approvedRequest->fresh(),
+                    $attempt,
+                    $adminUser,
+                    $source,
+                    $ip,
+                    $exception->getMessage(),
+                );
+            }
+
+            throw $exception;
+        }
+
+        return $approvedRequest->fresh();
     }
 
     public function reject(
         WithdrawRequest $withdrawRequest,
         ?AdminUser $adminUser,
         ?string $adminRemark = null,
+        string $source = 'filament',
+        ?string $ip = null,
     ): WithdrawRequest {
-        return DB::transaction(function () use ($withdrawRequest, $adminUser, $adminRemark): WithdrawRequest {
+        return DB::transaction(function () use ($withdrawRequest, $adminUser, $adminRemark, $source, $ip): WithdrawRequest {
             $lockedRequest = WithdrawRequest::query()
                 ->whereKey($withdrawRequest->id)
                 ->lockForUpdate()
@@ -198,8 +314,266 @@ class WithdrawService
                 ],
             );
 
+            $this->eventRecorder->recordWithdrawal(
+                'withdrawal.rejected',
+                $lockedRequest,
+                actor: $adminUser,
+                source: $source,
+                reason: $adminRemark,
+                payload: array_filter(['ip' => $ip], fn ($value): bool => $value !== null),
+            );
+
             return $lockedRequest;
         });
+    }
+
+    public function finalizePayout(
+        WithdrawRequest $withdrawRequest,
+        WithdrawalPayoutAttempt $attempt,
+        string $source,
+    ): bool {
+        return DB::transaction(function () use ($withdrawRequest, $attempt, $source): bool {
+            $lockedRequest = WithdrawRequest::query()
+                ->whereKey($withdrawRequest->id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            if ($lockedRequest->isPayoutCompleted()) {
+                return false;
+            }
+
+            if (! $lockedRequest->isApproved()) {
+                throw new RuntimeException('Only approved withdrawals can be finalized.');
+            }
+
+            $user = $lockedRequest->user()
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            $this->walletService->consumeLocked(
+                user: $user,
+                walletType: Wallet::TYPE_WITHDRAWABLE,
+                amount: $lockedRequest->amount,
+            );
+
+            $completedAt = now();
+            $lockedRequest->forceFill([
+                'payout_status' => WithdrawRequest::PAYOUT_COMPLETED,
+                'gateway_payment_status' => WithdrawalPayoutAttempt::STATUS_COMPLETED,
+                'gateway_completed_at' => $lockedRequest->gateway_completed_at ?: $completedAt,
+                'gateway_fail_reason' => null,
+            ])->save();
+
+            $this->eventRecorder->recordWithdrawal(
+                'withdrawal.gateway_completed',
+                $lockedRequest,
+                $attempt,
+                source: $source,
+                paymentStatus: WithdrawalPayoutAttempt::STATUS_COMPLETED,
+                payload: [
+                    'finalized_at' => $completedAt->toAtomString(),
+                    'reserved_amount_consumed' => (string) $lockedRequest->amount,
+                    'user_payout_amount' => (string) $attempt->amount,
+                ],
+            );
+
+            return true;
+        });
+    }
+
+    public function cancelPayout(
+        WithdrawRequest $withdrawRequest,
+        WithdrawalPayoutAttempt $attempt,
+        AdminUser $adminUser,
+        string $reason,
+        ?string $ip = null,
+    ): WithdrawRequest {
+        return DB::transaction(function () use ($withdrawRequest, $attempt, $adminUser, $reason, $ip): WithdrawRequest {
+            $lockedRequest = WithdrawRequest::query()
+                ->whereKey($withdrawRequest->id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            if (! $lockedRequest->isApproved() || $lockedRequest->isPayoutCompleted()) {
+                throw new RuntimeException(__('withdraw.cancel_not_allowed'));
+            }
+
+            if (! in_array($lockedRequest->payout_status, [
+                WithdrawRequest::PAYOUT_CREATE_FAILED,
+                WithdrawRequest::PAYOUT_FAILED,
+                WithdrawRequest::PAYOUT_REJECTED,
+                WithdrawRequest::PAYOUT_OVERDUE,
+            ], true) || ! $attempt->isSafeFinalFailure()) {
+                throw new RuntimeException(__('withdraw.cancel_not_safe'));
+            }
+
+            $user = $lockedRequest->user()
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            $this->walletService->releaseLocked(
+                user: $user,
+                walletType: Wallet::TYPE_WITHDRAWABLE,
+                transactionType: 'withdraw_gateway_cancelled',
+                amount: $lockedRequest->amount,
+                reference: $lockedRequest,
+                remarks: 'Withdrawal payout cancelled and reserve released',
+                meta: [
+                    'withdraw_request_id' => $lockedRequest->id,
+                    'withdrawal_payout_attempt_id' => $attempt->id,
+                    'merchant_order_id' => $attempt->merchant_order_id,
+                    'admin_user_id' => $adminUser->id,
+                    'reason' => $reason,
+                ],
+            );
+
+            $lockedRequest->forceFill([
+                'payout_status' => WithdrawRequest::PAYOUT_CANCELLED,
+                'gateway_fail_reason' => $reason,
+                'gateway_meta' => array_merge($lockedRequest->gateway_meta ?? [], [
+                    'cancelled_at' => now()->toAtomString(),
+                    'cancelled_by' => $adminUser->id,
+                ]),
+            ])->save();
+
+            $this->eventRecorder->recordWithdrawal(
+                'withdrawal.gateway_cancelled',
+                $lockedRequest,
+                $attempt,
+                $adminUser,
+                'filament',
+                $reason,
+                WithdrawRequest::PAYOUT_CANCELLED,
+                array_filter(['ip' => $ip], fn ($value): bool => $value !== null),
+            );
+
+            return $lockedRequest;
+        });
+    }
+
+    private function approveForGateway(
+        WithdrawRequest $withdrawRequest,
+        AdminUser $adminUser,
+        string $approvalMode,
+        int $delayHours,
+        string $eventType,
+        ?string $adminRemark,
+        string $source,
+        ?string $ip,
+    ): WithdrawRequest {
+        return DB::transaction(function () use (
+            $withdrawRequest,
+            $adminUser,
+            $approvalMode,
+            $delayHours,
+            $eventType,
+            $adminRemark,
+            $source,
+            $ip,
+        ): WithdrawRequest {
+            $lockedRequest = WithdrawRequest::query()
+                ->whereKey($withdrawRequest->id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            $this->ensureGatewayAvailable();
+            $this->ensurePending($lockedRequest);
+
+            if (! preg_match('/^\d+$/', (string) $lockedRequest->bank_code)) {
+                throw ValidationException::withMessages([
+                    'bank_account' => __('withdraw.bank_not_supported'),
+                ]);
+            }
+
+            $approvedAt = now();
+            $releaseAt = $delayHours === 0
+                ? $approvedAt->copy()
+                : $approvedAt->copy()->addHours($delayHours);
+
+            $lockedRequest->forceFill([
+                'status' => WithdrawRequest::STATUS_APPROVED,
+                'approval_mode' => $approvalMode,
+                'reviewed_by' => $adminUser->id,
+                'reviewed_at' => $approvedAt,
+                'admin_remark' => $adminRemark,
+                'gateway_provider' => WithdrawRequest::GATEWAY_QC168,
+                'payout_status' => WithdrawRequest::PAYOUT_WAITING_RELEASE,
+                'gateway_release_at' => $releaseAt,
+                'gateway_release_delay_hours_snapshot' => $delayHours,
+                'gateway_payment_status' => null,
+                'gateway_fail_reason' => null,
+            ])->save();
+
+            $eventPayload = array_filter([
+                'ip' => $ip,
+                'approval_mode' => $approvalMode,
+                'approved_at' => $approvedAt->toAtomString(),
+                'delay_hours_snapshot' => $delayHours,
+                'gateway_release_at' => $releaseAt->toAtomString(),
+            ], fn ($value): bool => $value !== null);
+
+            $this->eventRecorder->recordWithdrawal(
+                $eventType,
+                $lockedRequest,
+                actor: $adminUser,
+                source: $source,
+                reason: $adminRemark,
+                paymentStatus: WithdrawRequest::PAYOUT_WAITING_RELEASE,
+                payload: $eventPayload,
+            );
+            $this->eventRecorder->recordWithdrawal(
+                'withdrawal.gateway_waiting_release',
+                $lockedRequest,
+                actor: $adminUser,
+                source: $source,
+                paymentStatus: WithdrawRequest::PAYOUT_WAITING_RELEASE,
+                payload: $eventPayload,
+            );
+
+            return $lockedRequest;
+        });
+    }
+
+    private function recordInstantAttempt(
+        WithdrawRequest $withdrawRequest,
+        WithdrawalPayoutAttempt $attempt,
+        AdminUser $adminUser,
+        string $source,
+        ?string $ip,
+        ?string $failureReason = null,
+    ): void {
+        $this->eventRecorder->recordWithdrawal(
+            'withdrawal.gateway_instant_attempt_created',
+            $withdrawRequest,
+            $attempt,
+            $adminUser,
+            $source,
+            $failureReason,
+            $attempt->gateway_status,
+            array_filter([
+                'ip' => $ip,
+                'approval_mode' => WithdrawRequest::APPROVAL_MODE_GATEWAY_INSTANT,
+                'withdrawal_payout_attempt_id' => $attempt->id,
+                'merchant_order_id' => $attempt->merchant_order_id,
+            ], fn ($value): bool => $value !== null),
+            processingResult: $failureReason ? 'submission_failed' : 'submitted',
+        );
+    }
+
+    private function ensureGatewayAvailable(): void
+    {
+        if (! $this->qc168Gateway->isWithdrawalAvailable()) {
+            throw ValidationException::withMessages([
+                'withdrawal' => __('withdraw.gateway_unavailable'),
+            ]);
+        }
+    }
+
+    private function ensurePending(WithdrawRequest $withdrawRequest): void
+    {
+        if (! $withdrawRequest->isPending()) {
+            throw new RuntimeException('Only pending withdraw requests can be approved.');
+        }
     }
 
     private function withdrawFeePercent(mixed $vipLevel): float

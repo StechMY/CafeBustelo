@@ -76,8 +76,12 @@ class CafeDashboardMetricsServiceTest extends TestCase
         $this->assertCount(2, $shortChart['labels']);
         $this->assertCount(365, $longChart['labels']);
 
-        foreach ($longQueries as $query) {
-            $this->assertStringContainsString('group by DATE(reviewed_at)', $query['query']);
-        }
+        $queries = implode("\n", array_column($longQueries, 'query'));
+
+        $this->assertStringContainsString('group by DATE(reviewed_at)', $queries);
+        $this->assertStringContainsString(
+            'group by DATE(COALESCE(gateway_completed_at, reviewed_at))',
+            $queries,
+        );
     }
 }

@@ -45,7 +45,7 @@ class ProfileController extends Controller
         $yesterdayEnd = now()->subDay()->endOfDay();
 
         $totalEarning = WalletTransaction::query()->where('user_id', $user->id)->where('wallet_type', Wallet::TYPE_WITHDRAWABLE)->where('direction', WalletTransaction::DIRECTION_CREDIT)->sum('amount');
-        $totalWithdrawals = WithdrawRequest::query()->where('user_id', $user->id)->where('status', 'approved')->sum('net_amount');
+        $totalWithdrawals = WithdrawRequest::query()->where('user_id', $user->id)->paid()->sum('net_amount');
         $teamIncome = CommissionRecord::query()->where('earner_user_id', $user->id)->where('status', 'paid')->sum('amount');
         $incomeToday = WalletTransaction::query()->where('user_id', $user->id)->where('wallet_type', Wallet::TYPE_WITHDRAWABLE)->where('direction', WalletTransaction::DIRECTION_CREDIT)->whereBetween('created_at', [$todayStart, $todayEnd])->sum('amount');
         $yesterdayEarnings = WalletTransaction::query()->where('user_id', $user->id)->where('wallet_type', Wallet::TYPE_WITHDRAWABLE)->where('direction', WalletTransaction::DIRECTION_CREDIT)->whereBetween('created_at', [$yesterdayStart, $yesterdayEnd])->sum('amount');
@@ -58,7 +58,7 @@ class ProfileController extends Controller
             ...DisplayValue::moneyFields($user, 'accumulated_recharge', 'display_accumulated_recharge', $user->accumulated_recharge),
             ...DisplayValue::moneyFields($user, 'total_earning', 'display_total_earning', $totalEarning),
             ...DisplayValue::moneyFields($user, 'total_withdrawals', 'display_total_withdrawals', $totalWithdrawals),
-            'pending_withdrawals' => ApiFormatter::money(WithdrawRequest::query()->where('user_id', $user->id)->where('status', 'pending')->sum('amount')),
+            'pending_withdrawals' => ApiFormatter::money(WithdrawRequest::query()->where('user_id', $user->id)->withReservedFunds()->sum('amount')),
             ...DisplayValue::moneyFields($user, 'team_income', 'display_team_income', $teamIncome),
             ...DisplayValue::moneyFields($user, 'income_today', 'display_income_today', $incomeToday),
             ...DisplayValue::moneyFields($user, 'yesterday_earnings', 'display_yesterday_earnings', $yesterdayEarnings),

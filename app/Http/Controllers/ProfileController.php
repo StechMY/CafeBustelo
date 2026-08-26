@@ -61,12 +61,12 @@ class ProfileController extends Controller
 
             'total_withdrawals' => WithdrawRequest::query()
                 ->where('user_id', $user->id)
-                ->where('status', 'approved')
+                ->paid()
                 ->sum('net_amount'),
 
             'pending_withdrawals' => WithdrawRequest::query()
                 ->where('user_id', $user->id)
-                ->where('status', 'pending')
+                ->withReservedFunds()
                 ->sum('amount'),
 
             'team_income' => CommissionRecord::query()
@@ -234,7 +234,6 @@ class ProfileController extends Controller
 
         return back()->with('success', __('profile.avatar_deleted'));
     }
-
 
     private function displayOverride(User $user, string $field, mixed $realValue): mixed
     {

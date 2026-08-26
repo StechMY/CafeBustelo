@@ -7,6 +7,7 @@ use App\Http\Requests\Api\RechargeStoreRequest;
 use App\Models\RechargeMethod;
 use App\Models\RechargeRequest;
 use App\Models\Wallet;
+use App\Services\PaymentGateway\Qc168Gateway;
 use App\Support\Api\ApiFormatter;
 use App\Support\Api\ApiResponse;
 use Illuminate\Http\JsonResponse;
@@ -14,7 +15,7 @@ use Illuminate\Http\Request;
 
 class RechargeController extends Controller
 {
-    public function index(Request $request): JsonResponse
+    public function index(Request $request, Qc168Gateway $gateway): JsonResponse
     {
         $user = $request->user();
         $wallet = Wallet::query()->where('user_id', $user->id)->where('type', Wallet::TYPE_RECHARGE)->first();
@@ -24,13 +25,28 @@ class RechargeController extends Controller
             ->latest()
             ->paginate((int) $request->query('per_page', 10));
 
+        $methods = RechargeMethod::query()
+            ->where('status', RechargeMethod::STATUS_ACTIVE)
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->get();
+
         return ApiResponse::success([
             'wallet' => ApiFormatter::wallet($wallet, Wallet::TYPE_RECHARGE),
-            'methods' => RechargeMethod::query()
-                ->where('status', RechargeMethod::STATUS_ACTIVE)
-                ->orderBy('sort_order')
-                ->orderBy('id')
-                ->get()
+            'deposit_methods' => [
+                [
+                    'key' => RechargeRequest::METHOD_MANUAL,
+                    'label' => __('recharge.manual_deposit'),
+                    'enabled' => $methods->isNotEmpty(),
+                ],
+                [
+                    'key' => RechargeRequest::METHOD_GATEWAY,
+                    'label' => __('recharge.payment_gateway'),
+                    'enabled' => $gateway->isAvailable(),
+                    'provider' => RechargeRequest::GATEWAY_QC168,
+                ],
+            ],
+            'methods' => $methods
                 ->map(fn (RechargeMethod $method): array => ApiFormatter::rechargeMethod($method))
                 ->values(),
             'requests' => [
@@ -61,6 +77,7 @@ class RechargeController extends Controller
             'user_id' => $request->user()->id,
             'recharge_method_id' => $rechargeMethod->id,
             'amount' => $data['amount'],
+            'deposit_method' => RechargeRequest::METHOD_MANUAL,
             'receipt_path' => $receiptPath,
             'receipt_disk' => $receiptDisk,
             'payment_method_name' => $rechargeMethod->name,

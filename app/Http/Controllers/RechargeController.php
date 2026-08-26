@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\RechargeMethod;
 use App\Models\RechargeRequest;
 use App\Models\Wallet;
+use App\Services\PaymentGateway\Qc168Gateway;
+use App\Support\RechargeAmountRules;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -33,7 +35,7 @@ class RechargeController extends Controller
         ]);
     }
 
-    public function create(Request $request): View
+    public function create(Request $request, Qc168Gateway $gateway): View
     {
         $rechargeMethods = RechargeMethod::query()
             ->where('status', RechargeMethod::STATUS_ACTIVE)
@@ -44,13 +46,14 @@ class RechargeController extends Controller
         return view('recharge.create', [
             'user' => $request->user(),
             'rechargeMethods' => $rechargeMethods,
+            'gatewayAvailable' => $gateway->isAvailable(),
         ]);
     }
 
     public function store(Request $request): RedirectResponse
     {
         $data = $request->validate([
-            'amount' => ['required', 'numeric', 'min:1', 'max:99999999'],
+            'amount' => RechargeAmountRules::rules(),
             'recharge_method_id' => [
                 'required',
                 'integer',
@@ -73,13 +76,14 @@ class RechargeController extends Controller
         $receiptDisk = 'do_spaces';
 
         $receiptPath = $request->file('receipt')
-            ->storePublicly('recharge-receipts/' . now()->format('Y/m'), $receiptDisk);
+            ->storePublicly('recharge-receipts/'.now()->format('Y/m'), $receiptDisk);
 
         $rechargeRequest = RechargeRequest::query()->create([
             'user_id' => $request->user()->id,
             'recharge_method_id' => $rechargeMethod->id,
 
             'amount' => $data['amount'],
+            'deposit_method' => RechargeRequest::METHOD_MANUAL,
             'receipt_path' => $receiptPath,
             'receipt_disk' => $receiptDisk,
 

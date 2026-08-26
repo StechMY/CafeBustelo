@@ -9,6 +9,7 @@ use App\Models\WithdrawRequest;
 use App\Services\WithdrawService;
 use App\Support\Api\ApiFormatter;
 use App\Support\Api\ApiResponse;
+use App\Support\Qc168VietnamBank;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use RuntimeException;
@@ -38,6 +39,12 @@ class WithdrawController extends Controller
             'can_withdraw' => (bool) $user->canWithdraw()
                 && $user->status === 'active'
                 && $bankAccount !== null,
+            'supported_banks' => collect(Qc168VietnamBank::options())
+                ->map(fn (string $name): array => [
+                    'name' => $name,
+                    'bank_code' => Qc168VietnamBank::codeForName($name),
+                ])
+                ->values(),
             'requests' => [
                 'items' => $requests->getCollection()->map(fn (WithdrawRequest $item): array => ApiFormatter::withdrawRequest($item))->values(),
                 'pagination' => [

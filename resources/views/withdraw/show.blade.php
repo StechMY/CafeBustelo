@@ -27,7 +27,9 @@
                         'bg-green-100 text-green-700' => $withdrawRequest->status === 'approved',
                         'bg-red-100 text-red-700' => $withdrawRequest->status === 'rejected',
                     ])">
-                    {{ __('status.' . $withdrawRequest->status) }}
+                    {{ $withdrawRequest->status === 'approved'
+                        ? $withdrawRequest->payoutStatusLabel()
+                        : __('status.' . $withdrawRequest->status) }}
                 </span>
             </div>
 
@@ -40,6 +42,23 @@
                         {{ config('app.currency') }} {{ number_format((float) $withdrawRequest->amount, 2) }}
                     </div>
                 </div>
+
+                @if ($withdrawRequest->payout_status)
+                    <div class="rounded-2xl bg-[#fff8c7] p-4">
+                        <div class="text-xs font-black uppercase text-[#003b7a]/60">
+                            {{ __('withdraw.payout_status') }}
+                        </div>
+                        <div class="mt-1 font-black text-[#003b7a]">
+                            {{ $withdrawRequest->payoutStatusLabel() }}
+                        </div>
+                        @if ($withdrawRequest->payout_status === \App\Models\WithdrawRequest::PAYOUT_WAITING_RELEASE && $withdrawRequest->gateway_release_at)
+                            <div class="mt-1 text-xs font-bold text-[#003b7a]/60">
+                                {{ __('withdraw.eligible_after') }}:
+                                {{ $withdrawRequest->gateway_release_at->format('d M Y, h:i A') }}
+                            </div>
+                        @endif
+                    </div>
+                @endif
 
                 <div class="rounded-2xl bg-[#fff8c7] p-4">
                     <div class="text-xs font-black uppercase text-[#003b7a]/60">

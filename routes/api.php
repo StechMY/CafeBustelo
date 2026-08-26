@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\CheckInController;
 use App\Http\Controllers\Api\ContactController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\DownlineProductController;
+use App\Http\Controllers\Api\GatewayRechargeController;
 use App\Http\Controllers\Api\Internal\ManagementDashboardController;
 use App\Http\Controllers\Api\MyTeamController;
 use App\Http\Controllers\Api\PointsController;
@@ -71,6 +72,8 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
 
         Route::get('/recharge', [RechargeController::class, 'index'])->name('recharge.index');
         Route::post('/recharge', [RechargeController::class, 'store'])->name('recharge.store');
+        Route::post('/recharge/gateway', [GatewayRechargeController::class, 'store'])->name('recharge.gateway.store');
+        Route::get('/recharge/{rechargeRequest}/status', [GatewayRechargeController::class, 'status'])->name('recharge.gateway.status');
 
         Route::get('/withdraw', [WithdrawController::class, 'index'])->name('withdraw.index');
         Route::post('/withdraw', [WithdrawController::class, 'store'])->name('withdraw.store');

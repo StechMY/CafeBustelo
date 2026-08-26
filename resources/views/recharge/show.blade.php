@@ -32,6 +32,25 @@
             </div>
 
             <div class="grid gap-3">
+                <div class="rounded-2xl bg-[#fff8c7] p-4">
+                    <div class="text-xs font-black uppercase text-[#003b7a]/60">{{ __('recharge.deposit_method') }}</div>
+                    <div class="mt-1 font-black text-[#003b7a]">
+                        {{ $rechargeRequest->isGatewayDeposit() ? __('recharge.payment_gateway') : __('recharge.manual_deposit') }}
+                    </div>
+                </div>
+
+                @if ($rechargeRequest->isGatewayDeposit())
+                    <div class="grid gap-3 sm:grid-cols-2">
+                        <div class="rounded-2xl bg-[#fff8c7] p-4">
+                            <div class="text-xs font-black uppercase text-[#003b7a]/60">{{ __('recharge.merchant_order_id') }}</div>
+                            <div class="mt-1 break-all font-black text-[#003b7a]">{{ $rechargeRequest->merchant_order_id ?: '-' }}</div>
+                        </div>
+                        <div class="rounded-2xl bg-[#fff8c7] p-4">
+                            <div class="text-xs font-black uppercase text-[#003b7a]/60">{{ __('recharge.gateway_status') }}</div>
+                            <div class="mt-1 font-black uppercase text-[#003b7a]">{{ $rechargeRequest->gateway_payment_status ?: '-' }}</div>
+                        </div>
+                    </div>
+                @else
                 <div class="grid gap-3 sm:grid-cols-2">
                     <div class="rounded-2xl bg-[#fff8c7] p-4">
                         <div class="text-xs font-black uppercase text-[#003b7a]/60">
@@ -83,6 +102,7 @@
                         {{ $rechargeRequest->reference_no ?: '-' }}
                     </div>
                 </div>
+                @endif
 
 
                 @if ($rechargeRequest->admin_remark)

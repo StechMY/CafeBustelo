@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Policies;
 
 use App\Models\WithdrawRequest;
+use App\Support\FilamentSupportScope;
 use Illuminate\Auth\Access\HandlesAuthorization;
 use Illuminate\Foundation\Auth\User as AuthUser;
 
@@ -14,7 +15,44 @@ class WithdrawRequestPolicy
 
     public function audit(AuthUser $user, WithdrawRequest $withdrawRequest): bool
     {
-        return $user->can('Audit:Withdraw');
+        return $user->can('Audit:Withdraw')
+            && FilamentSupportScope::canAccessUserId($withdrawRequest->user_id);
+    }
+
+    public function approveManual(AuthUser $user, WithdrawRequest $withdrawRequest): bool
+    {
+        return $user->can('ApproveManual:Withdrawal')
+            && FilamentSupportScope::canAccessUserId($withdrawRequest->user_id);
+    }
+
+    public function approveScheduledGateway(AuthUser $user, WithdrawRequest $withdrawRequest): bool
+    {
+        return $user->can('ApproveScheduledGateway:Withdrawal')
+            && FilamentSupportScope::canAccessUserId($withdrawRequest->user_id);
+    }
+
+    public function approveInstantGateway(AuthUser $user, WithdrawRequest $withdrawRequest): bool
+    {
+        return $user->can('ApproveInstantGateway:Withdrawal')
+            && FilamentSupportScope::canAccessUserId($withdrawRequest->user_id);
+    }
+
+    public function retryGateway(AuthUser $user, WithdrawRequest $withdrawRequest): bool
+    {
+        return $user->can('RetryGateway:Withdrawal')
+            && FilamentSupportScope::canAccessUserId($withdrawRequest->user_id);
+    }
+
+    public function cancelGateway(AuthUser $user, WithdrawRequest $withdrawRequest): bool
+    {
+        return $user->can('CancelGateway:Withdrawal')
+            && FilamentSupportScope::canAccessUserId($withdrawRequest->user_id);
+    }
+
+    public function syncGateway(AuthUser $user, WithdrawRequest $withdrawRequest): bool
+    {
+        return $user->can('SyncGateway:Withdrawal')
+            && FilamentSupportScope::canAccessUserId($withdrawRequest->user_id);
     }
 
     public function viewAny(AuthUser $authUser): bool
@@ -24,7 +62,8 @@ class WithdrawRequestPolicy
 
     public function view(AuthUser $authUser, WithdrawRequest $withdrawRequest): bool
     {
-        return $authUser->can('View:WithdrawRequest');
+        return $authUser->can('View:WithdrawRequest')
+            && FilamentSupportScope::canAccessUserId($withdrawRequest->user_id);
     }
 
     public function create(AuthUser $authUser): bool

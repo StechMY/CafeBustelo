@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\BankAccountReviewRequest;
 use App\Services\BankAccountReviewService;
 use App\Services\OtpService;
+use App\Support\Qc168VietnamBank;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -66,6 +67,7 @@ class BankAccountController extends Controller
                 'required',
                 'string',
                 'max:100',
+                Rule::in(array_keys(Qc168VietnamBank::options())),
             ],
             'bank_account_no' => [
                 'required',

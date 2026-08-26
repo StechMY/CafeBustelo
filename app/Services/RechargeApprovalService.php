@@ -19,8 +19,9 @@ class RechargeApprovalService
         RechargeRequest $rechargeRequest,
         ?AdminUser $adminUser,
         ?string $adminRemark = null,
+        array $meta = [],
     ): RechargeRequest {
-        $approvedRechargeRequest = DB::transaction(function () use ($rechargeRequest, $adminUser, $adminRemark): RechargeRequest {
+        $approvedRechargeRequest = DB::transaction(function () use ($rechargeRequest, $adminUser, $adminRemark, $meta): RechargeRequest {
             $lockedRequest = RechargeRequest::query()
                 ->whereKey($rechargeRequest->id)
                 ->lockForUpdate()
@@ -51,6 +52,7 @@ class RechargeApprovalService
                 meta: [
                     'recharge_request_id' => $lockedRequest->id,
                     'admin_user_id' => $adminUser?->id,
+                    ...$meta,
                 ],
             );
 
