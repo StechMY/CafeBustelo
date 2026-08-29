@@ -26,6 +26,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Str;
 use Throwable;
 
 class WithdrawRequestsTable
@@ -36,7 +37,7 @@ class WithdrawRequestsTable
             ->columns([
                 /*
                 |--------------------------------------------------------------------------
-                | Customer Summary
+                | Customer
                 |--------------------------------------------------------------------------
                 */
                 TextColumn::make('user.username')
@@ -53,14 +54,11 @@ class WithdrawRequestsTable
 
                 /*
                 |--------------------------------------------------------------------------
-                | Money Summary
+                | Amount
                 |--------------------------------------------------------------------------
                 |
-                | Instead of:
-                |
-                | Amount | Fee | Net
-                |
-                | all three values are shown inside one compact column.
+                | Requested amount as main value.
+                | Net + fee in description.
                 |
                 */
                 TextColumn::make('amount')
@@ -75,18 +73,23 @@ class WithdrawRequestsTable
 
                 /*
                 |--------------------------------------------------------------------------
-                | Unified Status
+                | Unified Operational Status
                 |--------------------------------------------------------------------------
                 |
-                | Previously:
+                | This is now the main operational column.
                 |
-                | status
-                | approval_mode
-                | payout_status
+                | Examples:
                 |
-                | occupied three separate columns.
+                | Pending
                 |
-                | The main table now combines them into one operational summary.
+                | Waiting for Payout
+                | Scheduled Gateway · 30 Aug 2026 15:40
+                |
+                | Status Needs Confirmation
+                | Scheduled Gateway · ⚠ Gateway request timed out.
+                |
+                | Failed
+                | ⚠ Provider rejected payout.
                 |
                 */
                 TextColumn::make('withdrawal_summary_status')
@@ -104,22 +107,16 @@ class WithdrawRequestsTable
                         fn (WithdrawRequest $record): string =>
                             self::statusColor($record)
                     )
+                    ->tooltip(
+                        fn (WithdrawRequest $record): ?string =>
+                            self::gatewayTechnicalTooltip($record)
+                    )
                     ->wrap(),
 
                 /*
                 |--------------------------------------------------------------------------
                 | Bank Summary
                 |--------------------------------------------------------------------------
-                |
-                | Instead of:
-                |
-                | Bank
-                | Bank Code
-                | Account Name
-                | Account Number
-                |
-                | the normal table displays one compact bank summary.
-                |
                 */
                 TextColumn::make('bank_name')
                     ->label(__('filament.bank_name'))
@@ -147,8 +144,7 @@ class WithdrawRequestsTable
                 | Advanced Columns
                 |--------------------------------------------------------------------------
                 |
-                | Available when Finance/Reconciliation needs them, but not shown
-                | during normal daily review.
+                | Hidden by default.
                 |
                 */
                 TextColumn::make('fee_amount')
@@ -225,6 +221,38 @@ class WithdrawRequestsTable
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
 
+                /*
+                |--------------------------------------------------------------------------
+                | Failure reason
+                |--------------------------------------------------------------------------
+                |
+                | Available for reconciliation, but normal staff sees the friendly
+                | version inside the unified Status column.
+                |
+                */
+                TextColumn::make('gateway_fail_reason')
+                    ->label(
+                        self::ui(
+                            'withdraw.gateway_failure_reason',
+                            'Gateway Failure Reason',
+                            '网关失败原因'
+                        )
+                    )
+                    ->formatStateUsing(
+                        fn (?string $state): string =>
+                            filled($state)
+                                ? Str::limit($state, 140)
+                                : '-'
+                    )
+                    ->wrap()
+                    ->tooltip(
+                        fn (?string $state): ?string =>
+                            filled($state)
+                                ? Str::limit($state, 500)
+                                : null
+                    )
+                    ->toggleable(isToggledHiddenByDefault: true),
+
                 TextColumn::make('bank_code')
                     ->label(__('withdraw.bank_code'))
                     ->placeholder(
@@ -266,9 +294,7 @@ class WithdrawRequestsTable
                     ->placeholder('-')
                     ->toggleable(isToggledHiddenByDefault: true),
 
-                TextColumn::make(
-                    'gateway_current_merchant_order_id'
-                )
+                TextColumn::make('gateway_current_merchant_order_id')
                     ->label(__('withdraw.merchant_order_id'))
                     ->copyable()
                     ->placeholder('-')
@@ -284,6 +310,84 @@ class WithdrawRequestsTable
                         'approved' => __('filament.approved'),
                         'rejected' => __('filament.rejected'),
                     ]),
+
+                /*
+                |--------------------------------------------------------------------------
+                | Needs Attention Filter
+                |--------------------------------------------------------------------------
+                |
+                | Makes it easy for finance staff to see:
+                |
+                | - failed
+                | - rejected
+                | - overdue
+                | - create failed
+                | - refund review
+                | - timeout / connection uncertainty
+                |
+                */
+                Filter::make('gateway_attention')
+                    ->label(
+                        self::ui(
+                            'withdraw.needs_attention',
+                            'Needs Attention',
+                            '需要处理'
+                        )
+                    )
+                    ->query(function (Builder $query): Builder {
+                        return $query
+                            ->where('status', 'approved')
+                            ->where(function (Builder $query): void {
+                                $query
+                                    ->whereIn('payout_status', [
+                                        WithdrawRequest::PAYOUT_FAILED,
+                                        WithdrawRequest::PAYOUT_REJECTED,
+                                        WithdrawRequest::PAYOUT_OVERDUE,
+                                        WithdrawRequest::PAYOUT_CREATE_FAILED,
+                                        WithdrawRequest::PAYOUT_REFUND_REVIEW,
+                                    ])
+                                    ->orWhere(function (Builder $query): void {
+                                        $query
+                                            ->whereNotNull('gateway_fail_reason')
+                                            ->where('gateway_fail_reason', '!=', '')
+                                            ->where(function (Builder $query): void {
+                                                $query
+                                                    ->whereRaw(
+                                                        'LOWER(gateway_fail_reason) LIKE ?',
+                                                        ['%timeout%']
+                                                    )
+                                                    ->orWhereRaw(
+                                                        'LOWER(gateway_fail_reason) LIKE ?',
+                                                        ['%timed out%']
+                                                    )
+                                                    ->orWhereRaw(
+                                                        'LOWER(gateway_fail_reason) LIKE ?',
+                                                        ['%awaiting headers%']
+                                                    )
+                                                    ->orWhereRaw(
+                                                        'LOWER(gateway_fail_reason) LIKE ?',
+                                                        ['%connection%']
+                                                    )
+                                                    ->orWhereRaw(
+                                                        'LOWER(gateway_fail_reason) LIKE ?',
+                                                        ['%could not connect%']
+                                                    )
+                                                    ->orWhereRaw(
+                                                        'LOWER(gateway_fail_reason) LIKE ?',
+                                                        ['%connection reset%']
+                                                    )
+                                                    ->orWhereRaw(
+                                                        'LOWER(gateway_fail_reason) LIKE ?',
+                                                        ['%curl error 28%']
+                                                    );
+                                            });
+                                    });
+                            })
+                            ->whereNotIn('payout_status', [
+                                WithdrawRequest::PAYOUT_COMPLETED,
+                                WithdrawRequest::PAYOUT_CANCELLED,
+                            ]);
+                    }),
 
                 Filter::make('created_at')
                     ->label(__('filament.submitted_at'))
@@ -324,31 +428,100 @@ class WithdrawRequestsTable
                     }),
             ])
 
-            /*
-            |--------------------------------------------------------------------------
-            | Record Actions
-            |--------------------------------------------------------------------------
-            |
-            | View remains visible.
-            |
-            | All operational buttons are now inside one compact action menu:
-            |
-            | - Manual Approve
-            | - Scheduled Gateway
-            | - Instant Gateway
-            | - Reject
-            | - Retry
-            | - Cancel
-            | - Sync
-            | - Delete / Restore
-            |
-            | This is the biggest improvement for horizontal table width.
-            |
-            */
             ->recordActions([
+                /*
+                |--------------------------------------------------------------------------
+                | View
+                |--------------------------------------------------------------------------
+                */
                 ViewAction::make()
                     ->icon('heroicon-o-eye'),
 
+                /*
+                |--------------------------------------------------------------------------
+                | IMPORTANT: Direct Sync Button
+                |--------------------------------------------------------------------------
+                |
+                | For timeout / communication uncertainty we surface Sync outside
+                | the ... menu.
+                |
+                | Admin should sync first instead of blindly Retry.
+                |
+                */
+                Action::make('sync_gateway_attention')
+                    ->label(
+                        self::ui(
+                            'withdraw.sync_gateway',
+                            'Sync Status',
+                            '同步状态'
+                        )
+                    )
+                    ->icon('heroicon-o-arrow-path')
+                    ->color('warning')
+                    ->visible(
+                        fn (WithdrawRequest $record): bool =>
+                            self::hasGatewayCommunicationIssue($record)
+                            && $record->canSyncPayout()
+                    )
+                    ->authorize(
+                        fn (WithdrawRequest $record): bool =>
+                            Gate::allows(
+                                'syncGateway',
+                                $record
+                            )
+                    )
+                    ->tooltip(
+                        self::ui(
+                            'withdraw.sync_before_retry',
+                            'Gateway response was uncertain. Sync before retrying.',
+                            '网关响应状态不确定，请先同步状态再决定是否重试。'
+                        )
+                    )
+                    ->action(function (
+                        WithdrawRequest $record
+                    ): void {
+                        abort_unless(
+                            Gate::allows(
+                                'syncGateway',
+                                $record
+                            ),
+                            403
+                        );
+
+                        try {
+                            app(
+                                Qc168WithdrawalPayoutService::class
+                            )->sync(
+                                $record,
+                                'filament',
+                                Filament::auth()->user(),
+                                ip: request()->ip(),
+                            );
+
+                            Notification::make()
+                                ->title(
+                                    __('withdraw.sync_complete')
+                                )
+                                ->success()
+                                ->send();
+                        } catch (Throwable $exception) {
+                            report($exception);
+
+                            Notification::make()
+                                ->title(
+                                    __('withdraw.sync_failed')
+                                )
+                                ->body($exception->getMessage())
+                                ->danger()
+                                ->send();
+                        }
+                    }),
+
+                /*
+                |--------------------------------------------------------------------------
+                | Compact Action Menu
+                |--------------------------------------------------------------------------
+                */
                 ActionGroup::make([
                     /*
                     |--------------------------------------------------------------------------
@@ -433,7 +606,7 @@ class WithdrawRequestsTable
 
                     /*
                     |--------------------------------------------------------------------------
-                    | Approve + Scheduled Gateway
+                    | Scheduled Gateway Approval
                     |--------------------------------------------------------------------------
                     */
                     Action::make('approve_gateway_scheduled')
@@ -563,7 +736,7 @@ class WithdrawRequestsTable
 
                     /*
                     |--------------------------------------------------------------------------
-                    | Approve + Instant Gateway
+                    | Instant Gateway Approval
                     |--------------------------------------------------------------------------
                     */
                     Action::make('approve_gateway_instant')
@@ -775,7 +948,7 @@ class WithdrawRequestsTable
 
                     /*
                     |--------------------------------------------------------------------------
-                    | Retry Payout
+                    | Retry
                     |--------------------------------------------------------------------------
                     */
                     Action::make('retry_payout')
@@ -847,7 +1020,7 @@ class WithdrawRequestsTable
 
                     /*
                     |--------------------------------------------------------------------------
-                    | Cancel Payout
+                    | Cancel
                     |--------------------------------------------------------------------------
                     */
                     Action::make('cancel_payout')
@@ -919,8 +1092,12 @@ class WithdrawRequestsTable
 
                     /*
                     |--------------------------------------------------------------------------
-                    | Sync Gateway
+                    | Normal Sync
                     |--------------------------------------------------------------------------
+                    |
+                    | If it is a communication-uncertain payout, Sync is already
+                    | displayed outside the menu.
+                    |
                     */
                     Action::make('sync_gateway')
                         ->label(__('withdraw.sync_gateway'))
@@ -931,6 +1108,9 @@ class WithdrawRequestsTable
                         ->visible(
                             fn (WithdrawRequest $record): bool =>
                                 $record->canSyncPayout()
+                                && ! self::hasGatewayCommunicationIssue(
+                                    $record
+                                )
                         )
                         ->authorize(
                             fn (WithdrawRequest $record): bool =>
@@ -1009,13 +1189,11 @@ class WithdrawRequestsTable
             ]);
     }
 
-    /**
-     * Amount column second line.
-     *
-     * Example:
-     *
-     * Net RM 980.00 · Fee RM 20.00
-     */
+    /*
+    |--------------------------------------------------------------------------
+    | Money Summary
+    |--------------------------------------------------------------------------
+    */
     private static function moneySummary(
         WithdrawRequest $record
     ): string {
@@ -1040,12 +1218,28 @@ class WithdrawRequestsTable
             );
     }
 
-    /**
-     * Main visual status.
-     */
+    /*
+    |--------------------------------------------------------------------------
+    | Status Label
+    |--------------------------------------------------------------------------
+    */
     private static function statusLabel(
         WithdrawRequest $record
     ): string {
+        /*
+         * A timeout does NOT prove payout failure.
+         *
+         * QC168 may have received the request even though our app did not
+         * receive the response.
+         */
+        if (self::hasGatewayCommunicationIssue($record)) {
+            return self::ui(
+                'withdraw.gateway_status_uncertain',
+                'Status Needs Confirmation',
+                '状态待确认'
+            );
+        }
+
         if ($record->status === 'pending') {
             return __('filament.pending');
         }
@@ -1071,32 +1265,26 @@ class WithdrawRequestsTable
         return __('filament.approved');
     }
 
-    /**
-     * Secondary operational information underneath the status.
-     *
-     * Examples:
-     *
-     * Direct Approval
-     *
-     * Scheduled Gateway · 27 Aug 2026 14:30
-     *
-     * Instant Gateway
-     */
+    /*
+    |--------------------------------------------------------------------------
+    | Status Description
+    |--------------------------------------------------------------------------
+    */
     private static function statusDescription(
         WithdrawRequest $record
     ): ?string {
-        if ($record->status !== 'approved') {
-            return null;
-        }
-
         $parts = [];
 
-        if (filled($record->approval_mode)) {
+        if (
+            $record->status === 'approved'
+            && filled($record->approval_mode)
+        ) {
             $parts[] = $record->approvalModeLabel();
         }
 
         if (
-            $record->approval_mode
+            $record->status === 'approved'
+            && $record->approval_mode
                 === WithdrawRequest::APPROVAL_MODE_GATEWAY_SCHEDULED
             && filled($record->gateway_release_at)
         ) {
@@ -1109,14 +1297,29 @@ class WithdrawRequestsTable
             }
         }
 
+        $gatewayAlert = self::gatewayFriendlyAlert($record);
+
+        if ($gatewayAlert !== null) {
+            $parts[] = '⚠ '.$gatewayAlert;
+        }
+
         return $parts !== []
             ? implode(' · ', $parts)
             : null;
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | Status Color
+    |--------------------------------------------------------------------------
+    */
     private static function statusColor(
         WithdrawRequest $record
     ): string {
+        if (self::hasGatewayCommunicationIssue($record)) {
+            return 'warning';
+        }
+
         if ($record->status === 'pending') {
             return 'warning';
         }
@@ -1144,13 +1347,234 @@ class WithdrawRequestsTable
         };
     }
 
-    /**
-     * Compact bank summary.
-     *
-     * Example:
-     *
-     * NGUYEN VAN A · ••••••6789
-     */
+    /*
+    |--------------------------------------------------------------------------
+    | Gateway Attention Detection
+    |--------------------------------------------------------------------------
+    */
+    private static function hasGatewayAttention(
+        WithdrawRequest $record
+    ): bool {
+        if ($record->status !== 'approved') {
+            return false;
+        }
+
+        if (
+            in_array(
+                $record->payout_status,
+                [
+                    WithdrawRequest::PAYOUT_COMPLETED,
+                    WithdrawRequest::PAYOUT_CANCELLED,
+                ],
+                true
+            )
+        ) {
+            return false;
+        }
+
+        if (self::hasGatewayCommunicationIssue($record)) {
+            return true;
+        }
+
+        return in_array(
+            $record->payout_status,
+            [
+                WithdrawRequest::PAYOUT_FAILED,
+                WithdrawRequest::PAYOUT_REJECTED,
+                WithdrawRequest::PAYOUT_OVERDUE,
+                WithdrawRequest::PAYOUT_CREATE_FAILED,
+                WithdrawRequest::PAYOUT_REFUND_REVIEW,
+            ],
+            true
+        );
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Communication uncertainty
+    |--------------------------------------------------------------------------
+    |
+    | IMPORTANT:
+    |
+    | timeout / network error != payout failed.
+    |
+    | We must sync before retrying.
+    |
+    */
+    private static function hasGatewayCommunicationIssue(
+        WithdrawRequest $record
+    ): bool {
+        if ($record->status !== 'approved') {
+            return false;
+        }
+
+        if (
+            in_array(
+                $record->payout_status,
+                [
+                    WithdrawRequest::PAYOUT_COMPLETED,
+                    WithdrawRequest::PAYOUT_CANCELLED,
+                ],
+                true
+            )
+        ) {
+            return false;
+        }
+
+        $reason = self::gatewayFailureReason($record);
+
+        if ($reason === null) {
+            return false;
+        }
+
+        $reason = Str::lower($reason);
+
+        return Str::contains(
+            $reason,
+            [
+                'timeout',
+                'timed out',
+                'awaiting headers',
+                'connection timed out',
+                'connect timeout',
+                'connection refused',
+                'could not connect',
+                "couldn't connect",
+                'connection reset',
+                'curl error 28',
+                'network unreachable',
+            ]
+        );
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Friendly Gateway Alert
+    |--------------------------------------------------------------------------
+    */
+    private static function gatewayFriendlyAlert(
+        WithdrawRequest $record
+    ): ?string {
+        if (! self::hasGatewayAttention($record)) {
+            return null;
+        }
+
+        $reason = self::gatewayFailureReason($record);
+        $reasonLower = Str::lower((string) $reason);
+
+        if (self::hasGatewayCommunicationIssue($record)) {
+            return self::ui(
+                'withdraw.gateway_timeout_sync_first',
+                'Gateway request timed out. Status is uncertain; sync first.',
+                '网关请求超时，状态待确认，请先同步支付状态'
+            );
+        }
+
+        if (
+            Str::contains(
+                $reasonLower,
+                [
+                    'no bank cards available',
+                ]
+            )
+        ) {
+            return self::ui(
+                'withdraw.gateway_no_bank_cards',
+                'No bank cards are currently available in the payment channel.',
+                '支付通道目前没有可用银行卡'
+            );
+        }
+
+        return match ($record->payout_status) {
+            WithdrawRequest::PAYOUT_FAILED =>
+                self::ui(
+                    'withdraw.gateway_payout_failed',
+                    'Gateway payout failed.',
+                    '第三方支付出款失败'
+                ),
+
+            WithdrawRequest::PAYOUT_REJECTED =>
+                self::ui(
+                    'withdraw.gateway_payout_rejected',
+                    'Gateway payout was rejected.',
+                    '第三方支付拒绝了出款'
+                ),
+
+            WithdrawRequest::PAYOUT_OVERDUE =>
+                self::ui(
+                    'withdraw.gateway_payout_overdue',
+                    'Gateway payout expired.',
+                    '第三方支付出款已过期'
+                ),
+
+            WithdrawRequest::PAYOUT_CREATE_FAILED =>
+                self::ui(
+                    'withdraw.gateway_submission_failed',
+                    'Gateway payout submission failed.',
+                    '提交第三方支付出款失败'
+                ),
+
+            WithdrawRequest::PAYOUT_REFUND_REVIEW =>
+                self::ui(
+                    'withdraw.gateway_refund_review',
+                    'Gateway refund requires review.',
+                    '第三方支付退款需要人工处理'
+                ),
+
+            default =>
+                filled($reason)
+                    ? Str::limit($reason, 100)
+                    : self::ui(
+                        'withdraw.gateway_requires_attention',
+                        'Gateway payout requires attention.',
+                        '第三方支付出款需要处理'
+                    ),
+        };
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Raw Gateway Failure Reason
+    |--------------------------------------------------------------------------
+    */
+    private static function gatewayFailureReason(
+        WithdrawRequest $record
+    ): ?string {
+        $reason = trim(
+            (string) ($record->gateway_fail_reason ?? '')
+        );
+
+        return $reason !== ''
+            ? $reason
+            : null;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Tooltip
+    |--------------------------------------------------------------------------
+    */
+    private static function gatewayTechnicalTooltip(
+        WithdrawRequest $record
+    ): ?string {
+        if (! self::hasGatewayAttention($record)) {
+            return null;
+        }
+
+        $reason = self::gatewayFailureReason($record);
+
+        if ($reason === null) {
+            return self::gatewayFriendlyAlert($record);
+        }
+
+        return Str::limit($reason, 500);
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Bank Summary
+    |--------------------------------------------------------------------------
+    */
     private static function bankSummary(
         WithdrawRequest $record
     ): ?string {
@@ -1161,9 +1585,13 @@ class WithdrawRequestsTable
         }
 
         if (filled($record->bank_account_no)) {
-            $parts[] = (
-                $record->bank_account_no
-            );
+            /*
+             * Keeping the full account number because your current table already
+             * displays it this way.
+             *
+             * Change to maskAccountNumber() if you want masking later.
+             */
+            $parts[] = $record->bank_account_no;
         }
 
         return $parts !== []
@@ -1212,5 +1640,32 @@ class WithdrawRequestsTable
         } catch (Throwable) {
             return (string) $value;
         }
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Safe UI fallback
+    |--------------------------------------------------------------------------
+    |
+    | Allows this file to work before you add the new translation keys.
+    |
+    */
+    private static function ui(
+        string $key,
+        string $english,
+        string $chinese
+    ): string {
+        $translated = __($key);
+
+        if ($translated !== $key) {
+            return $translated;
+        }
+
+        return str_starts_with(
+            strtolower((string) app()->getLocale()),
+            'zh'
+        )
+            ? $chinese
+            : $english;
     }
 }

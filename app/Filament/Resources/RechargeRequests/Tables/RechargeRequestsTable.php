@@ -34,10 +34,6 @@ class RechargeRequestsTable
                 |--------------------------------------------------------------------------
                 | Customer
                 |--------------------------------------------------------------------------
-                |
-                | Username + phone are grouped into one column so the table does not
-                | waste horizontal space on two separate customer columns.
-                |
                 */
                 TextColumn::make('user.username')
                     ->label(__('filament.username'))
@@ -82,16 +78,16 @@ class RechargeRequestsTable
                                 ? 'info'
                                 : 'gray'
                     )
-                    ->description(function (RechargeRequest $record): ?string {
+                    ->description(function (
+                        RechargeRequest $record
+                    ): ?string {
                         if ($record->isGatewayDeposit()) {
-                            return null;
+                            return 'QC168';
                         }
 
-                        if (filled($record->payment_method_name)) {
-                            return $record->payment_method_name;
-                        }
-
-                        return null;
+                        return filled($record->payment_method_name)
+                            ? $record->payment_method_name
+                            : null;
                     })
                     ->sortable(),
 
@@ -99,57 +95,45 @@ class RechargeRequestsTable
                 |--------------------------------------------------------------------------
                 | Unified Status
                 |--------------------------------------------------------------------------
-                |
-                | Main status is displayed as badge.
-                | QC168 status becomes the secondary line instead of another column.
-                |
                 */
                 TextColumn::make('status')
                     ->label(__('filament.status'))
-                    ->formatStateUsing(fn (?string $state): string => match ($state) {
-                        'pending' => __('filament.pending'),
-                        'approved' => __('filament.approved'),
-                        'rejected' => __('filament.rejected'),
-                        default => $state ?: '-',
-                    })
+                    ->formatStateUsing(
+                        fn (
+                            ?string $state,
+                            RechargeRequest $record
+                        ): string =>
+                            self::statusLabel($record)
+                    )
                     ->badge()
-                    ->color(fn (?string $state): string => match ($state) {
-                        'pending' => 'warning',
-                        'approved' => 'success',
-                        'rejected' => 'danger',
-                        default => 'gray',
-                    })
-                    ->description(function (RechargeRequest $record): ?string {
-                        if (! $record->isGatewayDeposit()) {
-                            return null;
-                        }
-
-                        if (blank($record->gateway_payment_status)) {
-                            return null;
-                        }
-
-                        return __('filament.gateway_status')
-                            .': '
-                            .self::humanizeStatus($record->gateway_payment_status);
-                    })
-                    ->sortable(),
+                    ->color(
+                        fn (
+                            ?string $state,
+                            RechargeRequest $record
+                        ): string =>
+                            self::statusColor($record)
+                    )
+                    ->description(
+                        fn (RechargeRequest $record): ?string =>
+                            self::statusDescription($record)
+                    )
+                    ->tooltip(
+                        fn (RechargeRequest $record): ?string =>
+                            self::gatewayTechnicalTooltip($record)
+                    )
+                    ->sortable()
+                    ->wrap(),
 
                 /*
                 |--------------------------------------------------------------------------
-                | Payment / Bank Summary
+                | Payment Summary
                 |--------------------------------------------------------------------------
-                |
-                | Manual deposit:
-                | Bank name
-                | Payment method / account owner underneath
-                |
-                | Gateway:
-                | QC168
-                |
                 */
                 TextColumn::make('payment_summary')
                     ->label(__('filament.recharge_method'))
-                    ->state(function (RechargeRequest $record): string {
+                    ->state(function (
+                        RechargeRequest $record
+                    ): string {
                         if ($record->isGatewayDeposit()) {
                             return 'QC168';
                         }
@@ -158,16 +142,30 @@ class RechargeRequestsTable
                             ?: $record->payment_method_name
                             ?: '-';
                     })
-                    ->description(function (RechargeRequest $record): ?string {
+                    ->description(function (
+                        RechargeRequest $record
+                    ): ?string {
                         if ($record->isGatewayDeposit()) {
-                            return null;
+                            return filled($record->merchant_order_id)
+                                ? self::ui(
+                                    'filament.gateway_order',
+                                    'Gateway Order',
+                                    '网关订单'
+                                )
+                                    .': '
+                                    .Str::limit(
+                                        (string) $record->merchant_order_id,
+                                        28
+                                    )
+                                : null;
                         }
 
                         $parts = [];
 
                         if (
                             filled($record->payment_method_name)
-                            && $record->payment_method_name !== $record->payment_bank_name
+                            && $record->payment_method_name
+                                !== $record->payment_bank_name
                         ) {
                             $parts[] = $record->payment_method_name;
                         }
@@ -204,7 +202,7 @@ class RechargeRequestsTable
 
                 /*
                 |--------------------------------------------------------------------------
-                | Submitted At
+                | Submitted
                 |--------------------------------------------------------------------------
                 */
                 TextColumn::make('created_at')
@@ -215,12 +213,8 @@ class RechargeRequestsTable
 
                 /*
                 |--------------------------------------------------------------------------
-                | Advanced / Reconciliation Columns
+                | Advanced Columns
                 |--------------------------------------------------------------------------
-                |
-                | Still available from column toggle, but hidden by default so the
-                | normal finance workflow stays compact.
-                |
                 */
                 TextColumn::make('gateway_payment_status')
                     ->label(__('filament.gateway_status'))
@@ -246,6 +240,34 @@ class RechargeRequestsTable
                         default => 'gray',
                     })
                     ->placeholder('-')
+                    ->toggleable(isToggledHiddenByDefault: true),
+
+                /*
+                |--------------------------------------------------------------------------
+                | Failure Reason
+                |--------------------------------------------------------------------------
+                */
+                TextColumn::make('gateway_fail_reason')
+                    ->label(
+                        self::ui(
+                            'filament.gateway_failure_reason',
+                            'Gateway Failure Reason',
+                            '网关失败原因'
+                        )
+                    )
+                    ->formatStateUsing(
+                        fn (?string $state): string =>
+                            filled($state)
+                                ? Str::limit($state, 140)
+                                : '-'
+                    )
+                    ->wrap()
+                    ->tooltip(
+                        fn (?string $state): ?string =>
+                            filled($state)
+                                ? Str::limit($state, 500)
+                                : null
+                    )
                     ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('reference_no')
@@ -314,6 +336,95 @@ class RechargeRequestsTable
                             __('filament.payment_gateway'),
                     ]),
 
+                /*
+                |--------------------------------------------------------------------------
+                | Gateway Attention
+                |--------------------------------------------------------------------------
+                */
+                Filter::make('gateway_attention')
+                    ->label(
+                        self::ui(
+                            'filament.needs_attention',
+                            'Needs Attention',
+                            '需要处理'
+                        )
+                    )
+                    ->query(function (Builder $query): Builder {
+                        return $query
+                            ->where(
+                                'deposit_method',
+                                RechargeRequest::METHOD_GATEWAY
+                            )
+                            ->where(function (Builder $query): void {
+                                $query
+                                    ->whereIn(
+                                        'gateway_payment_status',
+                                        [
+                                            'failed',
+                                            'reject',
+                                            'refund',
+                                            'overdue',
+                                            'create_failed',
+                                        ]
+                                    )
+                                    ->orWhere(function (
+                                        Builder $query
+                                    ): void {
+                                        $query
+                                            ->whereNotNull(
+                                                'gateway_fail_reason'
+                                            )
+                                            ->where(
+                                                'gateway_fail_reason',
+                                                '!=',
+                                                ''
+                                            )
+                                            ->where(function (
+                                                Builder $query
+                                            ): void {
+                                                $query
+                                                    ->whereRaw(
+                                                        'LOWER(gateway_fail_reason) LIKE ?',
+                                                        ['%timeout%']
+                                                    )
+                                                    ->orWhereRaw(
+                                                        'LOWER(gateway_fail_reason) LIKE ?',
+                                                        ['%timed out%']
+                                                    )
+                                                    ->orWhereRaw(
+                                                        'LOWER(gateway_fail_reason) LIKE ?',
+                                                        ['%awaiting headers%']
+                                                    )
+                                                    ->orWhereRaw(
+                                                        'LOWER(gateway_fail_reason) LIKE ?',
+                                                        ['%connection%']
+                                                    )
+                                                    ->orWhereRaw(
+                                                        'LOWER(gateway_fail_reason) LIKE ?',
+                                                        ['%could not connect%']
+                                                    )
+                                                    ->orWhereRaw(
+                                                        'LOWER(gateway_fail_reason) LIKE ?',
+                                                        ['%connection reset%']
+                                                    )
+                                                    ->orWhereRaw(
+                                                        'LOWER(gateway_fail_reason) LIKE ?',
+                                                        ['%curl error 28%']
+                                                    );
+                                            });
+                                    });
+                            })
+                            ->where(function (Builder $query): void {
+                                $query
+                                    ->whereNull('gateway_payment_status')
+                                    ->orWhere(
+                                        'gateway_payment_status',
+                                        '!=',
+                                        'completed'
+                                    );
+                            });
+                    }),
+
                 Filter::make('created_at')
                     ->label(__('filament.created_at'))
                     ->form([
@@ -353,33 +464,120 @@ class RechargeRequestsTable
                     }),
             ])
 
-            /*
-            |--------------------------------------------------------------------------
-            | Actions
-            |--------------------------------------------------------------------------
-            |
-            | Only View stays permanently visible.
-            |
-            | Approve / Reject / Sync / Delete are moved into one compact action
-            | menu so they no longer consume huge horizontal table width.
-            |
-            */
             ->recordActions([
                 ViewAction::make()
                     ->icon('heroicon-o-eye'),
 
+                /*
+                |--------------------------------------------------------------------------
+                | Direct Sync For Problematic Gateway Deposits
+                |--------------------------------------------------------------------------
+                */
+                Action::make('syncGatewayAttention')
+                    ->label(
+                        self::ui(
+                            'filament.sync_gateway_status',
+                            'Sync Status',
+                            '同步状态'
+                        )
+                    )
+                    ->icon('heroicon-o-arrow-path')
+                    ->color('warning')
+                    ->visible(
+                        fn (RechargeRequest $record): bool =>
+                            $record->isGatewayDeposit()
+                            && self::hasGatewayCommunicationIssue(
+                                $record
+                            )
+                    )
+                    ->authorize(
+                        fn (RechargeRequest $record): bool =>
+                            Gate::allows(
+                                'syncGateway',
+                                $record
+                            )
+                    )
+                    ->tooltip(
+                        self::ui(
+                            'filament.gateway_sync_before_retry',
+                            'Gateway response was uncertain. Sync the order first.',
+                            '网关响应状态不确定，请先同步订单状态。'
+                        )
+                    )
+                    ->requiresConfirmation()
+                    ->action(function (
+                        RechargeRequest $record
+                    ): void {
+                        abort_unless(
+                            Gate::allows(
+                                'syncGateway',
+                                $record
+                            ),
+                            403
+                        );
+
+                        try {
+                            $result = app(
+                                Qc168CallbackService::class
+                            )->sync($record);
+
+                            if (! $result['accepted']) {
+                                Notification::make()
+                                    ->title(
+                                        __('filament.gateway_sync_failed')
+                                    )
+                                    ->body($result['result'])
+                                    ->danger()
+                                    ->send();
+
+                                return;
+                            }
+
+                            Notification::make()
+                                ->title(
+                                    __('filament.gateway_status_synced')
+                                )
+                                ->body($result['result'])
+                                ->success()
+                                ->send();
+                        } catch (Throwable $exception) {
+                            report($exception);
+
+                            Notification::make()
+                                ->title(
+                                    __('filament.gateway_sync_failed')
+                                )
+                                ->body($exception->getMessage())
+                                ->danger()
+                                ->send();
+                        }
+                    }),
+
                 ActionGroup::make([
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Normal Gateway Sync
+                    |--------------------------------------------------------------------------
+                    */
                     Action::make('syncGateway')
-                        ->label(__('filament.sync_gateway_status'))
+                        ->label(
+                            __('filament.sync_gateway_status')
+                        )
                         ->icon('heroicon-o-arrow-path')
                         ->color('info')
                         ->visible(
                             fn (RechargeRequest $record): bool =>
                                 $record->isGatewayDeposit()
+                                && ! self::hasGatewayCommunicationIssue(
+                                    $record
+                                )
                         )
                         ->authorize(
                             fn (RechargeRequest $record): bool =>
-                                Gate::allows('syncGateway', $record)
+                                Gate::allows(
+                                    'syncGateway',
+                                    $record
+                                )
                         )
                         ->requiresConfirmation()
                         ->action(function (
@@ -430,6 +628,11 @@ class RechargeRequestsTable
                             }
                         }),
 
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Manual Approve
+                    |--------------------------------------------------------------------------
+                    */
                     Action::make('approve')
                         ->label(__('filament.approve'))
                         ->icon('heroicon-o-check-circle')
@@ -441,7 +644,10 @@ class RechargeRequestsTable
                         )
                         ->authorize(
                             fn (RechargeRequest $record): bool =>
-                                Gate::allows('audit', $record)
+                                Gate::allows(
+                                    'audit',
+                                    $record
+                                )
                         )
                         ->form([
                             Textarea::make('admin_remark')
@@ -456,7 +662,10 @@ class RechargeRequestsTable
                             array $data
                         ): void {
                             abort_unless(
-                                Gate::allows('audit', $record),
+                                Gate::allows(
+                                    'audit',
+                                    $record
+                                ),
                                 403
                             );
 
@@ -465,14 +674,17 @@ class RechargeRequestsTable
                                     RechargeApprovalService::class
                                 )->approve(
                                     rechargeRequest: $record,
-                                    adminUser: Filament::auth()->user(),
+                                    adminUser:
+                                        Filament::auth()->user(),
                                     adminRemark:
                                         $data['admin_remark'] ?? null,
                                 );
 
                                 Notification::make()
                                     ->title(
-                                        __('filament.recharge_approved')
+                                        __(
+                                            'filament.recharge_approved'
+                                        )
                                     )
                                     ->success()
                                     ->send();
@@ -489,6 +701,11 @@ class RechargeRequestsTable
                             }
                         }),
 
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Manual Reject
+                    |--------------------------------------------------------------------------
+                    */
                     Action::make('reject')
                         ->label(__('filament.reject'))
                         ->icon('heroicon-o-x-circle')
@@ -500,7 +717,10 @@ class RechargeRequestsTable
                         )
                         ->authorize(
                             fn (RechargeRequest $record): bool =>
-                                Gate::allows('audit', $record)
+                                Gate::allows(
+                                    'audit',
+                                    $record
+                                )
                         )
                         ->form([
                             Textarea::make('admin_remark')
@@ -516,7 +736,10 @@ class RechargeRequestsTable
                             array $data
                         ): void {
                             abort_unless(
-                                Gate::allows('audit', $record),
+                                Gate::allows(
+                                    'audit',
+                                    $record
+                                ),
                                 403
                             );
 
@@ -525,14 +748,17 @@ class RechargeRequestsTable
                                     RechargeApprovalService::class
                                 )->reject(
                                     rechargeRequest: $record,
-                                    adminUser: Filament::auth()->user(),
+                                    adminUser:
+                                        Filament::auth()->user(),
                                     adminRemark:
                                         $data['admin_remark'] ?? null,
                                 );
 
                                 Notification::make()
                                     ->title(
-                                        __('filament.recharge_rejected')
+                                        __(
+                                            'filament.recharge_rejected'
+                                        )
                                     )
                                     ->success()
                                     ->send();
@@ -551,7 +777,9 @@ class RechargeRequestsTable
 
                     DeleteAction::make(),
                 ])
-                    ->icon('heroicon-o-ellipsis-horizontal'),
+                    ->icon(
+                        'heroicon-o-ellipsis-horizontal'
+                    ),
             ])
 
             ->toolbarActions([
@@ -561,8 +789,335 @@ class RechargeRequestsTable
             ]);
     }
 
-    private static function humanizeStatus(?string $status): string
-    {
+    /*
+    |--------------------------------------------------------------------------
+    | Status Label
+    |--------------------------------------------------------------------------
+    */
+    private static function statusLabel(
+        RechargeRequest $record
+    ): string {
+        if (
+            $record->isGatewayDeposit()
+            && self::hasGatewayCommunicationIssue($record)
+        ) {
+            return self::ui(
+                'filament.gateway_status_uncertain',
+                'Status Needs Confirmation',
+                '状态待确认'
+            );
+        }
+
+        if (
+            $record->isGatewayDeposit()
+            && self::isGatewayDefiniteFailure($record)
+        ) {
+            return self::ui(
+                'filament.gateway_failed',
+                'Gateway Failed',
+                '网关处理失败'
+            );
+        }
+
+        return match ($record->status) {
+            'pending' => __('filament.pending'),
+            'approved' => __('filament.approved'),
+            'rejected' => __('filament.rejected'),
+
+            default => $record->status ?: '-',
+        };
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Status Color
+    |--------------------------------------------------------------------------
+    */
+    private static function statusColor(
+        RechargeRequest $record
+    ): string {
+        if (
+            $record->isGatewayDeposit()
+            && self::hasGatewayCommunicationIssue($record)
+        ) {
+            return 'warning';
+        }
+
+        if (
+            $record->isGatewayDeposit()
+            && self::isGatewayDefiniteFailure($record)
+        ) {
+            return 'danger';
+        }
+
+        return match ($record->status) {
+            'pending' => 'warning',
+            'approved' => 'success',
+            'rejected' => 'danger',
+            default => 'gray',
+        };
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Status Description
+    |--------------------------------------------------------------------------
+    */
+    private static function statusDescription(
+        RechargeRequest $record
+    ): ?string {
+        if (! $record->isGatewayDeposit()) {
+            return null;
+        }
+
+        $parts = [];
+
+        if (filled($record->gateway_payment_status)) {
+            $parts[] = __('filament.gateway_status')
+                .': '
+                .self::humanizeStatus(
+                    $record->gateway_payment_status
+                );
+        }
+
+        $alert = self::gatewayFriendlyAlert($record);
+
+        if ($alert !== null) {
+            $parts[] = '⚠ '.$alert;
+        }
+
+        return $parts !== []
+            ? implode(' · ', $parts)
+            : null;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Attention Detection
+    |--------------------------------------------------------------------------
+    */
+    private static function hasGatewayAttention(
+        RechargeRequest $record
+    ): bool {
+        if (! $record->isGatewayDeposit()) {
+            return false;
+        }
+
+        if (
+            $record->gateway_payment_status === 'completed'
+            || $record->status === 'approved'
+        ) {
+            return false;
+        }
+
+        return self::hasGatewayCommunicationIssue($record)
+            || self::isGatewayDefiniteFailure($record);
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Communication Issue
+    |--------------------------------------------------------------------------
+    */
+    private static function hasGatewayCommunicationIssue(
+        RechargeRequest $record
+    ): bool {
+        if (! $record->isGatewayDeposit()) {
+            return false;
+        }
+
+        if (
+            $record->gateway_payment_status === 'completed'
+            || $record->status === 'approved'
+        ) {
+            return false;
+        }
+
+        $reason = self::gatewayFailureReason($record);
+
+        if ($reason === null) {
+            return false;
+        }
+
+        $reason = Str::lower($reason);
+
+        return Str::contains(
+            $reason,
+            [
+                'timeout',
+                'timed out',
+                'awaiting headers',
+                'connection timed out',
+                'connect timeout',
+                'connection refused',
+                'could not connect',
+                "couldn't connect",
+                'connection reset',
+                'curl error 28',
+                'network unreachable',
+            ]
+        );
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Definite Gateway Failure
+    |--------------------------------------------------------------------------
+    */
+    private static function isGatewayDefiniteFailure(
+        RechargeRequest $record
+    ): bool {
+        if (! $record->isGatewayDeposit()) {
+            return false;
+        }
+
+        if (
+            $record->gateway_payment_status === 'completed'
+            || $record->status === 'approved'
+        ) {
+            return false;
+        }
+
+        return in_array(
+            $record->gateway_payment_status,
+            [
+                'failed',
+                'reject',
+                'refund',
+                'overdue',
+                'create_failed',
+            ],
+            true
+        );
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Friendly Alert
+    |--------------------------------------------------------------------------
+    */
+    private static function gatewayFriendlyAlert(
+        RechargeRequest $record
+    ): ?string {
+        if (! self::hasGatewayAttention($record)) {
+            return null;
+        }
+
+        $reason = self::gatewayFailureReason($record);
+        $reasonLower = Str::lower((string) $reason);
+
+        if (self::hasGatewayCommunicationIssue($record)) {
+            return self::ui(
+                'filament.gateway_timeout_sync_first',
+                'Gateway request timed out. Status is uncertain; sync first.',
+                '网关请求超时，状态待确认，请先同步支付状态'
+            );
+        }
+
+        if (
+            Str::contains(
+                $reasonLower,
+                'no bank cards available'
+            )
+        ) {
+            return self::ui(
+                'filament.gateway_no_bank_cards',
+                'No bank cards are currently available in the payment channel.',
+                '支付通道目前没有可用银行卡'
+            );
+        }
+
+        return match ($record->gateway_payment_status) {
+            'failed' =>
+                self::ui(
+                    'filament.gateway_payment_failed',
+                    'Gateway payment failed.',
+                    '第三方支付处理失败'
+                ),
+
+            'reject' =>
+                self::ui(
+                    'filament.gateway_payment_rejected',
+                    'Gateway payment was rejected.',
+                    '第三方支付拒绝了交易'
+                ),
+
+            'overdue' =>
+                self::ui(
+                    'filament.gateway_payment_overdue',
+                    'Gateway payment expired.',
+                    '第三方支付订单已过期'
+                ),
+
+            'refund' =>
+                self::ui(
+                    'filament.gateway_payment_refund',
+                    'Gateway payment was refunded and requires review.',
+                    '第三方支付已退款，需要人工确认'
+                ),
+
+            'create_failed' =>
+                self::ui(
+                    'filament.gateway_submission_failed',
+                    'Gateway order submission failed.',
+                    '提交第三方支付订单失败'
+                ),
+
+            default =>
+                filled($reason)
+                    ? Str::limit($reason, 100)
+                    : self::ui(
+                        'filament.gateway_requires_attention',
+                        'Gateway payment requires attention.',
+                        '第三方支付订单需要处理'
+                    ),
+        };
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Failure Reason
+    |--------------------------------------------------------------------------
+    */
+    private static function gatewayFailureReason(
+        RechargeRequest $record
+    ): ?string {
+        $reason = trim(
+            (string) ($record->gateway_fail_reason ?? '')
+        );
+
+        return $reason !== ''
+            ? $reason
+            : null;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Tooltip
+    |--------------------------------------------------------------------------
+    */
+    private static function gatewayTechnicalTooltip(
+        RechargeRequest $record
+    ): ?string {
+        if (! self::hasGatewayAttention($record)) {
+            return null;
+        }
+
+        $reason = self::gatewayFailureReason($record);
+
+        if ($reason === null) {
+            return self::gatewayFriendlyAlert($record);
+        }
+
+        return Str::limit(
+            $reason,
+            500
+        );
+    }
+
+    private static function humanizeStatus(
+        ?string $status
+    ): string {
         if (blank($status)) {
             return '-';
         }
@@ -576,7 +1131,9 @@ class RechargeRequestsTable
     private static function maskAccountNumber(
         string|int|null $accountNo
     ): string {
-        $accountNo = trim((string) $accountNo);
+        $accountNo = trim(
+            (string) $accountNo
+        );
 
         if ($accountNo === '') {
             return '-';
@@ -588,7 +1145,39 @@ class RechargeRequestsTable
             return $accountNo;
         }
 
-        return str_repeat('•', $length - 4)
-            .substr($accountNo, -4);
+        return str_repeat(
+            '•',
+            $length - 4
+        )
+            .substr(
+                $accountNo,
+                -4
+            );
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Translation fallback
+    |--------------------------------------------------------------------------
+    */
+    private static function ui(
+        string $key,
+        string $english,
+        string $chinese
+    ): string {
+        $translated = __($key);
+
+        if ($translated !== $key) {
+            return $translated;
+        }
+
+        return str_starts_with(
+            strtolower(
+                (string) app()->getLocale()
+            ),
+            'zh'
+        )
+            ? $chinese
+            : $english;
     }
 }
