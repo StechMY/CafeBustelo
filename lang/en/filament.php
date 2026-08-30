@@ -665,6 +665,8 @@ return [
     'gateway_currency' => 'Gateway Currency',
     'gateway_channel' => 'Gateway Channel',
     'gateway_fail_reason' => 'Gateway Failure Reason',
+    'latest_gateway_error' => 'Latest Gateway Error',
+    'latest_gateway_error_help' => 'This is the latest gateway diagnostic and does not necessarily mean the current payment status failed.',
     'gateway_completed_at' => 'Gateway Completed At',
     'gateway_last_callback_at' => 'Last Callback',
     'gateway_last_synced_at' => 'Last Synced',

@@ -361,7 +361,7 @@ class WithdrawService
                 'payout_status' => WithdrawRequest::PAYOUT_COMPLETED,
                 'gateway_payment_status' => WithdrawalPayoutAttempt::STATUS_COMPLETED,
                 'gateway_completed_at' => $lockedRequest->gateway_completed_at ?: $completedAt,
-                'gateway_fail_reason' => null,
+                'gateway_fail_reason' => $attempt->failure_reason,
             ])->save();
 
             $this->eventRecorder->recordWithdrawal(

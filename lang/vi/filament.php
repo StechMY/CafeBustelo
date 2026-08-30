@@ -100,6 +100,8 @@ return [
     'gateway_currency' => 'Tiền tệ cổng',
     'gateway_channel' => 'Kênh thanh toán',
     'gateway_fail_reason' => 'Lý do thất bại',
+    'latest_gateway_error' => 'Lỗi cổng gần nhất',
+    'latest_gateway_error_help' => 'Đây là chẩn đoán gần nhất của cổng và không nhất thiết có nghĩa trạng thái thanh toán hiện tại đã thất bại.',
     'gateway_completed_at' => 'Hoàn tất thanh toán lúc',
     'gateway_last_callback_at' => 'Callback gần nhất',
     'gateway_last_synced_at' => 'Đồng bộ gần nhất',

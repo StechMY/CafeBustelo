@@ -100,6 +100,8 @@ return [
     'gateway_currency' => 'Mata Uang Gerbang',
     'gateway_channel' => 'Kanal Gerbang',
     'gateway_fail_reason' => 'Alasan Kegagalan',
+    'latest_gateway_error' => 'Kesalahan Gateway Terbaru',
+    'latest_gateway_error_help' => 'Ini adalah diagnostik gateway terbaru dan tidak selalu berarti status pembayaran saat ini gagal.',
     'gateway_completed_at' => 'Pembayaran Selesai Pada',
     'gateway_last_callback_at' => 'Callback Terakhir',
     'gateway_last_synced_at' => 'Sinkronisasi Terakhir',

@@ -60,6 +60,8 @@ return [
     'last_callback_at' => 'Callback Terakhir',
     'last_synced_at' => 'Sinkronisasi Terakhir',
     'failure_reason' => 'Alasan Kegagalan',
+    'latest_gateway_error' => 'Kesalahan Gateway Terbaru',
+    'latest_gateway_error_help' => 'Ini adalah diagnostik gateway terbaru dan tidak selalu berarti status pembayaran saat ini gagal.',
     'merchant_order_id' => 'ID Pesanan Merchant',
     'payout_attempts' => 'Percobaan Pembayaran',
     'attempt' => 'Percobaan',

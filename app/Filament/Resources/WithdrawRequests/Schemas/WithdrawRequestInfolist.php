@@ -161,7 +161,8 @@ class WithdrawRequestInfolist
                                     ->dateTime()
                                     ->placeholder('-'),
                                 TextEntry::make('gateway_fail_reason')
-                                    ->label(__('withdraw.failure_reason'))
+                                    ->label(__('withdraw.latest_gateway_error'))
+                                    ->helperText(__('withdraw.latest_gateway_error_help'))
                                     ->placeholder('-')
                                     ->columnSpanFull(),
                             ]),
@@ -194,7 +195,8 @@ class WithdrawRequestInfolist
                                     ->dateTime()
                                     ->placeholder('-'),
                                 TextEntry::make('failure_reason')
-                                    ->label(__('withdraw.failure_reason'))
+                                    ->label(__('withdraw.latest_gateway_error'))
+                                    ->helperText(__('withdraw.latest_gateway_error_help'))
                                     ->placeholder('-'),
                             ])
                             ->columns(4),

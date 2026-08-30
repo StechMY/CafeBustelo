@@ -61,6 +61,8 @@ return [
     'last_callback_at' => 'Last Callback',
     'last_synced_at' => 'Last Synced',
     'failure_reason' => 'Failure Reason',
+    'latest_gateway_error' => 'Latest Gateway Error',
+    'latest_gateway_error_help' => 'This is the latest gateway diagnostic and does not necessarily mean the current payment status failed.',
     'merchant_order_id' => 'Merchant Order ID',
     'payout_attempts' => 'Payout Attempts',
     'attempt' => 'Attempt',

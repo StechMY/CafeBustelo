@@ -27,7 +27,7 @@ class SyncPendingQc168Recharges extends Command
             ->where('deposit_method', RechargeRequest::METHOD_GATEWAY)
             ->where('gateway_provider', RechargeRequest::GATEWAY_QC168)
             ->where('status', 'pending')
-            ->whereIn('gateway_payment_status', ['none', 'pending', 'preparing', 'processing', 'completed'])
+            ->whereIn('gateway_payment_status', ['create_pending', 'none', 'pending', 'preparing', 'processing', 'completed'])
             ->where('created_at', '<=', now()->subMinutes(2))
             ->where(function ($query): void {
                 $query->whereNull('gateway_last_synced_at')

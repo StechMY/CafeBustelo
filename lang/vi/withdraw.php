@@ -61,6 +61,8 @@ return [
     'last_callback_at' => 'Callback gần nhất',
     'last_synced_at' => 'Đồng bộ gần nhất',
     'failure_reason' => 'Lý do thất bại',
+    'latest_gateway_error' => 'Lỗi cổng gần nhất',
+    'latest_gateway_error_help' => 'Đây là chẩn đoán gần nhất của cổng và không nhất thiết có nghĩa trạng thái thanh toán hiện tại đã thất bại.',
     'merchant_order_id' => 'Mã đơn hàng merchant',
     'payout_attempts' => 'Các lần thanh toán',
     'attempt' => 'Lần thử',

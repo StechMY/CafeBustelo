@@ -61,6 +61,8 @@ return [
     'last_callback_at' => '最后回调',
     'last_synced_at' => '最后同步',
     'failure_reason' => '失败原因',
+    'latest_gateway_error' => '最近一次网关错误',
+    'latest_gateway_error_help' => '这是最近一次网关诊断信息，并不一定表示当前支付状态失败。',
     'merchant_order_id' => '商户订单号',
     'payout_attempts' => '付款尝试',
     'attempt' => '尝试次数',

@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Exceptions\Qc168UncertainSubmissionException;
+use App\Filament\Resources\WithdrawRequests\Tables\WithdrawRequestsTable;
 use App\Models\AdminUser;
 use App\Models\PaymentGatewayEvent;
 use App\Models\Setting;
@@ -454,8 +456,130 @@ class Qc168WithdrawalPayoutTest extends TestCase
             ->count());
     }
 
+    public function test_processing_with_diagnostic_reason_stays_processing_and_is_not_retryable_or_cancellable(): void
+    {
+        $withdrawal = $this->approvedAndDispatched('processing_warning');
+        $attempt = $withdrawal->payoutAttempts()->firstOrFail();
+        $reason = 'CallserverErr: Client.Timeout exceeded while awaiting headers';
+
+        $this->sendCallback(
+            $this->providerPayload($attempt, 'processing', $reason)
+        )->assertOk();
+
+        $withdrawal->refresh();
+        $this->assertSame(WithdrawRequest::PAYOUT_PROCESSING, $withdrawal->payout_status);
+        $this->assertSame('processing', $withdrawal->gateway_payment_status);
+        $this->assertSame($reason, $withdrawal->gateway_fail_reason);
+        $this->assertSame('Payment Processing', $this->withdrawTableValue('statusLabel', $withdrawal));
+        $this->assertSame('info', $this->withdrawTableValue('statusColor', $withdrawal));
+        $this->assertStringContainsString(
+            'timed out',
+            strtolower($this->withdrawTableValue('gatewayFriendlyAlert', $withdrawal))
+        );
+        $this->assertFalse($this->withdrawTableValue('hasGatewayAttention', $withdrawal));
+        $this->assertTrue($this->withdrawTableValue('hasGatewayWarning', $withdrawal));
+        $this->assertFalse($withdrawal->canRetryPayout());
+        $this->assertFalse($withdrawal->canCancelPayout());
+        $this->assertWallet('processing_warning', '0.00', '1000.00');
+    }
+
+    public function test_completed_with_stale_diagnostic_finalizes_once_without_active_attention(): void
+    {
+        $withdrawal = $this->approvedAndDispatched('complete_stale_reason');
+        $attempt = $withdrawal->payoutAttempts()->firstOrFail();
+        $reason = 'Client.Timeout exceeded while awaiting headers';
+
+        $this->sendCallback(
+            $this->providerPayload($attempt, 'processing', $reason)
+        )->assertOk();
+        $completed = $this->providerPayload($attempt, 'completed', $reason);
+        $this->sendCallback($completed)->assertOk();
+        $this->sendCallback($completed)->assertOk();
+
+        $withdrawal->refresh();
+        $this->assertSame(WithdrawRequest::PAYOUT_COMPLETED, $withdrawal->payout_status);
+        $this->assertSame('completed', $withdrawal->gateway_payment_status);
+        $this->assertSame($reason, $withdrawal->gateway_fail_reason);
+        $this->assertSame($reason, $attempt->fresh()->failure_reason);
+        $this->assertSame('Paid', $this->withdrawTableValue('statusLabel', $withdrawal));
+        $this->assertSame('success', $this->withdrawTableValue('statusColor', $withdrawal));
+        $this->assertNull($this->withdrawTableValue('gatewayFriendlyAlert', $withdrawal));
+        $this->assertFalse($this->withdrawTableValue('hasGatewayAttention', $withdrawal));
+        $this->assertFalse($this->withdrawTableValue('hasGatewayWarning', $withdrawal));
+        $this->assertWallet('complete_stale_reason', '0.00', '0.00');
+        $this->assertSame(1, WalletTransaction::query()
+            ->where('reference_type', WithdrawRequest::class)
+            ->where('reference_id', $withdrawal->id)
+            ->count());
+        $this->assertSame(1, PaymentGatewayEvent::query()
+            ->where('withdraw_request_id', $withdrawal->id)
+            ->where('event_type', 'withdrawal.gateway_completed')
+            ->count());
+    }
+
+    public function test_uncertain_submission_becomes_processing_then_completed_through_order_sync(): void
+    {
+        $withdrawal = $this->pendingWithdrawal('uncertain_sync');
+        $admin = $this->approvalAdmin('uncertain-sync-admin', ['ApproveInstantGateway:Withdrawal']);
+        $inquiryStatus = null;
+        $attempt = null;
+        $reason = 'Client.Timeout exceeded while awaiting headers';
+        Http::fake(function () use (&$attempt, &$inquiryStatus, $reason) {
+            if ($inquiryStatus === null) {
+                return Http::failedConnection('Connection timed out');
+            }
+
+            return Http::response([
+                'result' => 'success',
+                'data' => $this->providerPayload($attempt, $inquiryStatus, $reason),
+            ]);
+        });
+
+        try {
+            app(WithdrawService::class)->approveWithInstantGateway($withdrawal, $admin);
+            $this->fail('The uncertain provider submission should be reported.');
+        } catch (Qc168UncertainSubmissionException) {
+            $this->addToAssertionCount(1);
+        }
+
+        $withdrawal->refresh();
+        $attempt = $withdrawal->payoutAttempts()->firstOrFail();
+        $this->assertSame(WithdrawRequest::PAYOUT_SUBMITTED, $withdrawal->payout_status);
+        $this->assertSame(WithdrawalPayoutAttempt::STATUS_CREATE_PENDING, $withdrawal->gateway_payment_status);
+        $this->assertSame('Status Needs Confirmation', $this->withdrawTableValue('statusLabel', $withdrawal));
+        $this->assertTrue($this->withdrawTableValue('hasGatewayAttention', $withdrawal));
+        $this->assertFalse($withdrawal->canRetryPayout());
+        $this->assertFalse($withdrawal->canCancelPayout());
+
+        $inquiryStatus = 'processing';
+        app(Qc168WithdrawalPayoutService::class)->sync($withdrawal);
+
+        $withdrawal->refresh();
+        $this->assertSame(WithdrawRequest::PAYOUT_PROCESSING, $withdrawal->payout_status);
+        $this->assertSame('Payment Processing', $this->withdrawTableValue('statusLabel', $withdrawal));
+        $this->assertFalse($this->withdrawTableValue('hasGatewayAttention', $withdrawal));
+        $this->assertTrue($this->withdrawTableValue('hasGatewayWarning', $withdrawal));
+
+        $inquiryStatus = 'completed';
+        app(Qc168WithdrawalPayoutService::class)->sync($withdrawal);
+        app(Qc168WithdrawalPayoutService::class)->sync($withdrawal->fresh());
+
+        $this->assertSame(WithdrawRequest::PAYOUT_COMPLETED, $withdrawal->fresh()->payout_status);
+        $this->assertWallet('uncertain_sync', '0.00', '0.00');
+        $this->assertSame(1, WalletTransaction::query()
+            ->where('reference_type', WithdrawRequest::class)
+            ->where('reference_id', $withdrawal->id)
+            ->count());
+    }
+
     public function test_failed_reject_and_overdue_never_finalize_or_release_reserve(): void
     {
+        $labels = [
+            'failed' => 'Payout Failed',
+            'reject' => 'Payout Rejected',
+            'overdue' => 'Payout Overdue',
+        ];
+
         foreach (['failed', 'reject', 'overdue'] as $status) {
             $username = 'status_'.$status;
             $withdrawal = $this->approvedAndDispatched($username);
@@ -464,7 +588,15 @@ class Qc168WithdrawalPayoutTest extends TestCase
             $this->sendCallback($this->providerPayload($attempt, $status))->assertOk();
 
             $expected = $status === 'reject' ? WithdrawRequest::PAYOUT_REJECTED : $status;
-            $this->assertSame($expected, $withdrawal->fresh()->payout_status);
+            $withdrawal->refresh();
+            $this->assertSame($expected, $withdrawal->payout_status);
+            $this->assertSame($status, $withdrawal->gateway_payment_status);
+            $this->assertSame($status, $withdrawal->gateway_fail_reason);
+            $this->assertSame($labels[$status], $this->withdrawTableValue('statusLabel', $withdrawal));
+            $this->assertTrue($this->withdrawTableValue('hasGatewayAttention', $withdrawal));
+            $this->assertFalse($this->withdrawTableValue('hasGatewayWarning', $withdrawal));
+            $this->assertTrue($withdrawal->canRetryPayout());
+            $this->assertTrue($withdrawal->canCancelPayout());
             $this->assertWallet($username, '0.00', '1000.00');
             $this->assertSame(1, WalletTransaction::query()
                 ->where('reference_type', WithdrawRequest::class)
@@ -639,6 +771,9 @@ class Qc168WithdrawalPayoutTest extends TestCase
     {
         $withdrawal = $this->pendingWithdrawal('api_fields');
         app(WithdrawService::class)->approveWithScheduledGateway($withdrawal, $this->admin());
+        $withdrawal->forceFill([
+            'gateway_fail_reason' => 'CallserverErr: http://10.40.4.126:8000 Client.Timeout',
+        ])->save();
 
         $formatted = ApiFormatter::withdrawRequest($withdrawal->fresh());
 
@@ -648,6 +783,8 @@ class Qc168WithdrawalPayoutTest extends TestCase
         $this->assertArrayNotHasKey('oc_key', $formatted);
         $this->assertArrayNotHasKey('secret', $formatted);
         $this->assertArrayNotHasKey('merchant_uid', $formatted);
+        $this->assertArrayNotHasKey('gateway_fail_reason', $formatted);
+        $this->assertStringNotContainsString('10.40.4.126', json_encode($formatted));
     }
 
     public function test_gateway_audit_payloads_strip_credentials_recursively(): void
@@ -760,8 +897,11 @@ class Qc168WithdrawalPayoutTest extends TestCase
         ]);
     }
 
-    private function providerPayload(WithdrawalPayoutAttempt $attempt, string $status): array
-    {
+    private function providerPayload(
+        WithdrawalPayoutAttempt $attempt,
+        string $status,
+        ?string $failureReason = null,
+    ): array {
         return [
             'transaction_type' => 'expense',
             'accounting_type' => 'pay',
@@ -773,7 +913,8 @@ class Qc168WithdrawalPayoutTest extends TestCase
             'notify_url' => route('payment-gateway.qc168.withdrawal.callback'),
             'merchant_order_id' => $attempt->merchant_order_id,
             'payment_status' => $status,
-            'payment_fail_reason' => in_array($status, ['failed', 'reject', 'overdue'], true) ? $status : '',
+            'payment_fail_reason' => $failureReason
+                ?? (in_array($status, ['failed', 'reject', 'overdue'], true) ? $status : ''),
             'order_uid' => 'ORDER-'.$attempt->id,
             'payment_uid' => 'PAY-'.$attempt->id,
             'signture_key' => 'callback-key',
@@ -788,6 +929,16 @@ class Qc168WithdrawalPayoutTest extends TestCase
             $payload,
             ['Oc-Signature' => app(Qc168Gateway::class)->sign($payload)],
         );
+    }
+
+    private function withdrawTableValue(
+        string $method,
+        WithdrawRequest $withdrawal,
+    ): mixed {
+        $reflection = new \ReflectionMethod(WithdrawRequestsTable::class, $method);
+        $reflection->setAccessible(true);
+
+        return $reflection->invoke(null, $withdrawal);
     }
 
     private function user(string $username): User

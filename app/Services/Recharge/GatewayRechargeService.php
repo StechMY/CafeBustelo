@@ -3,6 +3,7 @@
 namespace App\Services\Recharge;
 
 use App\Exceptions\Qc168GatewayException;
+use App\Exceptions\Qc168UncertainSubmissionException;
 use App\Models\RechargeRequest;
 use App\Models\User;
 use App\Services\PaymentGateway\Qc168Gateway;
@@ -55,6 +56,17 @@ class GatewayRechargeService
                     'order_created_at' => now()->toAtomString(),
                 ],
             ])->save();
+        } catch (Qc168UncertainSubmissionException $exception) {
+            $rechargeRequest->forceFill([
+                'gateway_payment_status' => 'create_pending',
+                'gateway_fail_reason' => mb_substr($exception->getMessage(), 0, 1000),
+                'gateway_meta' => [
+                    'order_create_result' => 'uncertain',
+                    'order_create_uncertain_at' => now()->toAtomString(),
+                ],
+            ])->save();
+
+            throw $exception;
         } catch (Throwable $exception) {
             $rechargeRequest->forceFill([
                 'gateway_payment_status' => 'create_failed',

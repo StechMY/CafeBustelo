@@ -250,9 +250,9 @@ class RechargeRequestsTable
                 TextColumn::make('gateway_fail_reason')
                     ->label(
                         self::ui(
-                            'filament.gateway_failure_reason',
-                            'Gateway Failure Reason',
-                            '网关失败原因'
+                            'filament.latest_gateway_error',
+                            'Latest Gateway Error',
+                            '最近一次网关错误'
                         )
                     )
                     ->formatStateUsing(
@@ -355,75 +355,43 @@ class RechargeRequestsTable
                                 'deposit_method',
                                 RechargeRequest::METHOD_GATEWAY
                             )
-                            ->where(function (Builder $query): void {
-                                $query
-                                    ->whereIn(
-                                        'gateway_payment_status',
-                                        [
-                                            'failed',
-                                            'reject',
-                                            'refund',
-                                            'overdue',
-                                            'create_failed',
-                                        ]
-                                    )
-                                    ->orWhere(function (
-                                        Builder $query
-                                    ): void {
-                                        $query
-                                            ->whereNotNull(
-                                                'gateway_fail_reason'
-                                            )
-                                            ->where(
-                                                'gateway_fail_reason',
-                                                '!=',
-                                                ''
-                                            )
-                                            ->where(function (
-                                                Builder $query
-                                            ): void {
-                                                $query
-                                                    ->whereRaw(
-                                                        'LOWER(gateway_fail_reason) LIKE ?',
-                                                        ['%timeout%']
-                                                    )
-                                                    ->orWhereRaw(
-                                                        'LOWER(gateway_fail_reason) LIKE ?',
-                                                        ['%timed out%']
-                                                    )
-                                                    ->orWhereRaw(
-                                                        'LOWER(gateway_fail_reason) LIKE ?',
-                                                        ['%awaiting headers%']
-                                                    )
-                                                    ->orWhereRaw(
-                                                        'LOWER(gateway_fail_reason) LIKE ?',
-                                                        ['%connection%']
-                                                    )
-                                                    ->orWhereRaw(
-                                                        'LOWER(gateway_fail_reason) LIKE ?',
-                                                        ['%could not connect%']
-                                                    )
-                                                    ->orWhereRaw(
-                                                        'LOWER(gateway_fail_reason) LIKE ?',
-                                                        ['%connection reset%']
-                                                    )
-                                                    ->orWhereRaw(
-                                                        'LOWER(gateway_fail_reason) LIKE ?',
-                                                        ['%curl error 28%']
-                                                    );
-                                            });
-                                    });
-                            })
-                            ->where(function (Builder $query): void {
-                                $query
-                                    ->whereNull('gateway_payment_status')
-                                    ->orWhere(
-                                        'gateway_payment_status',
-                                        '!=',
-                                        'completed'
-                                    );
-                            });
+                            ->whereIn(
+                                'gateway_payment_status',
+                                [
+                                    'failed',
+                                    'reject',
+                                    'refund',
+                                    'overdue',
+                                    'create_failed',
+                                    'create_pending',
+                                ]
+                            );
                     }),
+
+                Filter::make('gateway_warning')
+                    ->label(
+                        self::ui(
+                            'filament.gateway_warning',
+                            'Gateway Warning',
+                            '网关警告'
+                        )
+                    )
+                    ->query(
+                        fn (Builder $query): Builder => $query
+                            ->where(
+                                'deposit_method',
+                                RechargeRequest::METHOD_GATEWAY
+                            )
+                            ->whereIn('gateway_payment_status', [
+                                'none',
+                                'pending',
+                                'preparing',
+                                'processing',
+                            ])
+                            ->whereNotNull('gateway_fail_reason')
+                            ->where('gateway_fail_reason', '!=', '')
+                            ->where('status', '!=', 'approved')
+                    ),
 
                 Filter::make('created_at')
                     ->label(__('filament.created_at'))
@@ -486,8 +454,9 @@ class RechargeRequestsTable
                     ->visible(
                         fn (RechargeRequest $record): bool =>
                             $record->isGatewayDeposit()
-                            && self::hasGatewayCommunicationIssue(
-                                $record
+                            && (
+                                self::hasUnknownGatewayStatus($record)
+                                || self::hasGatewayWarning($record)
                             )
                     )
                     ->authorize(
@@ -568,9 +537,8 @@ class RechargeRequestsTable
                         ->visible(
                             fn (RechargeRequest $record): bool =>
                                 $record->isGatewayDeposit()
-                                && ! self::hasGatewayCommunicationIssue(
-                                    $record
-                                )
+                                && ! self::hasUnknownGatewayStatus($record)
+                                && ! self::hasGatewayWarning($record)
                         )
                         ->authorize(
                             fn (RechargeRequest $record): bool =>
@@ -799,7 +767,7 @@ class RechargeRequestsTable
     ): string {
         if (
             $record->isGatewayDeposit()
-            && self::hasGatewayCommunicationIssue($record)
+            && self::hasUnknownGatewayStatus($record)
         ) {
             return self::ui(
                 'filament.gateway_status_uncertain',
@@ -808,15 +776,44 @@ class RechargeRequestsTable
             );
         }
 
-        if (
-            $record->isGatewayDeposit()
-            && self::isGatewayDefiniteFailure($record)
-        ) {
-            return self::ui(
-                'filament.gateway_failed',
-                'Gateway Failed',
-                '网关处理失败'
-            );
+        if ($record->isGatewayDeposit()) {
+            if ($record->status === 'approved') {
+                return __('filament.approved');
+            }
+
+            if (filled($record->gateway_payment_status)) {
+                return match ($record->gateway_payment_status) {
+                    'completed' => __('filament.approved'),
+                    'failed' => self::ui(
+                        'filament.gateway_payment_failed',
+                        'Payment Failed',
+                        '支付失败'
+                    ),
+                    'reject' => self::ui(
+                        'filament.gateway_payment_rejected',
+                        'Payment Rejected',
+                        '支付被拒绝'
+                    ),
+                    'refund' => self::ui(
+                        'filament.gateway_payment_refund',
+                        'Refund Requires Review',
+                        '退款需要审核'
+                    ),
+                    'overdue' => self::ui(
+                        'filament.gateway_payment_overdue',
+                        'Payment Overdue',
+                        '支付已逾期'
+                    ),
+                    'create_failed' => self::ui(
+                        'filament.gateway_submission_failed',
+                        'Gateway Submission Failed',
+                        '网关提交失败'
+                    ),
+                    default => self::humanizeStatus(
+                        $record->gateway_payment_status
+                    ),
+                };
+            }
         }
 
         return match ($record->status) {
@@ -838,7 +835,7 @@ class RechargeRequestsTable
     ): string {
         if (
             $record->isGatewayDeposit()
-            && self::hasGatewayCommunicationIssue($record)
+            && self::hasUnknownGatewayStatus($record)
         ) {
             return 'warning';
         }
@@ -848,6 +845,22 @@ class RechargeRequestsTable
             && self::isGatewayDefiniteFailure($record)
         ) {
             return 'danger';
+        }
+
+        if ($record->isGatewayDeposit()) {
+            if ($record->gateway_payment_status === 'completed'
+                || $record->status === 'approved') {
+                return 'success';
+            }
+
+            if (in_array($record->gateway_payment_status, [
+                'none',
+                'pending',
+                'preparing',
+                'processing',
+            ], true)) {
+                return 'info';
+            }
         }
 
         return match ($record->status) {
@@ -910,16 +923,16 @@ class RechargeRequestsTable
             return false;
         }
 
-        return self::hasGatewayCommunicationIssue($record)
+        return self::hasUnknownGatewayStatus($record)
             || self::isGatewayDefiniteFailure($record);
     }
 
     /*
     |--------------------------------------------------------------------------
-    | Communication Issue
+    | Unknown provider state
     |--------------------------------------------------------------------------
     */
-    private static function hasGatewayCommunicationIssue(
+    private static function hasUnknownGatewayStatus(
         RechargeRequest $record
     ): bool {
         if (! $record->isGatewayDeposit()) {
@@ -933,30 +946,21 @@ class RechargeRequestsTable
             return false;
         }
 
-        $reason = self::gatewayFailureReason($record);
+        return $record->gateway_payment_status === 'create_pending';
+    }
 
-        if ($reason === null) {
-            return false;
-        }
-
-        $reason = Str::lower($reason);
-
-        return Str::contains(
-            $reason,
-            [
-                'timeout',
-                'timed out',
-                'awaiting headers',
-                'connection timed out',
-                'connect timeout',
-                'connection refused',
-                'could not connect',
-                "couldn't connect",
-                'connection reset',
-                'curl error 28',
-                'network unreachable',
-            ]
-        );
+    private static function hasGatewayWarning(
+        RechargeRequest $record
+    ): bool {
+        return $record->isGatewayDeposit()
+            && $record->status !== 'approved'
+            && in_array($record->gateway_payment_status, [
+                'none',
+                'pending',
+                'preparing',
+                'processing',
+            ], true)
+            && self::gatewayFailureReason($record) !== null;
     }
 
     /*
@@ -999,18 +1003,66 @@ class RechargeRequestsTable
     private static function gatewayFriendlyAlert(
         RechargeRequest $record
     ): ?string {
-        if (! self::hasGatewayAttention($record)) {
+        if (! self::hasGatewayAttention($record)
+            && ! self::hasGatewayWarning($record)) {
             return null;
         }
 
         $reason = self::gatewayFailureReason($record);
         $reasonLower = Str::lower((string) $reason);
 
-        if (self::hasGatewayCommunicationIssue($record)) {
+        if (self::hasUnknownGatewayStatus($record)) {
             return self::ui(
                 'filament.gateway_timeout_sync_first',
-                'Gateway request timed out. Status is uncertain; sync first.',
-                '网关请求超时，状态待确认，请先同步支付状态'
+                'The QC168 request did not return a reliable status; sync first.',
+                'QC168 请求未返回可靠状态，请先同步支付状态'
+            );
+        }
+
+        if (self::hasGatewayWarning($record)) {
+            $currentStatus = self::humanizeStatus(
+                $record->gateway_payment_status
+            );
+
+            if (Str::contains($reasonLower, [
+                'timeout',
+                'timed out',
+                'awaiting headers',
+                'curl error 28',
+            ])) {
+                return self::ui(
+                    'filament.gateway_timeout_known_status',
+                    "Latest gateway request timed out. Current QC168 status is still {$currentStatus}; sync to refresh.",
+                    "最近一次网关请求超时，当前 QC168 状态仍为 {$currentStatus}，可同步最新状态。"
+                );
+            }
+
+            if (Str::contains($reasonLower, [
+                'connection refused',
+                'could not connect',
+                "couldn't connect",
+                'connection reset',
+                'network unreachable',
+            ])) {
+                return self::ui(
+                    'filament.gateway_unreachable_known_status',
+                    "The gateway payment service was temporarily unreachable. Current QC168 status is still {$currentStatus}; sync to refresh.",
+                    "网关支付服务暂时无法连接，当前 QC168 状态仍为 {$currentStatus}，可同步最新状态。"
+                );
+            }
+
+            if (Str::contains($reasonLower, 'no bank cards available')) {
+                return self::ui(
+                    'filament.gateway_no_bank_cards_known_status',
+                    "The payment channel reported no available bank cards. Current QC168 status is still {$currentStatus}.",
+                    "支付通道报告没有可用银行卡，当前 QC168 状态仍为 {$currentStatus}。"
+                );
+            }
+
+            return self::ui(
+                'filament.gateway_diagnostic_known_status',
+                "The gateway reported a recent error. Current QC168 status is still {$currentStatus}; sync to refresh.",
+                "网关报告了最近一次错误，当前 QC168 状态仍为 {$currentStatus}，可同步最新状态。"
             );
         }
 
@@ -1099,7 +1151,8 @@ class RechargeRequestsTable
     private static function gatewayTechnicalTooltip(
         RechargeRequest $record
     ): ?string {
-        if (! self::hasGatewayAttention($record)) {
+        if (! self::hasGatewayAttention($record)
+            && ! self::hasGatewayWarning($record)) {
             return null;
         }
 

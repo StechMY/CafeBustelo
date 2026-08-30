@@ -82,7 +82,10 @@ class RechargeRequestInfolist
                                 TextEntry::make('gateway_final_amount')->label(__('filament.gateway_final_amount'))->placeholder('-'),
                                 TextEntry::make('gateway_currency')->label(__('filament.gateway_currency'))->placeholder('-'),
                                 TextEntry::make('gateway_channel')->label(__('filament.gateway_channel'))->placeholder('-'),
-                                TextEntry::make('gateway_fail_reason')->label(__('filament.gateway_fail_reason'))->placeholder('-'),
+                                TextEntry::make('gateway_fail_reason')
+                                    ->label(__('filament.latest_gateway_error'))
+                                    ->helperText(__('filament.latest_gateway_error_help'))
+                                    ->placeholder('-'),
                                 TextEntry::make('gateway_completed_at')->label(__('filament.gateway_completed_at'))->dateTime()->placeholder('-'),
                                 TextEntry::make('gateway_last_callback_at')->label(__('filament.gateway_last_callback_at'))->dateTime()->placeholder('-'),
                                 TextEntry::make('gateway_last_synced_at')->label(__('filament.gateway_last_synced_at'))->dateTime()->placeholder('-'),

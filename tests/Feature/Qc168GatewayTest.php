@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Filament\Resources\RechargeRequests\Tables\RechargeRequestsTable;
 use App\Models\PaymentGatewayEvent;
 use App\Models\PointTransaction;
 use App\Models\RechargeMethod;
@@ -10,6 +11,7 @@ use App\Models\Setting;
 use App\Models\User;
 use App\Models\Wallet;
 use App\Models\WalletTransaction;
+use App\Services\PaymentGateway\Qc168CallbackService;
 use App\Services\PaymentGateway\Qc168Gateway;
 use App\Services\PointService;
 use App\Services\RechargeApprovalService;
@@ -148,9 +150,17 @@ class Qc168GatewayTest extends TestCase
         Http::fake(Http::failedConnection('Connection timed out'));
         $this->postJson('/api/v1/recharge/gateway', ['amount' => '450000.00'])
             ->assertStatus(503);
-        $this->assertSame(2, RechargeRequest::query()
+        $this->assertSame(1, RechargeRequest::query()
             ->where('gateway_payment_status', 'create_failed')
             ->count());
+        $uncertain = RechargeRequest::query()->latest('id')->firstOrFail();
+        $this->assertSame('create_pending', $uncertain->gateway_payment_status);
+        $this->assertSame(
+            'Status Needs Confirmation',
+            $this->rechargeTableValue('statusLabel', $uncertain)
+        );
+        $this->assertTrue($this->rechargeTableValue('hasGatewayAttention', $uncertain));
+        $this->assertFalse($this->rechargeTableValue('hasGatewayWarning', $uncertain));
         $this->assertDatabaseCount('wallet_transactions', 0);
 
         config(['services.qc168.payment' => null]);
@@ -182,6 +192,137 @@ class Qc168GatewayTest extends TestCase
             ->where('reference_id', $recharge->id)
             ->count());
         $this->assertSame(3, PaymentGatewayEvent::query()->count());
+    }
+
+    public function test_processing_with_diagnostic_reason_stays_processing_and_shows_a_secondary_warning(): void
+    {
+        [$user, $recharge] = $this->gatewayRecharge('deposit_processing_warning', '1000.00');
+        $reason = 'CallserverErr: Client.Timeout exceeded while awaiting headers';
+        $payload = [
+            ...$this->callbackPayload($recharge, 'processing'),
+            'payment_fail_reason' => $reason,
+        ];
+
+        $this->sendCallback($payload)->assertOk();
+
+        $recharge->refresh();
+        $this->assertSame('pending', $recharge->status);
+        $this->assertSame('processing', $recharge->gateway_payment_status);
+        $this->assertSame($reason, $recharge->gateway_fail_reason);
+        $this->assertSame('Processing', $this->rechargeTableValue('statusLabel', $recharge));
+        $this->assertSame('info', $this->rechargeTableValue('statusColor', $recharge));
+        $this->assertStringContainsString(
+            'timed out',
+            strtolower($this->rechargeTableValue('gatewayFriendlyAlert', $recharge))
+        );
+        $this->assertFalse($this->rechargeTableValue('hasGatewayAttention', $recharge));
+        $this->assertTrue($this->rechargeTableValue('hasGatewayWarning', $recharge));
+
+        Sanctum::actingAs($user);
+        $this->getJson("/api/v1/recharge/{$recharge->id}/status")
+            ->assertOk()
+            ->assertDontSee('CallserverErr')
+            ->assertDontSee('Client.Timeout');
+    }
+
+    public function test_completed_with_stale_diagnostic_is_approved_without_active_attention(): void
+    {
+        [$user, $recharge] = $this->gatewayRecharge('deposit_complete_stale', '1000.00');
+        $reason = 'Client.Timeout exceeded while awaiting headers';
+        $processing = [
+            ...$this->callbackPayload($recharge, 'processing'),
+            'payment_fail_reason' => $reason,
+        ];
+        $completed = [
+            ...$this->callbackPayload($recharge, 'completed'),
+            'payment_fail_reason' => $reason,
+        ];
+
+        $this->sendCallback($processing)->assertOk();
+        $this->sendCallback($completed)->assertOk();
+        $this->sendCallback($completed)->assertOk();
+
+        $recharge->refresh();
+        $this->assertTrue($recharge->isApproved());
+        $this->assertSame('completed', $recharge->gateway_payment_status);
+        $this->assertSame($reason, $recharge->gateway_fail_reason);
+        $this->assertSame('Approved', $this->rechargeTableValue('statusLabel', $recharge));
+        $this->assertSame('success', $this->rechargeTableValue('statusColor', $recharge));
+        $this->assertNull($this->rechargeTableValue('gatewayFriendlyAlert', $recharge));
+        $this->assertFalse($this->rechargeTableValue('hasGatewayAttention', $recharge));
+        $this->assertFalse($this->rechargeTableValue('hasGatewayWarning', $recharge));
+        $this->assertSame('1000.00', Wallet::query()
+            ->where('user_id', $user->id)
+            ->where('type', Wallet::TYPE_RECHARGE)
+            ->value('balance'));
+        $this->assertSame(1, WalletTransaction::query()
+            ->where('reference_type', RechargeRequest::class)
+            ->where('reference_id', $recharge->id)
+            ->count());
+    }
+
+    public function test_order_sync_changes_unknown_to_processing_then_completed_using_root_data_payload(): void
+    {
+        [$user, $recharge] = $this->gatewayRecharge('deposit_sync_unknown', '1000.00');
+        $reason = 'Client.Timeout exceeded while awaiting headers';
+        $recharge->forceFill([
+            'gateway_payment_status' => 'create_pending',
+            'gateway_fail_reason' => $reason,
+        ])->save();
+
+        $this->assertSame(
+            'Status Needs Confirmation',
+            $this->rechargeTableValue('statusLabel', $recharge)
+        );
+
+        Http::fakeSequence()
+            ->push([
+                'result' => 'success',
+                'data' => [
+                    ...$this->callbackPayload($recharge, 'processing'),
+                    'payment_fail_reason' => '',
+                ],
+            ])
+            ->push([
+                'result' => 'success',
+                'data' => [
+                    ...$this->callbackPayload($recharge, 'completed'),
+                    'payment_fail_reason' => '',
+                ],
+            ])
+            ->push([
+                'result' => 'success',
+                'data' => [
+                    ...$this->callbackPayload($recharge, 'completed'),
+                    'payment_fail_reason' => '',
+                ],
+            ]);
+        $processingResult = app(Qc168CallbackService::class)->sync($recharge);
+        $this->assertTrue($processingResult['accepted'], json_encode($processingResult));
+
+        $recharge->refresh();
+        $this->assertSame('processing', $recharge->gateway_payment_status);
+        $this->assertSame($reason, $recharge->gateway_fail_reason);
+        $this->assertSame('Processing', $this->rechargeTableValue('statusLabel', $recharge));
+        $this->assertTrue($this->rechargeTableValue('hasGatewayWarning', $recharge));
+
+        $completedResult = app(Qc168CallbackService::class)->sync($recharge);
+        $this->assertTrue($completedResult['accepted'], json_encode($completedResult));
+        $this->assertSame('auto_approved', $completedResult['result']);
+        app(Qc168CallbackService::class)->sync($recharge->fresh());
+
+        $recharge->refresh();
+        $this->assertTrue($recharge->isApproved());
+        $this->assertSame('completed', $recharge->gateway_payment_status);
+        $this->assertSame($reason, $recharge->gateway_fail_reason);
+        $this->assertSame(1, WalletTransaction::query()
+            ->where('reference_type', RechargeRequest::class)
+            ->where('reference_id', $recharge->id)
+            ->count());
+        $this->assertSame('1000.00', Wallet::query()
+            ->where('user_id', $user->id)
+            ->where('type', Wallet::TYPE_RECHARGE)
+            ->value('balance'));
     }
 
     public function test_callback_validation_blocks_tampering_and_order_mismatches(): void
@@ -260,9 +401,16 @@ class Qc168GatewayTest extends TestCase
                 'locked_balance' => 0,
             ]);
 
-            $this->sendCallback($this->callbackPayload($recharge, $status))->assertOk();
+            $payload = [
+                ...$this->callbackPayload($recharge, $status),
+                'payment_fail_reason' => "diagnostic {$status}",
+            ];
+            $this->sendCallback($payload)->assertOk();
 
-            $this->assertSame('pending', $recharge->fresh()->status);
+            $recharge->refresh();
+            $this->assertSame('pending', $recharge->status);
+            $this->assertSame($status, $recharge->gateway_payment_status);
+            $this->assertSame("diagnostic {$status}", $recharge->gateway_fail_reason);
             $this->assertSame('250.00', Wallet::query()
                 ->where('user_id', $user->id)
                 ->where('type', Wallet::TYPE_RECHARGE)
@@ -384,5 +532,15 @@ class Qc168GatewayTest extends TestCase
         return $this->postJson('/payment-gateway/qc168/callback', $payload, [
             'Oc-Signature' => $signature,
         ]);
+    }
+
+    private function rechargeTableValue(
+        string $method,
+        RechargeRequest $recharge,
+    ): mixed {
+        $reflection = new \ReflectionMethod(RechargeRequestsTable::class, $method);
+        $reflection->setAccessible(true);
+
+        return $reflection->invoke(null, $recharge);
     }
 }

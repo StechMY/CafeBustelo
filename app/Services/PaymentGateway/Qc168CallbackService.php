@@ -129,7 +129,7 @@ class Qc168CallbackService
         $rechargeRequest->forceFill(['gateway_last_synced_at' => now()])->save();
 
         $response = $this->gateway->getOrder((string) $rechargeRequest->merchant_order_id);
-        $data = data_get($response, 'data.payment', data_get($response, 'data'));
+        $data = data_get($response, 'data');
 
         if (! is_array($data)) {
             return ['accepted' => false, 'result' => 'invalid_order_response'];
@@ -176,7 +176,8 @@ class Qc168CallbackService
                 'gateway_currency' => strtolower((string) $payload['currency']),
                 'gateway_channel' => $this->nullableString($payload['channel'] ?? null)
                     ?: $lockedRequest->gateway_channel,
-                'gateway_fail_reason' => $this->nullableString($payload['payment_fail_reason'] ?? null),
+                'gateway_fail_reason' => $this->nullableString($payload['payment_fail_reason'] ?? null)
+                    ?: $lockedRequest->gateway_fail_reason,
                 'gateway_meta' => array_merge($lockedRequest->gateway_meta ?? [], [
                     'latest_state_source' => $source,
                     'latest_state_received_at' => now()->toAtomString(),
@@ -301,7 +302,9 @@ class Qc168CallbackService
 
     private function shouldAcceptStatus(?string $currentStatus, string $incomingStatus): bool
     {
-        if (! $currentStatus || $currentStatus === 'create_failed' || $currentStatus === $incomingStatus) {
+        if (! $currentStatus
+            || in_array($currentStatus, ['create_pending', 'create_failed'], true)
+            || $currentStatus === $incomingStatus) {
             return true;
         }
 

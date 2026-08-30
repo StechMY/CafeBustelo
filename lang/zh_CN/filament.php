@@ -666,6 +666,8 @@ return [
     'gateway_currency' => '支付币种',
     'gateway_channel' => '支付通道',
     'gateway_fail_reason' => '失败原因',
+    'latest_gateway_error' => '最近一次网关错误',
+    'latest_gateway_error_help' => '这是最近一次网关诊断信息，并不一定表示当前支付状态失败。',
     'gateway_completed_at' => '付款完成时间',
     'gateway_last_callback_at' => '最后回调时间',
     'gateway_last_synced_at' => '最后同步时间',

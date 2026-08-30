@@ -223,7 +223,8 @@ class Qc168WithdrawalPayoutService
                 if (! $lockedAttempt->isCompleted()) {
                     $lockedAttempt->forceFill([
                         'gateway_status' => WithdrawalPayoutAttempt::STATUS_REFUND,
-                        'failure_reason' => $this->nullableString($payload['payment_fail_reason'] ?? null),
+                        'failure_reason' => $this->nullableString($payload['payment_fail_reason'] ?? null)
+                            ?: $lockedAttempt->failure_reason,
                         'provider_response' => $payload,
                         'provider_meta' => array_merge($lockedAttempt->provider_meta ?? [], [
                             'latest_state_source' => $source,
@@ -278,7 +279,8 @@ class Qc168WithdrawalPayoutService
                 'gateway_final_amount' => array_key_exists('final_amount', $payload)
                     ? $this->normalizeAmount($payload['final_amount'])
                     : $lockedAttempt->gateway_final_amount,
-                'failure_reason' => $this->nullableString($payload['payment_fail_reason'] ?? null),
+                'failure_reason' => $this->nullableString($payload['payment_fail_reason'] ?? null)
+                    ?: $lockedAttempt->failure_reason,
                 'provider_response' => $payload,
                 'provider_meta' => array_merge($lockedAttempt->provider_meta ?? [], [
                     'latest_state_source' => $source,
@@ -288,7 +290,6 @@ class Qc168WithdrawalPayoutService
 
             if ($incomingStatus === WithdrawalPayoutAttempt::STATUS_COMPLETED) {
                 $updates['completed_at'] = $lockedAttempt->completed_at ?: now();
-                $updates['failure_reason'] = null;
             } elseif (in_array($incomingStatus, [
                 WithdrawalPayoutAttempt::STATUS_FAILED,
                 WithdrawalPayoutAttempt::STATUS_REJECT,

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\WithdrawRequests\Tables;
 
+use App\Models\WithdrawalPayoutAttempt;
 use App\Models\WithdrawRequest;
 use App\Services\PaymentGateway\Qc168Gateway;
 use App\Services\PaymentGateway\Qc168WithdrawalPayoutService;
@@ -233,9 +234,9 @@ class WithdrawRequestsTable
                 TextColumn::make('gateway_fail_reason')
                     ->label(
                         self::ui(
-                            'withdraw.gateway_failure_reason',
-                            'Gateway Failure Reason',
-                            '网关失败原因'
+                            'withdraw.latest_gateway_error',
+                            'Latest Gateway Error',
+                            '最近一次网关错误'
                         )
                     )
                     ->formatStateUsing(
@@ -323,7 +324,7 @@ class WithdrawRequestsTable
                 | - overdue
                 | - create failed
                 | - refund review
-                | - timeout / connection uncertainty
+                | - unknown / uncertain submission state
                 |
                 */
                 Filter::make('gateway_attention')
@@ -346,48 +347,41 @@ class WithdrawRequestsTable
                                         WithdrawRequest::PAYOUT_CREATE_FAILED,
                                         WithdrawRequest::PAYOUT_REFUND_REVIEW,
                                     ])
-                                    ->orWhere(function (Builder $query): void {
-                                        $query
-                                            ->whereNotNull('gateway_fail_reason')
-                                            ->where('gateway_fail_reason', '!=', '')
-                                            ->where(function (Builder $query): void {
-                                                $query
-                                                    ->whereRaw(
-                                                        'LOWER(gateway_fail_reason) LIKE ?',
-                                                        ['%timeout%']
-                                                    )
-                                                    ->orWhereRaw(
-                                                        'LOWER(gateway_fail_reason) LIKE ?',
-                                                        ['%timed out%']
-                                                    )
-                                                    ->orWhereRaw(
-                                                        'LOWER(gateway_fail_reason) LIKE ?',
-                                                        ['%awaiting headers%']
-                                                    )
-                                                    ->orWhereRaw(
-                                                        'LOWER(gateway_fail_reason) LIKE ?',
-                                                        ['%connection%']
-                                                    )
-                                                    ->orWhereRaw(
-                                                        'LOWER(gateway_fail_reason) LIKE ?',
-                                                        ['%could not connect%']
-                                                    )
-                                                    ->orWhereRaw(
-                                                        'LOWER(gateway_fail_reason) LIKE ?',
-                                                        ['%connection reset%']
-                                                    )
-                                                    ->orWhereRaw(
-                                                        'LOWER(gateway_fail_reason) LIKE ?',
-                                                        ['%curl error 28%']
-                                                    );
-                                            });
-                                    });
+                                    ->orWhere(
+                                        'gateway_payment_status',
+                                        WithdrawalPayoutAttempt::STATUS_CREATE_PENDING
+                                    );
                             })
                             ->whereNotIn('payout_status', [
                                 WithdrawRequest::PAYOUT_COMPLETED,
                                 WithdrawRequest::PAYOUT_CANCELLED,
                             ]);
                     }),
+
+                Filter::make('gateway_warning')
+                    ->label(
+                        self::ui(
+                            'withdraw.gateway_warning',
+                            'Gateway Warning',
+                            '网关警告'
+                        )
+                    )
+                    ->query(
+                        fn (Builder $query): Builder => $query
+                            ->where('status', WithdrawRequest::STATUS_APPROVED)
+                            ->whereIn('gateway_payment_status', [
+                                WithdrawalPayoutAttempt::STATUS_NONE,
+                                WithdrawalPayoutAttempt::STATUS_PENDING,
+                                WithdrawalPayoutAttempt::STATUS_PREPARING,
+                                WithdrawalPayoutAttempt::STATUS_PROCESSING,
+                            ])
+                            ->whereNotNull('gateway_fail_reason')
+                            ->where('gateway_fail_reason', '!=', '')
+                            ->whereNotIn('payout_status', [
+                                WithdrawRequest::PAYOUT_COMPLETED,
+                                WithdrawRequest::PAYOUT_CANCELLED,
+                            ])
+                    ),
 
                 Filter::make('created_at')
                     ->label(__('filament.submitted_at'))
@@ -460,7 +454,10 @@ class WithdrawRequestsTable
                     ->color('warning')
                     ->visible(
                         fn (WithdrawRequest $record): bool =>
-                            self::hasGatewayCommunicationIssue($record)
+                            (
+                                self::hasUnknownGatewayStatus($record)
+                                || self::hasGatewayWarning($record)
+                            )
                             && $record->canSyncPayout()
                     )
                     ->authorize(
@@ -1108,9 +1105,8 @@ class WithdrawRequestsTable
                         ->visible(
                             fn (WithdrawRequest $record): bool =>
                                 $record->canSyncPayout()
-                                && ! self::hasGatewayCommunicationIssue(
-                                    $record
-                                )
+                                && ! self::hasUnknownGatewayStatus($record)
+                                && ! self::hasGatewayWarning($record)
                         )
                         ->authorize(
                             fn (WithdrawRequest $record): bool =>
@@ -1226,13 +1222,7 @@ class WithdrawRequestsTable
     private static function statusLabel(
         WithdrawRequest $record
     ): string {
-        /*
-         * A timeout does NOT prove payout failure.
-         *
-         * QC168 may have received the request even though our app did not
-         * receive the response.
-         */
-        if (self::hasGatewayCommunicationIssue($record)) {
+        if (self::hasUnknownGatewayStatus($record)) {
             return self::ui(
                 'withdraw.gateway_status_uncertain',
                 'Status Needs Confirmation',
@@ -1316,7 +1306,7 @@ class WithdrawRequestsTable
     private static function statusColor(
         WithdrawRequest $record
     ): string {
-        if (self::hasGatewayCommunicationIssue($record)) {
+        if (self::hasUnknownGatewayStatus($record)) {
             return 'warning';
         }
 
@@ -1372,11 +1362,7 @@ class WithdrawRequestsTable
             return false;
         }
 
-        if (self::hasGatewayCommunicationIssue($record)) {
-            return true;
-        }
-
-        return in_array(
+        return self::hasUnknownGatewayStatus($record) || in_array(
             $record->payout_status,
             [
                 WithdrawRequest::PAYOUT_FAILED,
@@ -1391,17 +1377,10 @@ class WithdrawRequestsTable
 
     /*
     |--------------------------------------------------------------------------
-    | Communication uncertainty
+    | Unknown provider state
     |--------------------------------------------------------------------------
-    |
-    | IMPORTANT:
-    |
-    | timeout / network error != payout failed.
-    |
-    | We must sync before retrying.
-    |
     */
-    private static function hasGatewayCommunicationIssue(
+    private static function hasUnknownGatewayStatus(
         WithdrawRequest $record
     ): bool {
         if ($record->status !== 'approved') {
@@ -1421,30 +1400,25 @@ class WithdrawRequestsTable
             return false;
         }
 
-        $reason = self::gatewayFailureReason($record);
+        return $record->gateway_payment_status
+            === WithdrawalPayoutAttempt::STATUS_CREATE_PENDING;
+    }
 
-        if ($reason === null) {
-            return false;
-        }
-
-        $reason = Str::lower($reason);
-
-        return Str::contains(
-            $reason,
-            [
-                'timeout',
-                'timed out',
-                'awaiting headers',
-                'connection timed out',
-                'connect timeout',
-                'connection refused',
-                'could not connect',
-                "couldn't connect",
-                'connection reset',
-                'curl error 28',
-                'network unreachable',
-            ]
-        );
+    private static function hasGatewayWarning(
+        WithdrawRequest $record
+    ): bool {
+        return $record->status === WithdrawRequest::STATUS_APPROVED
+            && ! in_array($record->payout_status, [
+                WithdrawRequest::PAYOUT_COMPLETED,
+                WithdrawRequest::PAYOUT_CANCELLED,
+            ], true)
+            && in_array($record->gateway_payment_status, [
+                WithdrawalPayoutAttempt::STATUS_NONE,
+                WithdrawalPayoutAttempt::STATUS_PENDING,
+                WithdrawalPayoutAttempt::STATUS_PREPARING,
+                WithdrawalPayoutAttempt::STATUS_PROCESSING,
+            ], true)
+            && self::gatewayFailureReason($record) !== null;
     }
 
     /*
@@ -1455,18 +1429,66 @@ class WithdrawRequestsTable
     private static function gatewayFriendlyAlert(
         WithdrawRequest $record
     ): ?string {
-        if (! self::hasGatewayAttention($record)) {
+        if (! self::hasGatewayAttention($record)
+            && ! self::hasGatewayWarning($record)) {
             return null;
         }
 
         $reason = self::gatewayFailureReason($record);
         $reasonLower = Str::lower((string) $reason);
 
-        if (self::hasGatewayCommunicationIssue($record)) {
+        if (self::hasUnknownGatewayStatus($record)) {
             return self::ui(
                 'withdraw.gateway_timeout_sync_first',
-                'Gateway request timed out. Status is uncertain; sync first.',
-                '网关请求超时，状态待确认，请先同步支付状态'
+                'The QC168 request did not return a reliable status; sync first.',
+                'QC168 请求未返回可靠状态，请先同步支付状态'
+            );
+        }
+
+        if (self::hasGatewayWarning($record)) {
+            $currentStatus = self::humanizeStatus(
+                $record->gateway_payment_status
+            );
+
+            if (Str::contains($reasonLower, [
+                'timeout',
+                'timed out',
+                'awaiting headers',
+                'curl error 28',
+            ])) {
+                return self::ui(
+                    'withdraw.gateway_timeout_known_status',
+                    "Latest gateway request timed out. Current QC168 status is still {$currentStatus}; sync to refresh.",
+                    "最近一次网关请求超时，当前 QC168 状态仍为 {$currentStatus}，可同步最新状态。"
+                );
+            }
+
+            if (Str::contains($reasonLower, [
+                'connection refused',
+                'could not connect',
+                "couldn't connect",
+                'connection reset',
+                'network unreachable',
+            ])) {
+                return self::ui(
+                    'withdraw.gateway_unreachable_known_status',
+                    "The gateway payment service was temporarily unreachable. Current QC168 status is still {$currentStatus}; sync to refresh.",
+                    "网关支付服务暂时无法连接，当前 QC168 状态仍为 {$currentStatus}，可同步最新状态。"
+                );
+            }
+
+            if (Str::contains($reasonLower, 'no bank cards available')) {
+                return self::ui(
+                    'withdraw.gateway_no_bank_cards_known_status',
+                    "The payment channel reported no available bank cards. Current QC168 status is still {$currentStatus}.",
+                    "支付通道报告没有可用银行卡，当前 QC168 状态仍为 {$currentStatus}。"
+                );
+            }
+
+            return self::ui(
+                'withdraw.gateway_diagnostic_known_status',
+                "The gateway reported a recent error. Current QC168 status is still {$currentStatus}; sync to refresh.",
+                "网关报告了最近一次错误，当前 QC168 状态仍为 {$currentStatus}，可同步最新状态。"
             );
         }
 
@@ -1557,7 +1579,8 @@ class WithdrawRequestsTable
     private static function gatewayTechnicalTooltip(
         WithdrawRequest $record
     ): ?string {
-        if (! self::hasGatewayAttention($record)) {
+        if (! self::hasGatewayAttention($record)
+            && ! self::hasGatewayWarning($record)) {
             return null;
         }
 
@@ -1568,6 +1591,13 @@ class WithdrawRequestsTable
         }
 
         return Str::limit($reason, 500);
+    }
+
+    private static function humanizeStatus(?string $status): string
+    {
+        return blank($status)
+            ? '-'
+            : Str::of($status)->replace('_', ' ')->headline()->toString();
     }
 
     /*
