@@ -306,6 +306,7 @@ return [
     'vip' => 'VIP',
     'vip_level' => 'VIP 等级',
     'vip_level_summary' => 'VIP 等级汇总',
+    'vip_level_upgrade_times' => 'VIP 等级升级时间',
     'vip_levels' => 'VIP 等级',
     'vip_snapshot' => 'VIP 快照',
     'virtual' => '虚拟',

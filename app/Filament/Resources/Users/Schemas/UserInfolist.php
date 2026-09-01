@@ -179,6 +179,14 @@ class UserInfolist
                                 TextEntry::make('active_team_size')
                                     ->label(__('filament.active_team_size'))
                                     ->state(fn(User $record): int => $record->activeTeamSize()),
+
+                                TextEntry::make('vip_level_upgrade_times')
+                                    ->label(__('filament.vip_level_upgrade_times'))
+                                    ->state(fn(User $record): array => $record->vipLevelAchievements
+                                        ->map(fn($achievement): string => "LV{$achievement->level}: {$achievement->reached_at->format('Y-m-d H:i:s')}")
+                                        ->all())
+                                    ->listWithLineBreaks()
+                                    ->placeholder('-'),
                             ]),
                     ]),
 

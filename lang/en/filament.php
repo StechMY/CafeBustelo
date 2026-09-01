@@ -292,6 +292,7 @@ return [
     'vip' => 'VIP',
     'vip_level' => 'VIP Level',
     'vip_level_summary' => 'VIP Level Summary',
+    'vip_level_upgrade_times' => 'VIP Level Upgrade Times',
     'vip_levels' => 'VIP Levels',
     'vip_snapshot' => 'VIP Snapshot',
     'virtual' => 'Virtual',

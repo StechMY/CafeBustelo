@@ -133,7 +133,7 @@ class UserResource extends Resource
     {
         return FilamentSupportScope::applyToUsersQuery(
             parent::getEloquentQuery()
-        );
+        )->with('vipLevelAchievements');
     }
 
     public static function getPages(): array

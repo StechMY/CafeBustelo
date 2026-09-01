@@ -129,6 +129,82 @@ class User extends Authenticatable
         ];
     }
 
+    protected static function booted(): void
+    {
+        static::created(function (self $user): void {
+            $user->recordReachedVipLevelTimes(previousRecharge: -1, previousActiveTeamSize: -1);
+
+            if ($user->status === 'active') {
+                $user->recordAncestorsReachedVipLevelTimes();
+            }
+        });
+
+        static::updated(function (self $user): void {
+            $rechargeChanged = $user->wasChanged('accumulated_recharge');
+            $teamChanged = $user->status === 'active' && $user->wasChanged(['status', 'referrer_id']);
+
+            if ($rechargeChanged) {
+                $user->recordReachedVipLevelTimes(
+                    previousRecharge: (float) $user->getOriginal('accumulated_recharge'),
+                );
+            }
+
+            if ($teamChanged) {
+                $user->recordAncestorsReachedVipLevelTimes();
+            }
+        });
+    }
+
+    private function recordAncestorsReachedVipLevelTimes(): void
+    {
+        $ancestor = $this->referrer()->first();
+
+        for ($depth = 1; $ancestor && $depth <= 3; $depth++) {
+            $activeTeamSize = $ancestor->activeTeamSize();
+            $ancestor->recordReachedVipLevelTimes(
+                previousActiveTeamSize: max(0, $activeTeamSize - 1),
+                activeTeamSize: $activeTeamSize,
+            );
+            $ancestor = $ancestor->referrer()->first();
+        }
+    }
+
+    private function recordReachedVipLevelTimes(
+        ?float $previousRecharge = null,
+        ?int $previousActiveTeamSize = null,
+        ?int $activeTeamSize = null,
+    ): void
+    {
+        $recharge = (float) ($this->accumulated_recharge ?? 0);
+        $activeTeamSize ??= $this->activeTeamSize();
+        $reachedLevels = VipLevel::query()
+            ->where('status', 'active')
+            ->where('level', '>', 1)
+            ->where('required_accumulated_recharge', '<=', $recharge)
+            ->where('required_active_team_size', '<=', $activeTeamSize)
+            ->get(['level', 'required_accumulated_recharge', 'required_active_team_size']);
+
+        $achievements = [];
+
+        foreach ($reachedLevels as $level) {
+            $wasAlreadyReached = (float) $level->required_accumulated_recharge <= ($previousRecharge ?? $recharge)
+                && (int) $level->required_active_team_size <= ($previousActiveTeamSize ?? $activeTeamSize);
+
+            if (! $wasAlreadyReached) {
+                $achievements[] = [
+                    'user_id' => $this->id,
+                    'level' => $level->level,
+                    'reached_at' => now(),
+                ];
+            }
+        }
+
+        if ($achievements !== []) {
+            VipLevelAchievement::query()->insertOrIgnore($achievements);
+            $this->unsetRelation('vipLevelAchievements');
+        }
+    }
+
     public function referrer(): BelongsTo
     {
         return $this->belongsTo(User::class, 'referrer_id');
@@ -137,6 +213,11 @@ class User extends Authenticatable
     public function referrals(): HasMany
     {
         return $this->hasMany(User::class, 'referrer_id');
+    }
+
+    public function vipLevelAchievements(): HasMany
+    {
+        return $this->hasMany(VipLevelAchievement::class)->orderBy('level');
     }
 
     public function loginLogs(): HasMany
