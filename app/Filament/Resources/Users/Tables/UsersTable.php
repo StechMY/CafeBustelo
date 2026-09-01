@@ -114,8 +114,7 @@ class UsersTable
                         ->map(fn($achievement): string => "LV{$achievement->level}: {$achievement->reached_at->format('Y-m-d H:i:s')}")
                         ->all())
                     ->listWithLineBreaks()
-                    ->placeholder('-')
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->placeholder('-'),
 
                 TextColumn::make('active_team_size')
                     ->label(__('filament.active_team'))
