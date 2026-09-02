@@ -1493,7 +1493,8 @@ class WithdrawRequestsTable
         }
 
         if (
-            Str::contains(
+            $record->payout_status !== WithdrawRequest::PAYOUT_CREATE_FAILED
+            && Str::contains(
                 $reasonLower,
                 [
                     'no bank cards available',
@@ -1532,8 +1533,8 @@ class WithdrawRequestsTable
             WithdrawRequest::PAYOUT_CREATE_FAILED =>
                 self::ui(
                     'withdraw.gateway_submission_failed',
-                    'Gateway payout submission failed.',
-                    '提交第三方支付出款失败'
+                    'QC168 did not create this payout order; it may be retried or cancelled and refunded.',
+                    'QC168 未成功建立该出款订单，可重新提交或取消退款。'
                 ),
 
             WithdrawRequest::PAYOUT_REFUND_REVIEW =>

@@ -112,7 +112,7 @@ return [
         'preparing' => 'Đang xử lý thanh toán',
         'processing' => 'Đang xử lý thanh toán',
         'completed' => 'Đã thanh toán',
-        'create_failed' => 'Cần xem xét thanh toán',
+        'create_failed' => 'Gửi thanh toán thất bại',
         'failed' => 'Thanh toán thất bại',
         'rejected' => 'Thanh toán bị từ chối',
         'overdue' => 'Thanh toán quá hạn',

@@ -117,6 +117,10 @@ class Qc168GatewayTest extends TestCase
             'gateway_payment_uid' => 'PAY-1',
             'gateway_payment_url' => 'https://gateway.example/pay/PAY-1',
         ]);
+        $this->assertDatabaseHas('payment_gateway_events', [
+            'event_type' => 'gateway.order.created',
+            'processing_result' => 'created',
+        ]);
         $this->assertDatabaseCount('wallet_transactions', 0);
     }
 
@@ -143,9 +147,29 @@ class Qc168GatewayTest extends TestCase
 
         $this->assertDatabaseHas('recharge_requests', [
             'gateway_payment_status' => 'create_failed',
-            'status' => 'pending',
+            'status' => 'rejected',
+        ]);
+        $rejected = RechargeRequest::query()->latest('id')->firstOrFail();
+        $this->assertFalse(data_get($rejected->gateway_meta, 'order_created'));
+        $this->assertSame(
+            'Gateway Order Creation Failed',
+            $this->rechargeTableValue('statusLabel', $rejected)
+        );
+        $this->assertStringContainsString(
+            'did not create',
+            $this->rechargeTableValue('gatewayFriendlyAlert', $rejected)
+        );
+        $this->assertDatabaseHas('payment_gateway_events', [
+            'recharge_request_id' => $rejected->id,
+            'event_type' => 'gateway.order.create_rejected',
+            'processing_result' => 'create_failed',
         ]);
         $this->assertDatabaseCount('wallet_transactions', 0);
+
+        $rejected->forceFill(['created_at' => now()->subMinutes(10)])->save();
+        $requestCount = Http::recorded()->count();
+        $this->artisan('qc168:sync-pending-recharges')->assertSuccessful();
+        $this->assertCount($requestCount, Http::recorded());
 
         Http::fake(Http::failedConnection('Connection timed out'));
         $this->postJson('/api/v1/recharge/gateway', ['amount' => '450000.00'])
@@ -155,6 +179,13 @@ class Qc168GatewayTest extends TestCase
             ->count());
         $uncertain = RechargeRequest::query()->latest('id')->firstOrFail();
         $this->assertSame('create_pending', $uncertain->gateway_payment_status);
+        $this->assertSame('pending', $uncertain->status);
+        $this->assertNull(data_get($uncertain->gateway_meta, 'order_created'));
+        $this->assertDatabaseHas('payment_gateway_events', [
+            'recharge_request_id' => $uncertain->id,
+            'event_type' => 'gateway.order.submission_uncertain',
+            'processing_result' => 'submission_uncertain',
+        ]);
         $this->assertSame(
             'Status Needs Confirmation',
             $this->rechargeTableValue('statusLabel', $uncertain)
@@ -167,6 +198,74 @@ class Qc168GatewayTest extends TestCase
         $this->postJson('/api/v1/recharge/gateway', ['amount' => '450000.00'])
             ->assertStatus(503);
         $this->assertDatabaseCount('recharge_requests', 2);
+    }
+
+    public function test_signed_callback_after_explicit_create_rejection_is_audited_and_processed_safely(): void
+    {
+        $user = $this->user('deposit_rejection_contradiction');
+        Sanctum::actingAs($user);
+        Http::fake(fn () => Http::response([
+            'result' => 'error',
+            'data' => 'Order was not created',
+        ]));
+
+        $this->postJson('/api/v1/recharge/gateway', ['amount' => '450000.00'])
+            ->assertStatus(503);
+        $recharge = RechargeRequest::query()->firstOrFail();
+        $this->assertTrue($recharge->isRejected());
+
+        $this->sendCallback($this->callbackPayload($recharge, 'completed'))
+            ->assertOk();
+
+        $recharge->refresh();
+        $this->assertTrue($recharge->isApproved());
+        $this->assertSame('completed', $recharge->gateway_payment_status);
+        $this->assertSame('450000.00', Wallet::query()
+            ->where('user_id', $user->id)
+            ->where('type', Wallet::TYPE_RECHARGE)
+            ->value('balance'));
+        $this->assertSame(1, WalletTransaction::query()
+            ->where('reference_type', RechargeRequest::class)
+            ->where('reference_id', $recharge->id)
+            ->count());
+        $event = PaymentGatewayEvent::query()
+            ->where('recharge_request_id', $recharge->id)
+            ->where('event_type', 'gateway.callback.create_rejected_contradiction')
+            ->firstOrFail();
+        $this->assertSame('high', $event->payload['audit_priority']);
+    }
+
+    public function test_success_result_remains_a_created_order_when_the_payment_url_is_invalid(): void
+    {
+        $user = $this->user('deposit_created_invalid_url');
+        Sanctum::actingAs($user);
+        Http::fake(fn () => Http::response([
+            'result' => 'success',
+            'data' => [
+                'payment' => [
+                    'payment_status' => 'pending',
+                    'payment_uid' => 'PAY-NO-URL',
+                    'currency' => 'vnd',
+                ],
+            ],
+        ]));
+
+        $this->postJson('/api/v1/recharge/gateway', ['amount' => '450000.00'])
+            ->assertStatus(503);
+
+        $recharge = RechargeRequest::query()->firstOrFail();
+        $this->assertTrue($recharge->isPending());
+        $this->assertSame('pending', $recharge->gateway_payment_status);
+        $this->assertTrue(data_get($recharge->gateway_meta, 'order_created'));
+        $this->assertDatabaseHas('payment_gateway_events', [
+            'recharge_request_id' => $recharge->id,
+            'event_type' => 'gateway.order.created',
+        ]);
+        $this->assertDatabaseMissing('payment_gateway_events', [
+            'recharge_request_id' => $recharge->id,
+            'event_type' => 'gateway.order.create_rejected',
+        ]);
+        $this->assertDatabaseCount('wallet_transactions', 0);
     }
 
     public function test_verified_completed_callback_credits_exactly_once_across_retries(): void

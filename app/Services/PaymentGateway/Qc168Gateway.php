@@ -3,6 +3,7 @@
 namespace App\Services\PaymentGateway;
 
 use App\Exceptions\Qc168GatewayException;
+use App\Exceptions\Qc168OrderRejectedException;
 use App\Exceptions\Qc168UncertainSubmissionException;
 use App\Models\RechargeRequest;
 use App\Models\WithdrawalPayoutAttempt;
@@ -95,18 +96,7 @@ class Qc168Gateway
         $this->assertProductionUrl($payload['redirect_url'], 'redirect_url');
         $this->assertProductionUrl($payload['notify_url'], 'notify_url');
 
-        $response = $this->request(self::CREATE_ORDER_ENDPOINT, $payload);
-        $paymentUrl = data_get($response, 'data.payment_url');
-
-        if (! is_string($paymentUrl) || ! filter_var($paymentUrl, FILTER_VALIDATE_URL)) {
-            throw new Qc168GatewayException('QC168 did not return a valid payment URL.');
-        }
-
-        if (app()->environment('production') && parse_url($paymentUrl, PHP_URL_SCHEME) !== 'https') {
-            throw new Qc168GatewayException('QC168 returned a non-HTTPS payment URL.');
-        }
-
-        return $response;
+        return $this->request(self::CREATE_ORDER_ENDPOINT, $payload);
     }
 
     public function createPayoutOrder(WithdrawalPayoutAttempt $attempt): array
@@ -224,6 +214,21 @@ class Qc168Gateway
             throw new Qc168UncertainSubmissionException('Unable to connect to QC168.', previous: $exception);
         }
 
+        $data = $response->json();
+
+        if (is_array($data) && ($data['result'] ?? null) === 'error') {
+            Log::warning('QC168 rejected a request.', [
+                'endpoint' => $endpoint,
+                'result' => $data['result'],
+            ]);
+
+            throw new Qc168OrderRejectedException($this->providerErrorMessage($data));
+        }
+
+        if (is_array($data) && ($data['result'] ?? null) === 'success') {
+            return $data;
+        }
+
         if (! $response->successful()) {
             Log::warning('QC168 returned a non-success HTTP response.', [
                 'endpoint' => $endpoint,
@@ -231,29 +236,19 @@ class Qc168Gateway
                 'http_body' => $response->body(),
             ]);
 
-            $exceptionClass = $response->serverError()
-                ? Qc168UncertainSubmissionException::class
-                : Qc168GatewayException::class;
-
-            throw new $exceptionClass('QC168 returned an unsuccessful HTTP response.');
+            throw new Qc168UncertainSubmissionException('QC168 returned an unsuccessful HTTP response.');
         }
-
-        $data = $response->json();
 
         if (! is_array($data)) {
             throw new Qc168UncertainSubmissionException('QC168 returned invalid JSON.');
         }
 
-        if (($data['result'] ?? null) !== 'success') {
-            Log::warning('QC168 rejected a request.', [
-                'endpoint' => $endpoint,
-                'result' => $data['result'] ?? null,
-            ]);
+        Log::warning('QC168 returned an unknown result.', [
+            'endpoint' => $endpoint,
+            'result' => $data['result'] ?? null,
+        ]);
 
-            throw new Qc168GatewayException($this->providerErrorMessage($data));
-        }
-
-        return $data;
+        throw new Qc168UncertainSubmissionException('QC168 returned an unknown result.');
     }
 
     private function signatureValue(mixed $value): string

@@ -4,11 +4,35 @@ namespace App\Services\PaymentGateway;
 
 use App\Models\AdminUser;
 use App\Models\PaymentGatewayEvent;
+use App\Models\RechargeRequest;
 use App\Models\WithdrawalPayoutAttempt;
 use App\Models\WithdrawRequest;
 
 class PaymentGatewayEventRecorder
 {
+    public function recordRecharge(
+        string $eventType,
+        RechargeRequest $rechargeRequest,
+        ?string $reason = null,
+        array $payload = [],
+        string $processingResult = 'recorded',
+    ): PaymentGatewayEvent {
+        return PaymentGatewayEvent::query()->create([
+            'provider' => $rechargeRequest->gateway_provider ?: RechargeRequest::GATEWAY_QC168,
+            'merchant_order_id' => $rechargeRequest->merchant_order_id,
+            'recharge_request_id' => $rechargeRequest->id,
+            'source' => 'system',
+            'reason' => $reason,
+            'event_type' => $eventType,
+            'payment_status' => $rechargeRequest->gateway_payment_status,
+            'signature_valid' => null,
+            'payload' => $payload,
+            'received_at' => now(),
+            'processed_at' => now(),
+            'processing_result' => $processingResult,
+        ]);
+    }
+
     public function recordSettingsChange(
         AdminUser $actor,
         ?string $ip,

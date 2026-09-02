@@ -112,7 +112,7 @@ return [
         'preparing' => 'Payment Processing',
         'processing' => 'Payment Processing',
         'completed' => 'Paid',
-        'create_failed' => 'Payout Requires Review',
+        'create_failed' => 'Payout Submission Failed',
         'failed' => 'Payout Failed',
         'rejected' => 'Payout Rejected',
         'overdue' => 'Payout Overdue',

@@ -71,6 +71,11 @@ class Qc168WithdrawalCallbackService
             return $this->outcome(false, 'unknown_order', 404);
         }
 
+        $createRejectedContradiction = data_get(
+            $attempt->provider_meta,
+            'provider_result_error'
+        ) === true;
+
         try {
             $result = $this->payoutService->processProviderState(
                 $attempt,
@@ -92,11 +97,15 @@ class Qc168WithdrawalCallbackService
         }
 
         $this->recordEvent(
-            $payload,
+            $createRejectedContradiction
+                ? [...$payload, 'audit_priority' => 'high']
+                : $payload,
             $merchantOrderId,
             $paymentStatus,
             true,
-            'gateway.withdrawal.callback.'.$result['result'],
+            $createRejectedContradiction
+                ? 'gateway.withdrawal.callback.create_rejected_contradiction'
+                : 'gateway.withdrawal.callback.'.$result['result'],
             $result['result'],
             $receivedAt,
             $attempt,

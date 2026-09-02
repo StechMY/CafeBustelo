@@ -111,7 +111,7 @@ return [
         'preparing' => 'Pembayaran Diproses',
         'processing' => 'Pembayaran Diproses',
         'completed' => 'Dibayar',
-        'create_failed' => 'Pembayaran Perlu Ditinjau',
+        'create_failed' => 'Pengiriman Pembayaran Gagal',
         'failed' => 'Pembayaran Gagal',
         'rejected' => 'Pembayaran Ditolak',
         'overdue' => 'Pembayaran Kedaluwarsa',

@@ -2,6 +2,7 @@
 
 namespace App\Services\PaymentGateway;
 
+use App\Exceptions\Qc168OrderRejectedException;
 use App\Exceptions\Qc168UncertainSubmissionException;
 use App\Models\AdminUser;
 use App\Models\WithdrawalPayoutAttempt;
@@ -486,6 +487,7 @@ class Qc168WithdrawalPayoutService
                 'provider_response' => $response,
                 'provider_meta' => array_merge($lockedAttempt->provider_meta ?? [], [
                     'submission_result' => 'success',
+                    'order_created' => true,
                     'submission_received_at' => $submittedAt->toAtomString(),
                 ]),
             ])->save();
@@ -536,6 +538,7 @@ class Qc168WithdrawalPayoutService
                 ->lockForUpdate()
                 ->firstOrFail();
             $message = mb_substr($exception->getMessage(), 0, 1000);
+            $providerRejected = $exception instanceof Qc168OrderRejectedException;
             $status = $definitive
                 ? WithdrawalPayoutAttempt::STATUS_CREATE_FAILED
                 : WithdrawalPayoutAttempt::STATUS_CREATE_PENDING;
@@ -547,6 +550,8 @@ class Qc168WithdrawalPayoutService
                 'provider_meta' => array_merge($lockedAttempt->provider_meta ?? [], [
                     'submission_result' => $definitive ? 'failed' : 'uncertain',
                     'submission_definitive_failure' => $definitive,
+                    'provider_result_error' => $providerRejected,
+                    'order_created' => $definitive ? false : null,
                     'submission_failed_at' => now()->toAtomString(),
                 ]),
             ])->save();
@@ -560,13 +565,17 @@ class Qc168WithdrawalPayoutService
             ])->save();
 
             $this->eventRecorder->recordWithdrawal(
-                $definitive ? 'withdrawal.gateway_failed' : 'withdrawal.gateway_submission_uncertain',
+                $definitive ? 'withdrawal.gateway_create_failed' : 'withdrawal.gateway_submission_uncertain',
                 $withdrawRequest,
                 $lockedAttempt,
                 source: $source,
                 reason: $message,
                 paymentStatus: $status,
-                payload: ['submission_definitive_failure' => $definitive],
+                payload: [
+                    'submission_definitive_failure' => $definitive,
+                    'provider_result_error' => $providerRejected,
+                    'order_created' => $definitive ? false : null,
+                ],
                 processingResult: $definitive ? 'create_failed' : 'submission_uncertain',
             );
         });

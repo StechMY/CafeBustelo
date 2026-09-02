@@ -806,8 +806,8 @@ class RechargeRequestsTable
                     ),
                     'create_failed' => self::ui(
                         'filament.gateway_submission_failed',
-                        'Gateway Submission Failed',
-                        '网关提交失败'
+                        'Gateway Order Creation Failed',
+                        '创建网关订单失败'
                     ),
                     default => self::humanizeStatus(
                         $record->gateway_payment_status
@@ -1067,7 +1067,8 @@ class RechargeRequestsTable
         }
 
         if (
-            Str::contains(
+            $record->gateway_payment_status !== 'create_failed'
+            && Str::contains(
                 $reasonLower,
                 'no bank cards available'
             )
@@ -1111,8 +1112,8 @@ class RechargeRequestsTable
             'create_failed' =>
                 self::ui(
                     'filament.gateway_submission_failed',
-                    'Gateway order submission failed.',
-                    '提交第三方支付订单失败'
+                    'QC168 did not create this order. A new deposit order may be created.',
+                    'QC168 未成功建立该订单，可以重新建立充值订单。'
                 ),
 
             default =>

@@ -112,7 +112,7 @@ return [
         'preparing' => '付款处理中',
         'processing' => '付款处理中',
         'completed' => '已付款',
-        'create_failed' => '付款需要审核',
+        'create_failed' => '提交出款失败',
         'failed' => '付款失败',
         'rejected' => '付款被拒绝',
         'overdue' => '付款已逾期',

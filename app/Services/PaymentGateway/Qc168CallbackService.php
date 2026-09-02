@@ -92,6 +92,11 @@ class Qc168CallbackService
             return $this->outcome(false, 'unknown_order', 404);
         }
 
+        $createRejectedContradiction = data_get(
+            $rechargeRequest->gateway_meta,
+            'order_create_result'
+        ) === 'rejected';
+
         try {
             $result = $this->processProviderState($rechargeRequest, $payload, 'callback');
         } catch (Throwable $exception) {
@@ -109,11 +114,15 @@ class Qc168CallbackService
         }
 
         $this->recordEvent(
-            $payload,
+            $createRejectedContradiction
+                ? [...$payload, 'audit_priority' => 'high']
+                : $payload,
             $merchantOrderId,
             $paymentStatus,
             true,
-            $this->eventType($result['result']),
+            $createRejectedContradiction
+                ? 'gateway.callback.create_rejected_contradiction'
+                : $this->eventType($result['result']),
             $result['result'],
             $receivedAt,
             $rechargeRequest,
@@ -148,6 +157,8 @@ class Qc168CallbackService
                 ->whereKey($rechargeRequest->id)
                 ->lockForUpdate()
                 ->firstOrFail();
+            $createRejectedContradiction = $lockedRequest->status === 'rejected'
+                && data_get($lockedRequest->gateway_meta, 'order_create_result') === 'rejected';
 
             $timeField = $source === 'callback'
                 ? 'gateway_last_callback_at'
@@ -202,8 +213,12 @@ class Qc168CallbackService
                 return ['accepted' => true, 'result' => 'duplicate_completed'];
             }
 
-            if (! $lockedRequest->isPending()) {
+            if (! $lockedRequest->isPending() && ! $createRejectedContradiction) {
                 return ['accepted' => false, 'result' => 'local_status_conflict'];
+            }
+
+            if ($createRejectedContradiction) {
+                $lockedRequest->forceFill(['status' => 'pending'])->save();
             }
 
             $this->approvalService->approve(

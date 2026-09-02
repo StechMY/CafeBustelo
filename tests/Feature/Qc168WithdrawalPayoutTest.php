@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Exceptions\Qc168OrderRejectedException;
 use App\Exceptions\Qc168UncertainSubmissionException;
 use App\Filament\Resources\WithdrawRequests\Tables\WithdrawRequestsTable;
 use App\Models\AdminUser;
@@ -224,6 +225,89 @@ class Qc168WithdrawalPayoutTest extends TestCase
             'withdraw_request_id' => $withdrawal->id,
             'gateway_status' => WithdrawalPayoutAttempt::STATUS_CREATE_FAILED,
         ]);
+        $attempt = $withdrawal->payoutAttempts()->firstOrFail();
+        $this->assertFalse(data_get($attempt->provider_meta, 'order_created'));
+        $this->assertTrue(data_get($attempt->provider_meta, 'provider_result_error'));
+        $this->assertSame(
+            'Payout Submission Failed',
+            $this->withdrawTableValue('statusLabel', $withdrawal)
+        );
+        $this->assertStringContainsString(
+            'did not create',
+            $this->withdrawTableValue('gatewayFriendlyAlert', $withdrawal)
+        );
+        $this->assertDatabaseHas('payment_gateway_events', [
+            'withdraw_request_id' => $withdrawal->id,
+            'event_type' => 'withdrawal.gateway_create_failed',
+            'processing_result' => 'create_failed',
+        ]);
+
+        $requestCount = Http::recorded()->count();
+        $this->artisan('qc168:sync-pending-withdrawals')->assertSuccessful();
+        $this->assertCount($requestCount, Http::recorded());
+    }
+
+    public function test_explicit_create_failure_can_retry_with_a_new_immutable_attempt(): void
+    {
+        $withdrawal = $this->explicitlyRejectedPayout('create_failed_retry', retrySucceeds: true);
+        $firstAttempt = $withdrawal->payoutAttempts()->firstOrFail();
+
+        $secondAttempt = app(Qc168WithdrawalPayoutService::class)->retry(
+            $withdrawal,
+            $this->admin(),
+            'Retry confirmed non-created QC168 order.',
+        );
+
+        $this->assertNotNull($secondAttempt);
+        $this->assertSame(2, $withdrawal->payoutAttempts()->count());
+        $this->assertNotSame($firstAttempt->merchant_order_id, $secondAttempt->merchant_order_id);
+        $this->assertSame(
+            WithdrawalPayoutAttempt::STATUS_CREATE_FAILED,
+            $firstAttempt->fresh()->gateway_status,
+        );
+        $this->assertWallet('create_failed_retry', '0.00', '1000.00');
+    }
+
+    public function test_explicit_create_failure_can_cancel_and_release_reserve_once(): void
+    {
+        $withdrawal = $this->explicitlyRejectedPayout('create_failed_cancel');
+        $requestCount = Http::recorded()->count();
+
+        app(Qc168WithdrawalPayoutService::class)->cancel(
+            $withdrawal,
+            $this->admin(),
+            'Cancel confirmed non-created QC168 order.',
+        );
+
+        $this->assertSame(WithdrawRequest::PAYOUT_CANCELLED, $withdrawal->fresh()->payout_status);
+        $this->assertWallet('create_failed_cancel', '1000.00', '0.00');
+        $this->assertCount($requestCount, Http::recorded());
+        $this->assertSame(2, WalletTransaction::query()
+            ->where('reference_type', WithdrawRequest::class)
+            ->where('reference_id', $withdrawal->id)
+            ->count());
+    }
+
+    public function test_signed_callback_after_explicit_payout_create_rejection_is_audited_and_finalized_once(): void
+    {
+        $withdrawal = $this->explicitlyRejectedPayout('payout_rejection_contradiction');
+        $attempt = $withdrawal->payoutAttempts()->firstOrFail();
+        $payload = $this->providerPayload($attempt, 'completed');
+
+        $this->sendCallback($payload)->assertOk();
+        $this->sendCallback($payload)->assertOk();
+
+        $this->assertSame(WithdrawRequest::PAYOUT_COMPLETED, $withdrawal->fresh()->payout_status);
+        $this->assertWallet('payout_rejection_contradiction', '0.00', '0.00');
+        $this->assertSame(1, WalletTransaction::query()
+            ->where('reference_type', WithdrawRequest::class)
+            ->where('reference_id', $withdrawal->id)
+            ->count());
+        $event = PaymentGatewayEvent::query()
+            ->where('withdraw_request_id', $withdrawal->id)
+            ->where('event_type', 'gateway.withdrawal.callback.create_rejected_contradiction')
+            ->firstOrFail();
+        $this->assertSame('high', $event->payload['audit_priority']);
     }
 
     public function test_gateway_switches_block_gateway_modes_but_never_manual_approval(): void
@@ -480,6 +564,7 @@ class Qc168WithdrawalPayoutTest extends TestCase
         $this->assertTrue($this->withdrawTableValue('hasGatewayWarning', $withdrawal));
         $this->assertFalse($withdrawal->canRetryPayout());
         $this->assertFalse($withdrawal->canCancelPayout());
+        $this->assertTrue($withdrawal->canSyncPayout());
         $this->assertWallet('processing_warning', '0.00', '1000.00');
     }
 
@@ -550,6 +635,12 @@ class Qc168WithdrawalPayoutTest extends TestCase
         $this->assertTrue($this->withdrawTableValue('hasGatewayAttention', $withdrawal));
         $this->assertFalse($withdrawal->canRetryPayout());
         $this->assertFalse($withdrawal->canCancelPayout());
+        $this->assertTrue($withdrawal->canSyncPayout());
+        $this->assertDatabaseHas('payment_gateway_events', [
+            'withdraw_request_id' => $withdrawal->id,
+            'event_type' => 'withdrawal.gateway_submission_uncertain',
+            'processing_result' => 'submission_uncertain',
+        ]);
 
         $inquiryStatus = 'processing';
         app(Qc168WithdrawalPayoutService::class)->sync($withdrawal);
@@ -857,6 +948,34 @@ class Qc168WithdrawalPayoutTest extends TestCase
         ]);
 
         return app(WithdrawService::class)->submit($user, '1000.00');
+    }
+
+    private function explicitlyRejectedPayout(string $username, bool $retrySucceeds = false): WithdrawRequest
+    {
+        $withdrawal = $this->pendingWithdrawal($username);
+        $admin = $this->approvalAdmin("{$username}-admin", ['ApproveInstantGateway:Withdrawal']);
+        $requestCount = 0;
+        Http::fake(function () use (&$requestCount, $retrySucceeds) {
+            $requestCount++;
+
+            if ($retrySucceeds && $requestCount > 1) {
+                return $this->createOrderResponse();
+            }
+
+            return Http::response([
+                'result' => 'error',
+                'data' => 'QC168 did not create the payout order',
+            ], 422);
+        });
+
+        try {
+            app(WithdrawService::class)->approveWithInstantGateway($withdrawal, $admin);
+            $this->fail('The provider should explicitly reject order creation.');
+        } catch (Qc168OrderRejectedException) {
+            $this->addToAssertionCount(1);
+        }
+
+        return $withdrawal->fresh();
     }
 
     private function approvedAndDispatched(string $username): WithdrawRequest
