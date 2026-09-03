@@ -549,6 +549,9 @@ The member payload mirrors the web level page: username, masked phone last five 
 - SMS OTP is server-side only. Flutter never receives `SMS_APP_KEY`, `SMS_APP_CODE`, or `SMS_APP_SECRET`.
 - OTP purpose names are `register`, `bank_account`, and `change_password`.
 - OTP codes are 6 digits, stored hashed, expire by `sms.otp_expire_minutes`, enforce resend cooldown by `sms.otp_resend_seconds`, and enforce failed attempts by `sms.otp_max_attempts`.
+- Filament displays the provider's remaining SMS message count in the global topbar. Laravel queries `GET {sms.base_url}/sms/balance/v1` server-side with a millisecond timestamp and lowercase `md5(appkey + appsecret + timestamp)` signature; credentials and signatures are never returned to the browser or API.
+- The balance is cached for 5 minutes, guarded by a 20-second cache lock, and polled by the header every 5 minutes. Manual refresh is globally limited to once per 10 seconds. The last successful value is retained for 24 hours and remains visible as stale when the provider is unavailable.
+- A successful provider submission (`00000`) marks the balance stale without decrementing it locally. `F0015` immediately marks SMS health insufficient; other critical provider codes show a sanitized provider-error state. A confirmed numeric zero remains a valid balance.
 - Product commission estimates are based on claim income, not product price.
 - Downline product commission formula:
   `commission_per_claim = income_per_claim * rate / 100`

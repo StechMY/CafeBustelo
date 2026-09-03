@@ -8,6 +8,10 @@ use RuntimeException;
 
 class SmsClient
 {
+    public function __construct(
+        private readonly SmsBalanceService $balanceService,
+    ) {}
+
     public function send(string $phone, string $message): array
     {
         if (! config('sms.enabled')) {
@@ -37,10 +41,13 @@ class SmsClient
         }
 
         $data = $response->json();
+        $code = data_get($data, 'code');
+
+        $this->balanceService->recordSendResult(is_string($code) ? $code : null);
 
         return [
-            'success' => data_get($data, 'code') === '00000',
-            'code' => data_get($data, 'code'),
+            'success' => $code === '00000',
+            'code' => $code,
             'desc' => data_get($data, 'desc'),
             'uid' => data_get($data, 'uid'),
             'raw' => $data,

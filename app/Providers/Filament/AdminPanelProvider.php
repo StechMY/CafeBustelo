@@ -45,6 +45,10 @@ class AdminPanelProvider extends PanelProvider
                 // FilamentInfoWidget::class,
             ])
             ->renderHook(
+                PanelsRenderHook::GLOBAL_SEARCH_BEFORE,
+                fn(): string => Blade::render('<livewire:admin-sms-balance-indicator />')
+            )
+            ->renderHook(
                 PanelsRenderHook::BODY_END,
                 fn(): string => Blade::render('<livewire:admin-pending-request-poller />')
             )
