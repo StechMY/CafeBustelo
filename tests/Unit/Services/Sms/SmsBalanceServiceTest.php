@@ -57,8 +57,8 @@ class SmsBalanceServiceTest extends TestCase
 
             return Http::response([
                 'appkey' => 'test',
-                'balance' => '12580',
-                'balance_time' => '2026-09-03 15:48:00',
+                'balance' => '5492.1',
+                'balance_time' => '2026-09-03 16:53:07',
             ]);
         });
 
@@ -66,8 +66,8 @@ class SmsBalanceServiceTest extends TestCase
         $first = $service->getBalance();
         $second = $service->getBalance();
 
-        $this->assertSame(12580, $first['balance']);
-        $this->assertSame('2026-09-03 15:48:00', $first['provider_balance_time']);
+        $this->assertSame(5492.1, $first['balance']);
+        $this->assertSame('2026-09-03 16:53:07', $first['provider_balance_time']);
         $this->assertTrue($first['is_available']);
         $this->assertFalse($first['is_stale']);
         $this->assertSame($first, $second);
@@ -85,7 +85,7 @@ class SmsBalanceServiceTest extends TestCase
 
         $result = app(SmsBalanceService::class)->getBalance();
 
-        $this->assertSame(0, $result['balance']);
+        $this->assertSame(0.0, $result['balance']);
         $this->assertTrue($result['is_available']);
         $this->assertSame('critical', $result['health']);
     }
@@ -103,17 +103,17 @@ class SmsBalanceServiceTest extends TestCase
 
         $result = $service->getBalance();
 
-        $this->assertSame(12580, $result['balance']);
+        $this->assertSame(12580.0, $result['balance']);
         $this->assertTrue($result['is_stale']);
         $this->assertFalse($result['is_available']);
         $this->assertSame('provider_error', $result['health']);
-        $this->assertSame(12580, $service->lastKnownBalance()['balance']);
+        $this->assertSame(12580.0, $service->lastKnownBalance()['balance']);
     }
 
     public function test_timeout_keeps_last_balance_and_logs_no_credentials(): void
     {
         Http::fake([
-            '*/sms/balance/v1*' => Http::response(['balance' => '12580']),
+            '*/sms/balance/v1*' => Http::response(['balance' => '5492.1']),
         ]);
 
         $service = app(SmsBalanceService::class);
@@ -125,7 +125,7 @@ class SmsBalanceServiceTest extends TestCase
 
         $result = $service->getBalance();
 
-        $this->assertSame(12580, $result['balance']);
+        $this->assertSame(5492.1, $result['balance']);
         $this->assertTrue($result['is_stale']);
         Log::shouldHaveReceived('warning')->with(
             'SMS balance lookup failed.',
@@ -152,7 +152,7 @@ class SmsBalanceServiceTest extends TestCase
     public function test_manual_refresh_has_a_global_cooldown(): void
     {
         Http::fake([
-            '*/sms/balance/v1*' => Http::response(['balance' => '12580']),
+            '*/sms/balance/v1*' => Http::response(['balance' => '5492.1']),
         ]);
 
         $service = app(SmsBalanceService::class);
@@ -193,12 +193,12 @@ class SmsBalanceServiceTest extends TestCase
         ]);
         $signature = md5('browser-key-must-not-appearbrowser-secret-must-not-appear1234567890123');
         Http::fake([
-            '*/sms/balance/v1*' => Http::response(['balance' => '12580']),
+            '*/sms/balance/v1*' => Http::response(['balance' => '5492.1']),
         ]);
 
         $html = Livewire::test('admin-sms-balance-indicator')->html();
 
-        $this->assertStringContainsString('12,580', $html);
+        $this->assertStringContainsString('5,492.1', $html);
         $this->assertStringNotContainsString('browser-key-must-not-appear', $html);
         $this->assertStringNotContainsString('browser-secret-must-not-appear', $html);
         $this->assertStringNotContainsString($signature, $html);

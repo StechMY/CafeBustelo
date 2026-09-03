@@ -8,7 +8,7 @@ use Livewire\Component;
 new class extends Component
 {
     #[Locked]
-    public ?int $balance = null;
+    public ?float $balance = null;
 
     #[Locked]
     public ?string $fetchedAt = null;
@@ -39,7 +39,9 @@ new class extends Component
 
     private function applyState(array $state): void
     {
-        $this->balance = is_int($state['balance'] ?? null) ? $state['balance'] : null;
+        $this->balance = is_int($state['balance'] ?? null) || is_float($state['balance'] ?? null)
+            ? (float) $state['balance']
+            : null;
         $this->isStale = (bool) ($state['is_stale'] ?? true);
         $this->isAvailable = (bool) ($state['is_available'] ?? false);
         $this->health = is_string($state['health'] ?? null) ? $state['health'] : 'unknown';
@@ -76,6 +78,10 @@ new class extends Component
         $balance === null => __('filament.sms_balance_unavailable'),
         default => __('filament.sms_balance_updated_at', ['time' => $fetchedAt ?? '-']),
     };
+
+    $formattedBalance = $balance === null
+        ? null
+        : rtrim(rtrim(number_format($balance, 4, '.', ','), '0'), '.');
 @endphp
 
 <div wire:poll.300s="pollBalance" class="flex shrink-0 items-center gap-1">
@@ -92,7 +98,7 @@ new class extends Component
             <span class="hidden md:inline">{{ __('filament.sms_balance_insufficient') }}</span>
             <x-filament::icon icon="heroicon-m-exclamation-triangle" class="size-3.5 md:hidden" />
         @elseif ($balance !== null)
-            <span>{{ number_format($balance) }}</span>
+            <span>{{ $formattedBalance }}</span>
             <span class="hidden lg:inline">{{ __('filament.sms_messages_remaining') }}</span>
 
             @if (! $isAvailable || $isStale)

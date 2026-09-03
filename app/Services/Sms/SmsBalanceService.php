@@ -187,11 +187,9 @@ class SmsBalanceService
             }
 
             $rawBalance = $data['balance'] ?? null;
-            $balance = filter_var($rawBalance, FILTER_VALIDATE_INT, [
-                'options' => ['min_range' => 0],
-            ]);
+            $balance = filter_var($rawBalance, FILTER_VALIDATE_FLOAT);
 
-            if ($balance === false) {
+            if ($balance === false || ! is_finite($balance) || $balance < 0) {
                 return $this->rememberFailure('INVALID_RESPONSE', $httpStatus);
             }
 
@@ -240,8 +238,15 @@ class SmsBalanceService
     {
         $lastSuccess = Cache::get(self::LAST_SUCCESS_KEY);
 
-        if (! is_array($lastSuccess) || ! is_int($lastSuccess['balance'] ?? null)) {
+        if (
+            ! is_array($lastSuccess)
+            || (! is_int($lastSuccess['balance'] ?? null) && ! is_float($lastSuccess['balance'] ?? null))
+            || ! is_finite((float) $lastSuccess['balance'])
+            || $lastSuccess['balance'] < 0
+        ) {
             $lastSuccess = null;
+        } else {
+            $lastSuccess['balance'] = (float) $lastSuccess['balance'];
         }
 
         $health = (string) Cache::get(
@@ -280,8 +285,8 @@ class SmsBalanceService
     {
         try {
             $lastSuccess = Cache::get(self::LAST_SUCCESS_KEY);
-            $health = is_array($lastSuccess) && is_int($lastSuccess['balance'] ?? null)
-                ? $this->healthForBalance($lastSuccess['balance'])
+            $health = is_array($lastSuccess) && (is_int($lastSuccess['balance'] ?? null) || is_float($lastSuccess['balance'] ?? null))
+                ? $this->healthForBalance((float) $lastSuccess['balance'])
                 : 'unknown';
 
             Cache::put(self::HEALTH_KEY, $health, $this->retentionSeconds());
@@ -291,7 +296,7 @@ class SmsBalanceService
         }
     }
 
-    private function healthForBalance(int $balance): string
+    private function healthForBalance(float $balance): string
     {
         if ($balance < (int) config('sms.balance_critical_threshold', 1000)) {
             return 'critical';
