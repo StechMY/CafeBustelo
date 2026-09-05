@@ -11,12 +11,14 @@ use App\Models\Setting;
 use App\Models\User;
 use App\Models\Wallet;
 use App\Models\WalletTransaction;
+use App\Services\PaymentGateway\Qc168BalanceService;
 use App\Services\PaymentGateway\Qc168CallbackService;
 use App\Services\PaymentGateway\Qc168Gateway;
 use App\Services\PointService;
 use App\Services\RechargeApprovalService;
 use Illuminate\Http\Client\Request as ClientRequest;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
@@ -422,6 +424,34 @@ class Qc168GatewayTest extends TestCase
             ->where('user_id', $user->id)
             ->where('type', Wallet::TYPE_RECHARGE)
             ->value('balance'));
+    }
+
+    public function test_completed_deposit_invalidates_balance_after_commit_but_duplicate_does_not(): void
+    {
+        [, $recharge] = $this->gatewayRecharge('balance_invalidation', '1000.00');
+        $balanceService = \Mockery::mock(Qc168BalanceService::class);
+        $balanceService->shouldReceive('markStale')
+            ->once()
+            ->andReturnUsing(function () use ($recharge): void {
+                $this->assertSame(0, DB::transactionLevel());
+                $this->assertTrue($recharge->fresh()->isApproved());
+            });
+        $this->app->instance(Qc168BalanceService::class, $balanceService);
+        $callbackService = app(Qc168CallbackService::class);
+
+        $completed = $callbackService->processProviderState(
+            $recharge,
+            $this->callbackPayload($recharge, 'completed'),
+            'test',
+        );
+        $duplicate = $callbackService->processProviderState(
+            $recharge->fresh(),
+            $this->callbackPayload($recharge->fresh(), 'completed'),
+            'test',
+        );
+
+        $this->assertSame('auto_approved', $completed['result']);
+        $this->assertContains($duplicate['result'], ['duplicate_completed', 'stale_status_ignored']);
     }
 
     public function test_callback_validation_blocks_tampering_and_order_mismatches(): void

@@ -31,6 +31,7 @@ class Qc168WithdrawalPayoutService
         private readonly Qc168Gateway $gateway,
         private readonly WithdrawService $withdrawService,
         private readonly PaymentGatewayEventRecorder $eventRecorder,
+        private readonly Qc168BalanceService $balanceService,
     ) {}
 
     public function dispatch(
@@ -351,6 +352,8 @@ class Qc168WithdrawalPayoutService
                         payload: $payload,
                         processingResult: 'duplicate_completed',
                     );
+                } else {
+                    DB::afterCommit(fn () => $this->balanceService->markStale());
                 }
 
                 return [

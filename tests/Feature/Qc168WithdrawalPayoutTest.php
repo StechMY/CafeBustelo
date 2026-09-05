@@ -15,6 +15,7 @@ use App\Models\Wallet;
 use App\Models\WalletTransaction;
 use App\Models\WithdrawalPayoutAttempt;
 use App\Models\WithdrawRequest;
+use App\Services\PaymentGateway\Qc168BalanceService;
 use App\Services\PaymentGateway\Qc168Gateway;
 use App\Services\PaymentGateway\Qc168WithdrawalPayoutService;
 use App\Services\Settings\Qc168Settings;
@@ -23,6 +24,7 @@ use App\Support\Api\ApiFormatter;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\Client\Request as ClientRequest;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Validation\ValidationException;
@@ -309,6 +311,31 @@ class Qc168WithdrawalPayoutTest extends TestCase
             ->where('event_type', 'gateway.withdrawal.callback.create_rejected_contradiction')
             ->firstOrFail();
         $this->assertSame('high', $event->payload['audit_priority']);
+    }
+
+    public function test_completed_payout_invalidates_balance_after_commit_but_duplicate_does_not(): void
+    {
+        $withdrawal = $this->approvedAndDispatched('balance_invalidation');
+        $attempt = $withdrawal->payoutAttempts()->firstOrFail();
+        $balanceService = \Mockery::mock(Qc168BalanceService::class);
+        $balanceService->shouldReceive('markStale')
+            ->once()
+            ->andReturnUsing(function () use ($withdrawal): void {
+                $this->assertSame(0, DB::transactionLevel());
+                $this->assertSame(
+                    WithdrawRequest::PAYOUT_COMPLETED,
+                    $withdrawal->fresh()->payout_status,
+                );
+            });
+        $this->app->instance(Qc168BalanceService::class, $balanceService);
+        $payoutService = app(Qc168WithdrawalPayoutService::class);
+        $payload = $this->providerPayload($attempt, 'completed');
+
+        $completed = $payoutService->processProviderState($attempt, $payload, 'test');
+        $duplicate = $payoutService->processProviderState($attempt->fresh(), $payload, 'test');
+
+        $this->assertSame('payout_completed', $completed['result']);
+        $this->assertSame('duplicate_completed', $duplicate['result']);
     }
 
     public function test_gateway_switches_block_gateway_modes_but_never_manual_approval(): void

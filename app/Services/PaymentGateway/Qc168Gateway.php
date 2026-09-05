@@ -19,6 +19,8 @@ class Qc168Gateway
 
     private const GET_ORDER_ENDPOINT = '/octopus/api/order/get';
 
+    private const GET_MERCHANT_LEDGER_ENDPOINT = '/octopus/api/ledger/get_merchant_ledger';
+
     public function __construct(
         private readonly Qc168Settings $settings,
     ) {}
@@ -46,6 +48,31 @@ class Qc168Gateway
     {
         return $this->masterEnabled()
             && $this->missingConfiguration(null) === [];
+    }
+
+    public function isEnabled(): bool
+    {
+        return $this->masterEnabled();
+    }
+
+    public function canQueryMerchantBalance(): bool
+    {
+        return $this->masterEnabled()
+            && $this->missingMerchantLedgerConfiguration() === [];
+    }
+
+    public function missingMerchantLedgerConfiguration(): array
+    {
+        return collect([
+            'base_url' => config('services.qc168.base_url'),
+            'oc_key' => config('services.qc168.oc_key'),
+            'secret' => config('services.qc168.secret'),
+            'merchant_uid' => config('services.qc168.merchant_uid'),
+        ])
+            ->filter(fn (mixed $value): bool => blank($value))
+            ->keys()
+            ->values()
+            ->all();
     }
 
     public function missingConfiguration(?string $paymentKey = 'payment'): array
@@ -137,6 +164,15 @@ class Qc168Gateway
         ], null);
     }
 
+    public function getMerchantLedger(): array
+    {
+        return $this->sendRequest(
+            self::GET_MERCHANT_LEDGER_ENDPOINT,
+            ['merchant_uid' => (string) config('services.qc168.merchant_uid')],
+            $this->missingMerchantLedgerConfiguration(),
+        );
+    }
+
     public function sign(array $payload): string
     {
         $secret = (string) config('services.qc168.secret');
@@ -183,11 +219,14 @@ class Qc168Gateway
 
     public function request(string $endpoint, array $payload, ?string $paymentKey = 'payment'): array
     {
+        return $this->sendRequest($endpoint, $payload, $this->missingConfiguration($paymentKey));
+    }
+
+    private function sendRequest(string $endpoint, array $payload, array $missing): array
+    {
         if (! $this->masterEnabled()) {
             throw new Qc168GatewayException('QC168 payment gateway is disabled.');
         }
-
-        $missing = $this->missingConfiguration($paymentKey);
 
         if ($missing !== []) {
             Log::warning('QC168 configuration is incomplete.', ['missing' => $missing]);

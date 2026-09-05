@@ -33,6 +33,7 @@ class Qc168CallbackService
     public function __construct(
         private readonly Qc168Gateway $gateway,
         private readonly RechargeApprovalService $approvalService,
+        private readonly Qc168BalanceService $balanceService,
     ) {}
 
     public function handleCallback(array $payload, ?string $signature): array
@@ -231,6 +232,8 @@ class Qc168CallbackService
                     'merchant_order_id' => $lockedRequest->merchant_order_id,
                 ],
             );
+
+            DB::afterCommit(fn () => $this->balanceService->markStale());
 
             return ['accepted' => true, 'result' => 'auto_approved'];
         });

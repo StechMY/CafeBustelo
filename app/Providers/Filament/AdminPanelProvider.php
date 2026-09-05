@@ -46,7 +46,7 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->renderHook(
                 PanelsRenderHook::GLOBAL_SEARCH_BEFORE,
-                fn(): string => Blade::render('<livewire:admin-sms-balance-indicator />')
+                fn(): string => view('filament.components.provider-balances')->render()
             )
             ->renderHook(
                 PanelsRenderHook::BODY_END,
