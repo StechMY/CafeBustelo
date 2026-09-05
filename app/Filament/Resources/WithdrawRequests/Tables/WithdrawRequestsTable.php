@@ -11,8 +11,6 @@ use App\Services\WithdrawService;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteAction;
-use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\RestoreAction;
 use Filament\Actions\RestoreBulkAction;
 use Filament\Actions\ViewAction;
@@ -1155,12 +1153,6 @@ class WithdrawRequestsTable
                             }
                         }),
 
-                    DeleteAction::make()
-                        ->visible(
-                            fn (WithdrawRequest $record): bool =>
-                                $record->status !== 'approved'
-                        ),
-
                     RestoreAction::make(),
                 ])
                     ->icon('heroicon-o-ellipsis-horizontal'),
@@ -1168,18 +1160,6 @@ class WithdrawRequestsTable
 
             ->toolbarActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make()
-                        ->action(function ($records): void {
-                            $records
-                                ->where(
-                                    'status',
-                                    '!=',
-                                    'approved'
-                                )
-                                ->each
-                                ->delete();
-                        }),
-
                     RestoreBulkAction::make(),
                 ]),
             ]);

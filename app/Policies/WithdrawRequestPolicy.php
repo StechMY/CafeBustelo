@@ -78,12 +78,12 @@ class WithdrawRequestPolicy
 
     public function delete(AuthUser $authUser, WithdrawRequest $withdrawRequest): bool
     {
-        return $authUser->can('Delete:WithdrawRequest');
+        return false;
     }
 
     public function deleteAny(AuthUser $authUser): bool
     {
-        return $authUser->can('DeleteAny:WithdrawRequest');
+        return false;
     }
 
     public function restore(AuthUser $authUser, WithdrawRequest $withdrawRequest): bool
@@ -93,12 +93,12 @@ class WithdrawRequestPolicy
 
     public function forceDelete(AuthUser $authUser, WithdrawRequest $withdrawRequest): bool
     {
-        return $authUser->can('ForceDelete:WithdrawRequest');
+        return false;
     }
 
     public function forceDeleteAny(AuthUser $authUser): bool
     {
-        return $authUser->can('ForceDeleteAny:WithdrawRequest');
+        return false;
     }
 
     public function restoreAny(AuthUser $authUser): bool

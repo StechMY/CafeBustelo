@@ -93,6 +93,10 @@ class WithdrawRequest extends Model
                 throw new \LogicException('Withdrawal approval mode is immutable after approval.');
             }
         });
+
+        static::deleting(function (): never {
+            throw new \LogicException('Withdrawal requests cannot be deleted.');
+        });
     }
 
     protected function casts(): array
