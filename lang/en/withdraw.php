@@ -48,6 +48,7 @@ return [
     'retry_not_allowed' => 'This payout cannot be retried in its current state.',
     'cancel_not_allowed' => 'This payout cannot be cancelled in its current state.',
     'cancel_not_safe' => 'Cancellation is blocked because the payout may still complete externally.',
+    'gateway_completed_after_cancel_review' => 'QC168 reported this payout completed after the user was refunded. Financial review is required immediately.',
     'no_payout_attempt' => 'No payout attempt exists for this withdrawal.',
     'payout_status' => 'Payout Status',
     'bank_code' => 'Bank Code',

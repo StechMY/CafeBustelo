@@ -16,6 +16,7 @@ class WalletTransaction extends Model
         'wallet_id',
         'wallet_type',
         'type',
+        'idempotency_key',
         'direction',
         'amount',
         'balance_before',

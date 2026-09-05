@@ -1437,6 +1437,14 @@ class WithdrawRequestsTable
         $reason = self::gatewayFailureReason($record);
         $reasonLower = Str::lower((string) $reason);
 
+        if (data_get($record->gateway_meta, 'financial_review_reason') === 'provider_completed_after_cancel') {
+            return self::ui(
+                'withdraw.gateway_completed_after_cancel_review',
+                'QC168 reported this payout completed after the user was refunded. Financial review is required immediately.',
+                '用户退款后 QC168 又报告出款完成，必须立即进行财务审核。'
+            );
+        }
+
         if (self::hasUnknownGatewayStatus($record)) {
             return self::ui(
                 'withdraw.gateway_timeout_sync_first',

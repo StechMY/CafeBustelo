@@ -163,17 +163,28 @@ class WithdrawRequest extends Model
 
     public function canRetryPayout(): bool
     {
-        return $this->isApproved() && in_array($this->payout_status, [
-            self::PAYOUT_CREATE_FAILED,
-            self::PAYOUT_FAILED,
-            self::PAYOUT_REJECTED,
-            self::PAYOUT_OVERDUE,
-        ], true);
+        return $this->isApproved()
+            && ! $this->hasGatewayCancellationLedger()
+            && in_array($this->payout_status, [
+                self::PAYOUT_CREATE_FAILED,
+                self::PAYOUT_FAILED,
+                self::PAYOUT_REJECTED,
+                self::PAYOUT_OVERDUE,
+            ], true);
     }
 
     public function canCancelPayout(): bool
     {
         return $this->canRetryPayout();
+    }
+
+    public function hasGatewayCancellationLedger(): bool
+    {
+        return WalletTransaction::query()
+            ->where('type', 'withdraw_gateway_cancelled')
+            ->where('reference_type', self::class)
+            ->where('reference_id', $this->getKey())
+            ->exists();
     }
 
     public function canSyncPayout(): bool
@@ -216,12 +227,20 @@ class WithdrawRequest extends Model
 
     public function scopeWithReservedFunds(Builder $query): Builder
     {
-        return $query->where(function (Builder $query): void {
-            $query->where('status', self::STATUS_PENDING)
-                ->orWhere(function (Builder $query): void {
-                    $query->where('status', self::STATUS_APPROVED)
-                        ->whereNotIn('payout_status', [self::PAYOUT_COMPLETED, self::PAYOUT_CANCELLED]);
-                });
-        });
+        return $query
+            ->where(function (Builder $query): void {
+                $query->where('status', self::STATUS_PENDING)
+                    ->orWhere(function (Builder $query): void {
+                        $query->where('status', self::STATUS_APPROVED)
+                            ->whereNotIn('payout_status', [self::PAYOUT_COMPLETED, self::PAYOUT_CANCELLED]);
+                    });
+            })
+            ->whereNotExists(function ($query): void {
+                $query->selectRaw('1')
+                    ->from('wallet_transactions')
+                    ->whereColumn('wallet_transactions.reference_id', 'withdraw_requests.id')
+                    ->where('wallet_transactions.reference_type', self::class)
+                    ->where('wallet_transactions.type', 'withdraw_gateway_cancelled');
+            });
     }
 }

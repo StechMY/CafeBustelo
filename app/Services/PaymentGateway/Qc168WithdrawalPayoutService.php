@@ -58,7 +58,9 @@ class Qc168WithdrawalPayoutService
 
         $latestAttempt = $withdrawRequest->payoutAttempts()->latest('attempt_no')->first();
 
-        if (! $latestAttempt || ! $latestAttempt->isSafeFinalFailure()) {
+        if ($withdrawRequest->hasGatewayCancellationLedger()
+            || ! $latestAttempt
+            || ! $latestAttempt->isSafeFinalFailure()) {
             throw new RuntimeException(__('withdraw.retry_not_allowed'));
         }
 
@@ -128,6 +130,11 @@ class Qc168WithdrawalPayoutService
     ): WithdrawRequest {
         $attempt = $withdrawRequest->payoutAttempts()->latest('attempt_no')->first();
 
+        if ($withdrawRequest->payout_status === WithdrawRequest::PAYOUT_CANCELLED
+            || $withdrawRequest->hasGatewayCancellationLedger()) {
+            throw new RuntimeException(__('withdraw.cancel_not_allowed'));
+        }
+
         if (! $attempt || ! $attempt->isSafeFinalFailure()) {
             throw new RuntimeException(__('withdraw.cancel_not_safe'));
         }
@@ -190,19 +197,25 @@ class Qc168WithdrawalPayoutService
         string $source,
     ): array {
         return DB::transaction(function () use ($attempt, $payload, $source): array {
-            $lockedAttempt = WithdrawalPayoutAttempt::query()
-                ->whereKey($attempt->id)
+            $withdrawRequest = WithdrawRequest::query()
+                ->whereKey($attempt->withdraw_request_id)
                 ->lockForUpdate()
                 ->firstOrFail();
-            $withdrawRequest = WithdrawRequest::query()
-                ->whereKey($lockedAttempt->withdraw_request_id)
+            $lockedAttempt = WithdrawalPayoutAttempt::query()
+                ->whereKey($attempt->id)
+                ->where('withdraw_request_id', $withdrawRequest->id)
                 ->lockForUpdate()
                 ->firstOrFail();
 
             $timeField = str_contains($source, 'callback')
                 ? 'gateway_last_callback_at'
                 : 'gateway_last_synced_at';
-            $withdrawRequest->forceFill([$timeField => now()])->save();
+            $financiallyCancelled = $withdrawRequest->payout_status === WithdrawRequest::PAYOUT_CANCELLED
+                || $withdrawRequest->hasGatewayCancellationLedger();
+
+            if (! $financiallyCancelled) {
+                $withdrawRequest->forceFill([$timeField => now()])->save();
+            }
 
             if ($error = $this->validateProviderState($lockedAttempt, $payload)) {
                 $this->eventRecorder->recordWithdrawal(
@@ -219,6 +232,52 @@ class Qc168WithdrawalPayoutService
             }
 
             $incomingStatus = strtolower((string) $payload['payment_status']);
+
+            if ($financiallyCancelled) {
+                $lockedAttempt->forceFill(
+                    $this->providerAttemptUpdates($lockedAttempt, $payload, $source, $incomingStatus)
+                )->save();
+
+                if ($incomingStatus === WithdrawalPayoutAttempt::STATUS_COMPLETED) {
+                    $withdrawRequest->forceFill([
+                        $timeField => now(),
+                        'payout_status' => WithdrawRequest::PAYOUT_REFUND_REVIEW,
+                        'gateway_payment_status' => WithdrawalPayoutAttempt::STATUS_COMPLETED,
+                        'gateway_final_amount' => $lockedAttempt->gateway_final_amount,
+                        'gateway_fail_reason' => __('withdraw.gateway_completed_after_cancel_review'),
+                        'gateway_meta' => array_merge($withdrawRequest->gateway_meta ?? [], [
+                            'financial_review_reason' => 'provider_completed_after_cancel',
+                            'financial_review_detected_at' => now()->toAtomString(),
+                            'financial_review_attempt_id' => $lockedAttempt->id,
+                            'financial_review_merchant_order_id' => $lockedAttempt->merchant_order_id,
+                        ]),
+                    ])->save();
+
+                    $this->eventRecorder->recordWithdrawal(
+                        'withdrawal.gateway_completed_after_cancel',
+                        $withdrawRequest,
+                        $lockedAttempt,
+                        source: $source,
+                        paymentStatus: $incomingStatus,
+                        payload: $payload,
+                        processingResult: 'financial_review_required',
+                    );
+
+                    return ['accepted' => true, 'result' => 'financial_review_required'];
+                }
+
+                $this->eventRecorder->recordWithdrawal(
+                    $this->providerStatusEventType($incomingStatus),
+                    $withdrawRequest,
+                    $lockedAttempt,
+                    source: $source,
+                    paymentStatus: $incomingStatus,
+                    payload: $payload,
+                    processingResult: 'status_recorded_after_cancel',
+                );
+
+                return ['accepted' => true, 'result' => 'status_recorded_after_cancel'];
+            }
 
             if ($incomingStatus === WithdrawalPayoutAttempt::STATUS_REFUND) {
                 if (! $lockedAttempt->isCompleted()) {
@@ -271,35 +330,9 @@ class Qc168WithdrawalPayoutService
                 return ['accepted' => true, 'result' => 'stale_status_ignored'];
             }
 
-            $updates = [
-                'gateway_status' => $incomingStatus,
-                'gateway_order_uid' => $this->nullableString($payload['order_uid'] ?? null)
-                    ?: $lockedAttempt->gateway_order_uid,
-                'gateway_payment_uid' => $this->nullableString($payload['payment_uid'] ?? null)
-                    ?: $lockedAttempt->gateway_payment_uid,
-                'gateway_final_amount' => array_key_exists('final_amount', $payload)
-                    ? $this->normalizeAmount($payload['final_amount'])
-                    : $lockedAttempt->gateway_final_amount,
-                'failure_reason' => $this->nullableString($payload['payment_fail_reason'] ?? null)
-                    ?: $lockedAttempt->failure_reason,
-                'provider_response' => $payload,
-                'provider_meta' => array_merge($lockedAttempt->provider_meta ?? [], [
-                    'latest_state_source' => $source,
-                    'latest_state_received_at' => now()->toAtomString(),
-                ]),
-            ];
-
-            if ($incomingStatus === WithdrawalPayoutAttempt::STATUS_COMPLETED) {
-                $updates['completed_at'] = $lockedAttempt->completed_at ?: now();
-            } elseif (in_array($incomingStatus, [
-                WithdrawalPayoutAttempt::STATUS_FAILED,
-                WithdrawalPayoutAttempt::STATUS_REJECT,
-                WithdrawalPayoutAttempt::STATUS_OVERDUE,
-            ], true)) {
-                $updates['failed_at'] = $lockedAttempt->failed_at ?: now();
-            }
-
-            $lockedAttempt->forceFill($updates)->save();
+            $lockedAttempt->forceFill(
+                $this->providerAttemptUpdates($lockedAttempt, $payload, $source, $incomingStatus)
+            )->save();
 
             if ($incomingStatus === WithdrawalPayoutAttempt::STATUS_COMPLETED) {
                 $finalized = $this->withdrawService->finalizePayout(
@@ -373,6 +406,10 @@ class Qc168WithdrawalPayoutService
                 ->firstOrFail();
 
             if (! $lockedRequest->isApproved() || $lockedRequest->isPayoutCompleted()) {
+                return null;
+            }
+
+            if ($lockedRequest->hasGatewayCancellationLedger()) {
                 return null;
             }
 
@@ -465,15 +502,18 @@ class Qc168WithdrawalPayoutService
             : $providerStatus;
 
         $submittedAttempt = DB::transaction(function () use ($attempt, $response, $source, $payment, $storedStatus): WithdrawalPayoutAttempt {
-            $lockedAttempt = WithdrawalPayoutAttempt::query()
-                ->whereKey($attempt->id)
+            $withdrawRequest = WithdrawRequest::query()
+                ->whereKey($attempt->withdraw_request_id)
                 ->lockForUpdate()
                 ->firstOrFail();
-            $withdrawRequest = WithdrawRequest::query()
-                ->whereKey($lockedAttempt->withdraw_request_id)
+            $lockedAttempt = WithdrawalPayoutAttempt::query()
+                ->whereKey($attempt->id)
+                ->where('withdraw_request_id', $withdrawRequest->id)
                 ->lockForUpdate()
                 ->firstOrFail();
             $submittedAt = now();
+            $financiallyCancelled = $withdrawRequest->payout_status === WithdrawRequest::PAYOUT_CANCELLED
+                || $withdrawRequest->hasGatewayCancellationLedger();
 
             $lockedAttempt->forceFill([
                 'gateway_status' => $storedStatus,
@@ -492,13 +532,15 @@ class Qc168WithdrawalPayoutService
                 ]),
             ])->save();
 
-            $withdrawRequest->forceFill([
-                'payout_status' => $this->withdrawalStatus($storedStatus),
-                'gateway_submitted_at' => $withdrawRequest->gateway_submitted_at ?: $submittedAt,
-                'gateway_payment_status' => $storedStatus,
-                'gateway_final_amount' => $lockedAttempt->gateway_final_amount,
-                'gateway_fail_reason' => $lockedAttempt->failure_reason,
-            ])->save();
+            if (! $financiallyCancelled) {
+                $withdrawRequest->forceFill([
+                    'payout_status' => $this->withdrawalStatus($storedStatus),
+                    'gateway_submitted_at' => $withdrawRequest->gateway_submitted_at ?: $submittedAt,
+                    'gateway_payment_status' => $storedStatus,
+                    'gateway_final_amount' => $lockedAttempt->gateway_final_amount,
+                    'gateway_fail_reason' => $lockedAttempt->failure_reason,
+                ])->save();
+            }
 
             $this->eventRecorder->recordWithdrawal(
                 'withdrawal.gateway_submitted',
@@ -509,7 +551,9 @@ class Qc168WithdrawalPayoutService
                 payload: [
                     'attempt_no' => $lockedAttempt->attempt_no,
                     'submitted_at' => $submittedAt->toAtomString(),
+                    'financial_state_preserved' => $financiallyCancelled,
                 ],
+                processingResult: $financiallyCancelled ? 'status_recorded_after_cancel' : 'recorded',
             );
 
             return $lockedAttempt;
@@ -529,12 +573,13 @@ class Qc168WithdrawalPayoutService
         string $source,
     ): void {
         DB::transaction(function () use ($attempt, $exception, $definitive, $source): void {
-            $lockedAttempt = WithdrawalPayoutAttempt::query()
-                ->whereKey($attempt->id)
+            $withdrawRequest = WithdrawRequest::query()
+                ->whereKey($attempt->withdraw_request_id)
                 ->lockForUpdate()
                 ->firstOrFail();
-            $withdrawRequest = WithdrawRequest::query()
-                ->whereKey($lockedAttempt->withdraw_request_id)
+            $lockedAttempt = WithdrawalPayoutAttempt::query()
+                ->whereKey($attempt->id)
+                ->where('withdraw_request_id', $withdrawRequest->id)
                 ->lockForUpdate()
                 ->firstOrFail();
             $message = mb_substr($exception->getMessage(), 0, 1000);
@@ -542,6 +587,8 @@ class Qc168WithdrawalPayoutService
             $status = $definitive
                 ? WithdrawalPayoutAttempt::STATUS_CREATE_FAILED
                 : WithdrawalPayoutAttempt::STATUS_CREATE_PENDING;
+            $financiallyCancelled = $withdrawRequest->payout_status === WithdrawRequest::PAYOUT_CANCELLED
+                || $withdrawRequest->hasGatewayCancellationLedger();
 
             $lockedAttempt->forceFill([
                 'gateway_status' => $status,
@@ -556,13 +603,15 @@ class Qc168WithdrawalPayoutService
                 ]),
             ])->save();
 
-            $withdrawRequest->forceFill([
-                'payout_status' => $definitive
-                    ? WithdrawRequest::PAYOUT_CREATE_FAILED
-                    : WithdrawRequest::PAYOUT_SUBMITTED,
-                'gateway_payment_status' => $status,
-                'gateway_fail_reason' => $message,
-            ])->save();
+            if (! $financiallyCancelled) {
+                $withdrawRequest->forceFill([
+                    'payout_status' => $definitive
+                        ? WithdrawRequest::PAYOUT_CREATE_FAILED
+                        : WithdrawRequest::PAYOUT_SUBMITTED,
+                    'gateway_payment_status' => $status,
+                    'gateway_fail_reason' => $message,
+                ])->save();
+            }
 
             $this->eventRecorder->recordWithdrawal(
                 $definitive ? 'withdrawal.gateway_create_failed' : 'withdrawal.gateway_submission_uncertain',
@@ -575,8 +624,11 @@ class Qc168WithdrawalPayoutService
                     'submission_definitive_failure' => $definitive,
                     'provider_result_error' => $providerRejected,
                     'order_created' => $definitive ? false : null,
+                    'financial_state_preserved' => $financiallyCancelled,
                 ],
-                processingResult: $definitive ? 'create_failed' : 'submission_uncertain',
+                processingResult: $financiallyCancelled
+                    ? 'status_recorded_after_cancel'
+                    : ($definitive ? 'create_failed' : 'submission_uncertain'),
             );
         });
     }
@@ -682,6 +734,54 @@ class Qc168WithdrawalPayoutService
             WithdrawalPayoutAttempt::STATUS_OVERDUE => WithdrawRequest::PAYOUT_OVERDUE,
             WithdrawalPayoutAttempt::STATUS_REFUND => WithdrawRequest::PAYOUT_REFUND_REVIEW,
             default => WithdrawRequest::PAYOUT_PENDING,
+        };
+    }
+
+    private function providerAttemptUpdates(
+        WithdrawalPayoutAttempt $attempt,
+        array $payload,
+        string $source,
+        string $incomingStatus,
+    ): array {
+        $updates = [
+            'gateway_status' => $incomingStatus,
+            'gateway_order_uid' => $this->nullableString($payload['order_uid'] ?? null)
+                ?: $attempt->gateway_order_uid,
+            'gateway_payment_uid' => $this->nullableString($payload['payment_uid'] ?? null)
+                ?: $attempt->gateway_payment_uid,
+            'gateway_final_amount' => array_key_exists('final_amount', $payload)
+                ? $this->normalizeAmount($payload['final_amount'])
+                : $attempt->gateway_final_amount,
+            'failure_reason' => $this->nullableString($payload['payment_fail_reason'] ?? null)
+                ?: $attempt->failure_reason,
+            'provider_response' => $payload,
+            'provider_meta' => array_merge($attempt->provider_meta ?? [], [
+                'latest_state_source' => $source,
+                'latest_state_received_at' => now()->toAtomString(),
+            ]),
+        ];
+
+        if ($incomingStatus === WithdrawalPayoutAttempt::STATUS_COMPLETED) {
+            $updates['completed_at'] = $attempt->completed_at ?: now();
+        } elseif (in_array($incomingStatus, [
+            WithdrawalPayoutAttempt::STATUS_FAILED,
+            WithdrawalPayoutAttempt::STATUS_REJECT,
+            WithdrawalPayoutAttempt::STATUS_OVERDUE,
+        ], true)) {
+            $updates['failed_at'] = $attempt->failed_at ?: now();
+        }
+
+        return $updates;
+    }
+
+    private function providerStatusEventType(string $status): string
+    {
+        return match ($status) {
+            WithdrawalPayoutAttempt::STATUS_FAILED => 'withdrawal.gateway_failed',
+            WithdrawalPayoutAttempt::STATUS_REJECT => 'withdrawal.gateway_rejected',
+            WithdrawalPayoutAttempt::STATUS_OVERDUE => 'withdrawal.gateway_overdue',
+            WithdrawalPayoutAttempt::STATUS_REFUND => 'withdrawal.gateway_refund_review',
+            default => 'withdrawal.gateway_processing',
         };
     }
 

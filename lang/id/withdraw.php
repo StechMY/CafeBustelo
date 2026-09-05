@@ -47,6 +47,7 @@ return [
     'retry_not_allowed' => 'Pembayaran ini tidak dapat dicoba ulang dalam status saat ini.',
     'cancel_not_allowed' => 'Pembayaran ini tidak dapat dibatalkan dalam status saat ini.',
     'cancel_not_safe' => 'Pembatalan diblokir karena pembayaran masih mungkin selesai secara eksternal.',
+    'gateway_completed_after_cancel_review' => 'QC168 melaporkan payout selesai setelah pengguna dikembalikan dananya. Tinjauan keuangan segera diperlukan.',
     'no_payout_attempt' => 'Belum ada percobaan pembayaran untuk penarikan ini.',
     'payout_status' => 'Status Pembayaran',
     'bank_code' => 'Kode Bank',

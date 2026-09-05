@@ -29,6 +29,7 @@ use Illuminate\Validation\ValidationException;
 use PDO;
 use RuntimeException;
 use Spatie\Permission\Models\Permission;
+use Symfony\Component\Process\Process;
 use Tests\TestCase;
 
 class Qc168WithdrawalPayoutTest extends TestCase
@@ -767,6 +768,285 @@ class Qc168WithdrawalPayoutTest extends TestCase
         );
     }
 
+    public function test_cancelled_withdrawal_remains_cancelled_after_later_reject_callback_and_cannot_refund_again(): void
+    {
+        $withdrawal = $this->cancelledCreateFailure('cancel_late_reject');
+        $attempt = $withdrawal->payoutAttempts()->firstOrFail();
+
+        $this->sendCallback($this->providerPayload($attempt, 'reject'))->assertOk();
+
+        $withdrawal->refresh();
+        $this->assertSame(WithdrawRequest::PAYOUT_CANCELLED, $withdrawal->payout_status);
+        $this->assertSame(WithdrawalPayoutAttempt::STATUS_CREATE_FAILED, $withdrawal->gateway_payment_status);
+        $this->assertNull($withdrawal->gateway_last_callback_at);
+        $this->assertSame('reject', $attempt->fresh()->gateway_status);
+        $this->assertFalse($withdrawal->canCancelPayout());
+        $this->assertDatabaseHas('payment_gateway_events', [
+            'withdraw_request_id' => $withdrawal->id,
+            'withdrawal_payout_attempt_id' => $attempt->id,
+            'event_type' => 'withdrawal.gateway_rejected',
+            'processing_result' => 'status_recorded_after_cancel',
+        ]);
+
+        $secondWithdrawal = app(WithdrawService::class)->submit($withdrawal->user, '1000.00');
+        Http::fake(fn () => Http::response([
+            'result' => 'success',
+            'data' => $this->providerPayload($attempt, 'reject'),
+        ]));
+
+        try {
+            app(Qc168WithdrawalPayoutService::class)->cancel(
+                $withdrawal,
+                $this->admin(),
+                'Duplicate cancellation after late reject.',
+            );
+        } catch (RuntimeException) {
+            $this->addToAssertionCount(1);
+        }
+
+        $this->assertWallet('cancel_late_reject', '0.00', '1000.00');
+        $this->assertSame(1, WalletTransaction::query()
+            ->where('type', 'withdraw_gateway_cancelled')
+            ->where('reference_type', WithdrawRequest::class)
+            ->where('reference_id', $withdrawal->id)
+            ->count());
+        $this->assertSame(WithdrawRequest::STATUS_PENDING, $secondWithdrawal->fresh()->status);
+    }
+
+    public function test_cancelled_withdrawal_remains_cancelled_after_later_failed_sync(): void
+    {
+        $withdrawal = $this->cancelledCreateFailure('cancel_late_failed');
+        $attempt = $withdrawal->payoutAttempts()->firstOrFail();
+        $this->inquiryStatus = 'failed';
+
+        app(Qc168WithdrawalPayoutService::class)->sync($withdrawal);
+
+        $withdrawal->refresh();
+        $this->assertSame(WithdrawRequest::PAYOUT_CANCELLED, $withdrawal->payout_status);
+        $this->assertSame(WithdrawalPayoutAttempt::STATUS_CREATE_FAILED, $withdrawal->gateway_payment_status);
+        $this->assertNull($withdrawal->gateway_last_synced_at);
+        $this->assertSame('failed', $attempt->fresh()->gateway_status);
+        $this->assertWallet('cancel_late_failed', '1000.00', '0.00');
+    }
+
+    public function test_cancelled_withdrawal_remains_cancelled_after_later_overdue_callback(): void
+    {
+        $withdrawal = $this->cancelledCreateFailure('cancel_late_overdue');
+        $attempt = $withdrawal->payoutAttempts()->firstOrFail();
+
+        $this->sendCallback($this->providerPayload($attempt, 'overdue'))->assertOk();
+
+        $withdrawal->refresh();
+        $this->assertSame(WithdrawRequest::PAYOUT_CANCELLED, $withdrawal->payout_status);
+        $this->assertSame(WithdrawalPayoutAttempt::STATUS_CREATE_FAILED, $withdrawal->gateway_payment_status);
+        $this->assertNull($withdrawal->gateway_last_callback_at);
+        $this->assertSame('overdue', $attempt->fresh()->gateway_status);
+        $this->assertWallet('cancel_late_overdue', '1000.00', '0.00');
+    }
+
+    public function test_cancellation_ledger_blocks_a_second_refund_even_if_local_status_was_regressed(): void
+    {
+        $withdrawal = $this->cancelledCreateFailure('cancel_ledger_guard');
+        $cancellation = WalletTransaction::query()
+            ->where('type', 'withdraw_gateway_cancelled')
+            ->where('reference_type', WithdrawRequest::class)
+            ->where('reference_id', $withdrawal->id)
+            ->firstOrFail();
+        $this->assertSame('withdrawal_gateway_cancelled:'.$withdrawal->id, $cancellation->idempotency_key);
+        $cancellation->forceFill(['idempotency_key' => null])->save();
+        $withdrawal->forceFill(['payout_status' => WithdrawRequest::PAYOUT_REJECTED])->save();
+        $secondWithdrawal = app(WithdrawService::class)->submit($withdrawal->user, '1000.00');
+
+        $this->assertFalse($withdrawal->fresh()->canCancelPayout());
+        $this->assertFalse(WithdrawRequest::query()->whereKey($withdrawal->id)->withReservedFunds()->exists());
+
+        try {
+            app(WithdrawService::class)->cancelPayout(
+                $withdrawal->fresh(),
+                $withdrawal->payoutAttempts()->firstOrFail(),
+                $this->admin(),
+                'Must not release twice.',
+            );
+            $this->fail('The cancellation ledger must block a second refund.');
+        } catch (RuntimeException) {
+            $this->addToAssertionCount(1);
+        }
+
+        $this->assertWallet('cancel_ledger_guard', '0.00', '1000.00');
+        $this->assertSame(1, WalletTransaction::query()
+            ->where('type', 'withdraw_gateway_cancelled')
+            ->where('reference_type', WithdrawRequest::class)
+            ->where('reference_id', $withdrawal->id)
+            ->count());
+        $this->assertSame(WithdrawRequest::STATUS_PENDING, $secondWithdrawal->fresh()->status);
+    }
+
+    public function test_concurrent_cancel_calls_create_one_refund(): void
+    {
+        if (config('database.default') !== 'mysql') {
+            $this->markTestSkipped('Concurrent cancellation requires the shared MySQL test database.');
+        }
+
+        $withdrawal = $this->explicitlyRejectedPayout('cancel_concurrent');
+        $admin = $this->admin();
+        $code = sprintf(
+            "try { app(%s::class)->cancel(%s::findOrFail(%d), %s::findOrFail(%d), 'Concurrent cancellation.'); echo 'CANCELLED'; } catch (\\RuntimeException) { echo 'BLOCKED'; }",
+            Qc168WithdrawalPayoutService::class,
+            WithdrawRequest::class,
+            $withdrawal->id,
+            AdminUser::class,
+            $admin->id,
+        );
+        $processes = [
+            new Process([PHP_BINARY, base_path('artisan'), 'tinker', '--execute', $code], base_path()),
+            new Process([PHP_BINARY, base_path('artisan'), 'tinker', '--execute', $code], base_path()),
+        ];
+
+        foreach ($processes as $process) {
+            $process->start();
+        }
+
+        foreach ($processes as $process) {
+            $process->wait();
+        }
+
+        $this->assertSame(1, collect($processes)->filter(
+            fn (Process $process): bool => str_contains($process->getOutput(), 'CANCELLED')
+        )->count());
+        $this->assertSame(1, collect($processes)->filter(
+            fn (Process $process): bool => str_contains($process->getOutput(), 'BLOCKED')
+        )->count());
+        $this->assertWallet('cancel_concurrent', '1000.00', '0.00');
+        $this->assertSame(1, WalletTransaction::query()
+            ->where('type', 'withdraw_gateway_cancelled')
+            ->where('reference_type', WithdrawRequest::class)
+            ->where('reference_id', $withdrawal->id)
+            ->count());
+    }
+
+    public function test_completed_after_cancellation_routes_to_financial_review_without_finalizing_again(): void
+    {
+        $withdrawal = $this->cancelledCreateFailure('cancel_late_completed');
+        $attempt = $withdrawal->payoutAttempts()->firstOrFail();
+
+        $this->sendCallback($this->providerPayload($attempt, 'completed'))->assertOk();
+
+        $withdrawal->refresh();
+        $this->assertSame(WithdrawRequest::PAYOUT_REFUND_REVIEW, $withdrawal->payout_status);
+        $this->assertSame('completed', $withdrawal->gateway_payment_status);
+        $this->assertSame('completed', $attempt->fresh()->gateway_status);
+        $this->assertFalse($withdrawal->canCancelPayout());
+        $this->assertFalse(WithdrawRequest::query()->whereKey($withdrawal->id)->withReservedFunds()->exists());
+        $this->assertWallet('cancel_late_completed', '1000.00', '0.00');
+        $this->assertSame(1, WalletTransaction::query()
+            ->where('type', 'withdraw_gateway_cancelled')
+            ->where('reference_type', WithdrawRequest::class)
+            ->where('reference_id', $withdrawal->id)
+            ->count());
+        $this->assertDatabaseHas('payment_gateway_events', [
+            'withdraw_request_id' => $withdrawal->id,
+            'withdrawal_payout_attempt_id' => $attempt->id,
+            'event_type' => 'withdrawal.gateway_completed_after_cancel',
+            'processing_result' => 'financial_review_required',
+        ]);
+        $this->assertStringContainsString(
+            'financial review',
+            strtolower($this->withdrawTableValue('gatewayFriendlyAlert', $withdrawal)),
+        );
+        $this->assertDatabaseHas('payment_gateway_events', [
+            'withdraw_request_id' => $withdrawal->id,
+            'withdrawal_payout_attempt_id' => $attempt->id,
+            'event_type' => 'gateway.withdrawal.callback.create_rejected_contradiction',
+            'processing_result' => 'financial_review_required',
+        ]);
+    }
+
+    public function test_completed_old_attempt_after_cancellation_also_routes_to_financial_review(): void
+    {
+        $withdrawal = $this->approvedAndDispatched('cancel_old_attempt_completed');
+        $oldAttempt = $withdrawal->payoutAttempts()->firstOrFail();
+        $this->sendCallback($this->providerPayload($oldAttempt, 'reject'))->assertOk();
+        $this->inquiryStatus = 'reject';
+        $currentAttempt = app(Qc168WithdrawalPayoutService::class)->retry(
+            $withdrawal,
+            $this->admin(),
+            'Retry before cancellation.',
+        );
+        $this->sendCallback($this->providerPayload($currentAttempt, 'failed'))->assertOk();
+        $this->inquiryStatus = 'failed';
+        app(Qc168WithdrawalPayoutService::class)->cancel(
+            $withdrawal->fresh(),
+            $this->admin(),
+            'Cancel current failed attempt.',
+        );
+
+        $this->sendCallback($this->providerPayload($oldAttempt, 'completed'))->assertOk();
+
+        $withdrawal->refresh();
+        $this->assertSame(WithdrawRequest::PAYOUT_REFUND_REVIEW, $withdrawal->payout_status);
+        $this->assertSame('completed', $oldAttempt->fresh()->gateway_status);
+        $this->assertSame($oldAttempt->id, data_get($withdrawal->gateway_meta, 'financial_review_attempt_id'));
+        $this->assertWallet('cancel_old_attempt_completed', '1000.00', '0.00');
+        $this->assertSame(1, WalletTransaction::query()
+            ->where('type', 'withdraw_gateway_cancelled')
+            ->where('reference_type', WithdrawRequest::class)
+            ->where('reference_id', $withdrawal->id)
+            ->count());
+    }
+
+    public function test_delayed_create_response_after_cancellation_does_not_regress_local_state(): void
+    {
+        $withdrawal = $this->approvedAndDispatched('cancel_delayed_create_response');
+        $attempt = $withdrawal->payoutAttempts()->firstOrFail();
+        $this->sendCallback($this->providerPayload($attempt, 'failed'))->assertOk();
+        $this->inquiryStatus = 'failed';
+        app(Qc168WithdrawalPayoutService::class)->cancel(
+            $withdrawal,
+            $this->admin(),
+            'Cancel before delayed create response.',
+        );
+        $this->inquiryStatus = null;
+
+        $method = new \ReflectionMethod(Qc168WithdrawalPayoutService::class, 'submitAttempt');
+        $method->setAccessible(true);
+        $method->invoke(app(Qc168WithdrawalPayoutService::class), $attempt, 'delayed_create_response');
+
+        $withdrawal->refresh();
+        $this->assertSame(WithdrawRequest::PAYOUT_CANCELLED, $withdrawal->payout_status);
+        $this->assertSame('failed', $withdrawal->gateway_payment_status);
+        $this->assertSame('pending', $attempt->fresh()->gateway_status);
+        $this->assertWallet('cancel_delayed_create_response', '1000.00', '0.00');
+    }
+
+    public function test_delayed_submission_failure_after_cancellation_does_not_regress_local_state(): void
+    {
+        $withdrawal = $this->approvedAndDispatched('cancel_delayed_create_failure');
+        $attempt = $withdrawal->payoutAttempts()->firstOrFail();
+        $this->sendCallback($this->providerPayload($attempt, 'failed'))->assertOk();
+        $this->inquiryStatus = 'failed';
+        app(Qc168WithdrawalPayoutService::class)->cancel(
+            $withdrawal,
+            $this->admin(),
+            'Cancel before delayed create failure.',
+        );
+
+        $method = new \ReflectionMethod(Qc168WithdrawalPayoutService::class, 'recordSubmissionFailure');
+        $method->setAccessible(true);
+        $method->invoke(
+            app(Qc168WithdrawalPayoutService::class),
+            $attempt,
+            new RuntimeException('Delayed create request failed.'),
+            true,
+            'delayed_create_failure',
+        );
+
+        $withdrawal->refresh();
+        $this->assertSame(WithdrawRequest::PAYOUT_CANCELLED, $withdrawal->payout_status);
+        $this->assertSame('failed', $withdrawal->gateway_payment_status);
+        $this->assertSame(WithdrawalPayoutAttempt::STATUS_CREATE_FAILED, $attempt->fresh()->gateway_status);
+        $this->assertWallet('cancel_delayed_create_failure', '1000.00', '0.00');
+    }
+
     public function test_processing_attempt_cannot_be_cancelled(): void
     {
         $withdrawal = $this->approvedAndDispatched('processing_cancel');
@@ -955,7 +1235,18 @@ class Qc168WithdrawalPayoutTest extends TestCase
         $withdrawal = $this->pendingWithdrawal($username);
         $admin = $this->approvalAdmin("{$username}-admin", ['ApproveInstantGateway:Withdrawal']);
         $requestCount = 0;
-        Http::fake(function () use (&$requestCount, $retrySucceeds) {
+        Http::fake(function (ClientRequest $request) use (&$requestCount, $retrySucceeds) {
+            if (str_ends_with($request->url(), '/octopus/api/order/get') && $this->inquiryStatus !== null) {
+                $attempt = WithdrawalPayoutAttempt::query()
+                    ->where('merchant_order_id', (string) $request['merchant_order_id'])
+                    ->firstOrFail();
+
+                return Http::response([
+                    'result' => 'success',
+                    'data' => $this->providerPayload($attempt, $this->inquiryStatus),
+                ]);
+            }
+
             $requestCount++;
 
             if ($retrySucceeds && $requestCount > 1) {
@@ -974,6 +1265,19 @@ class Qc168WithdrawalPayoutTest extends TestCase
         } catch (Qc168OrderRejectedException) {
             $this->addToAssertionCount(1);
         }
+
+        return $withdrawal->fresh();
+    }
+
+    private function cancelledCreateFailure(string $username): WithdrawRequest
+    {
+        $withdrawal = $this->explicitlyRejectedPayout($username);
+
+        app(Qc168WithdrawalPayoutService::class)->cancel(
+            $withdrawal,
+            $this->admin(),
+            'Confirmed create failure.',
+        );
 
         return $withdrawal->fresh();
     }

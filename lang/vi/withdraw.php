@@ -48,6 +48,7 @@ return [
     'retry_not_allowed' => 'Không thể thử lại khoản thanh toán ở trạng thái hiện tại.',
     'cancel_not_allowed' => 'Không thể hủy khoản thanh toán ở trạng thái hiện tại.',
     'cancel_not_safe' => 'Không thể hủy vì khoản thanh toán vẫn có thể hoàn tất bên ngoài hệ thống.',
+    'gateway_completed_after_cancel_review' => 'QC168 báo đã thanh toán sau khi người dùng được hoàn tiền. Cần kiểm tra tài chính ngay lập tức.',
     'no_payout_attempt' => 'Chưa có lần thanh toán nào cho yêu cầu rút tiền này.',
     'payout_status' => 'Trạng thái thanh toán',
     'bank_code' => 'Mã ngân hàng',

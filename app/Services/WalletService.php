@@ -195,12 +195,23 @@ class WalletService
         ?\Illuminate\Database\Eloquent\Model $reference = null,
         ?string $remarks = null,
         array $meta = [],
+        ?string $idempotencyKey = null,
     ): \App\Models\WalletTransaction {
         if ((float) $amount <= 0) {
             throw new \RuntimeException('Release amount must be greater than zero.');
         }
 
-        return \Illuminate\Support\Facades\DB::transaction(function () use ($user, $walletType, $transactionType, $amount, $reference, $remarks, $meta, ): \App\Models\WalletTransaction {
+        return \Illuminate\Support\Facades\DB::transaction(function () use ($user, $walletType, $transactionType, $amount, $reference, $remarks, $meta, $idempotencyKey, ): \App\Models\WalletTransaction {
+            if ($idempotencyKey !== null) {
+                $existingTransaction = \App\Models\WalletTransaction::query()
+                    ->where('idempotency_key', $idempotencyKey)
+                    ->first();
+
+                if ($existingTransaction) {
+                    return $existingTransaction;
+                }
+            }
+
             $wallet = \App\Models\Wallet::query()
                 ->where('user_id', $user->id)
                 ->where('type', $walletType)
@@ -228,6 +239,7 @@ class WalletService
                 'wallet_id' => $wallet->id,
                 'wallet_type' => $walletType,
                 'type' => $transactionType,
+                'idempotency_key' => $idempotencyKey,
                 'direction' => \App\Models\WalletTransaction::DIRECTION_CREDIT,
                 'amount' => $amount,
                 'balance_before' => $balanceBefore,

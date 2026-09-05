@@ -48,6 +48,7 @@ return [
     'retry_not_allowed' => '当前状态不允许重试此付款。',
     'cancel_not_allowed' => '当前状态不允许取消此付款。',
     'cancel_not_safe' => '该付款仍可能在外部完成，因此无法取消。',
+    'gateway_completed_after_cancel_review' => '用户退款后 QC168 又报告出款完成，必须立即进行财务审核。',
     'no_payout_attempt' => '此提现尚无付款尝试。',
     'payout_status' => '付款状态',
     'bank_code' => '银行代码',

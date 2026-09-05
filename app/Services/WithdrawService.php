@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\AdminUser;
 use App\Models\User;
 use App\Models\Wallet;
+use App\Models\WalletTransaction;
 use App\Models\WithdrawalPayoutAttempt;
 use App\Models\WithdrawRequest;
 use App\Services\PaymentGateway\PaymentGatewayEventRecorder;
@@ -394,16 +395,31 @@ class WithdrawService
                 ->lockForUpdate()
                 ->firstOrFail();
 
+            if (WalletTransaction::query()
+                ->where('type', 'withdraw_gateway_cancelled')
+                ->where('reference_type', WithdrawRequest::class)
+                ->where('reference_id', $lockedRequest->id)
+                ->lockForUpdate()
+                ->exists()) {
+                throw new RuntimeException(__('withdraw.cancel_not_allowed'));
+            }
+
             if (! $lockedRequest->isApproved() || $lockedRequest->isPayoutCompleted()) {
                 throw new RuntimeException(__('withdraw.cancel_not_allowed'));
             }
+
+            $lockedAttempt = WithdrawalPayoutAttempt::query()
+                ->where('withdraw_request_id', $lockedRequest->id)
+                ->latest('attempt_no')
+                ->lockForUpdate()
+                ->first();
 
             if (! in_array($lockedRequest->payout_status, [
                 WithdrawRequest::PAYOUT_CREATE_FAILED,
                 WithdrawRequest::PAYOUT_FAILED,
                 WithdrawRequest::PAYOUT_REJECTED,
                 WithdrawRequest::PAYOUT_OVERDUE,
-            ], true) || ! $attempt->isSafeFinalFailure()) {
+            ], true) || ! $lockedAttempt?->isSafeFinalFailure() || $lockedAttempt->id !== $attempt->id) {
                 throw new RuntimeException(__('withdraw.cancel_not_safe'));
             }
 
@@ -420,11 +436,12 @@ class WithdrawService
                 remarks: 'Withdrawal payout cancelled and reserve released',
                 meta: [
                     'withdraw_request_id' => $lockedRequest->id,
-                    'withdrawal_payout_attempt_id' => $attempt->id,
-                    'merchant_order_id' => $attempt->merchant_order_id,
+                    'withdrawal_payout_attempt_id' => $lockedAttempt->id,
+                    'merchant_order_id' => $lockedAttempt->merchant_order_id,
                     'admin_user_id' => $adminUser->id,
                     'reason' => $reason,
                 ],
+                idempotencyKey: 'withdrawal_gateway_cancelled:'.$lockedRequest->id,
             );
 
             $lockedRequest->forceFill([
@@ -439,7 +456,7 @@ class WithdrawService
             $this->eventRecorder->recordWithdrawal(
                 'withdrawal.gateway_cancelled',
                 $lockedRequest,
-                $attempt,
+                $lockedAttempt,
                 $adminUser,
                 'filament',
                 $reason,
