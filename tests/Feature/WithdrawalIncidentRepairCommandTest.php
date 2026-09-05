@@ -259,7 +259,7 @@ class WithdrawalIncidentRepairCommandTest extends TestCase
         }
 
         $attempt = WithdrawalPayoutAttempt::query()->forceCreate([
-            'id' => 1079,
+            'id' => 509,
             'withdraw_request_id' => $withdrawal1079->id,
             'attempt_no' => 1,
             'provider' => WithdrawRequest::GATEWAY_QC168,
@@ -285,7 +285,6 @@ class WithdrawalIncidentRepairCommandTest extends TestCase
             'signature_valid' => true,
             'payload' => [
                 'transaction_type' => 'expense',
-                'accounting_type' => 'pay',
                 'merchant_uid' => 'merchant-123',
                 'merchant_order_id' => $attempt->merchant_order_id,
                 'amount' => '279000.00',

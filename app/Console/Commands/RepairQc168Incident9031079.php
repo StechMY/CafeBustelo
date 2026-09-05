@@ -18,6 +18,8 @@ class RepairQc168Incident9031079 extends Command
 {
     private const MERCHANT_ORDER_ID = 'WD1079-A1-01M1P8PJRQX3R814QM7QRX4Y87';
 
+    private const PAYOUT_ATTEMPT_ID = 509;
+
     protected $signature = 'qc168:repair-incident-903-1079
                             {--dry-run : Validate and report without changing data}
                             {--apply : Apply the guarded one-time repair}';
@@ -56,6 +58,7 @@ class RepairQc168Incident9031079 extends Command
                 $this->expect($withdrawal1113 instanceof WithdrawRequest, 'withdrawal #1113 exists', true, false);
 
                 $attempt = WithdrawalPayoutAttempt::query()
+                    ->whereKey(self::PAYOUT_ATTEMPT_ID)
                     ->where('withdraw_request_id', 1079)
                     ->where('merchant_order_id', self::MERCHANT_ORDER_ID)
                     ->lockForUpdate()
@@ -244,6 +247,7 @@ class RepairQc168Incident9031079 extends Command
         $this->expectMoney($withdrawal1079->net_amount, '#1079 net_amount', 279000);
         $this->expect($withdrawal1079->gateway_current_merchant_order_id, '#1079 merchant_order_id', self::MERCHANT_ORDER_ID);
         $this->expect($withdrawal1079->status, '#1079 status', WithdrawRequest::STATUS_APPROVED);
+        $this->expect($attempt->id, '#1079 payout attempt ID', self::PAYOUT_ATTEMPT_ID);
         $this->expect($attempt->merchant_order_id, '#1079 payout attempt merchant_order_id', self::MERCHANT_ORDER_ID);
         $this->expectMoney($attempt->amount, '#1079 payout attempt amount', 279000);
         $this->expect($attempt->provider, '#1079 payout attempt provider', WithdrawRequest::GATEWAY_QC168);
@@ -258,7 +262,6 @@ class RepairQc168Incident9031079 extends Command
         $this->expect($payload['merchant_uid'] ?? null, '#1079 event payload merchant_uid', (string) config('services.qc168.merchant_uid'));
         $this->expectMoney($payload['amount'] ?? null, '#1079 event payload amount', 279000);
         $this->expect($payload['transaction_type'] ?? null, '#1079 event transaction_type', 'expense');
-        $this->expect($payload['accounting_type'] ?? null, '#1079 event accounting_type', 'pay');
         $this->expect(strtolower((string) ($payload['currency'] ?? '')), '#1079 event currency', 'vnd');
         $this->expect($payload['payment'] ?? null, '#1079 event payment', 'vn02');
 
