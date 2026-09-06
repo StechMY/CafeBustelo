@@ -17,6 +17,8 @@ class AdminUser extends Authenticatable implements FilamentUser, HasName
     use SoftDeletes;
     use HasRoles;
 
+    private array $managedDownlineUserIdsCache = [];
+
     protected $table = 'admin_users';
 
     protected $guard_name = 'admin';
@@ -80,17 +82,37 @@ class AdminUser extends Authenticatable implements FilamentUser, HasName
             return [];
         }
 
-        $managedUser = $this->managedUser;
+        $cacheKey = $this->managed_user_id.':'.($maxDepth === null ? 'all' : $maxDepth);
 
-        if (! $managedUser) {
-            return [];
+        if (array_key_exists($cacheKey, $this->managedDownlineUserIdsCache)) {
+            return $this->managedDownlineUserIdsCache[$cacheKey];
         }
 
-        return $managedUser
-            ->allDownlineUsers($maxDepth)
-            ->pluck('id')
-            ->map(fn ($id) => (int) $id)
-            ->all();
+        $result = [];
+        $parentIds = [(int) $this->managed_user_id];
+        $depth = 1;
+
+        while ($parentIds !== []) {
+            if ($maxDepth !== null && $depth > $maxDepth) {
+                break;
+            }
+
+            $childIds = User::query()
+                ->whereIn('referrer_id', $parentIds)
+                ->pluck('id')
+                ->map(fn ($id): int => (int) $id)
+                ->all();
+
+            if ($childIds === []) {
+                break;
+            }
+
+            array_push($result, ...$childIds);
+            $parentIds = $childIds;
+            $depth++;
+        }
+
+        return $this->managedDownlineUserIdsCache[$cacheKey] = $result;
     }
 
     public function canAccessUserRecord(User $user): bool

@@ -29,6 +29,11 @@ new class extends Component {
 
     public function mount(Qc168BalanceService $balanceService): void
     {
+        $this->applyState($balanceService->getCachedBalance());
+    }
+
+    public function loadBalance(Qc168BalanceService $balanceService): void
+    {
         $this->applyState($balanceService->getBalance());
     }
 
@@ -152,7 +157,7 @@ new class extends Component {
     $compactBalance = $formatCompactBalance($balance);
 @endphp
 
-<div wire:poll.300s="pollBalance" class="sms-balance-root">
+<div wire:init="loadBalance" wire:poll.300s="pollBalance" class="sms-balance-root">
     <div class="sms-balance-control" data-status="{{ $status }}" title="{{ $tooltip }}">
         <div class="sms-balance-main">
             <x-filament::icon icon="heroicon-o-banknotes" class="sms-balance-icon" />

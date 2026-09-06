@@ -302,20 +302,35 @@ class Qc168BalanceServiceTest extends TestCase
             ),
         ]);
 
-        $html = Livewire::test('admin-qc168-balance-indicator')->html();
+        $component = Livewire::test('admin-qc168-balance-indicator');
+
+        Http::assertNothingSent();
+
+        $html = $component
+            ->call('loadBalance')
+            ->html();
 
         $this->assertStringContainsString('QC168 Balance', $html);
         $this->assertStringContainsString('₫125,000,000', $html);
         $this->assertStringNotContainsString('browser-key-must-not-appear', $html);
         $this->assertStringNotContainsString('browser-secret-must-not-appear', $html);
+        Http::assertSentCount(1);
     }
 
     public function test_component_renders_unavailable_without_throwing(): void
     {
-        Http::fake(fn () => throw new ConnectionException('timeout'));
+        $attempted = false;
+        Http::fake(function () use (&$attempted) {
+            $attempted = true;
+
+            throw new ConnectionException('timeout');
+        });
 
         Livewire::test('admin-qc168-balance-indicator')
+            ->call('loadBalance')
             ->assertSee(__('filament.qc168_balance_unavailable'));
+
+        $this->assertTrue($attempted);
     }
 
     public function test_topbar_renders_sms_then_qc168_before_search(): void

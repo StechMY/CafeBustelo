@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Exceptions\Qc168OrderRejectedException;
 use App\Exceptions\Qc168UncertainSubmissionException;
+use App\Filament\Resources\WithdrawRequests\WithdrawRequestResource;
 use App\Filament\Resources\WithdrawRequests\Tables\WithdrawRequestsTable;
 use App\Models\AdminUser;
 use App\Models\PaymentGatewayEvent;
@@ -31,6 +32,7 @@ use Illuminate\Validation\ValidationException;
 use PDO;
 use RuntimeException;
 use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 use Symfony\Component\Process\Process;
 use Tests\TestCase;
 
@@ -336,6 +338,140 @@ class Qc168WithdrawalPayoutTest extends TestCase
 
         $this->assertSame('payout_completed', $completed['result']);
         $this->assertSame('duplicate_completed', $duplicate['result']);
+    }
+
+    public function test_withdrawal_resource_preloads_row_dependencies_and_cancellation_state(): void
+    {
+        $withdrawal = $this->pendingWithdrawal('list-performance');
+        $withdrawal->forceFill([
+            'status' => WithdrawRequest::STATUS_APPROVED,
+            'approval_mode' => WithdrawRequest::APPROVAL_MODE_GATEWAY_INSTANT,
+            'gateway_provider' => WithdrawRequest::GATEWAY_QC168,
+            'payout_status' => WithdrawRequest::PAYOUT_FAILED,
+        ])->save();
+
+        $record = WithdrawRequestResource::getEloquentQuery()
+            ->findOrFail($withdrawal->getKey());
+
+        $this->assertTrue($record->relationLoaded('user'));
+        $this->assertTrue($record->relationLoaded('reviewer'));
+        $this->assertArrayHasKey(
+            'gateway_cancellation_transactions_exists',
+            $record->getAttributes(),
+        );
+
+        DB::enableQueryLog();
+        DB::flushQueryLog();
+
+        $this->assertTrue($record->canRetryPayout(usePreloadedCancellationState: true));
+        $this->assertTrue($record->canCancelPayout(usePreloadedCancellationState: true));
+        $this->assertSame([], DB::getQueryLog());
+
+        $wallet = $withdrawal->user->wallets()
+            ->where('type', Wallet::TYPE_WITHDRAWABLE)
+            ->firstOrFail();
+        WalletTransaction::query()->create([
+            'user_id' => $withdrawal->user_id,
+            'wallet_id' => $wallet->getKey(),
+            'wallet_type' => Wallet::TYPE_WITHDRAWABLE,
+            'type' => 'withdraw_gateway_cancelled',
+            'direction' => WalletTransaction::DIRECTION_CREDIT,
+            'amount' => '980.00',
+            'balance_before' => '0.00',
+            'balance_after' => '980.00',
+            'reference_type' => WithdrawRequest::class,
+            'reference_id' => $withdrawal->getKey(),
+        ]);
+
+        $this->assertTrue($record->hasGatewayCancellationLedger());
+        $this->assertFalse($record->canRetryPayout());
+    }
+
+    public function test_restricted_support_reuses_downline_ids_within_the_request(): void
+    {
+        $managedUser = $this->user('managed-user');
+        $child = $this->user('managed-child');
+        $grandchild = $this->user('managed-grandchild');
+        $child->forceFill(['referrer_id' => $managedUser->getKey()])->save();
+        $grandchild->forceFill(['referrer_id' => $child->getKey()])->save();
+
+        $admin = $this->approvalAdmin('managed-support', []);
+        $admin->forceFill(['managed_user_id' => $managedUser->getKey()])->save();
+        $admin->assignRole(Role::findOrCreate('Support', 'admin'));
+
+        $expected = [$child->getKey(), $grandchild->getKey()];
+        $this->assertSame($expected, $admin->managedDownlineUserIds());
+
+        DB::enableQueryLog();
+        DB::flushQueryLog();
+
+        $this->assertSame($expected, $admin->managedDownlineUserIds());
+        $this->assertSame([], DB::getQueryLog());
+    }
+
+    public function test_withdrawal_list_avoids_per_record_scope_and_cancellation_queries(): void
+    {
+        config([
+            'services.qc168.enabled' => false,
+            'sms.enabled' => false,
+        ]);
+
+        $managedUser = $this->user('list-managed-user');
+
+        foreach (range(1, 17) as $index) {
+            $withdrawal = $this->pendingWithdrawal('list-row-'.$index);
+            $withdrawal->user->forceFill([
+                'referrer_id' => $managedUser->getKey(),
+            ])->save();
+
+            if ($index > 8) {
+                $withdrawal->forceFill([
+                    'status' => WithdrawRequest::STATUS_APPROVED,
+                    'approval_mode' => WithdrawRequest::APPROVAL_MODE_GATEWAY_INSTANT,
+                    'gateway_provider' => WithdrawRequest::GATEWAY_QC168,
+                    'payout_status' => WithdrawRequest::PAYOUT_FAILED,
+                ])->save();
+            }
+        }
+
+        $admin = $this->approvalAdmin('list-support', [
+            'ViewAny:WithdrawRequest',
+            'ApproveManual:Withdrawal',
+            'ApproveScheduledGateway:Withdrawal',
+            'ApproveInstantGateway:Withdrawal',
+            'RetryGateway:Withdrawal',
+            'CancelGateway:Withdrawal',
+        ]);
+        $admin->forceFill(['managed_user_id' => $managedUser->getKey()])->save();
+        $admin->assignRole(Role::findOrCreate('Support', 'admin'));
+
+        DB::enableQueryLog();
+        DB::flushQueryLog();
+
+        $this->actingAs($admin, 'admin')
+            ->get('/admin/withdraw-requests')
+            ->assertOk();
+
+        $queries = collect(DB::getQueryLog());
+        $directCancellationQueries = $queries->filter(
+            fn (array $query): bool => str_contains($query['query'], 'select exists')
+                && str_contains($query['query'], 'wallet_transactions'),
+        );
+        $downlineQueries = $queries->filter(
+            fn (array $query): bool => str_contains($query['query'], 'from `users`')
+                && str_contains($query['query'], '`referrer_id` in'),
+        );
+        $gatewaySettingQueries = $queries->filter(
+            fn (array $query): bool => str_contains($query['query'], 'from `settings`')
+                && in_array($query['bindings'][0] ?? null, [
+                    Qc168Settings::KEY_WITHDRAW_ENABLED,
+                    Qc168Settings::KEY_WITHDRAW_RELEASE_HOURS,
+                ], true),
+        );
+
+        $this->assertCount(0, $directCancellationQueries);
+        $this->assertLessThanOrEqual(2, $downlineQueries->count());
+        $this->assertLessThanOrEqual(2, $gatewaySettingQueries->count());
     }
 
     public function test_gateway_switches_block_gateway_modes_but_never_manual_approval(): void

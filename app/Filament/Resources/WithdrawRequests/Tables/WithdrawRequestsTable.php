@@ -32,6 +32,9 @@ class WithdrawRequestsTable
 {
     public static function configure(Table $table): Table
     {
+        $withdrawalAvailable = app(Qc168Gateway::class)->isWithdrawalAvailable();
+        $withdrawReleaseHours = app(Qc168Settings::class)->withdrawReleaseHours();
+
         return $table
             ->columns([
                 /*
@@ -610,9 +613,7 @@ class WithdrawRequestsTable
                                 __(
                                     'withdraw.approve_gateway_scheduled_delay',
                                     [
-                                        'hours' => app(
-                                            Qc168Settings::class
-                                        )->withdrawReleaseHours(),
+                                        'hours' => $withdrawReleaseHours,
                                     ]
                                 )
                         )
@@ -624,18 +625,14 @@ class WithdrawRequestsTable
                         )
                         ->disabled(
                             fn (WithdrawRequest $record): bool =>
-                                ! app(
-                                    Qc168Gateway::class
-                                )->isWithdrawalAvailable()
+                                ! $withdrawalAvailable
                                 || ! self::hasValidBankCode($record)
                         )
                         ->tooltip(
                             fn (
                                 WithdrawRequest $record
                             ): ?string =>
-                                ! app(
-                                    Qc168Gateway::class
-                                )->isWithdrawalAvailable()
+                                ! $withdrawalAvailable
                                     ? __('withdraw.gateway_unavailable')
                                     : (
                                         ! self::hasValidBankCode(
@@ -664,9 +661,7 @@ class WithdrawRequestsTable
                                 __(
                                     'withdraw.approve_gateway_scheduled_confirmation',
                                     [
-                                        'hours' => app(
-                                            Qc168Settings::class
-                                        )->withdrawReleaseHours(),
+                                        'hours' => $withdrawReleaseHours,
                                     ]
                                 )
                         )
@@ -746,18 +741,14 @@ class WithdrawRequestsTable
                         )
                         ->disabled(
                             fn (WithdrawRequest $record): bool =>
-                                ! app(
-                                    Qc168Gateway::class
-                                )->isWithdrawalAvailable()
+                                ! $withdrawalAvailable
                                 || ! self::hasValidBankCode($record)
                         )
                         ->tooltip(
                             fn (
                                 WithdrawRequest $record
                             ): ?string =>
-                                ! app(
-                                    Qc168Gateway::class
-                                )->isWithdrawalAvailable()
+                                ! $withdrawalAvailable
                                     ? __('withdraw.gateway_unavailable')
                                     : (
                                         ! self::hasValidBankCode(
@@ -952,7 +943,7 @@ class WithdrawRequestsTable
                         ->color('warning')
                         ->visible(
                             fn (WithdrawRequest $record): bool =>
-                                $record->canRetryPayout()
+                                $record->canRetryPayout(usePreloadedCancellationState: true)
                         )
                         ->authorize(
                             fn (WithdrawRequest $record): bool =>
@@ -1024,7 +1015,7 @@ class WithdrawRequestsTable
                         ->color('danger')
                         ->visible(
                             fn (WithdrawRequest $record): bool =>
-                                $record->canCancelPayout()
+                                $record->canCancelPayout(usePreloadedCancellationState: true)
                         )
                         ->authorize(
                             fn (WithdrawRequest $record): bool =>

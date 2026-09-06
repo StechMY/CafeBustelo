@@ -31,7 +31,9 @@ class WithdrawRequestResource extends Resource
         return FilamentSupportScope::applyToUserOwnedQuery(
             parent::getEloquentQuery(),
             'user_id'
-        );
+        )
+            ->with(['user', 'reviewer'])
+            ->withExists('gatewayCancellationTransactions');
     }
 
     public static function getGlobalSearchEloquentQuery(): Builder

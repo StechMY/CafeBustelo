@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class WithdrawRequest extends Model
 {
@@ -145,6 +146,12 @@ class WithdrawRequest extends Model
         return $this->hasOne(WithdrawalPayoutAttempt::class)->latestOfMany('attempt_no');
     }
 
+    public function gatewayCancellationTransactions(): MorphMany
+    {
+        return $this->morphMany(WalletTransaction::class, 'reference')
+            ->where('type', 'withdraw_gateway_cancelled');
+    }
+
     public function isPending(): bool
     {
         return $this->status === self::STATUS_PENDING;
@@ -165,10 +172,10 @@ class WithdrawRequest extends Model
         return $this->payout_status === self::PAYOUT_COMPLETED;
     }
 
-    public function canRetryPayout(): bool
+    public function canRetryPayout(bool $usePreloadedCancellationState = false): bool
     {
         return $this->isApproved()
-            && ! $this->hasGatewayCancellationLedger()
+            && ! $this->hasGatewayCancellationLedger($usePreloadedCancellationState)
             && in_array($this->payout_status, [
                 self::PAYOUT_CREATE_FAILED,
                 self::PAYOUT_FAILED,
@@ -177,18 +184,19 @@ class WithdrawRequest extends Model
             ], true);
     }
 
-    public function canCancelPayout(): bool
+    public function canCancelPayout(bool $usePreloadedCancellationState = false): bool
     {
-        return $this->canRetryPayout();
+        return $this->canRetryPayout($usePreloadedCancellationState);
     }
 
-    public function hasGatewayCancellationLedger(): bool
+    public function hasGatewayCancellationLedger(bool $usePreloadedState = false): bool
     {
-        return WalletTransaction::query()
-            ->where('type', 'withdraw_gateway_cancelled')
-            ->where('reference_type', self::class)
-            ->where('reference_id', $this->getKey())
-            ->exists();
+        if ($usePreloadedState
+            && array_key_exists('gateway_cancellation_transactions_exists', $this->attributes)) {
+            return (bool) $this->attributes['gateway_cancellation_transactions_exists'];
+        }
+
+        return $this->gatewayCancellationTransactions()->exists();
     }
 
     public function canSyncPayout(): bool

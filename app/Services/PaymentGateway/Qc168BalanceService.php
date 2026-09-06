@@ -56,6 +56,21 @@ class Qc168BalanceService
         }
     }
 
+    public function getCachedBalance(): array
+    {
+        if ($state = $this->availabilityState()) {
+            return $state;
+        }
+
+        try {
+            return $this->currentState();
+        } catch (Throwable) {
+            Log::warning('QC168 merchant balance cache is unavailable.');
+
+            return $this->unavailableState('provider_error');
+        }
+    }
+
     public function refresh(): array
     {
         if ($state = $this->availabilityState()) {
