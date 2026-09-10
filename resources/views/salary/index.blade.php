@@ -364,7 +364,8 @@
                                 </td>
 
                                 <td class="px-3 py-3 text-right font-bold text-[#003b7a]">
-                                    {{ $currency }} {{ number_format((float) $level->team_subsidy, 2) }}
+                                    {{-- {{ $currency }} {{ number_format((float) $level->team_subsidy, 2) }} --}}
+                                    {{ $currency }} {{ number_format((float) $level->monthly_salary, 2) }}
                                 </td>
 
                                 <td class="px-3 py-3 text-right font-bold text-[#003b7a]">
