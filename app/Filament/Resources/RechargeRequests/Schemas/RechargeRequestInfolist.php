@@ -33,12 +33,13 @@ class RechargeRequestInfolist
 
                                 TextEntry::make('amount')
                                     ->label(__('filament.amount'))
-                                    ->prefix(config('app.currency').' '),
+                                    ->numeric(decimalPlaces: 2, decimalSeparator: '.', thousandsSeparator: ',')
+                                    ->prefix(config('app.currency') . ' '),
 
                                 TextEntry::make('status')
                                     ->label(__('filament.status'))
                                     ->badge()
-                                    ->color(fn (?string $state): string => match ($state) {
+                                    ->color(fn(?string $state): string => match ($state) {
                                         'pending' => 'warning',
                                         'approved' => 'success',
                                         'rejected' => 'danger',
@@ -53,7 +54,7 @@ class RechargeRequestInfolist
                     ]),
 
                 Section::make(__('filament.payment_detail'))
-                    ->visible(fn ($record): bool => $record->isManualDeposit())
+                    ->visible(fn($record): bool => $record->isManualDeposit())
                     ->schema([
                         Grid::make(2)
                             ->schema([
@@ -69,7 +70,7 @@ class RechargeRequestInfolist
                     ]),
 
                 Section::make(__('filament.gateway_details'))
-                    ->visible(fn ($record): bool => $record->isGatewayDeposit())
+                    ->visible(fn($record): bool => $record->isGatewayDeposit())
                     ->columnSpanFull()
                     ->schema([
                         Grid::make(3)
@@ -93,7 +94,7 @@ class RechargeRequestInfolist
                     ]),
 
                 Section::make(__('filament.payment_information'))
-                    ->visible(fn ($record): bool => $record->isManualDeposit())
+                    ->visible(fn($record): bool => $record->isManualDeposit())
                     ->schema([
                         Grid::make(2)
                             ->schema([
@@ -127,13 +128,13 @@ class RechargeRequestInfolist
                     ->schema([
                         ImageEntry::make('receipt_path')
                             ->label(__('filament.receipt_preview'))
-                            ->disk(fn ($record): string => $record->receipt_disk ?: 'do_spaces')
+                            ->disk(fn($record): string => $record->receipt_disk ?: 'do_spaces')
                             ->height(360)
                             ->extraAttributes([
                                 'class' => 'w-full overflow-hidden rounded-xl bg-gray-50',
                             ])
-                            ->visible(fn ($record): bool => filled($record->receipt_path)
-                                && ! str_ends_with(strtolower($record->receipt_path), '.pdf')),
+                            ->visible(fn($record): bool => filled($record->receipt_path)
+                                && !str_ends_with(strtolower($record->receipt_path), '.pdf')),
                     ]),
 
                 Section::make(__('filament.review'))

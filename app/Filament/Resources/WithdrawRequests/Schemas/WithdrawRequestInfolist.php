@@ -34,28 +34,32 @@ class WithdrawRequestInfolist
 
                                 TextEntry::make('amount')
                                     ->label(__('filament.amount'))
-                                    ->prefix(config('app.currency').' '),
+                                    ->prefix(config('app.currency') . ' ')
+                                    ->numeric(decimalPlaces: 2, decimalSeparator: '.', thousandsSeparator: ','),
 
                                 TextEntry::make('fee_amount')
                                     ->label(__('filament.fee'))
-                                    ->prefix(config('app.currency').' '),
+                                    ->prefix(config('app.currency') . ' ')
+                                    ->numeric(decimalPlaces: 2, decimalSeparator: '.', thousandsSeparator: ','),
 
                                 TextEntry::make('net_amount')
                                     ->label(__('filament.net_amount'))
-                                    ->prefix(config('app.currency').' '),
+                                    ->prefix(config('app.currency') . ' ')
+                                    ->numeric(decimalPlaces: 2, decimalSeparator: '.', thousandsSeparator: ','),
 
                                 TextEntry::make('vip_level_snapshot')
                                     ->label(__('filament.vip_snapshot'))
-                                    ->formatStateUsing(fn ($state): string => __('filament.lv').$state),
+                                    ->formatStateUsing(fn($state): string => __('filament.lv') . $state),
 
                                 TextEntry::make('min_withdraw_amount_snapshot')
                                     ->label(__('filament.min_withdraw_snapshot'))
-                                    ->prefix(config('app.currency').' '),
+                                    ->prefix(config('app.currency') . ' ')
+                                    ->numeric(decimalPlaces: 2, decimalSeparator: '.', thousandsSeparator: ','),
 
                                 TextEntry::make('status')
                                     ->label(__('filament.status'))
                                     ->badge()
-                                    ->color(fn (?string $state): string => match ($state) {
+                                    ->color(fn(?string $state): string => match ($state) {
                                         'pending' => 'warning',
                                         'approved' => 'success',
                                         'rejected' => 'danger',
@@ -64,13 +68,13 @@ class WithdrawRequestInfolist
 
                                 TextEntry::make('approval_mode')
                                     ->label(__('withdraw.approval_method'))
-                                    ->formatStateUsing(fn (WithdrawRequest $record): string => $record->approvalModeLabel())
+                                    ->formatStateUsing(fn(WithdrawRequest $record): string => $record->approvalModeLabel())
                                     ->badge()
                                     ->placeholder('-'),
 
                                 TextEntry::make('payout_status')
                                     ->label(__('withdraw.payout_status'))
-                                    ->formatStateUsing(fn (WithdrawRequest $record): string => $record->payoutStatusLabel())
+                                    ->formatStateUsing(fn(WithdrawRequest $record): string => $record->payoutStatusLabel())
                                     ->badge(),
 
                                 TextEntry::make('created_at')
@@ -130,7 +134,7 @@ class WithdrawRequestInfolist
                                     ->placeholder('-'),
                                 TextEntry::make('payout_status')
                                     ->label(__('withdraw.payout_status'))
-                                    ->formatStateUsing(fn (WithdrawRequest $record): string => $record->payoutStatusLabel())
+                                    ->formatStateUsing(fn(WithdrawRequest $record): string => $record->payoutStatusLabel())
                                     ->badge(),
                                 TextEntry::make('gateway_payment_status')
                                     ->label(__('withdraw.gateway_status'))
@@ -180,7 +184,7 @@ class WithdrawRequestInfolist
                                     ->copyable(),
                                 TextEntry::make('amount')
                                     ->label(__('filament.amount'))
-                                    ->prefix(config('app.currency').' '),
+                                    ->prefix(config('app.currency') . ' '),
                                 TextEntry::make('bank_code_snapshot')
                                     ->label(__('withdraw.bank_code')),
                                 TextEntry::make('gateway_status')
