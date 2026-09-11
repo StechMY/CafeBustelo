@@ -3,6 +3,7 @@
 namespace App\Services\Dashboard;
 
 use App\Data\Dashboard\DashboardFilterData;
+use App\Models\AdminTopUp;
 use App\Models\BonusClaim;
 use App\Models\CommissionRecord;
 use App\Models\DailyIncomeClaim;
@@ -144,7 +145,7 @@ class CafeDashboardMetricsService
 
         $pendingWithdrawAmount = WithdrawRequest::query()
             ->where('status', 'pending')
-            ->tap(fn (Builder $query) => $this->applyRelatedUserScope(
+            ->tap(fn(Builder $query) => $this->applyRelatedUserScope(
                 $query,
                 $filters->virtualMode,
                 'user',
@@ -154,7 +155,7 @@ class CafeDashboardMetricsService
 
         $expiredProductMemberCount = UserProduct::query()
             ->where('status', 'expired')
-            ->tap(fn (Builder $query) => $this->applyRelatedUserScope(
+            ->tap(fn(Builder $query) => $this->applyRelatedUserScope(
                 $query,
                 $filters->virtualMode,
                 'user',
@@ -165,24 +166,24 @@ class CafeDashboardMetricsService
 
         $invalidRecharge = RechargeRequest::query()
             ->where('status', 'approved')
-            ->tap(fn (Builder $query) => $this->applyRelatedUserScope(
+            ->tap(fn(Builder $query) => $this->applyRelatedUserScope(
                 $query,
                 $filters->virtualMode,
                 'user',
                 $visibleUserIds,
             ))
-            ->whereHas('user', fn (Builder $query) => $this->applyInvalidMemberScope($query))
+            ->whereHas('user', fn(Builder $query) => $this->applyInvalidMemberScope($query))
             ->sum('amount');
 
         $invalidWithdraw = WithdrawRequest::query()
             ->paid()
-            ->tap(fn (Builder $query) => $this->applyRelatedUserScope(
+            ->tap(fn(Builder $query) => $this->applyRelatedUserScope(
                 $query,
                 $filters->virtualMode,
                 'user',
                 $visibleUserIds,
             ))
-            ->whereHas('user', fn (Builder $query) => $this->applyInvalidMemberScope($query))
+            ->whereHas('user', fn(Builder $query) => $this->applyInvalidMemberScope($query))
             ->sum('amount');
 
         return [
@@ -296,7 +297,7 @@ class CafeDashboardMetricsService
 
         $productPurchaseAmount = UserProduct::query()
             ->whereBetween('purchased_at', [$filters->dateFrom, $filters->dateTo])
-            ->tap(fn (Builder $query) => $this->applyRelatedUserScope(
+            ->tap(fn(Builder $query) => $this->applyRelatedUserScope(
                 $query,
                 $filters->virtualMode,
                 'user',
@@ -306,7 +307,7 @@ class CafeDashboardMetricsService
 
         $dailyIncomePaid = DailyIncomeClaim::query()
             ->whereBetween('claimed_at', [$filters->dateFrom, $filters->dateTo])
-            ->tap(fn (Builder $query) => $this->applyRelatedUserScope(
+            ->tap(fn(Builder $query) => $this->applyRelatedUserScope(
                 $query,
                 $filters->virtualMode,
                 'user',
@@ -317,7 +318,7 @@ class CafeDashboardMetricsService
         $commissionsPaid = CommissionRecord::query()
             ->where('status', 'paid')
             ->whereBetween('created_at', [$filters->dateFrom, $filters->dateTo])
-            ->tap(fn (Builder $query) => $this->applyRelatedUserScope(
+            ->tap(fn(Builder $query) => $this->applyRelatedUserScope(
                 $query,
                 $filters->virtualMode,
                 'earner',
@@ -327,7 +328,7 @@ class CafeDashboardMetricsService
 
         $bonusPaid = BonusClaim::query()
             ->whereBetween('claimed_at', [$filters->dateFrom, $filters->dateTo])
-            ->tap(fn (Builder $query) => $this->applyRelatedUserScope(
+            ->tap(fn(Builder $query) => $this->applyRelatedUserScope(
                 $query,
                 $filters->virtualMode,
                 'user',
@@ -337,7 +338,7 @@ class CafeDashboardMetricsService
 
         $salaryPaid = SalaryClaim::query()
             ->whereBetween('claimed_at', [$filters->dateFrom, $filters->dateTo])
-            ->tap(fn (Builder $query) => $this->applyRelatedUserScope(
+            ->tap(fn(Builder $query) => $this->applyRelatedUserScope(
                 $query,
                 $filters->virtualMode,
                 'user',
@@ -364,7 +365,7 @@ class CafeDashboardMetricsService
         $pendingRecharge = RechargeRequest::query()
             ->where('status', 'pending')
             ->whereBetween('created_at', [$filters->dateFrom, $filters->dateTo])
-            ->tap(fn (Builder $query) => $this->applyRelatedUserScope(
+            ->tap(fn(Builder $query) => $this->applyRelatedUserScope(
                 $query,
                 $filters->virtualMode,
                 'user',
@@ -377,7 +378,7 @@ class CafeDashboardMetricsService
         $pendingWithdraw = WithdrawRequest::query()
             ->where('status', 'pending')
             ->whereBetween('created_at', [$filters->dateFrom, $filters->dateTo])
-            ->tap(fn (Builder $query) => $this->applyRelatedUserScope(
+            ->tap(fn(Builder $query) => $this->applyRelatedUserScope(
                 $query,
                 $filters->virtualMode,
                 'user',
@@ -390,7 +391,7 @@ class CafeDashboardMetricsService
         $rejectedRechargeCount = RechargeRequest::query()
             ->where('status', 'rejected')
             ->whereBetween('reviewed_at', [$filters->dateFrom, $filters->dateTo])
-            ->tap(fn (Builder $query) => $this->applyRelatedUserScope(
+            ->tap(fn(Builder $query) => $this->applyRelatedUserScope(
                 $query,
                 $filters->virtualMode,
                 'user',
@@ -401,7 +402,7 @@ class CafeDashboardMetricsService
         $rejectedWithdrawCount = WithdrawRequest::query()
             ->where('status', 'rejected')
             ->whereBetween('reviewed_at', [$filters->dateFrom, $filters->dateTo])
-            ->tap(fn (Builder $query) => $this->applyRelatedUserScope(
+            ->tap(fn(Builder $query) => $this->applyRelatedUserScope(
                 $query,
                 $filters->virtualMode,
                 'user',
@@ -431,7 +432,7 @@ class CafeDashboardMetricsService
         );
         $activeUsers = User::query()
             ->where('status', 'active')
-            ->tap(fn (Builder $query) => $this->applyDirectUserScope(
+            ->tap(fn(Builder $query) => $this->applyDirectUserScope(
                 $query,
                 $filters->virtualMode,
                 $visibleUserIds,
@@ -439,7 +440,7 @@ class CafeDashboardMetricsService
             ->count();
         $inactiveUsers = User::query()
             ->where('status', 'inactive')
-            ->tap(fn (Builder $query) => $this->applyDirectUserScope(
+            ->tap(fn(Builder $query) => $this->applyDirectUserScope(
                 $query,
                 $filters->virtualMode,
                 $visibleUserIds,
@@ -449,12 +450,12 @@ class CafeDashboardMetricsService
         // Legacy dashboard compatibility: virtual_users ignores the selected virtual mode.
         $virtualUsers = User::query()
             ->where('is_virtual', true)
-            ->tap(fn (Builder $query) => $this->applyVisibleUserScope($query, $visibleUserIds))
+            ->tap(fn(Builder $query) => $this->applyVisibleUserScope($query, $visibleUserIds))
             ->count();
 
         $activeUserProducts = UserProduct::query()
             ->where('status', 'active')
-            ->tap(fn (Builder $query) => $this->applyRelatedUserScope(
+            ->tap(fn(Builder $query) => $this->applyRelatedUserScope(
                 $query,
                 $filters->virtualMode,
                 'user',
@@ -464,7 +465,7 @@ class CafeDashboardMetricsService
         $expiredUserProducts = UserProduct::query()
             ->where('status', 'expired')
             ->whereBetween('expires_at', [$filters->dateFrom, $filters->dateTo])
-            ->tap(fn (Builder $query) => $this->applyRelatedUserScope(
+            ->tap(fn(Builder $query) => $this->applyRelatedUserScope(
                 $query,
                 $filters->virtualMode,
                 'user',
@@ -473,7 +474,7 @@ class CafeDashboardMetricsService
             ->count();
         $rechargeWalletBalance = Wallet::query()
             ->where('type', Wallet::TYPE_RECHARGE)
-            ->tap(fn (Builder $query) => $this->applyRelatedUserScope(
+            ->tap(fn(Builder $query) => $this->applyRelatedUserScope(
                 $query,
                 $filters->virtualMode,
                 'user',
@@ -482,7 +483,7 @@ class CafeDashboardMetricsService
             ->sum('balance');
         $withdrawableWalletBalance = Wallet::query()
             ->where('type', Wallet::TYPE_WITHDRAWABLE)
-            ->tap(fn (Builder $query) => $this->applyRelatedUserScope(
+            ->tap(fn(Builder $query) => $this->applyRelatedUserScope(
                 $query,
                 $filters->virtualMode,
                 'user',
@@ -509,7 +510,7 @@ class CafeDashboardMetricsService
         $rechargeByDate = RechargeRequest::query()
             ->where('status', 'approved')
             ->whereBetween('reviewed_at', [$filters->dateFrom, $filters->dateTo])
-            ->tap(fn (Builder $query) => $this->applyRelatedUserScope(
+            ->tap(fn(Builder $query) => $this->applyRelatedUserScope(
                 $query,
                 $filters->virtualMode,
                 'user',
@@ -518,13 +519,13 @@ class CafeDashboardMetricsService
             ->selectRaw('DATE(reviewed_at) AS aggregate_date, SUM(amount) AS aggregate_amount')
             ->groupByRaw('DATE(reviewed_at)')
             ->pluck('aggregate_amount', 'aggregate_date')
-            ->map(fn ($amount): float => $this->money($amount))
+            ->map(fn($amount): float => $this->money($amount))
             ->all();
 
         $withdrawByDate = WithdrawRequest::query()
             ->paid()
             ->whereBetween(DB::raw('COALESCE(gateway_completed_at, reviewed_at)'), [$filters->dateFrom, $filters->dateTo])
-            ->tap(fn (Builder $query) => $this->applyRelatedUserScope(
+            ->tap(fn(Builder $query) => $this->applyRelatedUserScope(
                 $query,
                 $filters->virtualMode,
                 'user',
@@ -533,7 +534,7 @@ class CafeDashboardMetricsService
             ->selectRaw('DATE(COALESCE(gateway_completed_at, reviewed_at)) AS aggregate_date, SUM(amount) AS aggregate_amount')
             ->groupByRaw('DATE(COALESCE(gateway_completed_at, reviewed_at))')
             ->pluck('aggregate_amount', 'aggregate_date')
-            ->map(fn ($amount): float => $this->money($amount))
+            ->map(fn($amount): float => $this->money($amount))
             ->all();
 
         $labels = [];
@@ -570,21 +571,38 @@ class CafeDashboardMetricsService
         ?CarbonInterface $end = null,
         ?array $visibleUserIds = null,
     ): float {
-        return (float) RechargeRequest::query()
+        $rechargeRequestSum = (float) RechargeRequest::query()
             ->where('status', 'approved')
-            ->tap(fn (Builder $query) => $this->applyOptionalDateRange(
+            ->tap(fn(Builder $query) => $this->applyOptionalDateRange(
                 $query,
                 'reviewed_at',
                 $start,
                 $end,
             ))
-            ->tap(fn (Builder $query) => $this->applyRelatedUserScope(
+            ->tap(fn(Builder $query) => $this->applyRelatedUserScope(
                 $query,
                 $filters->virtualMode,
                 'user',
                 $visibleUserIds,
             ))
             ->sum('amount');
+        $adminTopupSum = (float) AdminTopUp::query()
+            ->where('status', 'completed')
+            ->where('counts_as_recharge', 1)
+            ->tap(fn(Builder $query) => $this->applyOptionalDateRange(
+                $query,
+                'reviewed_at',
+                $start,
+                $end,
+            ))
+            ->tap(fn(Builder $query) => $this->applyRelatedUserScope(
+                $query,
+                $filters->virtualMode,
+                'user',
+                $visibleUserIds,
+            ))
+            ->sum('amount');
+        return $rechargeRequestSum + $adminTopupSum;
     }
 
     private function approvedWithdrawAmount(
@@ -595,15 +613,15 @@ class CafeDashboardMetricsService
     ): float {
         return (float) WithdrawRequest::query()
             ->paid()
-            ->when($start, fn (Builder $query): Builder => $query->whereRaw(
+            ->when($start, fn(Builder $query): Builder => $query->whereRaw(
                 'COALESCE(gateway_completed_at, reviewed_at) >= ?',
                 [$start],
             ))
-            ->when($end, fn (Builder $query): Builder => $query->whereRaw(
+            ->when($end, fn(Builder $query): Builder => $query->whereRaw(
                 'COALESCE(gateway_completed_at, reviewed_at) <= ?',
                 [$end],
             ))
-            ->tap(fn (Builder $query) => $this->applyRelatedUserScope(
+            ->tap(fn(Builder $query) => $this->applyRelatedUserScope(
                 $query,
                 $filters->virtualMode,
                 'user',
@@ -619,13 +637,13 @@ class CafeDashboardMetricsService
         ?array $visibleUserIds = null,
     ): float {
         return (float) UserProduct::query()
-            ->tap(fn (Builder $query) => $this->applyOptionalDateRange(
+            ->tap(fn(Builder $query) => $this->applyOptionalDateRange(
                 $query,
                 'purchased_at',
                 $start,
                 $end,
             ))
-            ->tap(fn (Builder $query) => $this->applyRelatedUserScope(
+            ->tap(fn(Builder $query) => $this->applyRelatedUserScope(
                 $query,
                 $filters->virtualMode,
                 'user',
@@ -641,13 +659,13 @@ class CafeDashboardMetricsService
         ?array $visibleUserIds = null,
     ): int {
         return UserProduct::query()
-            ->tap(fn (Builder $query) => $this->applyOptionalDateRange(
+            ->tap(fn(Builder $query) => $this->applyOptionalDateRange(
                 $query,
                 'purchased_at',
                 $start,
                 $end,
             ))
-            ->tap(fn (Builder $query) => $this->applyRelatedUserScope(
+            ->tap(fn(Builder $query) => $this->applyRelatedUserScope(
                 $query,
                 $filters->virtualMode,
                 'user',
@@ -662,7 +680,7 @@ class CafeDashboardMetricsService
     ): float {
         return (float) CommissionRecord::query()
             ->where('status', 'paid')
-            ->tap(fn (Builder $query) => $this->applyRelatedUserScope(
+            ->tap(fn(Builder $query) => $this->applyRelatedUserScope(
                 $query,
                 $filters->virtualMode,
                 'earner',
@@ -676,7 +694,7 @@ class CafeDashboardMetricsService
         ?array $visibleUserIds = null,
     ): float {
         return (float) Wallet::query()
-            ->tap(fn (Builder $query) => $this->applyRelatedUserScope(
+            ->tap(fn(Builder $query) => $this->applyRelatedUserScope(
                 $query,
                 $filters->virtualMode,
                 'user',
@@ -690,7 +708,7 @@ class CafeDashboardMetricsService
         ?array $visibleUserIds = null,
     ): int {
         return User::query()
-            ->tap(fn (Builder $query) => $this->applyDirectUserScope(
+            ->tap(fn(Builder $query) => $this->applyDirectUserScope(
                 $query,
                 $filters->virtualMode,
                 $visibleUserIds,
@@ -706,7 +724,7 @@ class CafeDashboardMetricsService
     ): int {
         return User::query()
             ->whereBetween('created_at', [$start, $end])
-            ->tap(fn (Builder $query) => $this->applyDirectUserScope(
+            ->tap(fn(Builder $query) => $this->applyDirectUserScope(
                 $query,
                 $filters->virtualMode,
                 $visibleUserIds,
@@ -721,7 +739,7 @@ class CafeDashboardMetricsService
         return User::query()
             ->where('status', 'active')
             ->whereHas('activeProducts')
-            ->tap(fn (Builder $query) => $this->applyDirectUserScope(
+            ->tap(fn(Builder $query) => $this->applyDirectUserScope(
                 $query,
                 $filters->virtualMode,
                 $visibleUserIds,
@@ -739,7 +757,7 @@ class CafeDashboardMetricsService
             ->selectRaw('user_id, MIN(reviewed_at) AS first_reviewed_at')
             ->where('status', 'approved')
             ->whereNotNull('reviewed_at')
-            ->tap(fn (Builder $query) => $this->applyRelatedUserScope(
+            ->tap(fn(Builder $query) => $this->applyRelatedUserScope(
                 $query,
                 $filters->virtualMode,
                 'user',
@@ -769,7 +787,7 @@ class CafeDashboardMetricsService
             ->joinSub($firstPurchaseSubQuery, 'first_product_purchases', function ($join): void {
                 $join->on('first_product_purchases.user_id', '=', 'users.id');
             })
-            ->tap(fn (Builder $query) => $this->applyDirectUserScope(
+            ->tap(fn(Builder $query) => $this->applyDirectUserScope(
                 $query,
                 $filters->virtualMode,
                 $visibleUserIds,
@@ -787,13 +805,13 @@ class CafeDashboardMetricsService
     ): float {
         return (float) UserProduct::query()
             ->whereBetween('purchased_at', [$start, $end])
-            ->tap(fn (Builder $query) => $this->applyRelatedUserScope(
+            ->tap(fn(Builder $query) => $this->applyRelatedUserScope(
                 $query,
                 $filters->virtualMode,
                 'user',
                 $visibleUserIds,
             ))
-            ->whereHas('user', fn (Builder $query) => $this->applyIndirectDownlineScope($query))
+            ->whereHas('user', fn(Builder $query) => $this->applyIndirectDownlineScope($query))
             ->whereHas('product', function (Builder $query): void {
                 $query->whereRaw('LOWER(code) <> ?', ['t1']);
             })
@@ -808,7 +826,7 @@ class CafeDashboardMetricsService
     ): float {
         return (float) BonusClaim::query()
             ->whereBetween('claimed_at', [$start, $end])
-            ->tap(fn (Builder $query) => $this->applyRelatedUserScope(
+            ->tap(fn(Builder $query) => $this->applyRelatedUserScope(
                 $query,
                 $filters->virtualMode,
                 'user',
@@ -824,8 +842,8 @@ class CafeDashboardMetricsService
         ?CarbonInterface $end,
     ): Builder {
         return $query
-            ->when($start, fn (Builder $query): Builder => $query->where($column, '>=', $start))
-            ->when($end, fn (Builder $query): Builder => $query->where($column, '<=', $end));
+            ->when($start, fn(Builder $query): Builder => $query->where($column, '>=', $start))
+            ->when($end, fn(Builder $query): Builder => $query->where($column, '<=', $end));
     }
 
     private function applyDirectUserScope(
@@ -863,10 +881,7 @@ class CafeDashboardMetricsService
             return $query;
         }
 
-        return $query->whereHas($relation, function (Builder $query) use (
-            $virtualMode,
-            $visibleUserIds,
-        ): void {
+        return $query->whereHas($relation, function (Builder $query) use ($virtualMode, $visibleUserIds, ): void {
             $this->applyDirectUserScope($query, $virtualMode, $visibleUserIds);
         });
     }
