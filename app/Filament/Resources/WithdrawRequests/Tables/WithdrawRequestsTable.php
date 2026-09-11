@@ -65,6 +65,7 @@ class WithdrawRequestsTable
                 */
                 TextColumn::make('amount')
                     ->label(__('filament.amount'))
+                    ->numeric(decimalPlaces: 2, decimalSeparator: '.', thousandsSeparator: ',')
                     ->prefix(config('app.currency').' ')
                     ->weight('bold')
                     ->sortable()

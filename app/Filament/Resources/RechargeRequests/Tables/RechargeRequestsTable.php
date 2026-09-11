@@ -54,6 +54,7 @@ class RechargeRequestsTable
                 */
                 TextColumn::make('amount')
                     ->label(__('filament.amount'))
+                    ->numeric(decimalPlaces: 2, decimalSeparator: '.', thousandsSeparator: ',')
                     ->prefix(config('app.currency').' ')
                     ->sortable()
                     ->weight('bold'),
