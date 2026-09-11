@@ -591,7 +591,7 @@ class CafeDashboardMetricsService
             ->where('counts_as_recharge', 1)
             ->tap(fn(Builder $query) => $this->applyOptionalDateRange(
                 $query,
-                'reviewed_at',
+                'created_at',
                 $start,
                 $end,
             ))
