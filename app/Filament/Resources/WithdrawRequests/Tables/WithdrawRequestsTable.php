@@ -385,6 +385,27 @@ class WithdrawRequestsTable
                             ])
                     ),
 
+                Filter::make('gateway_release_at')
+                    ->label(__('withdraw.gateway_release_at'))
+                    ->form([
+                        DatePicker::make('release_from')
+                            ->label('Release from'),
+
+                        DatePicker::make('release_until')
+                            ->label('Release until'),
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        return $query
+                            ->when(
+                                $data['release_from'] ?? null,
+                                fn (Builder $query, $date) => $query->whereDate('gateway_release_at', '>=', $date)
+                            )
+                            ->when(
+                                $data['release_until'] ?? null,
+                                fn (Builder $query, $date) => $query->whereDate('gateway_release_at', '<=', $date)
+                            );
+                    }),
+
                 Filter::make('created_at')
                     ->label(__('filament.submitted_at'))
                     ->form([
