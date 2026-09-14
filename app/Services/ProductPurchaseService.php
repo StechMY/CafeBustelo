@@ -38,6 +38,12 @@ class ProductPurchaseService
         }
 
         return DB::transaction(function () use ($user, $product, $walletType): UserProduct {
+            // Serialize this user's purchases across products and payment wallets.
+            $user = User::query()
+                ->whereKey($user->id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
             $lockedProduct = Product::query()
                 ->whereKey($product->id)
                 ->lockForUpdate()
@@ -112,6 +118,7 @@ class ProductPurchaseService
             }
 
             $this->pointService->giveUpgradeDayPurchasePoints($user, $userProduct);
+            $this->pointService->giveInviteDayFirstPurchasePoints($user, $userProduct);
 
             if ($user->status !== 'active') {
                 $user->forceFill([
@@ -121,6 +128,6 @@ class ProductPurchaseService
             }
 
             return $userProduct;
-        });
+        }, 3);
     }
 }

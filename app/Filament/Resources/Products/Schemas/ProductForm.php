@@ -214,7 +214,8 @@ class ProductForm
                                     ->numeric()
                                     ->default(0)
                                     ->minValue(0)
-                                    ->step(1),
+                                    ->step(1)
+                                    ->helperText(__('filament.extra_points_help')),
 
                                 Placeholder::make('total_income_preview')
                                     ->label(__('filament.total_income_preview'))

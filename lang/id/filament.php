@@ -27,6 +27,8 @@ return [
     'purchase_date' => 'Tanggal Pembelian',
     'purchase_price' => 'Harga Pembelian',
     'extra_points' => 'Poin Tambahan',
+    'extra_points_help' => 'Digunakan untuk pembelian Hari Upgrade dan hadiah pembelian pertama Hari Undangan. Nilai 0 menggunakan jumlah poin Hari Upgrade; syarat kegiatan tetap berlaku.',
+    'invite_day_first_purchase_help' => 'Pengundang langsung juga mendapat hadiah jika anggota mendaftar dan melakukan pembelian produk pertama pada hari undangan yang sama. Gunakan poin tambahan produk, atau jumlah poin Hari Upgrade jika nilainya 0. Jika deposit pertama diwajibkan, syaratnya harus terpenuhi sebelum pembelian.',
     'user_product_status_active' => 'Aktif',
     'user_product_status_expired' => 'Kedaluwarsa',
     'product_type_normal' => 'Normal',

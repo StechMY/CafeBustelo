@@ -13,6 +13,7 @@ class PointTransaction extends Model
 
     public const TYPE_UPGRADE_DAY_PURCHASE = 'upgrade_day_purchase';
     public const TYPE_INVITE_DAY_REGISTER = 'invite_day_register';
+    public const TYPE_INVITE_DAY_FIRST_PURCHASE = 'invite_day_first_purchase';
     public const TYPE_REDEEM_CASH = 'redeem_cash';
 
     protected $fillable = [

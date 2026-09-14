@@ -184,6 +184,10 @@
                         </div>
 
                         <div class="rounded-2xl bg-white/10 p-4">
+                            {{ __('points.invite_day_first_purchase_rule') }}
+                        </div>
+
+                        <div class="rounded-2xl bg-white/10 p-4">
                             {{ __('points.redeem_rule') }}
                         </div>
                     </div>

@@ -23,6 +23,7 @@ return [
     'how_to_get_points' => 'Cách nhận điểm',
     'upgrade_day_rule' => 'Mua bất kỳ sản phẩm nào trong ngày nâng cấp để nhận thêm điểm.',
     'invite_day_rule' => 'Mời thành viên mới đăng ký trong ngày mời bạn để nhận thêm điểm.',
+    'invite_day_first_purchase_rule' => 'Khi thành viên được mời đăng ký và mua sản phẩm lần đầu trong cùng một ngày mời bạn, người mời trực tiếp cũng nhận thêm điểm. Nếu yêu cầu nạp lần đầu, phải đáp ứng điều kiện trước khi mua.',
     'redeem_rule' => 'Điểm có thể được quy đổi vào ví có thể rút dựa trên tỷ lệ quy đổi.',
     'points_history' => 'Lịch sử điểm',
     'points_history_desc' => 'Xem tất cả lịch sử cộng và trừ điểm của bạn.',
@@ -31,6 +32,7 @@ return [
     'types' => [
         'upgrade_day_purchase' => 'Mua hàng ngày nâng cấp',
         'invite_day_register' => 'Đăng ký ngày mời bạn',
+        'invite_day_first_purchase' => 'Thưởng mua lần đầu ngày mời bạn',
         'redeem_cash' => 'Quy đổi tiền mặt',
     ],
     'exchange_all_points' => 'Đổi tất cả điểm',

@@ -27,6 +27,8 @@ return [
     'purchase_date' => 'Ngày mua',
     'purchase_price' => 'Giá mua',
     'extra_points' => 'Điểm bổ sung',
+    'extra_points_help' => 'Áp dụng cho mua hàng ngày nâng cấp và thưởng mua lần đầu ngày mời bạn. Giá trị 0 sử dụng số điểm ngày nâng cấp; vẫn phải đáp ứng điều kiện chương trình.',
+    'invite_day_first_purchase_help' => 'Người mời trực tiếp được thưởng thêm khi thành viên đăng ký và mua sản phẩm lần đầu trong cùng một ngày mời bạn. Ưu tiên điểm bổ sung của sản phẩm; nếu bằng 0 thì dùng số điểm ngày nâng cấp. Nếu yêu cầu nạp lần đầu, phải đáp ứng điều kiện trước khi mua.',
     'user_product_status_active' => 'Đang hoạt động',
     'user_product_status_expired' => 'Đã hết hạn',
     'product_type_normal' => 'Thông thường',

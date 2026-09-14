@@ -159,6 +159,86 @@ class PointService
         );
     }
 
+    public function giveInviteDayFirstPurchasePoints(User $user, UserProduct $userProduct): void
+    {
+        if (! $this->pointsEnabled()
+            || ! Setting::bool(self::SETTING_INVITE_DAY_ENABLED, false)
+            || ! $user->referrer_id) {
+            return;
+        }
+
+        $registeredAt = $user->created_at;
+        $purchasedAt = $userProduct->purchased_at;
+
+        if (! $registeredAt || ! $purchasedAt
+            || ! $registeredAt->isSameDay($purchasedAt)
+            || ! in_array((int) $purchasedAt->isoWeekday(), $this->settingWeekdays(self::SETTING_INVITE_DAY_WEEKDAYS, [4, 5]), true)) {
+            return;
+        }
+
+        // Deleted or expired purchases still consume the user's first purchase.
+        if (UserProduct::withTrashed()
+            ->where('user_id', $user->id)
+            ->whereKeyNot($userProduct->id)
+            ->exists()) {
+            return;
+        }
+
+        if (Setting::bool(self::SETTING_INVITE_DAY_REQUIRE_FIRST_DEPOSIT, false)) {
+            // Ledger order distinguishes approvals made within the same second.
+            $firstDeposit = $user->walletTransactions()
+                ->where('type', 'recharge_approved')
+                ->orderBy('id')
+                ->first();
+
+            if (! $firstDeposit
+                || (float) $firstDeposit->amount < Setting::decimal(self::SETTING_INVITE_DAY_FIRST_DEPOSIT_MIN_AMOUNT, 0)) {
+                return;
+            }
+        }
+
+        $productExtraPoints = (float) ($userProduct->extra_points_snapshot ?? 0);
+        $points = $productExtraPoints > 0
+            ? $productExtraPoints
+            : Setting::decimal(self::SETTING_UPGRADE_DAY_AMOUNT, 0);
+
+        if ($points <= 0) {
+            return;
+        }
+
+        $referrer = $user->referrer()->first();
+
+        if (! $referrer) {
+            return;
+        }
+
+        $alreadyGiven = PointTransaction::query()
+            ->where('user_id', $referrer->id)
+            ->where('type', PointTransaction::TYPE_INVITE_DAY_FIRST_PURCHASE)
+            ->where('reference_type', $user::class)
+            ->where('reference_id', $user->id)
+            ->exists();
+
+        if ($alreadyGiven) {
+            return;
+        }
+
+        $this->credit(
+            user: $referrer,
+            type: PointTransaction::TYPE_INVITE_DAY_FIRST_PURCHASE,
+            points: $points,
+            reference: $user,
+            remarks: 'Invite day first purchase reward',
+            meta: [
+                'new_user_id' => $user->id,
+                'user_product_id' => $userProduct->id,
+                'product_id' => $userProduct->product_id,
+                'registered_at' => $registeredAt->toDateTimeString(),
+                'purchased_at' => $purchasedAt->toDateTimeString(),
+            ],
+        );
+    }
+
     public function redeemToWithdrawableWallet(User $user, float $points): void
     {
         if (! $this->pointsEnabled()) {
