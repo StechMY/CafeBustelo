@@ -146,7 +146,7 @@ Success:
 }
 ```
 
-Invite-day points may be credited immediately during registration or later when the invited user's first recharge is approved, depending on the backend admin setting. Flutter should not assume the referrer receives invite-day points at registration time.
+Invite-day registration points are credited immediately when no first deposit is required. If it is required, the first recharge must meet the minimum and be approved on the same calendar date as registration, on an invite day in the application timezone. Approval on a later date never qualifies. Flutter should not assume the referrer receives invite-day points at registration time.
 
 ### Login
 
@@ -472,7 +472,7 @@ For QC168 automatic deposit:
 
 Flutter must not send a user ID and must never receive or store `QC168_OC_KEY`, `QC168_SECRET`, or `QC168_MERCHANT_UID`. The provider may return to the Laravel web status page; no custom mobile deep link is assumed.
 
-If the backend requires first-deposit qualification for invite-day points, the referrer can receive those points only when this user's first approved recharge meets the configured minimum. A first approved recharge below the minimum does not qualify later on a second recharge.
+If the backend requires first-deposit qualification for invite-day registration points, registration and the first recharge approval must occur on the same invite-day calendar date in the application timezone, and the recharge must meet the minimum. Use the approval date (`reviewed_at`), not the submission date. Approval on any later date, including another invite day, does not qualify. A first approved recharge below the minimum cannot qualify later through another recharge. A successful recharge still credits the wallet when the invitation reward is ineligible; previously issued points are not reversed by this rule change.
 
 ### Withdraw
 

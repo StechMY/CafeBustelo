@@ -18,12 +18,14 @@ use App\Services\PointService;
 use App\Services\RechargeApprovalService;
 use Illuminate\Http\Client\Request as ClientRequest;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\Sanctum;
 use PDO;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 class Qc168GatewayTest extends TestCase
@@ -482,8 +484,10 @@ class Qc168GatewayTest extends TestCase
         $this->assertSame('pending', $recharge->fresh()->status);
     }
 
-    public function test_gateway_completion_runs_first_deposit_invite_hook_once(): void
+    #[DataProvider('inviteDayApprovalDates')]
+    public function test_gateway_completion_runs_first_deposit_invite_hook_once(string $registeredAt, string $approvedAt, string $expectedPoints): void
     {
+        $this->travelTo(Carbon::parse($approvedAt));
         Setting::setValue(PointService::SETTING_POINTS_ENABLED, true);
         Setting::setValue(PointService::SETTING_INVITE_DAY_ENABLED, true);
         Setting::setValue(PointService::SETTING_INVITE_DAY_AMOUNT, 25);
@@ -494,7 +498,7 @@ class Qc168GatewayTest extends TestCase
         $user = $this->user('invite_depositor');
         $user->forceFill([
             'referrer_id' => $referrer->id,
-            'created_at' => '2026-08-27 10:00:00',
+            'created_at' => $registeredAt,
         ])->saveQuietly();
         $recharge = RechargeRequest::query()->create([
             'user_id' => $user->id,
@@ -511,12 +515,29 @@ class Qc168GatewayTest extends TestCase
         $this->sendCallback($payload)->assertOk();
         $this->sendCallback($payload)->assertOk();
 
-        $this->assertSame('25.00', $referrer->fresh()->points_balance);
-        $this->assertSame(1, PointTransaction::query()
+        $this->assertSame('approved', $recharge->fresh()->status);
+        $this->assertSame('1000.00', Wallet::query()->where('user_id', $user->id)->where('type', Wallet::TYPE_RECHARGE)->value('balance'));
+        $this->assertSame($expectedPoints, $referrer->fresh()->points_balance);
+        $this->assertSame($expectedPoints === '0.00' ? 0 : 1, PointTransaction::query()
             ->where('type', PointTransaction::TYPE_INVITE_DAY_REGISTER)
             ->where('reference_type', User::class)
             ->where('reference_id', $user->id)
             ->count());
+    }
+
+    public static function inviteDayApprovalDates(): array
+    {
+        return [
+            'same Thursday' => ['2026-09-10 09:00:00', '2026-09-10 10:00:00', '25.00'],
+            'same Friday before midnight' => ['2026-09-11 09:00:00', '2026-09-11 23:59:59', '25.00'],
+            'Thursday registration Monday approval' => ['2026-09-10 18:20:12', '2026-09-14 14:59:00', '0.00'],
+            'Friday registration Monday approval' => ['2026-09-11 22:19:54', '2026-09-14 20:48:43', '0.00'],
+            'Thursday registration Friday approval' => ['2026-09-10 09:00:00', '2026-09-11 10:00:00', '0.00'],
+            'crossing midnight between invite days' => ['2026-09-10 23:59:59', '2026-09-11 00:00:00', '0.00'],
+            'next Thursday' => ['2026-09-10 09:00:00', '2026-09-17 10:00:00', '0.00'],
+            'same non-invite day' => ['2026-09-14 09:00:00', '2026-09-14 10:00:00', '0.00'],
+            'Monday registration Thursday approval' => ['2026-09-14 09:00:00', '2026-09-17 10:00:00', '0.00'],
+        ];
     }
 
     public function test_non_completed_and_refund_callbacks_never_credit_or_debit_wallet(): void

@@ -3,9 +3,9 @@
 return [
     'end_date' => 'Ngày kết thúc',
     'invite_day_require_first_deposit' => 'Yêu cầu nạp lần đầu để nhận thưởng mời',
-    'invite_day_require_first_deposit_help' => 'Khi bật, người mời chỉ nhận điểm sau khi người được mời có lần nạp đầu tiên được duyệt.',
+    'invite_day_require_first_deposit_help' => 'Khi bật, người được mời phải đăng ký vào ngày mời bạn và lần nạp đầu tiên phải được duyệt trong cùng ngày, đạt số tiền tối thiểu. Các ngày hoặc lần nạp sau không đủ điều kiện nhận thưởng đăng ký.',
     'invite_day_first_deposit_min_amount' => 'Số tiền nạp lần đầu tối thiểu',
-    'invite_day_first_deposit_min_amount_help' => 'Lần nạp đầu tiên được duyệt của người được mời phải đạt số tiền này thì người mời mới nhận được điểm.',
+    'invite_day_first_deposit_min_amount_help' => 'Lần nạp đầu tiên được duyệt trong ngày đăng ký phải đạt số tiền này. Lần nạp sau không thể bù cho lần nạp đầu chưa đạt mức tối thiểu để nhận thưởng.',
     'product_type_weekend_special' => 'Cuối tuần bùng nổ',
     'register_date' => 'Ngày đăng ký',
     'start_date' => 'Ngày bắt đầu',

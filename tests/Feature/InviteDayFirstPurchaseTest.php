@@ -8,6 +8,7 @@ use App\Models\Setting;
 use App\Models\User;
 use App\Models\UserProduct;
 use App\Models\Wallet;
+use App\Services\InviteDayBonusService;
 use App\Services\PointService;
 use App\Services\ProductPurchaseService;
 use App\Services\RechargeApprovalService;
@@ -219,6 +220,50 @@ class InviteDayFirstPurchaseTest extends TestCase
 
         $this->assertEquals(20, $referrer->fresh()->points_balance);
         $this->assertDatabaseMissing('point_transactions', ['type' => 'invite_day_first_purchase']);
+    }
+
+    public function test_cross_day_manual_deposit_cannot_be_rewarded_by_a_later_recharge_or_purchase(): void
+    {
+        Setting::setValue(PointService::SETTING_INVITE_DAY_REQUIRE_FIRST_DEPOSIT, true);
+        Setting::setValue(PointService::SETTING_INVITE_DAY_FIRST_DEPOSIT_MIN_AMOUNT, 100);
+        [$referrer, $user] = $this->invitedUser('2026-09-11 22:19:54');
+        $this->travelTo(Carbon::parse('2026-09-14 20:48:43'));
+
+        app(RechargeApprovalService::class)->approve($this->deposit($user, 100, 'pending'), null);
+        $this->assertEquals(0, $referrer->fresh()->points_balance);
+
+        $this->travelTo(Carbon::parse('2026-09-17 10:00:00'));
+        app(RechargeApprovalService::class)->approve($this->deposit($user, 200, 'pending'), null);
+        app(ProductPurchaseService::class)->purchase($user, $this->product(30));
+
+        $this->assertEquals(0, $referrer->fresh()->points_balance);
+        $this->assertDatabaseCount('point_transactions', 0);
+    }
+
+    public function test_registration_reward_cannot_qualify_after_a_low_first_deposit(): void
+    {
+        Setting::setValue(PointService::SETTING_INVITE_DAY_REQUIRE_FIRST_DEPOSIT, true);
+        Setting::setValue(PointService::SETTING_INVITE_DAY_FIRST_DEPOSIT_MIN_AMOUNT, 100);
+        [$referrer, $user] = $this->invitedUser();
+
+        app(RechargeApprovalService::class)->approve($this->deposit($user, 99, 'pending'), null);
+        app(RechargeApprovalService::class)->approve($this->deposit($user, 100, 'pending'), null);
+
+        $this->assertEquals(0, $referrer->fresh()->points_balance);
+        $this->assertDatabaseCount('point_transactions', 0);
+    }
+
+    public function test_registration_reward_still_applies_without_a_deposit_when_requirement_is_disabled(): void
+    {
+        Setting::setValue(PointService::SETTING_INVITE_DAY_REQUIRE_FIRST_DEPOSIT, false);
+        [$referrer, $user] = $this->invitedUser();
+
+        $this->assertTrue(app(InviteDayBonusService::class)->shouldGiveOnRegistration());
+        app(PointService::class)->giveInviteDayRegisterPoints($referrer, $user);
+        app(PointService::class)->giveInviteDayRegisterPoints($referrer, $user);
+
+        $this->assertEquals(20, $referrer->fresh()->points_balance);
+        $this->assertDatabaseCount('point_transactions', 1);
     }
 
     public function test_failed_purchase_does_not_consume_first_purchase_eligibility(): void

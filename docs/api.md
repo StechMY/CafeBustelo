@@ -128,7 +128,7 @@ POST /api/v1/register
 }
 ```
 
-Verifies OTP purpose `register`, creates wallets, welcome bonus, login log, and returns a Sanctum token. Invite-day points are given on registration unless the admin setting requires a qualifying first approved recharge.
+Verifies OTP purpose `register`, creates wallets, welcome bonus, login log, and returns a Sanctum token. On an invite day, registration gives points immediately when no first deposit is required. Otherwise, the first recharge must meet the minimum and be approved on that same registration date.
 
 ### Login
 
@@ -218,7 +218,7 @@ The response contains `recharge_request` and `payment_url`. The client opens `pa
 
 Recharge request responses now include `deposit_method`, `approved`, `gateway_provider`, `merchant_order_id`, `gateway_status`, and (for a gateway request) `payment_url`. They never include `OC-Key`, the signing secret, or merchant UID.
 
-When the admin setting `invite_day_require_first_deposit` is enabled, approving the invited user's first recharge can give invite-day points to the referrer. The first approved recharge must be at least `invite_day_first_deposit_min_amount`; if the first approved recharge is below the minimum, later recharges do not trigger the invite-day bonus.
+When `invite_day_require_first_deposit` is enabled, the invited user's registration and first recharge approval must occur on the same calendar date in the application timezone, on a configured invite day, to give registration points to the referrer. The approval date is the recharge's `reviewed_at`, not its submission date. The first approved recharge must be at least `invite_day_first_deposit_min_amount`. Approval on another date (even another invite day), a first approved recharge below the minimum, or any later recharge cannot qualify. The recharge itself is still approved and credited normally when these reward conditions are not met. This rule does not reverse previously issued points.
 
 ### Withdraw
 

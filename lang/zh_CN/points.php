@@ -22,7 +22,7 @@ return [
     'cash_receive' => '可获得现金',
     'how_to_get_points' => '如何获得积分',
     'upgrade_day_rule' => '在升级日购买任意产品即可获得额外积分。',
-    'invite_day_rule' => '在邀请日邀请新注册会员即可获得额外积分。',
+    'invite_day_rule' => '在邀请日邀请新会员注册可获积分；如要求首充，首笔充值须在注册当天审核通过并达到最低金额，跨日不补发。',
     'invite_day_first_purchase_rule' => '被邀请人在同一邀请日当天注册并完成首次购买，直接邀请人还可获得首购积分。如要求首充，首购前须达到首充门槛。',
     'redeem_rule' => '积分可根据后台设置的兑换比例兑换到提现钱包。',
     'points_history' => '积分记录',

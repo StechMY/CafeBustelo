@@ -32,6 +32,12 @@ class InviteDayBonusService
             return;
         }
 
+        $approvedAt = $rechargeRequest->reviewed_at;
+
+        if (! $approvedAt || ! $user->created_at?->isSameDay($approvedAt)) {
+            return;
+        }
+
         $hasEarlierApprovedRecharge = RechargeRequest::query()
             ->where('user_id', $user->id)
             ->where('status', 'approved')
