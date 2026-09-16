@@ -288,8 +288,9 @@
                         $isWithinAvailablePeriod = $product->isWithinAvailablePeriod();
                         $hasStock = $product->hasStock();
                         $isPurchasableNow = $product->isPurchasableNow();
+                        $meetsVipLevelRequirement = $product->meetsVipLevelRequirement($user);
 
-                        $canPurchase = $canAfford && !$limitReached && $isPurchasableNow;
+                        $canPurchase = $canAfford && !$limitReached && $isPurchasableNow && $meetsVipLevelRequirement;
 
                         $remainingStock =
                             $product->stock_quantity === null
@@ -470,6 +471,12 @@
                             </div>
 
                             <div class="mt-2 grid grid-cols-1 gap-1.5">
+                                @if ($product->min_vip_level !== null)
+                                    <p class="text-[9px] font-bold text-[#003b7a] sm:text-xs">
+                                        {{ __('products.vip_level_required', ['level' => $product->min_vip_level]) }}
+                                    </p>
+                                @endif
+
                                 <button
                                         type="button"
                                         class="w-full rounded-lg border border-[#003b7a]/15 bg-white px-2 py-1.5 text-[9px] font-black text-[#003b7a] sm:rounded-xl sm:px-2.5 sm:py-2 sm:text-[11px]"
@@ -529,7 +536,9 @@
                                         {{ $canPurchase
                                             ? 'bg-[#e4003a] text-white hover:-translate-y-0.5 hover:bg-[#c90032]'
                                             : 'cursor-not-allowed bg-gray-200 text-gray-500' }}">
-                                        @if ($limitReached)
+                                        @if (!$meetsVipLevelRequirement)
+                                            {{ __('products.vip_level_insufficient') }}
+                                        @elseif ($limitReached)
                                             {{ __('products.purchase_limit_reached') }}
                                         @elseif (!$isPurchasableNow)
                                             {{ __('products.not_available_now') }}

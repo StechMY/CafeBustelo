@@ -1,6 +1,9 @@
 <?php
 
 return [
+    'min_vip_level' => 'Minimum Purchase Level',
+    'min_vip_level_help' => 'Members at this VIP level or higher can purchase. Leave empty for no level restriction.',
+    'no_vip_level_requirement' => 'No level restriction',
     '1_b_2_c_3_d' => '1 = B, 2 = C, 3 = D',
     'account_information' => 'Account Information',
     'account_name' => 'Account Name',

@@ -1,6 +1,8 @@
 <?php
 
 return [
+    'vip_level_required' => 'LV:level or higher is required to purchase this product.',
+    'vip_level_insufficient' => 'VIP level too low',
     'products' => 'Products',
     'product' => 'Product',
     'product_center' => 'Product Center',

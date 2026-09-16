@@ -1,6 +1,9 @@
 <?php
 
 return [
+    'min_vip_level' => 'Cấp tối thiểu để mua',
+    'min_vip_level_help' => 'Thành viên đạt cấp VIP này trở lên mới có thể mua. Để trống nếu không giới hạn cấp.',
+    'no_vip_level_requirement' => 'Không giới hạn cấp',
     'end_date' => 'Ngày kết thúc',
     'invite_day_require_first_deposit' => 'Yêu cầu nạp lần đầu để nhận thưởng mời',
     'invite_day_require_first_deposit_help' => 'Khi bật, người được mời phải đăng ký vào ngày mời bạn và lần nạp đầu tiên phải được duyệt trong cùng ngày, đạt số tiền tối thiểu. Các ngày hoặc lần nạp sau không đủ điều kiện nhận thưởng đăng ký.',

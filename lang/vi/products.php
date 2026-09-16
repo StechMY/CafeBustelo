@@ -1,6 +1,8 @@
 <?php
 
 return [
+    'vip_level_required' => 'Cần đạt LV:level trở lên để mua sản phẩm này.',
+    'vip_level_insufficient' => 'Chưa đủ cấp VIP',
     'products' => 'Sản phẩm',
     'product' => 'Sản phẩm',
     'product_center' => 'Trung tâm sản phẩm',

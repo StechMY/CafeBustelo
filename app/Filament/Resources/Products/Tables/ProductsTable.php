@@ -46,6 +46,12 @@ class ProductsTable
                     ->label(__('filament.max_purchase_per_user'))
                     ->sortable(),
 
+                TextColumn::make('min_vip_level')
+                    ->label(__('filament.min_vip_level'))
+                    ->formatStateUsing(fn($state): string => 'LV' . $state . '+')
+                    ->placeholder(__('filament.no_vip_level_requirement'))
+                    ->sortable(),
+
                 TextColumn::make('daily_income')
                     ->label(__('filament.daily'))
                     ->prefix(config('app.currency') . " ")

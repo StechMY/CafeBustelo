@@ -1,6 +1,8 @@
 <?php
 
 return [
+    'vip_level_required' => 'LV:level 及以上才可购买此产品。',
+    'vip_level_insufficient' => 'VIP 等级不足',
     'products' => '产品',
     'product' => '产品',
     'product_center' => '产品中心',

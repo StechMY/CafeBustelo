@@ -128,6 +128,7 @@ class ApiFormatter
         $maxPurchase = $product->maxPurchasePerUser();
         $limitReached = $purchaseCount >= $maxPurchase;
         $isPurchasableNow = $product->isPurchasableNow();
+        $meetsVipLevelRequirement = $product->meetsVipLevelRequirement($user);
 
         return [
             'id' => (int) $product->id,
@@ -163,10 +164,12 @@ class ApiFormatter
             'is_purchasable_now' => $isPurchasableNow,
             'user_purchase_count' => $purchaseCount,
             'max_purchase_per_user' => $maxPurchase,
+            'min_vip_level' => $product->min_vip_level,
+            'meets_vip_level_requirement' => $meetsVipLevelRequirement,
             'limit_reached' => $limitReached,
             'can_afford_recharge' => $rechargeBalance >= $price,
             'can_afford_withdrawable' => $withdrawableBalance >= $price,
-            'can_purchase' => $isPurchasableNow && ! $limitReached && (bool) $user?->canOrder(),
+            'can_purchase' => $isPurchasableNow && ! $limitReached && $meetsVipLevelRequirement && (bool) $user?->canOrder(),
         ];
     }
 

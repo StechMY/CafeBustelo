@@ -44,6 +44,7 @@ class Product extends Model
         'upgrade_bonus',
         'invite_bonus',
         'max_purchase_per_user',
+        'min_vip_level',
         'status',
         'sort_order',
         'meta',
@@ -59,6 +60,7 @@ class Product extends Model
             'duration_days' => 'integer',
             'sort_order' => 'integer',
             'max_purchase_per_user' => 'integer',
+            'min_vip_level' => 'integer',
             'available_days' => 'array',
             'available_from' => 'datetime',
             'available_until' => 'datetime',
@@ -136,6 +138,12 @@ class Product extends Model
     public function effectiveClaimIntervalHours(): int
     {
         return max(1, (int) ($this->claim_interval_hours ?: 24));
+    }
+
+    public function meetsVipLevelRequirement(?User $user): bool
+    {
+        return $this->min_vip_level === null
+            || ($user !== null && $user->current_vip_level_number >= $this->min_vip_level);
     }
 
     public function effectiveTotalClaims(): int

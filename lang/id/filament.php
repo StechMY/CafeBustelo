@@ -1,6 +1,9 @@
 <?php
 
 return [
+    'min_vip_level' => 'Level Minimum Pembelian',
+    'min_vip_level_help' => 'Anggota dengan level VIP ini atau lebih tinggi dapat membeli. Kosongkan jika tidak ada batasan level.',
+    'no_vip_level_requirement' => 'Tanpa batasan level',
     'end_date' => 'Tanggal Akhir',
     'invite_day_require_first_deposit' => 'Wajib deposit pertama untuk bonus undangan',
     'invite_day_require_first_deposit_help' => 'Jika diaktifkan, pengguna yang diundang harus mendaftar pada hari undangan dan deposit pertamanya harus disetujui pada tanggal yang sama serta mencapai jumlah minimum. Tanggal atau deposit berikutnya tidak memenuhi syarat hadiah pendaftaran.',

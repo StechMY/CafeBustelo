@@ -53,6 +53,12 @@ class ProductPurchaseService
                 throw new RuntimeException(__('products.product_not_available_now'));
             }
 
+            if (! $lockedProduct->meetsVipLevelRequirement($user)) {
+                throw new RuntimeException(__('products.vip_level_required', [
+                    'level' => $lockedProduct->min_vip_level,
+                ]));
+            }
+
             $purchasedCount = UserProduct::query()
                 ->where('user_id', $user->id)
                 ->where('product_id', $lockedProduct->id)

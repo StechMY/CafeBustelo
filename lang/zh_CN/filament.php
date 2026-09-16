@@ -1,6 +1,9 @@
 <?php
 
 return [
+    'min_vip_level' => '最低购买等级',
+    'min_vip_level_help' => '达到此 VIP 等级或以上的会员才可购买。留空表示不限制等级。',
+    'no_vip_level_requirement' => '不限等级',
     '1_b_2_c_3_d' => '1 = B，2 = C，3 = D',
     'account_information' => '账户信息',
     'account_name' => '账户名',

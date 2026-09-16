@@ -64,6 +64,11 @@ class ProductInfolist
                                 TextEntry::make('max_purchase_per_user')
                                     ->label(__('filament.max_purchase_per_user')),
 
+                                TextEntry::make('min_vip_level')
+                                    ->label(__('filament.min_vip_level'))
+                                    ->formatStateUsing(fn($state): string => 'LV' . $state . '+')
+                                    ->placeholder(__('filament.no_vip_level_requirement')),
+
                                 TextEntry::make('daily_income')
                                     ->label(__('filament.daily_income'))
                                     ->prefix(config('app.currency') . " "),

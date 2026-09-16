@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Products\Schemas;
 
 use App\Models\Product;
+use App\Models\VipLevel;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\FileUpload;
@@ -148,6 +149,16 @@ class ProductForm
                                     ->disabled()
                                     ->dehydrated(false)
                                     ->helperText(__('filament.sold_quantity_help')),
+
+                                Select::make('min_vip_level')
+                                    ->label(__('filament.min_vip_level'))
+                                    ->options(fn() => VipLevel::query()->orderBy('level')->pluck('name', 'level'))
+                                    ->placeholder(__('filament.no_vip_level_requirement'))
+                                    ->nullable()
+                                    ->rules(['integer', 'min:1'])
+                                    ->exists('vip_levels', 'level')
+                                    ->native(false)
+                                    ->helperText(__('filament.min_vip_level_help')),
                             ]),
                     ]),
 
