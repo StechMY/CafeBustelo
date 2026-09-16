@@ -750,10 +750,6 @@
                                         <div style="font-weight:900; color:#003b7a;">${button.dataset.days}</div>
                                     </div>
 
-                                    <div style="border-radius:14px; background:#fff8c7; padding:12px;">
-                                        <div style="font-size:11px; font-weight:900; color:#6b7280;">{{ __('filament.stock') }}</div>
-                                        <div style="font-weight:900; color:#003b7a;">${button.dataset.stock}</div>
-                                    </div>
                                 </div>
 
                                 <div style="border-radius:14px; border:2px dashed rgba(0,59,122,.2); padding:12px;">
