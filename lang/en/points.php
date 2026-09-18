@@ -23,7 +23,7 @@ return [
     'how_to_get_points' => 'How to Get Points',
     'upgrade_day_rule' => 'Buy any product during upgrade day to receive extra points.',
     'invite_day_rule' => 'Invite a new member to register on an invite day to earn points. If a first deposit is required, it must meet the minimum and be approved on the registration date. Later dates do not qualify.',
-    'invite_day_first_purchase_rule' => 'When an invited member registers and makes their first product purchase on the same invite day, their direct inviter also earns points. Any required first deposit must qualify before purchase.',
+    'invite_day_first_purchase_rule' => 'When an invited member makes their first product purchase on an invite day in their registration week (Monday to Sunday), their direct inviter earns points. Registration and purchase can be on different days. Each invited member can trigger this reward once. Any required first deposit must qualify before purchase.',
     'redeem_rule' => 'Points can be redeemed into your withdrawable wallet based on the exchange rate.',
     'points_history' => 'Points History',
     'points_history_desc' => 'View all your points credit and debit records.',

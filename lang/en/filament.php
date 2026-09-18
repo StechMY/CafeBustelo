@@ -513,7 +513,7 @@ return [
     'upgrade_day_points_enabled' => 'Enable Upgrade Day Points',
     'upgrade_day_points_amount' => 'Upgrade Day Points Amount',
     'invite_day_points_enabled' => 'Enable Invite Day Points',
-    'invite_day_first_purchase_help' => 'Also rewards the direct inviter when a member registers and makes their first product purchase on the same invite day. Uses product extra points, or the Upgrade Day amount when extra points are 0. Any required first deposit must qualify before purchase.',
+    'invite_day_first_purchase_help' => 'Rewards the direct inviter when a member makes their first product purchase on an invite day in their registration week (Monday to Sunday). Registration and purchase can be on different days. Uses product extra points, or the Upgrade Day amount when extra points are 0. Any required first deposit must qualify before purchase.',
     'invite_day_points_amount' => 'Invite Day Points Amount',
     'invite_day_require_first_deposit' => 'Require first deposit for invite bonus',
     'invite_day_require_first_deposit_help' => 'When enabled, the invited user must register on an invite day and have their first deposit approved on that same date, meeting the minimum. Later dates or deposits cannot qualify for the registration reward.',

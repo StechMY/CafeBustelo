@@ -171,7 +171,7 @@ class PointService
         $purchasedAt = $userProduct->purchased_at;
 
         if (! $registeredAt || ! $purchasedAt
-            || ! $registeredAt->isSameDay($purchasedAt)
+            || ! $registeredAt->isSameWeek($purchasedAt)
             || ! in_array((int) $purchasedAt->isoWeekday(), $this->settingWeekdays(self::SETTING_INVITE_DAY_WEEKDAYS, [4, 5]), true)) {
             return;
         }
