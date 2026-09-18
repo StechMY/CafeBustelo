@@ -23,7 +23,7 @@ return [
     'how_to_get_points' => 'Cara Mendapatkan Poin',
     'upgrade_day_rule' => 'Beli produk apa pun pada hari upgrade untuk mendapatkan poin tambahan.',
     'invite_day_rule' => 'Undang anggota baru untuk mendaftar pada hari undangan agar mendapat poin. Jika deposit pertama diwajibkan, jumlahnya harus mencapai minimum dan disetujui pada tanggal pendaftaran. Tanggal berikutnya tidak memenuhi syarat.',
-    'invite_day_first_purchase_rule' => 'Jika anggota yang diundang melakukan pembelian produk pertama pada hari undangan dalam minggu pendaftaran (Senin sampai Minggu), pengundang langsung mendapat poin. Pendaftaran dan pembelian tidak harus pada hari yang sama. Setiap anggota yang diundang hanya dapat memicu hadiah ini sekali. Jika deposit pertama diwajibkan, syaratnya harus terpenuhi sebelum pembelian.',
+    'invite_day_first_purchase_rule' => 'Jika anggota yang diundang mendaftar dan melakukan pembelian produk pertama pada hari undangan yang sama, pengundang langsung juga mendapat poin. Jika deposit pertama diwajibkan, syaratnya harus terpenuhi sebelum pembelian.',
     'redeem_rule' => 'Poin dapat ditukar ke dompet penarikan berdasarkan kurs penukaran.',
     'points_history' => 'Riwayat Poin',
     'points_history_desc' => 'Lihat semua catatan penambahan dan pengurangan poin Anda.',

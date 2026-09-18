@@ -514,7 +514,7 @@ return [
     'upgrade_day_points_enabled' => '开启升级日积分',
     'upgrade_day_points_amount' => '升级日积分数量',
     'invite_day_points_enabled' => '开启邀请日积分',
-    'invite_day_first_purchase_help' => '会员在注册当周（周一至周日）的邀请日完成首次购买，直接邀请人可获得奖励，无须同一天注册与购买。分数优先使用产品额外积分，填 0 时使用升级日积分数量；如要求首充，首购前必须满足首充门槛。',
+    'invite_day_first_purchase_help' => '同一邀请日当天注册并完成首次购买，还会奖励直接邀请人。分数优先使用产品额外积分，填 0 时使用升级日积分数量；如要求首充，首购前必须满足首充门槛。',
     'invite_day_points_amount' => '邀请日积分数量',
     'invite_day_require_first_deposit' => '邀请奖励需首充',
     'invite_day_require_first_deposit_help' => '开启后，被邀请人须在邀请日当天注册，且首笔充值须在同一天审核通过并达到最低金额，邀请人才获得注册奖励。跨日或后续充值不补发。',

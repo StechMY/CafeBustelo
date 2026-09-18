@@ -175,7 +175,7 @@ Uses `ProductPurchaseService`. Backend validates product status, order status, p
 A successful first product purchase can additionally credit the buyer's direct referrer with `invite_day_first_purchase` points:
 
 - `points_enabled` and `invite_day_points_enabled` must be enabled. This reward does not require the Upgrade Day switch or weekdays.
-- Registration and the first successful product purchase must be in the same calendar week (Monday to Sunday) in the application timezone. Only the purchase date must be in `invite_day_points_weekdays`; registration can be on the purchase date or any earlier day of that week. This is not a rolling seven-day window. There is no registration cutoff for existing accounts, but they must still meet this same-week condition.
+- Registration and the first successful product purchase must be on the same calendar date in the application timezone, and that date must be in `invite_day_points_weekdays`. There is no registration cutoff for existing accounts, but they must still meet this same-date condition.
 - The reward uses `extra_points_snapshot` when positive, otherwise `upgrade_day_points_amount`; the amounts are not added together.
 - When `invite_day_require_first_deposit` is enabled, the first approved recharge (in approval order) must already meet `invite_day_first_deposit_min_amount` when the first purchase succeeds. Pending/rejected deposits do not qualify; a later recharge or purchase does not retry this first-purchase reward.
 - The first purchase is across all products and payment wallets, including expired or soft-deleted purchases. A failed purchase does not consume eligibility.

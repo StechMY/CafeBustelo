@@ -84,13 +84,8 @@ class InviteDayFirstPurchaseTest extends TestCase
             'Friday product override does not add default' => ['2026-09-18 09:00', '2026-09-18 23:59:59', 30, [], 30],
             'smaller product override still wins' => ['2026-09-17 09:00', '2026-09-17 10:00', 3, [], 3],
             'Thursday registration Monday purchase' => ['2026-09-17 09:00', '2026-09-21 10:00', 30, [], 0],
-            'Monday registration Thursday purchase' => ['2026-09-14 09:00', '2026-09-17 10:00', 30, [], 30],
-            'crossing midnight between invitation days' => ['2026-09-17 23:59:59', '2026-09-18 00:00:00', 30, [], 30],
-            'Monday midnight starts the eligible week' => ['2026-09-14 00:00:00', '2026-09-17 10:00', 0, [], 10],
-            'previous Sunday is ineligible even within seven days' => ['2026-09-13 23:59:59', '2026-09-17 10:00', 30, [], 0],
-            'Sunday invite day belongs to the same week' => ['2026-09-14 09:00', '2026-09-20 23:59:59', 30, [PointService::SETTING_INVITE_DAY_WEEKDAYS => '[7]'], 30],
-            'Monday invite day starts a new week' => ['2026-09-20 23:59:59', '2026-09-21 00:00:00', 30, [PointService::SETTING_INVITE_DAY_WEEKDAYS => '[1]'], 0],
-            'same week can cross the calendar year' => ['2026-12-28 09:00', '2027-01-01 10:00', 30, [], 30],
+            'Monday registration Thursday purchase' => ['2026-09-14 09:00', '2026-09-17 10:00', 30, [], 0],
+            'crossing midnight between invitation days' => ['2026-09-17 23:59:59', '2026-09-18 00:00:00', 30, [], 0],
             'next week is ineligible' => ['2026-09-17 09:00', '2026-09-24 10:00', 30, [], 0],
             'same day outside invitation weekdays' => ['2026-09-14 09:00', '2026-09-14 10:00', 30, [], 0],
             'configured weekdays apply' => ['2026-09-14 09:00', '2026-09-14 10:00', 0, [PointService::SETTING_INVITE_DAY_WEEKDAYS => '[1]'], 10],
@@ -107,7 +102,7 @@ class InviteDayFirstPurchaseTest extends TestCase
         Setting::setValue(PointService::SETTING_INVITE_DAY_REQUIRE_FIRST_DEPOSIT, true);
         Setting::setValue(PointService::SETTING_INVITE_DAY_FIRST_DEPOSIT_MIN_AMOUNT, 100);
         Setting::setValue(PointService::SETTING_INVITE_DAY_AMOUNT, 0);
-        [$referrer, $user] = $this->invitedUser('2026-09-14 09:00:00');
+        [$referrer, $user] = $this->invitedUser();
         $approvals = [];
 
         foreach ($deposits as [$amount, $status, $reviewedAt]) {
@@ -170,7 +165,6 @@ class InviteDayFirstPurchaseTest extends TestCase
         app(RechargeApprovalService::class)->approve($this->deposit($user, 100, 'pending'), null);
         $this->assertEquals(20, $referrer->fresh()->points_balance);
 
-        Carbon::setTestNow(Carbon::parse('2026-09-18 10:00:00'));
         Sanctum::actingAs($user);
         $product = $this->product(30);
         $this->postJson("/api/v1/products/{$product->id}/purchase", ['wallet_type' => Wallet::TYPE_RECHARGE])->assertCreated();
@@ -197,20 +191,7 @@ class InviteDayFirstPurchaseTest extends TestCase
         $this->actingAs($referrer->fresh(), 'web')->withSession(['locale' => 'en'])->get('/points')
             ->assertOk()
             ->assertSee('Invite Day First Purchase Reward')
-            ->assertSee('When an invited member makes their first product purchase on an invite day in their registration week (Monday to Sunday)');
-    }
-
-    public function test_first_purchase_before_invite_day_cannot_earn_a_reward_on_a_later_purchase(): void
-    {
-        [$referrer, $user] = $this->invitedUser('2026-09-14 09:00:00');
-        Carbon::setTestNow(Carbon::parse('2026-09-14 10:00:00'));
-        app(ProductPurchaseService::class)->purchase($user, $this->product(30));
-
-        Carbon::setTestNow(Carbon::parse('2026-09-17 10:00:00'));
-        app(ProductPurchaseService::class)->purchase($user, $this->product(50));
-
-        $this->assertEquals(0, $referrer->fresh()->points_balance);
-        $this->assertDatabaseCount('point_transactions', 0);
+            ->assertSee('When an invited member registers and makes their first product purchase on the same invite day');
     }
 
     public function test_ineligible_first_purchase_cannot_be_replaced_by_a_later_product_or_deleted_order(): void
@@ -257,6 +238,41 @@ class InviteDayFirstPurchaseTest extends TestCase
 
         $this->assertEquals(0, $referrer->fresh()->points_balance);
         $this->assertDatabaseCount('point_transactions', 0);
+    }
+
+    #[DataProvider('sameDayRechargeRules')]
+    public function test_required_first_recharge_must_be_approved_on_the_registration_invite_day(
+        string $registeredAt,
+        string $approvedAt,
+        bool $eligible,
+    ): void {
+        Setting::setValue(PointService::SETTING_INVITE_DAY_REQUIRE_FIRST_DEPOSIT, true);
+        Setting::setValue(PointService::SETTING_INVITE_DAY_FIRST_DEPOSIT_MIN_AMOUNT, 100);
+        [$referrer, $user] = $this->invitedUser($registeredAt);
+
+        $this->assertFalse(app(InviteDayBonusService::class)->shouldGiveOnRegistration());
+
+        Carbon::setTestNow(Carbon::parse($approvedAt));
+        $recharge = app(RechargeApprovalService::class)->approve($this->deposit($user, 100, 'pending'), null);
+        app(InviteDayBonusService::class)->handleApprovedRecharge($recharge);
+
+        $this->assertEquals($eligible ? 20 : 0, $referrer->fresh()->points_balance);
+        $this->assertDatabaseCount('point_transactions', $eligible ? 1 : 0);
+
+        app(ProductPurchaseService::class)->purchase($user, $this->product(30));
+
+        $this->assertEquals($eligible ? 50 : 0, $referrer->fresh()->points_balance);
+        $this->assertDatabaseCount('point_transactions', $eligible ? 2 : 0);
+    }
+
+    public static function sameDayRechargeRules(): array
+    {
+        return [
+            'same invite day qualifies' => ['2026-09-17 09:00:00', '2026-09-17 10:00:00', true],
+            'crossing midnight does not qualify' => ['2026-09-17 23:59:59', '2026-09-18 00:00:00', false],
+            'next invite day in the same week does not qualify' => ['2026-09-17 09:00:00', '2026-09-18 10:00:00', false],
+            'same date outside invite days does not qualify' => ['2026-09-14 09:00:00', '2026-09-14 10:00:00', false],
+        ];
     }
 
     public function test_registration_reward_cannot_qualify_after_a_low_first_deposit(): void
