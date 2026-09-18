@@ -77,7 +77,7 @@ class DailyIncomeClaimBoundaryTest extends TestCase
 
         $pointService = Mockery::mock(PointService::class);
         $pointService->shouldReceive('giveUpgradeDayPurchasePoints')->once();
-        $pointService->shouldReceive('giveInviteDayFirstPurchasePoints')->once();
+        $pointService->shouldReceive('giveInviteDayFirstPurchasePoints')->never();
 
         $userProduct = (new ProductPurchaseService($walletService, $pointService))
             ->purchase($user, $product);

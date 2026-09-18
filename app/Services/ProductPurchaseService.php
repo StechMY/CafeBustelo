@@ -124,7 +124,8 @@ class ProductPurchaseService
             }
 
             $this->pointService->giveUpgradeDayPurchasePoints($user, $userProduct);
-            $this->pointService->giveInviteDayFirstPurchasePoints($user, $userProduct);
+            // Temporarily disabled: first-purchase points for the direct inviter.
+            // $this->pointService->giveInviteDayFirstPurchasePoints($user, $userProduct);
 
             if ($user->status !== 'active') {
                 $user->forceFill([

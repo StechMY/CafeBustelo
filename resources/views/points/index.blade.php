@@ -183,9 +183,11 @@
                             {{ __('points.invite_day_rule') }}
                         </div>
 
+                        {{-- First-purchase points for the direct inviter are temporarily disabled.
                         <div class="rounded-2xl bg-white/10 p-4">
                             {{ __('points.invite_day_first_purchase_rule') }}
                         </div>
+                        --}}
 
                         <div class="rounded-2xl bg-white/10 p-4">
                             {{ __('points.redeem_rule') }}

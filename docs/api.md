@@ -172,7 +172,7 @@ POST /api/v1/products/1/purchase
 
 Uses `ProductPurchaseService`. Backend validates product status, order status, purchase window, stock, purchase limit, and wallet balance.
 
-A successful first product purchase can additionally credit the buyer's direct referrer with `invite_day_first_purchase` points:
+The `invite_day_first_purchase` reward is temporarily disabled: product purchases do not award these points to the direct referrer. Invitation registration/first-deposit rewards and the buyer's Upgrade Day points remain active under their existing settings. The retained rules below apply only if the first-purchase reward is re-enabled:
 
 - `points_enabled` and `invite_day_points_enabled` must be enabled. This reward does not require the Upgrade Day switch or weekdays.
 - Registration and the first successful product purchase must be on the same calendar date in the application timezone, and that date must be in `invite_day_points_weekdays`. There is no registration cutoff for existing accounts, but they must still meet this same-date condition.
@@ -181,7 +181,7 @@ A successful first product purchase can additionally credit the buyer's direct r
 - The first purchase is across all products and payment wallets, including expired or soft-deleted purchases. A failed purchase does not consume eligibility.
 - Each invited user can trigger this reward once. It is separate from the existing invitation registration/first-deposit reward and the buyer's own Upgrade Day points. No historical rewards are backfilled.
 
-`GET /api/v1/points` includes the new transaction type. Its reference is the invited `User`; `meta` includes `new_user_id`, `user_product_id`, `product_id`, `registered_at`, and `purchased_at`.
+`GET /api/v1/points` can still include historical transactions of this type. Its reference is the invited `User`; `meta` includes `new_user_id`, `user_product_id`, `product_id`, `registered_at`, and `purchased_at`.
 
 ### Claim Product Income
 

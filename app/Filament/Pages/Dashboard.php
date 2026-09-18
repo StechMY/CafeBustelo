@@ -314,8 +314,8 @@ class Dashboard extends BaseDashboard
 
                     Toggle::make('invite_day_points_enabled')
                         ->label(__('filament.invite_day_points_enabled'))
-                        ->default(fn (): bool => Setting::bool(PointService::SETTING_INVITE_DAY_ENABLED, false))
-                        ->helperText(__('filament.invite_day_first_purchase_help')),
+                        ->default(fn (): bool => Setting::bool(PointService::SETTING_INVITE_DAY_ENABLED, false)),
+                        // ->helperText(__('filament.invite_day_first_purchase_help')),
 
                     TextInput::make('invite_day_points_amount')
                         ->label(__('filament.invite_day_points_amount'))

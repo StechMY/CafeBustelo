@@ -403,11 +403,11 @@ Each product includes `type`, `type_label`, `product_type`, `product_type_label`
 
 After success, refresh dashboard, wallet, products, and user-products.
 
-The purchase can also give the buyer's direct inviter a separate `invite_day_first_purchase` points transaction. Registration and the first successful purchase must occur on the same calendar date in the application timezone, on a configured invite day. Points and Invite Day must be enabled; the Upgrade Day switch is not required. The amount is the product's purchase-time extra points when positive, otherwise the Upgrade Day default amount, without adding the two.
+The `invite_day_first_purchase` reward is temporarily disabled. Product purchases no longer award these points to the direct inviter; hide the first-purchase reward promotion. Existing invitation registration/first-deposit rewards and the buyer's Upgrade Day points retain their existing settings. The rules in this and the following paragraph are retained for possible re-enabling: registration and the first successful purchase must occur on the same calendar date in the application timezone, on a configured invite day. Points and Invite Day must be enabled; the Upgrade Day switch is not required. The amount is the product's purchase-time extra points when positive, otherwise the Upgrade Day default amount, without adding the two.
 
 If first-deposit qualification is required, the first approved deposit must already meet the minimum before purchase. Later deposits or purchases do not retry this reward. All earlier successful product purchases, including expired or soft-deleted ones, count against first-purchase eligibility. Existing accounts have no rollout cutoff but must meet the same-day rule; there is no historical backfill. Existing invitation registration/first-deposit rewards remain separate.
 
-Render `invite_day_first_purchase` as an Invite Day First Purchase Reward in points history. Its `meta` contains `new_user_id`, `user_product_id`, `product_id`, `registered_at`, and `purchased_at`. Flutter should use the backend points balance and transactions instead of calculating this reward locally.
+Continue rendering historical `invite_day_first_purchase` transactions as an Invite Day First Purchase Reward in points history. Its `meta` contains `new_user_id`, `user_product_id`, `product_id`, `registered_at`, and `purchased_at`. Flutter should use the backend points balance and transactions instead of calculating this reward locally.
 
 `GET /api/v1/user-products`
 
