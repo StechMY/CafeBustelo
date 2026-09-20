@@ -22,10 +22,10 @@ Schedule::command('qc168:sync-pending-recharges')
     ->withoutOverlapping()
     ->runInBackground();
 
-Schedule::command('qc168:dispatch-approved-withdrawals')
-    ->everyMinute()
-    ->withoutOverlapping()
-    ->runInBackground();
+//Schedule::command('qc168:dispatch-approved-withdrawals')
+ //   ->everyMinute()
+ //   ->withoutOverlapping()
+//    ->runInBackground();
 
 Schedule::command('qc168:sync-pending-withdrawals')
     ->everyFiveMinutes()
