@@ -446,6 +446,67 @@ class WithdrawRequestsTable
             ])
 
             ->recordActions([
+                
+                                Action::make('cancel_schedule')
+                    ->label('Cancel Schedule')
+                    ->icon('heroicon-o-arrow-uturn-left')
+                    ->color('warning')
+                    ->visible(fn (WithdrawRequest $record): bool =>
+                        $record->status === WithdrawRequest::STATUS_APPROVED
+                        && $record->approval_mode === WithdrawRequest::APPROVAL_MODE_GATEWAY_SCHEDULED
+                        && $record->gateway_provider === WithdrawRequest::GATEWAY_QC168
+                        && $record->payout_status === WithdrawRequest::PAYOUT_WAITING_RELEASE
+                        && $record->gateway_release_at !== null
+                        && $record->gateway_submitted_at === null
+                        && $record->gateway_current_merchant_order_id === null
+                        && $record->gateway_payment_status === null
+                        && ! $record->hasGatewayCancellationLedger(usePreloadedState: true)
+                    )
+                    ->authorize(fn (WithdrawRequest $record): bool =>
+                        Gate::allows('cancelGateway', $record)
+                    )
+                    ->requiresConfirmation()
+                    ->modalHeading('Cancel scheduled withdrawal?')
+                    ->modalDescription(
+                        'This returns the withdrawal to Pending. Funds stay locked, '
+                        .'and it can be reviewed again. No request will be sent to the gateway by this action.'
+                    )
+                    ->form([
+                        Textarea::make('reason')
+                            ->label('Reason')
+                            ->required()
+                            ->maxLength(1000)
+                            ->rows(3),
+                    ])
+                    ->action(function (WithdrawRequest $record, array $data): void {
+                        abort_unless(Gate::allows('cancelGateway', $record), 403);
+
+                        try {
+                            app(WithdrawService::class)->cancelScheduledGateway(
+                                $record,
+                                Filament::auth()->user(),
+                                $data['reason'],
+                                request()->ip(),
+                            );
+
+                            $record->refresh();
+
+                            Notification::make()
+                                ->title('Schedule cancelled')
+                                ->body('Returned to Pending. Funds remain locked.')
+                                ->success()
+                                ->send();
+                        } catch (Throwable $exception) {
+                            report($exception);
+
+                            Notification::make()
+                                ->title('Unable to cancel schedule')
+                                ->body($exception->getMessage())
+                                ->danger()
+                                ->send();
+                        }
+                    }),
+                
                 /*
                 |--------------------------------------------------------------------------
                 | View

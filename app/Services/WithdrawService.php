@@ -606,4 +606,121 @@ class WithdrawService
     {
         return round($amount * ($feePercent / 100), 2);
     }
+    
+        public function cancelScheduledGateway(
+        WithdrawRequest $withdrawRequest,
+        AdminUser $adminUser,
+        string $reason,
+        ?string $ip = null,
+    ): WithdrawRequest {
+        $reason = trim($reason);
+
+        if ($reason === '' || mb_strlen($reason) > 1000) {
+            throw ValidationException::withMessages([
+                'reason' => 'Please enter a reason of 1 to 1000 characters.',
+            ]);
+        }
+
+        return DB::transaction(function () use (
+            $withdrawRequest, $adminUser, $reason, $ip
+        ): WithdrawRequest {
+            // The dispatcher locks this same row before claiming a payout.
+            $lockedRequest = WithdrawRequest::query()
+                ->whereKey($withdrawRequest->id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            Gate::forUser($adminUser)->authorize('cancelGateway', $lockedRequest);
+
+            if ($lockedRequest->status !== WithdrawRequest::STATUS_APPROVED
+                || $lockedRequest->approval_mode !== WithdrawRequest::APPROVAL_MODE_GATEWAY_SCHEDULED
+                || $lockedRequest->gateway_provider !== WithdrawRequest::GATEWAY_QC168
+                || $lockedRequest->payout_status !== WithdrawRequest::PAYOUT_WAITING_RELEASE
+                || $lockedRequest->gateway_release_at === null) {
+                throw new RuntimeException('This withdrawal is no longer waiting for scheduled release.');
+            }
+
+            // A missing submitted_at alone does not prove the request is unsent.
+            $submissionFields = [
+                'gateway_submitted_at',
+                'gateway_completed_at',
+                'gateway_last_callback_at',
+                'gateway_last_synced_at',
+                'gateway_current_merchant_order_id',
+                'gateway_payment_status',
+                'gateway_final_amount',
+            ];
+
+            foreach ($submissionFields as $field) {
+                if ($lockedRequest->getAttribute($field) !== null) {
+                    throw new RuntimeException('Gateway activity exists. The schedule cannot be cancelled.');
+                }
+            }
+
+            if ($lockedRequest->payoutAttempts()->exists()
+                || $lockedRequest->hasGatewayCancellationLedger()) {
+                throw new RuntimeException('A payout attempt or cancellation ledger already exists.');
+            }
+
+            $reset = [
+                'status' => WithdrawRequest::STATUS_PENDING,
+                'approval_mode' => null,
+                'reviewed_by' => null,
+                'reviewed_at' => null,
+                'admin_remark' => null,
+                'gateway_provider' => null,
+                'payout_status' => null,
+                'gateway_release_at' => null,
+                'gateway_release_delay_hours_snapshot' => null,
+                'gateway_submitted_at' => null,
+                'gateway_completed_at' => null,
+                'gateway_last_callback_at' => null,
+                'gateway_last_synced_at' => null,
+                'gateway_current_merchant_order_id' => null,
+                'gateway_payment_status' => null,
+                'gateway_final_amount' => null,
+                'gateway_fail_reason' => null,
+                'gateway_meta' => null,
+            ];
+
+            $before = array_intersect_key($lockedRequest->getRawOriginal(), $reset);
+
+            // Deliberate, narrowly guarded reset. Query updates bypass model
+            // events, so keep the model's normal approval_mode guard unchanged.
+            $updated = WithdrawRequest::query()
+                ->whereKey($lockedRequest->id)
+                ->where('status', WithdrawRequest::STATUS_APPROVED)
+                ->where('approval_mode', WithdrawRequest::APPROVAL_MODE_GATEWAY_SCHEDULED)
+                ->where('gateway_provider', WithdrawRequest::GATEWAY_QC168)
+                ->where('payout_status', WithdrawRequest::PAYOUT_WAITING_RELEASE)
+                ->whereNotNull('gateway_release_at')
+                ->whereNull($submissionFields)
+                ->whereDoesntHave('payoutAttempts')
+                ->whereDoesntHave('gatewayCancellationTransactions')
+                ->update($reset);
+
+            if ($updated !== 1) {
+                throw new RuntimeException('The withdrawal changed. Refresh the page and check its status.');
+            }
+
+            $lockedRequest->refresh();
+
+            // Preserve approval history without creating any wallet transaction.
+            $this->eventRecorder->recordWithdrawal(
+                'withdrawal.gateway_schedule_cancelled',
+                $lockedRequest,
+                actor: $adminUser,
+                source: 'filament',
+                reason: $reason,
+                paymentStatus: WithdrawRequest::STATUS_PENDING,
+                payload: [
+                    'ip' => $ip,
+                    'before' => $before,
+                    'after' => $reset,
+                ],
+            );
+
+            return $lockedRequest;
+        }, 3);
+    }
 }
