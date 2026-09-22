@@ -1,6 +1,8 @@
 <?php
 
 return [
+    'daily_limit' => 'Daily Limit',
+    'daily_limit_help' => 'Total purchases per product across all users each day. Leave empty for no daily limit. Resets at midnight in the system time zone.',
     'min_vip_level' => 'Minimum Purchase Level',
     'min_vip_level_help' => 'Members at this VIP level or higher can purchase. Leave empty for no level restriction.',
     'no_vip_level_requirement' => 'No level restriction',

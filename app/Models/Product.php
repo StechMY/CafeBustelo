@@ -33,6 +33,7 @@ class Product extends Model
         'available_from',
         'available_until',
         'stock_quantity',
+        'daily_limit',
         'sold_quantity',
         'claim_interval_hours',
         'total_claims',
@@ -65,6 +66,7 @@ class Product extends Model
             'available_from' => 'datetime',
             'available_until' => 'datetime',
             'stock_quantity' => 'integer',
+            'daily_limit' => 'integer',
             'sold_quantity' => 'integer',
             'claim_interval_hours' => 'integer',
             'total_claims' => 'integer',
@@ -198,12 +200,30 @@ class Product extends Model
         return (int) $this->sold_quantity < (int) $this->stock_quantity;
     }
 
+    public function hasDailyStock(): bool
+    {
+        if ($this->daily_limit === null) {
+            return true;
+        }
+
+        $startOfDay = now()->startOfDay();
+
+        // Completed or soft-deleted purchases still consumed a daily slot.
+        $soldToday = $this->userProducts()->withTrashed()
+            ->where('purchased_at', '>=', $startOfDay)
+            ->where('purchased_at', '<', $startOfDay->copy()->addDay())
+            ->count();
+
+        return $soldToday < $this->daily_limit;
+    }
+
     public function isPurchasableNow(): bool
     {
         return $this->isActive()
             && $this->isWithinAvailablePeriod()
             && $this->isAvailableToday()
-            && $this->hasStock();
+            && $this->hasStock()
+            && $this->hasDailyStock();
     }
 
     public function getImageUrlAttribute(): ?string

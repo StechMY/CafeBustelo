@@ -50,6 +50,10 @@ class ProductPurchaseService
                 ->firstOrFail();
 
             if (! $lockedProduct->isPurchasableNow()) {
+                if (! $lockedProduct->hasDailyStock()) {
+                    throw new RuntimeException(__('products.product_sold_out'));
+                }
+
                 throw new RuntimeException(__('products.product_not_available_now'));
             }
 

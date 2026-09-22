@@ -1,6 +1,8 @@
 <?php
 
 return [
+    'daily_limit' => 'Batas Harian (Daily Limit)',
+    'daily_limit_help' => 'Jumlah pembelian produk oleh semua anggota per hari. Kosongkan untuk tanpa batas harian. Dihitung ulang pada tengah malam sesuai zona waktu sistem.',
     'min_vip_level' => 'Level Minimum Pembelian',
     'min_vip_level_help' => 'Anggota dengan level VIP ini atau lebih tinggi dapat membeli. Kosongkan jika tidak ada batasan level.',
     'no_vip_level_requirement' => 'Tanpa batasan level',

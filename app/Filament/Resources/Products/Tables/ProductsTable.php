@@ -94,6 +94,13 @@ class ProductsTable
                         : "{$record->sold_quantity} / {$record->stock_quantity}")
                     ->toggleable(),
 
+                TextColumn::make('daily_limit')
+                    ->label(__('filament.daily_limit'))
+                    ->placeholder(__('filament.unlimited'))
+                    ->numeric()
+                    ->sortable()
+                    ->toggleable(),
+
                 TextColumn::make('claim_interval_hours')
                     ->label(__('filament.claim_interval_hours'))
                     ->suffix(' h')

@@ -140,6 +140,14 @@ class ProductForm
                                     ->step(1)
                                     ->helperText(__('filament.stock_quantity_help')),
 
+                                TextInput::make('daily_limit')
+                                    ->label(__('filament.daily_limit'))
+                                    ->integer()
+                                    ->nullable()
+                                    ->minValue(1)
+                                    ->maxValue(4294967295)
+                                    ->helperText(__('filament.daily_limit_help')),
+
                                 TextInput::make('sold_quantity')
                                     ->label(__('filament.sold_quantity'))
                                     ->numeric()

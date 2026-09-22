@@ -157,6 +157,8 @@ class ApiFormatter
                 ? $product->available_until->copy()->timezone(config('app.timezone'))->format('d M Y, h:i A')
                 : null,
             'stock_quantity' => $product->stock_quantity,
+            'daily_limit' => $product->daily_limit,
+            'daily_limit_reached' => ! $product->hasDailyStock(),
             'sold_quantity' => (int) ($product->sold_quantity ?? 0),
             'remaining_stock' => $product->stock_quantity === null ? null : max(0, (int) $product->stock_quantity - (int) $product->sold_quantity),
             'image_url' => $product->image_url,

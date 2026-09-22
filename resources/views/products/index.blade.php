@@ -286,7 +286,7 @@
 
                         $isAvailableToday = $product->isAvailableToday();
                         $isWithinAvailablePeriod = $product->isWithinAvailablePeriod();
-                        $hasStock = $product->hasStock();
+                        $hasStock = $product->hasStock() && $product->hasDailyStock();
                         $isPurchasableNow = $product->isPurchasableNow();
                         $meetsVipLevelRequirement = $product->meetsVipLevelRequirement($user);
 
@@ -536,7 +536,9 @@
                                         {{ $canPurchase
                                             ? 'bg-[#e4003a] text-white hover:-translate-y-0.5 hover:bg-[#c90032]'
                                             : 'cursor-not-allowed bg-gray-200 text-gray-500' }}">
-                                        @if (!$meetsVipLevelRequirement)
+                                        @if (!$hasStock)
+                                            {{ __('products.sold_out') }}
+                                        @elseif (!$meetsVipLevelRequirement)
                                             {{ __('products.vip_level_insufficient') }}
                                         @elseif ($limitReached)
                                             {{ __('products.purchase_limit_reached') }}

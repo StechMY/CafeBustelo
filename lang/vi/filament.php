@@ -1,6 +1,8 @@
 <?php
 
 return [
+    'daily_limit' => 'Giới hạn mỗi ngày (Daily Limit)',
+    'daily_limit_help' => 'Tổng số lượt mua sản phẩm của tất cả thành viên mỗi ngày. Để trống nếu không giới hạn. Đặt lại lúc 0 giờ theo múi giờ hệ thống.',
     'min_vip_level' => 'Cấp tối thiểu để mua',
     'min_vip_level_help' => 'Thành viên đạt cấp VIP này trở lên mới có thể mua. Để trống nếu không giới hạn cấp.',
     'no_vip_level_requirement' => 'Không giới hạn cấp',

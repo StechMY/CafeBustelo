@@ -69,6 +69,11 @@ class ProductInfolist
                                     ->formatStateUsing(fn($state): string => 'LV' . $state . '+')
                                     ->placeholder(__('filament.no_vip_level_requirement')),
 
+                                TextEntry::make('daily_limit')
+                                    ->label(__('filament.daily_limit'))
+                                    ->placeholder(__('filament.unlimited'))
+                                    ->numeric(),
+
                                 TextEntry::make('daily_income')
                                     ->label(__('filament.daily_income'))
                                     ->prefix(config('app.currency') . " "),

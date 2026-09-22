@@ -14,7 +14,10 @@ class ProductCatalogService
             ->orderBy('price')
             ->orderBy('sort_order')
             ->get()
-            ->filter(fn (Product $product): bool => $product->isPurchasableNow())
+            // Keep daily sold-out products visible so customers can see their status.
+            ->filter(fn (Product $product): bool => $product->isWithinAvailablePeriod()
+                && $product->isAvailableToday()
+                && $product->hasStock())
             ->values();
     }
 

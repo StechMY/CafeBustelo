@@ -1,6 +1,8 @@
 <?php
 
 return [
+    'daily_limit' => '每日限量 (Daily Limit)',
+    'daily_limit_help' => '此产品每天所有用户合计可购买的数量。留空表示不限制；按系统时区每天零点重新计算。',
     'min_vip_level' => '最低购买等级',
     'min_vip_level_help' => '达到此 VIP 等级或以上的会员才可购买。留空表示不限制等级。',
     'no_vip_level_requirement' => '不限等级',
