@@ -24,7 +24,12 @@ class SmsBalanceService
 
     public const MANUAL_COOLDOWN_KEY = 'sms_provider_balance:manual_cooldown';
 
-    private const CRITICAL_SEND_ERRORS = ['F0006', 'F0007', 'F0008', 'F0014', 'F0017'];
+    public function cacheKey(string $key): string
+    {
+        $account = hash('sha256', rtrim((string) config('sms.base_url'), '/').'|'.config('sms.org_code'));
+
+        return 'abosend:'.$account.':'.$key;
+    }
 
     public function getBalance(bool $force = false): array
     {
@@ -49,7 +54,7 @@ class SmsBalanceService
     {
         try {
             if (! Cache::add(
-                self::MANUAL_COOLDOWN_KEY,
+                $this->cacheKey(self::MANUAL_COOLDOWN_KEY),
                 true,
                 (int) config('sms.balance_manual_refresh_cooldown', 10),
             )) {
@@ -67,7 +72,7 @@ class SmsBalanceService
     public function markStale(): void
     {
         try {
-            Cache::put(self::STALE_KEY, true, $this->retentionSeconds());
+            Cache::put($this->cacheKey(self::STALE_KEY), true, $this->retentionSeconds());
         } catch (Throwable) {
             Log::warning('SMS balance cache is unavailable.');
         }
@@ -76,7 +81,7 @@ class SmsBalanceService
     public function isStale(): bool
     {
         try {
-            return (bool) Cache::get(self::STALE_KEY, true);
+            return (bool) Cache::get($this->cacheKey(self::STALE_KEY), true);
         } catch (Throwable) {
             return true;
         }
@@ -85,7 +90,7 @@ class SmsBalanceService
     public function lastKnownBalance(): ?array
     {
         try {
-            $balance = Cache::get(self::LAST_SUCCESS_KEY);
+            $balance = Cache::get($this->cacheKey(self::LAST_SUCCESS_KEY));
 
             return is_array($balance) ? $balance : null;
         } catch (Throwable) {
@@ -97,27 +102,26 @@ class SmsBalanceService
     {
         $code = $this->sanitizeCode($code);
 
-        if ($code === '00000') {
+        if ($code === '200') {
             $this->markStale();
             $this->clearSendError();
 
             return;
         }
 
-        if ($code === 'F0015') {
-            $this->storeHealth('insufficient', $code);
-
-            return;
-        }
-
-        if (in_array($code, self::CRITICAL_SEND_ERRORS, true)) {
-            $this->storeHealth('provider_error', $code);
-        }
+        // Submission errors are distinct from delivery status codes. Until a
+        // documented balance-error code is available, do not guess its meaning.
+        $this->storeHealth('provider_error', $code ?? 'INVALID_RESPONSE');
     }
 
     private function refreshWithLock(bool $force = false): array
     {
-        $result = Cache::lock(self::REFRESH_LOCK_KEY, 20)->get(function () use ($force): array {
+        $result = Cache::lock($this->cacheKey(self::REFRESH_LOCK_KEY), 20)->get(function () use ($force): array {
+            $lastChecked = Cache::get($this->cacheKey(self::LAST_CHECKED_KEY));
+            if (is_int($lastChecked) && now()->timestamp - $lastChecked < 5) {
+                return $this->currentState();
+            }
+
             if (! $force && ! $this->shouldRefresh()) {
                 return $this->currentState();
             }
@@ -130,7 +134,7 @@ class SmsBalanceService
 
     private function shouldRefresh(): bool
     {
-        $lastChecked = Cache::get(self::LAST_CHECKED_KEY);
+        $lastChecked = Cache::get($this->cacheKey(self::LAST_CHECKED_KEY));
 
         if (! is_int($lastChecked)) {
             return true;
@@ -146,26 +150,24 @@ class SmsBalanceService
 
     private function fetchProviderBalance(): array
     {
-        $appKey = config('sms.appkey');
-        $appCode = config('sms.appcode');
-        $appSecret = config('sms.appsecret');
+        $orgCode = (string) config('sms.org_code');
+        $md5Key = (string) config('sms.md5_key');
 
-        if (! config('sms.enabled') || blank($appKey) || blank($appCode) || blank($appSecret)) {
+        if (! config('sms.enabled') || blank($orgCode) || blank($md5Key) || blank(config('sms.base_url'))) {
             return $this->rememberFailure('CONFIGURATION');
         }
 
-        $timestamp = (string) now()->getTimestampMs();
-        $sign = md5($appKey.$appSecret.$timestamp);
+        $rand = (string) random_int(100000, 999999);
+        $sign = strtoupper(md5($orgCode.$rand.$md5Key));
         $httpStatus = null;
 
         try {
-            $response = Http::timeout(10)->get(
-                rtrim((string) config('sms.base_url'), '/').'/sms/balance/v1',
+            $response = Http::connectTimeout(5)->timeout(10)->asForm()->post(
+                rtrim((string) config('sms.base_url'), '/').'/api/viewOrgBalance',
                 [
-                    'appkey' => $appKey,
-                    'appcode' => $appCode,
+                    'orgCode' => $orgCode,
+                    'rand' => $rand,
                     'sign' => $sign,
-                    'timestamp' => $timestamp,
                 ],
             );
             $httpStatus = $response->status();
@@ -182,31 +184,33 @@ class SmsBalanceService
 
             $providerCode = $this->sanitizeCode($data['code'] ?? null);
 
-            if ($providerCode && $providerCode !== '00000') {
-                return $this->rememberFailure($providerCode, $httpStatus);
+            if (! in_array($data['code'] ?? null, [200, '200'], true)) {
+                return $this->rememberFailure($providerCode ?? 'INVALID_RESPONSE', $httpStatus);
             }
 
-            $rawBalance = $data['balance'] ?? null;
+            if (data_get($data, 'data.orgCode') !== $orgCode) {
+                return $this->rememberFailure('INVALID_RESPONSE', $httpStatus);
+            }
+
+            $rawBalance = data_get($data, 'data.balance');
             $balance = filter_var($rawBalance, FILTER_VALIDATE_FLOAT);
 
-            if ($balance === false || ! is_finite($balance) || $balance < 0) {
+            if ((! is_string($rawBalance) && ! is_int($rawBalance) && ! is_float($rawBalance)) || $balance === false || ! is_finite($balance) || $balance < 0) {
                 return $this->rememberFailure('INVALID_RESPONSE', $httpStatus);
             }
 
             $fetchedAt = now()->toIso8601String();
             $lastSuccess = [
                 'balance' => $balance,
-                'provider_balance_time' => is_string($data['balance_time'] ?? null)
-                    ? $data['balance_time']
-                    : null,
+                'provider_balance_time' => null,
                 'fetched_at' => $fetchedAt,
             ];
 
-            Cache::put(self::LAST_SUCCESS_KEY, $lastSuccess, $this->retentionSeconds());
-            Cache::put(self::LAST_CHECKED_KEY, now()->timestamp, $this->retentionSeconds());
-            Cache::put(self::STALE_KEY, false, $this->retentionSeconds());
-            Cache::put(self::HEALTH_KEY, $this->healthForBalance($balance), $this->retentionSeconds());
-            Cache::forget(self::ERROR_CODE_KEY);
+            Cache::put($this->cacheKey(self::LAST_SUCCESS_KEY), $lastSuccess, $this->retentionSeconds());
+            Cache::put($this->cacheKey(self::LAST_CHECKED_KEY), now()->timestamp, $this->retentionSeconds());
+            Cache::put($this->cacheKey(self::STALE_KEY), false, $this->retentionSeconds());
+            Cache::put($this->cacheKey(self::HEALTH_KEY), $this->healthForBalance($balance), $this->retentionSeconds());
+            Cache::forget($this->cacheKey(self::ERROR_CODE_KEY));
 
             return $this->currentState();
         } catch (Throwable) {
@@ -217,14 +221,12 @@ class SmsBalanceService
     private function rememberFailure(?string $code, ?int $httpStatus = null): array
     {
         $code = $this->sanitizeCode($code) ?? 'PROVIDER_ERROR';
-        $health = ($code === 'F0015' || (Cache::get(self::HEALTH_KEY) === 'insufficient' && in_array($code, ['HTTP_ERROR', 'REQUEST_FAILED'], true)))
-            ? 'insufficient'
-            : 'provider_error';
+        $health = 'provider_error';
 
-        Cache::put(self::LAST_CHECKED_KEY, now()->timestamp, $this->retentionSeconds());
-        Cache::put(self::STALE_KEY, true, $this->retentionSeconds());
-        Cache::put(self::HEALTH_KEY, $health, $this->retentionSeconds());
-        Cache::put(self::ERROR_CODE_KEY, $code, $this->retentionSeconds());
+        Cache::put($this->cacheKey(self::LAST_CHECKED_KEY), now()->timestamp, $this->retentionSeconds());
+        Cache::put($this->cacheKey(self::STALE_KEY), true, $this->retentionSeconds());
+        Cache::put($this->cacheKey(self::HEALTH_KEY), $health, $this->retentionSeconds());
+        Cache::put($this->cacheKey(self::ERROR_CODE_KEY), $code, $this->retentionSeconds());
 
         Log::warning('SMS balance lookup failed.', array_filter([
             'code' => $code,
@@ -236,7 +238,7 @@ class SmsBalanceService
 
     private function currentState(): array
     {
-        $lastSuccess = Cache::get(self::LAST_SUCCESS_KEY);
+        $lastSuccess = Cache::get($this->cacheKey(self::LAST_SUCCESS_KEY));
 
         if (
             ! is_array($lastSuccess)
@@ -250,10 +252,10 @@ class SmsBalanceService
         }
 
         $health = (string) Cache::get(
-            self::HEALTH_KEY,
+            $this->cacheKey(self::HEALTH_KEY),
             $lastSuccess ? $this->healthForBalance($lastSuccess['balance']) : 'unknown',
         );
-        $lastChecked = Cache::get(self::LAST_CHECKED_KEY);
+        $lastChecked = Cache::get($this->cacheKey(self::LAST_CHECKED_KEY));
 
         return [
             'balance' => $lastSuccess['balance'] ?? null,
@@ -262,20 +264,20 @@ class SmsBalanceService
             'last_checked_at' => is_int($lastChecked)
                 ? Carbon::createFromTimestamp($lastChecked)->toIso8601String()
                 : null,
-            'is_stale' => (bool) Cache::get(self::STALE_KEY, $lastSuccess === null),
+            'is_stale' => (bool) Cache::get($this->cacheKey(self::STALE_KEY), $lastSuccess === null),
             'is_available' => $lastSuccess !== null && ! in_array($health, ['provider_error', 'insufficient'], true),
             'health' => $health,
-            'error_code' => Cache::get(self::ERROR_CODE_KEY),
-            'error_message' => $this->sanitizedErrorMessage(Cache::get(self::ERROR_CODE_KEY)),
+            'error_code' => Cache::get($this->cacheKey(self::ERROR_CODE_KEY)),
+            'error_message' => $this->sanitizedErrorMessage(Cache::get($this->cacheKey(self::ERROR_CODE_KEY))),
         ];
     }
 
     private function storeHealth(string $health, string $code): void
     {
         try {
-            Cache::put(self::STALE_KEY, true, $this->retentionSeconds());
-            Cache::put(self::HEALTH_KEY, $health, $this->retentionSeconds());
-            Cache::put(self::ERROR_CODE_KEY, $code, $this->retentionSeconds());
+            Cache::put($this->cacheKey(self::STALE_KEY), true, $this->retentionSeconds());
+            Cache::put($this->cacheKey(self::HEALTH_KEY), $health, $this->retentionSeconds());
+            Cache::put($this->cacheKey(self::ERROR_CODE_KEY), $code, $this->retentionSeconds());
         } catch (Throwable) {
             Log::warning('SMS balance cache is unavailable.');
         }
@@ -284,13 +286,13 @@ class SmsBalanceService
     private function clearSendError(): void
     {
         try {
-            $lastSuccess = Cache::get(self::LAST_SUCCESS_KEY);
+            $lastSuccess = Cache::get($this->cacheKey(self::LAST_SUCCESS_KEY));
             $health = is_array($lastSuccess) && (is_int($lastSuccess['balance'] ?? null) || is_float($lastSuccess['balance'] ?? null))
                 ? $this->healthForBalance((float) $lastSuccess['balance'])
                 : 'unknown';
 
-            Cache::put(self::HEALTH_KEY, $health, $this->retentionSeconds());
-            Cache::forget(self::ERROR_CODE_KEY);
+            Cache::put($this->cacheKey(self::HEALTH_KEY), $health, $this->retentionSeconds());
+            Cache::forget($this->cacheKey(self::ERROR_CODE_KEY));
         } catch (Throwable) {
             Log::warning('SMS balance cache is unavailable.');
         }
@@ -298,11 +300,14 @@ class SmsBalanceService
 
     private function healthForBalance(float $balance): string
     {
-        if ($balance < (int) config('sms.balance_critical_threshold', 1000)) {
+        $critical = config('sms.balance_critical_threshold');
+        $warning = config('sms.balance_warning_threshold');
+
+        if ($balance == 0 || (is_numeric($critical) && $balance <= (float) $critical)) {
             return 'critical';
         }
 
-        if ($balance <= (int) config('sms.balance_warning_threshold', 5000)) {
+        if (is_numeric($warning) && $balance <= (float) $warning) {
             return 'warning';
         }
 
@@ -323,12 +328,7 @@ class SmsBalanceService
     private function sanitizedErrorMessage(mixed $code): ?string
     {
         return match ($code) {
-            'F0006' => 'Invalid provider account.',
-            'F0007' => 'Provider account is closed.',
-            'F0008' => 'Provider signature was rejected.',
-            'F0014' => 'Provider IP whitelist rejected the request.',
-            'F0015' => 'Provider reports insufficient balance.',
-            'F0017' => 'No SMS business is available.',
+            'CONFIGURATION' => 'AboSEND is not configured.',
             null => null,
             default => 'SMS provider is temporarily unavailable.',
         };

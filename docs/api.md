@@ -556,13 +556,23 @@ The member payload mirrors the web level page: username, masked phone last five 
 
 ## Business Rules
 
+### AboSEND deployment
+
+- Set `SMS_ENABLED=true`, `SMS_BASE_URL=https://smsapi.microcloudltd.com`, `SMS_ORG_CODE`, and `SMS_MD5_KEY` in the target server's environment. The old `SMS_APP_*` credentials are no longer used. Local `.env` credentials are not committed or automatically deployed.
+- Leave `SMS_SENDER_ID` empty unless the provider has supplied an approved value. Configure optional USD warning thresholds according to the account's usage; the old provider's thresholds do not apply.
+- Rebuild Laravel's configuration cache (`php artisan config:cache`) and restart any long-running application workers when deploying. No database migration or global cache flush is needed for this change.
+- Verify balance lookup from the deployed server, then send an OTP to an authorized test number to confirm Vietnam delivery, message content and charges before relying on the new provider in production. Balance lookup alone does not verify SMS delivery.
+- Contract and OTP integration tests: `php vendor/bin/phpunit tests/Unit/Services/Sms` (requires PDO SQLite for the isolated in-memory OTP tests).
+
+### Application rules
+
 - Product purchase and SVIP purchase support `wallet_type: recharge|withdrawable`.
-- SMS OTP is server-side only. Flutter never receives `SMS_APP_KEY`, `SMS_APP_CODE`, or `SMS_APP_SECRET`.
+- SMS OTP is server-side only. Flutter never receives `SMS_ORG_CODE`, `SMS_MD5_KEY`, or provider signatures. AboSEND sends via JSON `POST /v2/api/sendSMS` using uppercase `MD5(orgCode + content + rand + MD5Key)`, where `rand` is an independent six-digit random number. Optional `SMS_SENDER_ID` maps to `oaNumber`.
 - OTP purpose names are `register`, `bank_account`, and `change_password`.
 - OTP codes are 6 digits, stored hashed, expire by `sms.otp_expire_minutes`, enforce resend cooldown by `sms.otp_resend_seconds`, and enforce failed attempts by `sms.otp_max_attempts`.
-- Filament displays the provider's remaining SMS message balance in the global topbar. The provider may return a non-negative decimal string such as `"5492.1"`; Laravel preserves and displays that decimal value. Laravel queries `GET {sms.base_url}/sms/balance/v1` server-side with a millisecond timestamp and lowercase `md5(appkey + appsecret + timestamp)` signature; credentials and signatures are never returned to the browser or API.
-- The balance is cached for 5 minutes, guarded by a 20-second cache lock, and polled by the header every 5 minutes. Manual refresh is globally limited to once per 10 seconds. The last successful value is retained for 24 hours and remains visible as stale when the provider is unavailable.
-- A successful provider submission (`00000`) marks the balance stale without decrementing it locally. `F0015` immediately marks SMS health insufficient; other critical provider codes show a sanitized provider-error state. A confirmed numeric zero remains a valid balance.
+- Filament displays the AboSEND account balance in USD, with up to six decimal places. Laravel queries form-encoded `POST {sms.base_url}/api/viewOrgBalance` server-side using uppercase `MD5(orgCode + rand + MD5Key)`, requires business code `200` and the matching organization, and reads `data.balance`. Credentials and signatures are never returned to the browser or API. Optional `SMS_BALANCE_WARNING_THRESHOLD` and `SMS_BALANCE_CRITICAL_THRESHOLD` are USD amounts; unset thresholds disable nonzero-balance warnings, and zero is always critical.
+- The balance is cached for 5 minutes, guarded by a 20-second cache lock, and polled by the header every 5 minutes. Manual refresh is limited to once per 10 seconds per account, and all balance requests respect the provider's five-second minimum interval. All balance state and locks are isolated by AboSEND API URL and organization, so old-provider balances cannot carry over. The last successful value is retained for 24 hours and remains visible as stale when the provider is unavailable.
+- An accepted AboSEND submission (`200` with `data.sendCode`) marks the balance stale without decrementing it locally. Submission is not confirmation of delivery. Rejections, invalid responses, HTTP failures and timeouts show a sanitized provider-error state; undocumented submission errors are not interpreted as insufficient funds. A confirmed numeric zero remains a valid balance. SMS submissions are not automatically retried because acceptance after a timeout is uncertain. Existing unexpired OTPs remain verifiable after the provider switch.
 - Product commission estimates are based on claim income, not product price.
 - Downline product commission formula:
   `commission_per_claim = income_per_claim * rate / 100`

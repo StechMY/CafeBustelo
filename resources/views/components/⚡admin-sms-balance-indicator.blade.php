@@ -132,7 +132,7 @@ new class extends Component {
                                   class="sms-balance-warning-icon" />
             @elseif ($balance !== null)
                 <span class="sms-balance-number">
-                    {{ $balance }}
+                    USD {{ rtrim(rtrim(number_format($balance, 6, '.', ','), '0'), '.') }}
                 </span>
 
 
