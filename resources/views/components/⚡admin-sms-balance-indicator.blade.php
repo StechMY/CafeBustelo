@@ -23,6 +23,11 @@ new class extends Component {
 
     public function mount(SmsBalanceService $balanceService): void
     {
+        $this->applyState($balanceService->getCachedBalance());
+    }
+
+    public function loadBalance(SmsBalanceService $balanceService): void
+    {
         $this->applyState($balanceService->getBalance());
     }
 
@@ -98,6 +103,7 @@ new class extends Component {
 
 
 <div
+     wire:init="loadBalance"
      wire:poll.300s="pollBalance"
      class="sms-balance-root">
     <div

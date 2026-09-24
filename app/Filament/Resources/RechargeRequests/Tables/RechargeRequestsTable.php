@@ -194,6 +194,7 @@ class RechargeRequestsTable
                 */
                 ImageColumn::make('receipt_path')
                     ->disk('do_spaces')
+                    ->checkFileExistence(false)
                     ->url(
                         fn (RechargeRequest $record): ?string =>
                             $record->receipt_url

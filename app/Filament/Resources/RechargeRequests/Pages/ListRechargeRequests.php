@@ -12,7 +12,7 @@ class ListRechargeRequests extends ListRecords
 
     protected function getTablePollingInterval(): ?string
     {
-        return '10s';
+        return '60s';
     }
 
     protected function getHeaderActions(): array

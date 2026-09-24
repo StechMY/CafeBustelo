@@ -46,14 +46,28 @@ class PlatformFinanceChart extends ChartWidget
                 [
                     'label' => __('filament.approved_recharge'),
                     'data' => $metrics['approved_recharge'],
+                    'borderColor' => '#3b82f6',
+                    'backgroundColor' => '#3b82f6',
+                    'pointBackgroundColor' => '#3b82f6',
+                    'pointStyle' => 'circle',
                 ],
                 [
                     'label' => __('filament.approved_withdraw'),
                     'data' => $metrics['approved_withdraw'],
+                    'borderColor' => '#ea580c',
+                    'backgroundColor' => '#ea580c',
+                    'pointBackgroundColor' => '#ea580c',
+                    'pointStyle' => 'triangle',
+                    'borderDash' => [8, 4],
                 ],
                 [
                     'label' => __('filament.net'),
                     'data' => $metrics['net'],
+                    'borderColor' => '#a855f7',
+                    'backgroundColor' => '#a855f7',
+                    'pointBackgroundColor' => '#a855f7',
+                    'pointStyle' => 'rectRot',
+                    'borderDash' => [2, 4],
                 ],
             ],
             'labels' => array_map(

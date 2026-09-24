@@ -187,7 +187,9 @@ class SmsBalanceServiceTest extends TestCase
             '*/api/viewOrgBalance' => Http::response($this->balanceResponse('5492.1')),
         ]);
 
-        $html = Livewire::test('admin-sms-balance-indicator')->html();
+        $component = Livewire::test('admin-sms-balance-indicator');
+        Http::assertNothingSent();
+        $html = $component->call('loadBalance')->html();
 
         $this->assertStringContainsString('USD 5,492.1', $html);
         $this->assertStringNotContainsString('browser-key-must-not-appear', $html);
@@ -200,7 +202,30 @@ class SmsBalanceServiceTest extends TestCase
         Http::fake(fn () => throw new ConnectionException('timeout'));
 
         Livewire::test('admin-sms-balance-indicator')
+            ->call('loadBalance')
             ->assertSee(__('filament.sms_balance_unavailable'));
+    }
+
+    public function test_header_displays_stale_cached_balance_without_waiting_for_provider(): void
+    {
+        Http::fakeSequence()
+            ->push($this->balanceResponse('12.5'))
+            ->push($this->balanceResponse('10'));
+        $service = app(SmsBalanceService::class);
+        $service->getBalance();
+        $service->markStale();
+        Carbon::setTestNow(now()->addSeconds(31));
+
+        $component = Livewire::test('admin-sms-balance-indicator')
+            ->assertSet('balance', 12.5)
+            ->assertSet('isStale', true)
+            ->assertSee('wire:init="loadBalance"', escape: false);
+        Http::assertSentCount(1);
+
+        $component->call('loadBalance')
+            ->assertSet('balance', 10.0)
+            ->assertSet('isStale', false);
+        Http::assertSentCount(2);
     }
 
     public function test_account_and_provider_caches_are_isolated(): void

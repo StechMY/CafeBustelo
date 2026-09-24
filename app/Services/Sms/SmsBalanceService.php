@@ -50,6 +50,17 @@ class SmsBalanceService
         }
     }
 
+    public function getCachedBalance(): array
+    {
+        try {
+            return $this->currentState();
+        } catch (Throwable) {
+            Log::warning('SMS balance cache is unavailable.');
+
+            return $this->unavailableState();
+        }
+    }
+
     public function refresh(): array
     {
         try {
