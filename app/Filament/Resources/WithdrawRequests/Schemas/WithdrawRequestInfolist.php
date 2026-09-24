@@ -202,6 +202,19 @@ class WithdrawRequestInfolist
                                     ->label(__('withdraw.latest_gateway_error'))
                                     ->helperText(__('withdraw.latest_gateway_error_help'))
                                     ->placeholder('-'),
+                                TextEntry::make('provider_meta.manual_unpaid_confirmation.provider_confirmation')
+                                    ->label(__('withdraw.provider_confirmation'))
+                                    ->placeholder('-'),
+                                TextEntry::make('provider_meta.manual_unpaid_confirmation.reason')
+                                    ->label(__('withdraw.manual_resolution_reason'))
+                                    ->placeholder('-'),
+                                TextEntry::make('provider_meta.manual_unpaid_confirmation.admin_user_id')
+                                    ->label(__('filament.reviewed_by'))
+                                    ->placeholder('-'),
+                                TextEntry::make('provider_meta.manual_unpaid_confirmation.confirmed_at')
+                                    ->label(__('withdraw.manually_confirmed_at'))
+                                    ->dateTime()
+                                    ->placeholder('-'),
                             ])
                             ->columns(4),
                     ]),

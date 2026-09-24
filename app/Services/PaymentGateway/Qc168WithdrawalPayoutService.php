@@ -9,6 +9,8 @@ use App\Models\WithdrawalPayoutAttempt;
 use App\Models\WithdrawRequest;
 use App\Services\WithdrawService;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use RuntimeException;
 use Throwable;
@@ -68,7 +70,7 @@ class Qc168WithdrawalPayoutService
         $definitiveCreateFailure = $latestAttempt->gateway_status === WithdrawalPayoutAttempt::STATUS_CREATE_FAILED
             && data_get($latestAttempt->provider_meta, 'submission_definitive_failure') === true;
 
-        if (! $definitiveCreateFailure) {
+        if (! $definitiveCreateFailure && ! $latestAttempt->isManuallyConfirmedUnpaid()) {
             $this->syncAttempt($latestAttempt, 'filament_retry_check', $adminUser, $reason, $ip);
 
             $withdrawRequest->refresh();
@@ -83,7 +85,7 @@ class Qc168WithdrawalPayoutService
             }
         }
 
-        $attempt = $this->claimAttempt($withdrawRequest, true, $adminUser, $reason, $ip, 'filament_retry');
+        $attempt = $this->claimAttempt($withdrawRequest, true, $adminUser, $reason, $ip, 'filament_retry', $latestAttempt->id);
 
         if (! $attempt) {
             return null;
@@ -143,7 +145,7 @@ class Qc168WithdrawalPayoutService
         $definitiveCreateFailure = $attempt->gateway_status === WithdrawalPayoutAttempt::STATUS_CREATE_FAILED
             && data_get($attempt->provider_meta, 'submission_definitive_failure') === true;
 
-        if (! $definitiveCreateFailure) {
+        if (! $definitiveCreateFailure && ! $attempt->isManuallyConfirmedUnpaid()) {
             $this->syncAttempt($attempt, 'filament_cancel_check', $adminUser, $reason, $ip);
             $attempt->refresh();
             $withdrawRequest->refresh();
@@ -160,6 +162,86 @@ class Qc168WithdrawalPayoutService
             $reason,
             $ip,
         );
+    }
+
+    public function confirmUnpaid(
+        WithdrawRequest $withdrawRequest,
+        AdminUser $adminUser,
+        string $merchantOrderId,
+        string $providerConfirmation,
+        string $reason,
+        bool $confirmedUnpaid,
+        ?string $ip = null,
+    ): WithdrawRequest {
+        return DB::transaction(function () use ($withdrawRequest, $adminUser, $merchantOrderId, $providerConfirmation, $reason, $confirmedUnpaid, $ip): WithdrawRequest {
+            $lockedRequest = WithdrawRequest::query()->whereKey($withdrawRequest->id)->lockForUpdate()->firstOrFail();
+            Gate::forUser($adminUser)->authorize('confirmGatewayUnpaid', $lockedRequest);
+
+            $providerConfirmation = trim($providerConfirmation);
+            $reason = trim($reason);
+            Validator::make([
+                'merchant_order_id' => $merchantOrderId,
+                'provider_confirmation' => $providerConfirmation,
+                'reason' => $reason,
+                'confirmed_unpaid' => $confirmedUnpaid,
+            ], [
+                'merchant_order_id' => ['required', 'string'],
+                'provider_confirmation' => ['required', 'string', 'max:2000'],
+                'reason' => ['required', 'string', 'max:1000'],
+                'confirmed_unpaid' => ['accepted'],
+            ])->validate();
+
+            $attempt = $lockedRequest->payoutAttempts()->latest('attempt_no')->lockForUpdate()->first();
+            if (! $lockedRequest->canConfirmGatewayUnpaid()
+                || ! $attempt
+                || $attempt->provider !== WithdrawRequest::GATEWAY_QC168
+                || $attempt->gateway_status !== WithdrawalPayoutAttempt::STATUS_CREATE_PENDING
+                || $attempt->completed_at
+                || data_get($attempt->provider_meta, 'submission_result') !== 'uncertain'
+                || ! filled(data_get($attempt->provider_meta, 'submission_failed_at'))
+                || ! hash_equals($attempt->merchant_order_id, $merchantOrderId)
+                || ! $this->isCurrentAttempt($lockedRequest, $attempt)) {
+                throw new RuntimeException(__('withdraw.confirm_unpaid_not_allowed'));
+            }
+
+            $confirmation = [
+                'confirmed_at' => now()->toAtomString(),
+                'admin_user_id' => $adminUser->id,
+                'merchant_order_id' => $merchantOrderId,
+                'provider_confirmation' => $providerConfirmation,
+                'reason' => $reason,
+                'ip' => $ip,
+                'previous_gateway_status' => $attempt->gateway_status,
+                'previous_failure_reason' => $attempt->failure_reason,
+            ];
+            $attempt->forceFill([
+                'gateway_status' => WithdrawalPayoutAttempt::STATUS_FAILED,
+                'failed_at' => now(),
+                'failure_reason' => $reason,
+                'provider_meta' => array_merge($attempt->provider_meta ?? [], [
+                    'manual_unpaid_confirmation' => $confirmation,
+                    'latest_state_source' => 'manual_unpaid_confirmation',
+                ]),
+            ])->save();
+            $lockedRequest->forceFill([
+                'payout_status' => WithdrawRequest::PAYOUT_FAILED,
+                'gateway_payment_status' => WithdrawalPayoutAttempt::STATUS_FAILED,
+                'gateway_fail_reason' => $reason,
+            ])->save();
+
+            $this->eventRecorder->recordWithdrawal(
+                'withdrawal.gateway_manually_confirmed_unpaid',
+                $lockedRequest,
+                $attempt,
+                $adminUser,
+                'filament',
+                $reason,
+                WithdrawalPayoutAttempt::STATUS_FAILED,
+                $confirmation,
+            );
+
+            return $lockedRequest;
+        });
     }
 
     public function syncAttempt(
@@ -315,7 +397,9 @@ class Qc168WithdrawalPayoutService
                 return ['accepted' => true, 'result' => 'refund_requires_manual_review'];
             }
 
-            if (! $this->shouldAcceptStatus($lockedAttempt->gateway_status, $incomingStatus)) {
+            // A provider update supersedes a manual conclusion, including a return to processing.
+            if (! $lockedAttempt->isManuallyConfirmedUnpaid()
+                && ! $this->shouldAcceptStatus($lockedAttempt->gateway_status, $incomingStatus)) {
                 $this->eventRecorder->recordWithdrawal(
                     $incomingStatus === WithdrawalPayoutAttempt::STATUS_COMPLETED
                         ? 'withdrawal.gateway_duplicate_completed'
@@ -401,8 +485,9 @@ class Qc168WithdrawalPayoutService
         ?string $reason = null,
         ?string $ip = null,
         string $source = 'qc168_scheduler',
+        ?int $expectedAttemptId = null,
     ): ?WithdrawalPayoutAttempt {
-        return DB::transaction(function () use ($withdrawRequest, $retry, $adminUser, $reason, $ip, $source): ?WithdrawalPayoutAttempt {
+        return DB::transaction(function () use ($withdrawRequest, $retry, $adminUser, $reason, $ip, $source, $expectedAttemptId): ?WithdrawalPayoutAttempt {
             $lockedRequest = WithdrawRequest::query()
                 ->whereKey($withdrawRequest->id)
                 ->lockForUpdate()
@@ -424,6 +509,11 @@ class Qc168WithdrawalPayoutService
             }
 
             if ($retry) {
+                $latestAttempt = $lockedRequest->payoutAttempts()->latest('attempt_no')->lockForUpdate()->first();
+                if (! $latestAttempt?->isSafeFinalFailure() || $latestAttempt->id !== $expectedAttemptId) {
+                    throw new RuntimeException(__('withdraw.retry_not_allowed'));
+                }
+
                 if (! in_array($lockedRequest->payout_status, [
                     WithdrawRequest::PAYOUT_CREATE_FAILED,
                     WithdrawRequest::PAYOUT_FAILED,

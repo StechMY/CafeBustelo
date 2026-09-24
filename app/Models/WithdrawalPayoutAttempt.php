@@ -93,4 +93,11 @@ class WithdrawalPayoutAttempt extends Model
             self::STATUS_OVERDUE,
         ], true);
     }
+
+    public function isManuallyConfirmedUnpaid(): bool
+    {
+        return $this->gateway_status === self::STATUS_FAILED
+            && data_get($this->provider_meta, 'latest_state_source') === 'manual_unpaid_confirmation'
+            && filled(data_get($this->provider_meta, 'manual_unpaid_confirmation.confirmed_at'));
+    }
 }

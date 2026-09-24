@@ -55,6 +55,11 @@ class WithdrawRequestPolicy
             && FilamentSupportScope::canAccessUserId($withdrawRequest->user_id);
     }
 
+    public function confirmGatewayUnpaid(AuthUser $user, WithdrawRequest $withdrawRequest): bool
+    {
+        return $this->cancelGateway($user, $withdrawRequest);
+    }
+
     public function viewAny(AuthUser $authUser): bool
     {
         return $authUser->can('ViewAny:WithdrawRequest');

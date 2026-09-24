@@ -189,6 +189,17 @@ class WithdrawRequest extends Model
         return $this->canRetryPayout($usePreloadedCancellationState);
     }
 
+    public function canConfirmGatewayUnpaid(bool $usePreloadedCancellationState = false): bool
+    {
+        return $this->isApproved()
+            && $this->gateway_provider === self::GATEWAY_QC168
+            && $this->payout_status === self::PAYOUT_SUBMITTED
+            && $this->gateway_payment_status === WithdrawalPayoutAttempt::STATUS_CREATE_PENDING
+            && filled($this->gateway_current_merchant_order_id)
+            && filled($this->gateway_fail_reason)
+            && ! $this->hasGatewayCancellationLedger($usePreloadedCancellationState);
+    }
+
     public function hasGatewayCancellationLedger(bool $usePreloadedState = false): bool
     {
         if ($usePreloadedState

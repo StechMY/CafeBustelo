@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\WithdrawRequests\Pages;
 
+use App\Filament\Resources\WithdrawRequests\Actions\ConfirmGatewayUnpaidAction;
 use App\Filament\Resources\WithdrawRequests\WithdrawRequestResource;
 use App\Models\WithdrawRequest;
 use App\Services\PaymentGateway\Qc168Gateway;
@@ -251,6 +252,7 @@ class ViewWithdrawRequest extends ViewRecord
                     }
                 }),
 
+            ConfirmGatewayUnpaidAction::make(),
             Action::make('retry_payout')
                 ->label(__('withdraw.retry_payout'))
                 ->icon('heroicon-o-arrow-path')

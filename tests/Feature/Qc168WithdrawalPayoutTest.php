@@ -4,8 +4,10 @@ namespace Tests\Feature;
 
 use App\Exceptions\Qc168OrderRejectedException;
 use App\Exceptions\Qc168UncertainSubmissionException;
-use App\Filament\Resources\WithdrawRequests\WithdrawRequestResource;
+use App\Filament\Resources\WithdrawRequests\Pages\ListWithdrawRequests;
+use App\Filament\Resources\WithdrawRequests\Pages\ViewWithdrawRequest;
 use App\Filament\Resources\WithdrawRequests\Tables\WithdrawRequestsTable;
+use App\Filament\Resources\WithdrawRequests\WithdrawRequestResource;
 use App\Models\AdminUser;
 use App\Models\PaymentGatewayEvent;
 use App\Models\Setting;
@@ -22,13 +24,17 @@ use App\Services\PaymentGateway\Qc168WithdrawalPayoutService;
 use App\Services\Settings\Qc168Settings;
 use App\Services\WithdrawService;
 use App\Support\Api\ApiFormatter;
+use Filament\Actions\Testing\TestAction;
+use Filament\Facades\Filament;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Http\Client\Factory;
 use Illuminate\Http\Client\Request as ClientRequest;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Validation\ValidationException;
+use Livewire\Livewire;
 use PDO;
 use RuntimeException;
 use Spatie\Permission\Models\Permission;
@@ -825,6 +831,243 @@ class Qc168WithdrawalPayoutTest extends TestCase
             ->where('reference_type', WithdrawRequest::class)
             ->where('reference_id', $withdrawal->id)
             ->count());
+    }
+
+    public function test_manual_unpaid_confirmation_preserves_funds_and_records_provider_evidence(): void
+    {
+        $withdrawal = $this->uncertainPayout('manual_unpaid');
+        $attempt = $withdrawal->payoutAttempts()->firstOrFail();
+        $admin = $this->approvalAdmin('resolve-admin', ['CancelGateway:Withdrawal']);
+
+        $this->assertTrue($withdrawal->canConfirmGatewayUnpaid());
+        $resolved = app(Qc168WithdrawalPayoutService::class)->confirmUnpaid(
+            $withdrawal, $admin, $attempt->merchant_order_id,
+            'Ticket QC-3344: never paid and will not pay.', 'Provider confirmed closure.', true, '127.0.0.1',
+        );
+
+        $this->assertTrue($resolved->canRetryPayout());
+        $this->assertTrue($resolved->canCancelPayout());
+        $this->assertFalse($resolved->canConfirmGatewayUnpaid());
+        $this->assertWallet('manual_unpaid', '0.00', '1000.00');
+        $this->assertDatabaseCount('withdrawal_payout_attempts', 1);
+        $this->assertDatabaseCount('wallet_transactions', 1);
+        $attempt->refresh();
+        $this->assertTrue($attempt->isManuallyConfirmedUnpaid());
+        $this->assertSame('uncertain', data_get($attempt->provider_meta, 'submission_result'));
+        $this->assertFalse(data_get($attempt->provider_meta, 'submission_definitive_failure'));
+        $this->assertSame($admin->id, data_get($attempt->provider_meta, 'manual_unpaid_confirmation.admin_user_id'));
+        $this->assertNotEmpty(data_get($attempt->provider_meta, 'manual_unpaid_confirmation.previous_failure_reason'));
+        $event = PaymentGatewayEvent::where('event_type', 'withdrawal.gateway_manually_confirmed_unpaid')->sole();
+        $this->assertSame($attempt->merchant_order_id, $event->merchant_order_id);
+        $this->assertSame('Ticket QC-3344: never paid and will not pay.', $event->payload['provider_confirmation']);
+        $this->assertSame('127.0.0.1', $event->payload['ip']);
+    }
+
+    public function test_manually_confirmed_unpaid_can_retry_with_a_new_order_without_another_debit(): void
+    {
+        $withdrawal = $this->uncertainPayout('manual_retry');
+        $attempt = $withdrawal->payoutAttempts()->firstOrFail();
+        $admin = $this->approvalAdmin('resolve-admin', ['CancelGateway:Withdrawal', 'RetryGateway:Withdrawal']);
+        $service = app(Qc168WithdrawalPayoutService::class);
+        $resolved = $service->confirmUnpaid($withdrawal, $admin, $attempt->merchant_order_id, 'QC168 confirms no payout now or later.', 'Retry requested.', true);
+        Http::swap(new Factory);
+        Http::fake(fn () => $this->createOrderResponse());
+
+        $newAttempt = $service->retry($resolved, $admin, 'Submit a new provider order.');
+
+        $this->assertSame(2, $newAttempt->attempt_no);
+        $this->assertNotSame($attempt->merchant_order_id, $newAttempt->merchant_order_id);
+        $this->assertSame($withdrawal->id, $newAttempt->withdraw_request_id);
+        $this->assertTrue($attempt->fresh()->isManuallyConfirmedUnpaid());
+        $this->assertWallet('manual_retry', '0.00', '1000.00');
+        $this->assertDatabaseCount('wallet_transactions', 1);
+        Http::assertNotSent(fn (ClientRequest $request) => str_ends_with($request->url(), '/octopus/api/order/get'));
+    }
+
+    public function test_manually_confirmed_unpaid_can_refund_full_reserve_once_and_late_completion_requires_review(): void
+    {
+        $withdrawal = $this->uncertainPayout('manual_cancel');
+        $attempt = $withdrawal->payoutAttempts()->firstOrFail();
+        $admin = $this->approvalAdmin('resolve-admin', ['CancelGateway:Withdrawal']);
+        $service = app(Qc168WithdrawalPayoutService::class);
+        $resolved = $service->confirmUnpaid($withdrawal, $admin, $attempt->merchant_order_id, 'QC168 confirms no payout now or later.', 'Return funds.', true);
+        Http::fake();
+        $service->cancel($resolved, $admin, 'Refund after provider confirmation.');
+
+        $this->assertWallet('manual_cancel', '1000.00', '0.00');
+        $this->assertSame('1000.00', WalletTransaction::where('type', 'withdraw_gateway_cancelled')->sole()->amount);
+        try {
+            $service->cancel($resolved, $admin, 'Duplicate click.');
+            $this->fail('A second refund must be blocked.');
+        } catch (RuntimeException) {
+            $this->assertDatabaseCount('wallet_transactions', 2);
+        }
+        $this->sendCallback($this->providerPayload($attempt, 'completed'))->assertOk();
+        $this->assertSame(WithdrawRequest::PAYOUT_REFUND_REVIEW, $resolved->fresh()->payout_status);
+        $this->assertWallet('manual_cancel', '1000.00', '0.00');
+        Http::assertNothingSent();
+    }
+
+    public function test_manual_unpaid_confirmation_requires_permission_evidence_reason_and_acknowledgement(): void
+    {
+        $withdrawal = $this->uncertainPayout('manual_validation');
+        $service = app(Qc168WithdrawalPayoutService::class);
+        $admin = $this->approvalAdmin('resolve-admin', ['RetryGateway:Withdrawal']);
+        $orderId = $withdrawal->gateway_current_merchant_order_id;
+        try {
+            $service->confirmUnpaid($withdrawal, $admin, $orderId, 'Evidence', 'Reason', true);
+            $this->fail('Retry permission alone must not permit manual confirmation.');
+        } catch (AuthorizationException) {
+            $this->assertSame(WithdrawRequest::PAYOUT_SUBMITTED, $withdrawal->fresh()->payout_status);
+        }
+        $admin = $this->approvalAdmin('resolve-admin', ['CancelGateway:Withdrawal']);
+        foreach ([['  ', 'Reason', true], ['Evidence', '  ', true], ['Evidence', 'Reason', false]] as [$evidence, $reason, $acknowledged]) {
+            try {
+                $service->confirmUnpaid($withdrawal, $admin, $orderId, $evidence, $reason, $acknowledged);
+                $this->fail('Incomplete confirmation must be rejected.');
+            } catch (ValidationException) {
+                $this->assertSame(WithdrawRequest::PAYOUT_SUBMITTED, $withdrawal->fresh()->payout_status);
+            }
+        }
+        $this->assertWallet('manual_validation', '0.00', '1000.00');
+        $this->assertSame(0, PaymentGatewayEvent::where('event_type', 'withdrawal.gateway_manually_confirmed_unpaid')->count());
+    }
+
+    public function test_manual_unpaid_confirmation_rejects_stale_order_and_completed_or_processing_attempts(): void
+    {
+        $service = app(Qc168WithdrawalPayoutService::class);
+        $admin = $this->approvalAdmin('resolve-admin', ['CancelGateway:Withdrawal']);
+        foreach (['wrong_order', 'processing', 'completed', 'in_flight'] as $scenario) {
+            $withdrawal = $this->uncertainPayout('manual_'.$scenario);
+            $attempt = $withdrawal->payoutAttempts()->firstOrFail();
+            $orderId = $scenario === 'wrong_order' ? 'stale-order' : $attempt->merchant_order_id;
+            if (in_array($scenario, ['processing', 'completed'], true)) {
+                $this->sendCallback($this->providerPayload($attempt, $scenario))->assertOk();
+            } elseif ($scenario === 'in_flight') {
+                $attempt->forceFill(['provider_meta' => ['claimed_at' => now()->toAtomString()]])->save();
+            }
+            try {
+                $service->confirmUnpaid($withdrawal, $admin, $orderId, 'Evidence', 'Reason', true);
+                $this->fail('A stale or ineligible confirmation must be rejected.');
+            } catch (RuntimeException) {
+                $this->assertFalse($attempt->fresh()->isManuallyConfirmedUnpaid());
+            }
+        }
+    }
+
+    public function test_provider_processing_update_revokes_manual_confirmation_before_retry_or_refund(): void
+    {
+        $withdrawal = $this->uncertainPayout('manual_revoked');
+        $attempt = $withdrawal->payoutAttempts()->firstOrFail();
+        $admin = $this->approvalAdmin('resolve-admin', ['CancelGateway:Withdrawal']);
+        $service = app(Qc168WithdrawalPayoutService::class);
+        $resolved = $service->confirmUnpaid($withdrawal, $admin, $attempt->merchant_order_id, 'Evidence', 'Reason', true);
+        $this->sendCallback($this->providerPayload($attempt, 'processing'))->assertOk();
+
+        $this->assertFalse($attempt->fresh()->isManuallyConfirmedUnpaid());
+        $this->assertSame(WithdrawRequest::PAYOUT_PROCESSING, $resolved->fresh()->payout_status);
+        foreach (['retry', 'cancel'] as $operation) {
+            try {
+                $service->$operation($resolved, $admin, 'Stale operation.');
+                $this->fail('The latest provider status must block this operation.');
+            } catch (RuntimeException) {
+                $this->assertWallet('manual_revoked', '0.00', '1000.00');
+            }
+        }
+        $this->assertDatabaseCount('withdrawal_payout_attempts', 1);
+    }
+
+    public function test_manual_unpaid_action_is_available_on_list_and_details_and_validates_confirmation(): void
+    {
+        $withdrawal = $this->uncertainPayout('manual_ui');
+        $admin = $this->approvalAdmin('resolve-admin', ['ViewAny:WithdrawRequest', 'View:WithdrawRequest', 'CancelGateway:Withdrawal', 'RetryGateway:Withdrawal']);
+        $this->actingAs($admin, 'admin');
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+        Livewire::test(ListWithdrawRequests::class)
+            ->assertActionVisible(TestAction::make('confirm_gateway_unpaid')->table($withdrawal));
+
+        $page = Livewire::test(ViewWithdrawRequest::class, ['record' => $withdrawal->getRouteKey()])
+            ->assertActionVisible('confirm_gateway_unpaid')
+            ->assertActionHidden('retry_payout')
+            ->assertActionHidden('cancel_payout');
+        $data = [
+            'merchant_order_id' => $withdrawal->gateway_current_merchant_order_id,
+            'provider_confirmation' => 'QC168 ticket: unpaid and will not pay.',
+            'reason' => 'Provider confirmed closure.',
+            'confirmed_unpaid' => false,
+        ];
+        $page->callAction('confirm_gateway_unpaid', $data)
+            ->assertHasActionErrors(['confirmed_unpaid']);
+        $page->setActionData(array_merge($data, ['confirmed_unpaid' => true]))
+            ->callMountedAction()
+            ->assertHasNoActionErrors()
+            ->assertActionHidden('confirm_gateway_unpaid')
+            ->assertActionVisible('retry_payout')
+            ->assertActionVisible('cancel_payout');
+        $this->assertTrue($withdrawal->fresh()->canCancelPayout());
+        $this->assertWallet('manual_ui', '0.00', '1000.00');
+    }
+
+    private function uncertainPayout(string $username): WithdrawRequest
+    {
+        $withdrawal = $this->pendingWithdrawal($username);
+        $admin = $this->approvalAdmin('uncertain-approval-admin', ['ApproveInstantGateway:Withdrawal']);
+        Http::fake(fn () => Http::failedConnection('Connection timed out'));
+        try {
+            app(WithdrawService::class)->approveWithInstantGateway($withdrawal, $admin);
+            $this->fail('Submission must be uncertain.');
+        } catch (Qc168UncertainSubmissionException) {
+            return $withdrawal->fresh();
+        }
+    }
+
+    public function test_manual_unpaid_table_action_binds_order_and_records_confirmation_only_once(): void
+    {
+        $withdrawal = $this->uncertainPayout('manual_table');
+        $admin = $this->approvalAdmin('resolve-admin', ['ViewAny:WithdrawRequest', 'View:WithdrawRequest', 'CancelGateway:Withdrawal']);
+        $this->actingAs($admin, 'admin');
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+        Livewire::test(ListWithdrawRequests::class)
+            ->mountAction(TestAction::make('confirm_gateway_unpaid')->table($withdrawal))
+            ->assertActionDataSet(['merchant_order_id' => $withdrawal->gateway_current_merchant_order_id])
+            ->setActionData([
+                'merchant_order_id' => $withdrawal->gateway_current_merchant_order_id,
+                'provider_confirmation' => 'QC168 confirms unpaid and no future payment.',
+                'reason' => 'Resolve timeout.',
+                'confirmed_unpaid' => true,
+            ])
+            ->callMountedAction()
+            ->assertHasNoActionErrors()
+            ->assertActionVisible(TestAction::make('cancel_payout')->table($withdrawal));
+
+        try {
+            app(Qc168WithdrawalPayoutService::class)->confirmUnpaid(
+                $withdrawal, $admin, $withdrawal->gateway_current_merchant_order_id, 'Evidence', 'Duplicate confirmation.', true,
+            );
+            $this->fail('Confirmation from a stale second session must not be applied twice.');
+        } catch (RuntimeException) {
+            $this->assertSame(1, PaymentGatewayEvent::where('event_type', 'withdrawal.gateway_manually_confirmed_unpaid')->count());
+        }
+        $this->assertWallet('manual_table', '0.00', '1000.00');
+    }
+
+    public function test_manual_unpaid_action_is_hidden_without_cancel_permission_or_outside_support_scope(): void
+    {
+        $withdrawal = $this->uncertainPayout('manual_scope');
+        $admin = $this->approvalAdmin('resolve-admin', ['ViewAny:WithdrawRequest', 'View:WithdrawRequest', 'RetryGateway:Withdrawal']);
+        $this->actingAs($admin, 'admin');
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+        Livewire::test(ViewWithdrawRequest::class, ['record' => $withdrawal->getRouteKey()])
+            ->assertActionHidden('confirm_gateway_unpaid');
+
+        $admin = $this->approvalAdmin('resolve-admin', ['CancelGateway:Withdrawal']);
+        $admin->forceFill(['managed_user_id' => $this->user('unrelated-manager')->id])->save();
+        $admin->assignRole(Role::findOrCreate('Support', 'admin'));
+        $this->actingAs($admin, 'admin');
+        $this->expectException(AuthorizationException::class);
+        app(Qc168WithdrawalPayoutService::class)->confirmUnpaid(
+            $withdrawal, $admin, $withdrawal->gateway_current_merchant_order_id, 'Evidence', 'Outside scope.', true,
+        );
     }
 
     public function test_failed_reject_and_overdue_never_finalize_or_release_reserve(): void
