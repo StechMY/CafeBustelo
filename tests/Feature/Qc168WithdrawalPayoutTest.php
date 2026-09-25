@@ -18,6 +18,7 @@ use App\Models\Wallet;
 use App\Models\WalletTransaction;
 use App\Models\WithdrawalPayoutAttempt;
 use App\Models\WithdrawRequest;
+use App\Services\PaymentGateway\PaymentGatewayEventRecorder;
 use App\Services\PaymentGateway\Qc168BalanceService;
 use App\Services\PaymentGateway\Qc168Gateway;
 use App\Services\PaymentGateway\Qc168WithdrawalPayoutService;
@@ -145,6 +146,169 @@ class Qc168WithdrawalPayoutTest extends TestCase
         }
 
         Http::assertNothingSent();
+    }
+
+    public function test_revert_manual_approval_restores_full_reserve_and_allows_gateway_reapproval(): void
+    {
+        $withdrawal = $this->pendingWithdrawal('undo_manual');
+        $admin = $this->approvalAdmin('undo-admin', ['ApproveManual:Withdrawal', 'ApproveScheduledGateway:Withdrawal']);
+        $service = app(WithdrawService::class);
+        $paid = $service->approveManually($withdrawal, $admin, 'Clicked by mistake.');
+        $approval = $paid->manualApprovalEvents()->sole();
+        // Another withdrawal's reserve must not be overwritten by the restoration.
+        Wallet::where('user_id', $paid->user_id)->where('type', Wallet::TYPE_WITHDRAWABLE)
+            ->update(['locked_balance' => '500.00']);
+        Http::fake();
+
+        $pending = $service->revertManualApproval($paid, $admin, $approval->id, 'No transfer was made.', true, '127.0.0.1');
+
+        $this->assertTrue($pending->isPending());
+        $this->assertNull($pending->approval_mode);
+        $this->assertNull($pending->payout_status);
+        $this->assertNull($pending->reviewed_at);
+        $this->assertNull($pending->reviewed_by);
+        $this->assertNull($pending->admin_remark);
+        $this->assertWallet('undo_manual', '0.00', '1500.00');
+        $this->assertDatabaseCount('wallet_transactions', 1);
+        $event = PaymentGatewayEvent::where('event_type', 'withdrawal.manual_approval_reverted')->sole();
+        $this->assertSame($approval->id, $event->payload['approval_event_id']);
+        $this->assertSame('500.00', $event->payload['locked_balance_before']);
+        $this->assertSame('1500.00', $event->payload['locked_balance_after']);
+        $this->assertSame('Clicked by mistake.', $event->payload['before']['admin_remark']);
+        $this->assertSame($admin->id, $event->actor_admin_user_id);
+        $this->assertSame('127.0.0.1', $event->payload['ip']);
+        $this->assertDatabaseHas('payment_gateway_events', ['id' => $approval->id, 'event_type' => 'withdrawal.approved_manual']);
+
+        $service->approveWithScheduledGateway($pending, $admin);
+        $this->assertSame(WithdrawRequest::APPROVAL_MODE_GATEWAY_SCHEDULED, $pending->fresh()->approval_mode);
+        $this->assertWallet('undo_manual', '0.00', '1500.00');
+        Http::assertNothingSent();
+    }
+
+    public function test_revert_manual_approval_cannot_restore_twice_or_replay_an_older_approval(): void
+    {
+        $withdrawal = $this->pendingWithdrawal('undo_replay');
+        $admin = $this->approvalAdmin('undo-admin', ['ApproveManual:Withdrawal']);
+        $service = app(WithdrawService::class);
+        $paid = $service->approveManually($withdrawal, $admin);
+        $oldEventId = $paid->manualApprovalEvents()->sole()->id;
+        $pending = $service->revertManualApproval($paid, $admin, $oldEventId, 'Mistake.', true);
+        try {
+            $service->revertManualApproval($paid, $admin, $oldEventId, 'Duplicate click.', true);
+            $this->fail('Duplicate restoration must be blocked.');
+        } catch (RuntimeException) {
+            $this->assertWallet('undo_replay', '0.00', '1000.00');
+        }
+        $paidAgain = $service->approveManually($pending, $admin);
+        try {
+            $service->revertManualApproval($paidAgain, $admin, $oldEventId, 'Stale browser tab.', true);
+            $this->fail('The previous approval must not authorize undoing a new approval.');
+        } catch (RuntimeException) {
+            $this->assertWallet('undo_replay', '0.00', '0.00');
+        }
+        $pendingAgain = $service->revertManualApproval(
+            $paidAgain, $admin, $paidAgain->manualApprovalEvents()->latest('id')->firstOrFail()->id, 'New mistake.', true,
+        );
+        $service->reject($pendingAgain, $admin, 'Return funds instead.');
+        $this->assertWallet('undo_replay', '1000.00', '0.00');
+        $this->assertDatabaseCount('wallet_transactions', 2);
+    }
+
+    public function test_revert_manual_approval_requires_permission_reason_and_unpaid_confirmation(): void
+    {
+        $withdrawal = $this->pendingWithdrawal('undo_permission');
+        $admin = $this->approvalAdmin('undo-admin', ['ApproveManual:Withdrawal']);
+        $service = app(WithdrawService::class);
+        $paid = $service->approveManually($withdrawal, $admin);
+        $eventId = $paid->manualApprovalEvents()->sole()->id;
+        try {
+            $service->revertManualApproval($paid, $this->admin(), $eventId, 'Mistake.', true);
+            $this->fail('Manual approval permission is required.');
+        } catch (AuthorizationException) {
+            $this->assertWallet('undo_permission', '0.00', '0.00');
+        }
+        foreach ([[' ', true], ['Mistake.', false]] as [$reason, $unpaid]) {
+            try {
+                $service->revertManualApproval($paid, $admin, $eventId, $reason, $unpaid);
+                $this->fail('Reason and unpaid confirmation are required.');
+            } catch (ValidationException) {
+                $this->assertTrue($paid->fresh()->isPayoutCompleted());
+            }
+        }
+        $this->assertSame(0, PaymentGatewayEvent::where('event_type', 'withdrawal.manual_approval_reverted')->count());
+    }
+
+    public function test_revert_manual_approval_blocks_gateway_activity_and_missing_accounting_evidence(): void
+    {
+        $admin = $this->approvalAdmin('undo-admin', ['ApproveManual:Withdrawal']);
+        $service = app(WithdrawService::class);
+        foreach (['gateway_field', 'attempt', 'missing_event', 'refunded'] as $scenario) {
+            $paid = $service->approveManually($this->pendingWithdrawal('undo_'.$scenario), $admin);
+            $eventId = $paid->manualApprovalEvents()->sole()->id;
+            if ($scenario === 'gateway_field') {
+                $paid->forceFill(['gateway_submitted_at' => now()])->save();
+            } elseif ($scenario === 'attempt') {
+                $paid->payoutAttempts()->create([
+                    'attempt_no' => 1, 'provider' => 'qc168', 'merchant_order_id' => 'unexpected-'.$paid->id,
+                    'amount' => $paid->net_amount, 'currency' => 'vnd', 'payment_channel' => 'vn02', 'gateway_status' => 'completed',
+                    'bank_name_snapshot' => $paid->bank_name, 'bank_code_snapshot' => $paid->bank_code,
+                    'bank_account_name_snapshot' => $paid->bank_account_name, 'bank_account_no_snapshot' => $paid->bank_account_no,
+                ]);
+            } elseif ($scenario === 'missing_event') {
+                DB::table('payment_gateway_events')->where('id', $eventId)->delete();
+            } else {
+                $paid->gatewayCancellationTransactions()->create([
+                    'user_id' => $paid->user_id, 'wallet_id' => Wallet::where('user_id', $paid->user_id)->where('type', Wallet::TYPE_WITHDRAWABLE)->sole()->id,
+                    'wallet_type' => Wallet::TYPE_WITHDRAWABLE, 'type' => 'withdraw_gateway_cancelled', 'direction' => 'credit',
+                    'amount' => '1000.00', 'balance_before' => '0.00', 'balance_after' => '1000.00',
+                ]);
+            }
+            try {
+                $service->revertManualApproval($paid, $admin, $eventId, 'Mistake.', true);
+                $this->fail('An unsafe restoration must be blocked.');
+            } catch (RuntimeException) {
+                $this->assertWallet('undo_'.$scenario, '0.00', '0.00');
+                $this->assertTrue($paid->fresh()->isPayoutCompleted());
+            }
+        }
+    }
+
+    public function test_revert_manual_approval_rolls_back_wallet_and_status_when_audit_record_fails(): void
+    {
+        $admin = $this->approvalAdmin('undo-admin', ['ApproveManual:Withdrawal']);
+        $paid = app(WithdrawService::class)->approveManually($this->pendingWithdrawal('undo_atomic'), $admin);
+        $eventId = $paid->manualApprovalEvents()->sole()->id;
+        $this->mock(PaymentGatewayEventRecorder::class)
+            ->shouldReceive('recordWithdrawal')->once()->andThrow(new RuntimeException('Audit unavailable.'));
+        try {
+            app(WithdrawService::class)->revertManualApproval($paid, $admin, $eventId, 'Mistake.', true);
+            $this->fail('The failed audit must roll back the restoration.');
+        } catch (RuntimeException $exception) {
+            $this->assertSame('Audit unavailable.', $exception->getMessage());
+            $this->assertWallet('undo_atomic', '0.00', '0.00');
+            $this->assertTrue($paid->fresh()->isPayoutCompleted());
+            $this->assertSame(WithdrawRequest::APPROVAL_MODE_MANUAL, $paid->fresh()->approval_mode);
+        }
+    }
+
+    public function test_revert_manual_approval_action_returns_detail_page_to_pending_actions(): void
+    {
+        $admin = $this->approvalAdmin('undo-admin', ['ApproveManual:Withdrawal', 'ViewAny:WithdrawRequest', 'View:WithdrawRequest']);
+        $paid = app(WithdrawService::class)->approveManually($this->pendingWithdrawal('undo_ui'), $admin);
+        $this->actingAs($admin, 'admin');
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+        Livewire::test(ListWithdrawRequests::class)
+            ->assertActionVisible(TestAction::make('revert_manual_approval')->table($paid));
+        $page = Livewire::test(ViewWithdrawRequest::class, ['record' => $paid->getRouteKey()])
+            ->mountAction('revert_manual_approval')
+            ->assertActionDataSet(['approval_event_id' => $paid->manualApprovalEvents()->sole()->id]);
+        $page->setActionData(['reason' => 'No transfer made.', 'confirmed_unpaid' => false])
+            ->callMountedAction()->assertHasActionErrors(['confirmed_unpaid']);
+        $page->setActionData(['reason' => 'No transfer made.', 'confirmed_unpaid' => true])
+            ->callMountedAction()->assertHasNoActionErrors()
+            ->assertActionHidden('revert_manual_approval')->assertActionVisible('approve_manual');
+        $this->assertTrue($paid->fresh()->isPending());
+        $this->assertWallet('undo_ui', '0.00', '1000.00');
     }
 
     public function test_instant_gateway_approval_commits_then_submits_using_the_shared_attempt_path(): void

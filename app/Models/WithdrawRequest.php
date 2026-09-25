@@ -157,6 +157,20 @@ class WithdrawRequest extends Model
         return $this->status === self::STATUS_PENDING;
     }
 
+    public function manualApprovalEvents(): HasMany
+    {
+        return $this->hasMany(PaymentGatewayEvent::class)
+            ->where('event_type', 'withdrawal.approved_manual');
+    }
+
+    public function canRevertManualApproval(): bool
+    {
+        return $this->isApproved()
+            && $this->approval_mode === self::APPROVAL_MODE_MANUAL
+            && $this->isPayoutCompleted()
+            && $this->gateway_provider === null;
+    }
+
     public function isApproved(): bool
     {
         return $this->status === self::STATUS_APPROVED;

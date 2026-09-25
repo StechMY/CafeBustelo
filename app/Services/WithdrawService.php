@@ -14,6 +14,7 @@ use App\Services\PaymentGateway\Qc168WithdrawalPayoutService;
 use App\Services\Settings\Qc168Settings;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 use RuntimeException;
 use Throwable;
@@ -197,6 +198,101 @@ class WithdrawService
 
             return $lockedRequest;
         });
+    }
+
+    public function revertManualApproval(
+        WithdrawRequest $withdrawRequest,
+        AdminUser $adminUser,
+        int $approvalEventId,
+        string $reason,
+        bool $confirmedUnpaid,
+        ?string $ip = null,
+    ): WithdrawRequest {
+        return DB::transaction(function () use ($withdrawRequest, $adminUser, $approvalEventId, $reason, $confirmedUnpaid, $ip): WithdrawRequest {
+            $lockedRequest = WithdrawRequest::query()->whereKey($withdrawRequest->id)->lockForUpdate()->firstOrFail();
+            Gate::forUser($adminUser)->authorize('revertManualApproval', $lockedRequest);
+            $reason = trim($reason);
+            Validator::make([
+                'reason' => $reason,
+                'confirmed_unpaid' => $confirmedUnpaid,
+            ], [
+                'reason' => ['required', 'string', 'max:1000'],
+                'confirmed_unpaid' => ['accepted'],
+            ])->validate();
+
+            $approval = $lockedRequest->manualApprovalEvents()->latest('id')->first();
+            if (! $lockedRequest->canRevertManualApproval()
+                || ! $approval
+                || $approval->id !== $approvalEventId
+                || (string) data_get($approval->payload, 'reserved_amount_consumed') !== (string) $lockedRequest->amount
+                || $lockedRequest->payoutAttempts()->exists()
+                || $lockedRequest->hasGatewayCancellationLedger()) {
+                throw new RuntimeException(__('withdraw.revert_manual_not_allowed'));
+            }
+
+            foreach ([
+                'gateway_release_at', 'gateway_release_delay_hours_snapshot',
+                'gateway_submitted_at', 'gateway_completed_at', 'gateway_last_callback_at',
+                'gateway_last_synced_at', 'gateway_current_merchant_order_id',
+                'gateway_payment_status', 'gateway_final_amount', 'gateway_fail_reason', 'gateway_meta',
+            ] as $field) {
+                if ($lockedRequest->getAttribute($field) !== null) {
+                    throw new RuntimeException(__('withdraw.revert_manual_not_allowed'));
+                }
+            }
+
+            $user = $lockedRequest->user()->lockForUpdate()->firstOrFail();
+            $wallet = Wallet::query()->where('user_id', $user->id)
+                ->where('type', Wallet::TYPE_WITHDRAWABLE)->lockForUpdate()->firstOrFail();
+            $lockedBefore = $wallet->locked_balance;
+
+            // Undo consumeLocked without crediting spendable funds or debiting the user again.
+            $wallet->increment('locked_balance', $lockedRequest->amount);
+            $wallet->refresh();
+
+            $reset = [
+                'status' => WithdrawRequest::STATUS_PENDING,
+                'approval_mode' => null,
+                'payout_status' => null,
+                'reviewed_by' => null,
+                'reviewed_at' => null,
+                'admin_remark' => null,
+            ];
+            $before = array_intersect_key($lockedRequest->getRawOriginal(), $reset);
+
+            // This guarded reset is the only exception here to approval-mode immutability.
+            $updated = WithdrawRequest::query()->whereKey($lockedRequest->id)
+                ->where('status', WithdrawRequest::STATUS_APPROVED)
+                ->where('approval_mode', WithdrawRequest::APPROVAL_MODE_MANUAL)
+                ->where('payout_status', WithdrawRequest::PAYOUT_COMPLETED)
+                ->update($reset);
+            if ($updated !== 1) {
+                throw new RuntimeException(__('withdraw.revert_manual_not_allowed'));
+            }
+            $lockedRequest->refresh();
+            $this->eventRecorder->recordWithdrawal(
+                'withdrawal.manual_approval_reverted',
+                $lockedRequest,
+                actor: $adminUser,
+                source: 'filament',
+                reason: $reason,
+                paymentStatus: WithdrawRequest::STATUS_PENDING,
+                payload: [
+                    'ip' => $ip,
+                    'approval_event_id' => $approvalEventId,
+                    'confirmed_unpaid' => true,
+                    'before' => $before,
+                    'after' => $reset,
+                    'wallet_id' => $wallet->id,
+                    'available_balance' => $wallet->balance,
+                    'locked_balance_before' => $lockedBefore,
+                    'locked_balance_after' => $wallet->locked_balance,
+                    'reserved_amount_restored' => $lockedRequest->amount,
+                ],
+            );
+
+            return $lockedRequest;
+        }, 3);
     }
 
     public function approveWithScheduledGateway(

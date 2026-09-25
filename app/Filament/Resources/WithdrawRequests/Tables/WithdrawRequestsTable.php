@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\WithdrawRequests\Tables;
 
 use App\Filament\Resources\WithdrawRequests\Actions\ConfirmGatewayUnpaidAction;
+use App\Filament\Resources\WithdrawRequests\Actions\RevertManualApprovalAction;
 use App\Models\WithdrawalPayoutAttempt;
 use App\Models\WithdrawRequest;
 use App\Services\PaymentGateway\Qc168Gateway;
@@ -1022,6 +1023,7 @@ class WithdrawRequestsTable
                     |--------------------------------------------------------------------------
                     */
                     ConfirmGatewayUnpaidAction::make(usePreloadedCancellationState: true),
+                    RevertManualApprovalAction::make(),
                     Action::make('retry_payout')
                         ->label(__('withdraw.retry_payout'))
                         ->icon('heroicon-o-arrow-path')

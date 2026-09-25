@@ -31,6 +31,11 @@ class WithdrawRequestPolicy
             && FilamentSupportScope::canAccessUserId($withdrawRequest->user_id);
     }
 
+    public function revertManualApproval(AuthUser $user, WithdrawRequest $withdrawRequest): bool
+    {
+        return $this->approveManual($user, $withdrawRequest);
+    }
+
     public function approveInstantGateway(AuthUser $user, WithdrawRequest $withdrawRequest): bool
     {
         return $user->can('ApproveInstantGateway:Withdrawal')
