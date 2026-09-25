@@ -26,13 +26,16 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+        $middleware->prependToPriorityList(
+            \Illuminate\Routing\Middleware\ThrottleRequests::class,
+            \App\Http\Middleware\AuditOtpSend::class,
+        );
         $middleware->validateCsrfTokens(except: [
             'payment-gateway/qc168/callback',
             'payment-gateway/qc168/withdrawal/callback',
         ]);
 
         $middleware->trustProxies(
-            at: '*',
             headers: Request::HEADER_X_FORWARDED_FOR |
             Request::HEADER_X_FORWARDED_HOST |
             Request::HEADER_X_FORWARDED_PORT |
@@ -43,6 +46,8 @@ return Application::configure(basePath: dirname(__DIR__))
             SetLocale::class,
         ]);
         $middleware->alias([
+            'otp.audit' => \App\Http\Middleware\AuditOtpSend::class,
+            'otp.challenge' => \App\Http\Middleware\VerifyOtpChallenge::class,
             'abilities' => CheckAbilities::class,
             'ability' => CheckForAnyAbility::class,
             'dashboard.api-client' => EnsureDashboardApiClient::class,
@@ -50,6 +55,8 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
+        $exceptions->dontFlash(['turnstile_token']);
+
         $exceptions->render(function (ValidationException $exception, Request $request) {
             if ($request->is('api/*')) {
                 return ApiResponse::error('Validation failed', $exception->errors(), 422);

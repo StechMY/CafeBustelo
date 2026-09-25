@@ -13,6 +13,8 @@ class RegisterOtpController extends Controller
 {
     public function send(Request $request, OtpService $otpService): JsonResponse
     {
+        $request->validate(['phone' => ['required', 'string', 'max:40']]);
+
         $request->merge([
             'phone' => $otpService->normalizePhone((string) $request->input('phone')),
         ]);

@@ -25,6 +25,16 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        RateLimiter::for('otp-send', function (Request $request): array {
+            $limits = [Limit::perMinute(3)->by('otp-ip:'.$request->ip())];
+
+            if ($request->user()) {
+                $limits[] = Limit::perMinute(3)->by('otp-user:'.$request->user()->getAuthIdentifier());
+            }
+
+            return $limits;
+        });
+
         RateLimiter::for('management-dashboard', function (Request $request): Limit {
             $client = $request->user();
 

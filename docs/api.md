@@ -1,5 +1,12 @@
 # API Documentation
 
+OTP protection update: all three App OTP sends require `turnstile_token`.
+See [Flutter Turnstile integration](flutter-turnstile-handoff.md) for the hosted
+challenge page and bridge contract. Old App versions must update. All OTP routes share
+3 requests/minute per IP and, when logged in, per account. Phone cooldown applies
+across purposes, including provider failures/timeouts. Only valid Vietnamese
+mobile formats are accepted. See [OTP protection and deployment](otp-protection.md).
+
 Base path: `/api/v1`
 
 All responses use:
@@ -92,7 +99,8 @@ POST /api/v1/register/send-otp
 
 ```json
 {
-  "phone": "60123456789"
+  "phone": "0912345678",
+  "turnstile_token": "fresh-token-from-otp_register"
 }
 ```
 
@@ -119,7 +127,7 @@ POST /api/v1/register
 {
   "name": "Jane",
   "username": "jane123",
-  "phone": "60123456789",
+  "phone": "0912345678",
   "otp_code": "123456",
   "referral_code": "ABCD1234",
   "password": "password123",
@@ -244,7 +252,8 @@ POST /api/v1/bank-account/send-otp
 
 ```json
 {
-  "phone": "60123456789"
+  "phone": "0912345678",
+  "turnstile_token": "fresh-token-from-otp_bank_account"
 }
 ```
 
@@ -261,7 +270,7 @@ POST /api/v1/bank-account
   "bank_account_name": "Customer Name",
   "bank_name": "Vietcombank",
   "bank_account_no": "1234567890",
-  "phone": "60123456789",
+  "phone": "0912345678",
   "otp_code": "123456"
 }
 ```
@@ -274,6 +283,12 @@ Change password uses SMS OTP purpose `change_password`. The backend always sends
 
 ```http
 POST /api/v1/account/password/send-otp
+```
+
+```json
+{
+  "turnstile_token": "fresh-token-from-otp_change_password"
+}
 ```
 
 Success returns `resend_seconds` and `expires_in_minutes`.

@@ -64,6 +64,12 @@ use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', '/dashboard');
 
+Route::get('/otp/challenge/{purpose}', function (string $purpose) {
+    return response()->view('otp.app-challenge', compact('purpose'))
+        ->header('Cache-Control', 'no-store');
+})->whereIn('purpose', ['register', 'bank_account', 'change_password'])
+    ->name('otp.app-challenge');
+
 Route::post('/payment-gateway/qc168/callback', Qc168CallbackController::class)
     ->middleware('throttle:120,1')
     ->name('payment-gateway.qc168.callback');
@@ -81,11 +87,11 @@ Route::post('/human-gate/verify', [HumanGateController::class, 'verify'])
     ->middleware(['web', 'throttle:30,1']);
 
 Route::post('/register/send-otp', [RegisterOtpController::class, 'send'])
-    ->middleware('throttle:3,1')
+    ->middleware(['otp.audit:register', 'throttle:otp-send', 'otp.challenge:register'])
     ->name('register.otp.send');
 
 Route::post('/bank-account/send-otp', [BankAccountOtpController::class, 'send'])
-    ->middleware(['auth', 'throttle:3,1'])
+    ->middleware(['auth', 'otp.audit:bank_account', 'throttle:otp-send', 'otp.challenge:bank_account'])
     ->name('bank-account.otp.send');
 
 Route::middleware(['guest', 'web', 'human.only'])->group(function (): void {
@@ -193,7 +199,7 @@ Route::middleware('auth')->group(function (): void {
         ->name('settings.password.edit');
 
     Route::post('/settings/password/send-otp', [AccountPasswordController::class, 'sendOtp'])
-        ->middleware('throttle:3,1')
+        ->middleware(['otp.audit:change_password', 'throttle:otp-send', 'otp.challenge:change_password'])
         ->name('settings.password.otp.send');
 
     Route::post('/settings/password', [AccountPasswordController::class, 'update'])

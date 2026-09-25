@@ -52,6 +52,14 @@ return [
 
     'channels' => [
 
+        'otp' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/otp.log'),
+            'level' => 'info',
+            'days' => 30,
+            'replace_placeholders' => true,
+        ],
+
         'stack' => [
             'driver' => 'stack',
             'channels' => explode(',', env('LOG_STACK', 'single')),

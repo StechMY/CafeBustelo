@@ -147,6 +147,7 @@
                         </div>
 
                         <div data-otp-message class="mt-1.5 hidden text-xs font-bold sm:text-sm"></div>
+                        <x-otp-challenge purpose="bank_account" />
 
                         {{-- <p class="mt-2 text-xs font-bold text-[#003b7a]/60">
                         {{ __('otp.phone_prefix_hint') }}

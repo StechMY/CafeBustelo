@@ -40,7 +40,7 @@ Route::prefix('internal/v1')
 
 Route::prefix('v1')->name('api.v1.')->group(function (): void {
     Route::post('/register/send-otp', [RegisterOtpController::class, 'send'])
-        ->middleware('throttle:3,1')
+        ->middleware(['otp.audit:register', 'throttle:otp-send', 'otp.challenge:register'])
         ->name('register.otp.send');
     Route::post('/register', [AuthController::class, 'register'])->name('register');
     Route::post('/login', [AuthController::class, 'login'])->name('login');
@@ -58,7 +58,7 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
         Route::post('/profile/avatar', [ProfileController::class, 'updateAvatar'])->name('profile.avatar.update');
         Route::delete('/profile/avatar', [ProfileController::class, 'deleteAvatar'])->name('profile.avatar.delete');
         Route::post('/account/password/send-otp', [AccountPasswordController::class, 'sendOtp'])
-            ->middleware('throttle:3,1')
+            ->middleware(['otp.audit:change_password', 'throttle:otp-send', 'otp.challenge:change_password'])
             ->name('account.password.otp.send');
         Route::post('/account/password', [AccountPasswordController::class, 'update'])->name('account.password.update');
 
@@ -78,7 +78,7 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
         Route::get('/withdraw', [WithdrawController::class, 'index'])->name('withdraw.index');
         Route::post('/withdraw', [WithdrawController::class, 'store'])->name('withdraw.store');
         Route::post('/bank-account/send-otp', [BankAccountOtpController::class, 'send'])
-            ->middleware('throttle:3,1')
+            ->middleware(['otp.audit:bank_account', 'throttle:otp-send', 'otp.challenge:bank_account'])
             ->name('bank-account.otp.send');
         Route::post('/bank-account', [BankAccountController::class, 'store'])->name('bank-account.store');
 

@@ -1,6 +1,10 @@
 <?php
 
 return [
+    'challenge_required' => '请先完成安全验证，再发送验证码。',
+    'service_unavailable' => '暂时无法发送验证码，请稍后再试。',
+    'invalid_phone' => '请输入有效的越南手机号码。',
+    'invalid_destination' => '此操作不允许使用该手机号码。',
     'sent' => '验证码已发送。',
     'send_code' => '发送验证码',
     'verification_code' => '验证码',

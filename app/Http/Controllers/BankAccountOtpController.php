@@ -19,6 +19,8 @@ class BankAccountOtpController extends Controller
             ], 422);
         }
 
+        $request->validate(['phone' => ['required', 'string', 'max:40']]);
+
         $request->merge([
             'phone' => $otpService->normalizePhone((string) $request->input('phone')),
         ]);

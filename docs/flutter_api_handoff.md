@@ -1,5 +1,12 @@
 # Flutter API Handoff
 
+OTP protection update: all three OTP sends now require `turnstile_token`.
+Implement [Flutter Turnstile integration](flutter-turnstile-handoff.md) before
+the backend release; old clients cannot send OTP afterward.
+Handle 429 (IP/account limit) and 422 (challenge/phone validation,
+cooldown or unavailable sending). Cooldown now spans purposes and failed/uncertain
+provider submissions. See [OTP protection and deployment](otp-protection.md).
+
 ## 1. Overview
 
 Base API URL format:
@@ -72,7 +79,8 @@ Body:
 
 ```json
 {
-  "phone": "60123456789"
+  "phone": "0912345678",
+  "turnstile_token": "fresh-token-from-otp_register"
 }
 ```
 
@@ -114,7 +122,7 @@ Example:
 {
   "name": "Jane",
   "username": "jane123",
-  "phone": "60123456789",
+  "phone": "0912345678",
   "otp_code": "123456",
   "referral_code": "ABCD1234",
   "password": "password123",
@@ -371,6 +379,12 @@ Auth required: yes
 
 Laravel sends OTP purpose `change_password` to the authenticated user's saved phone number. Flutter must not send a phone number for this flow.
 
+```json
+{
+  "turnstile_token": "fresh-token-from-otp_change_password"
+}
+```
+
 Step 2 URL: `/api/v1/account/password`
 
 Auth required: yes
@@ -490,7 +504,8 @@ Auth: Bearer token required
 
 ```json
 {
-  "phone": "60123456789"
+  "phone": "0912345678",
+  "turnstile_token": "fresh-token-from-otp_bank_account"
 }
 ```
 
@@ -520,7 +535,7 @@ Auth: Bearer token required
   "bank_account_name": "Customer Name",
   "bank_name": "Vietcombank",
   "bank_account_no": "1234567890",
-  "phone": "60123456789",
+  "phone": "0912345678",
   "otp_code": "123456"
 }
 ```

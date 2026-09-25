@@ -1,6 +1,10 @@
 <?php
 
 return [
+    'challenge_required' => 'Vui lòng hoàn tất xác minh bảo mật trước khi gửi OTP.',
+    'service_unavailable' => 'Tạm thời không thể gửi OTP. Vui lòng thử lại sau.',
+    'invalid_phone' => 'Vui lòng nhập số điện thoại di động Việt Nam hợp lệ.',
+    'invalid_destination' => 'Không thể sử dụng số điện thoại này cho thao tác này.',
     'sent' => 'Mã OTP đã được gửi.',
     'send_code' => 'Gửi OTP',
     'verification_code' => 'Mã xác minh',

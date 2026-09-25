@@ -99,6 +99,7 @@
                         </div>
 
                         <div data-otp-message class="mt-2 hidden text-sm font-bold"></div>
+                        <x-otp-challenge purpose="register" />
 
                         {{-- <p class="mt-2 text-xs font-bold text-[#003b7a]/60">
                             {{ __('otp.phone_prefix_hint') }}

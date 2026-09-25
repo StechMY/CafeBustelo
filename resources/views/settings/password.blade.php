@@ -39,8 +39,9 @@
                         </div>
                     @enderror
 
-                    <form method="POST" action="{{ route('settings.password.otp.send') }}" class="mt-4">
+                    <form method="POST" action="{{ route('settings.password.otp.send') }}" class="mt-4" data-otp-form>
                         @csrf
+                        <x-otp-challenge purpose="change_password" />
 
                         <button
                                 type="submit"

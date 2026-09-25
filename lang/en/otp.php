@@ -1,6 +1,10 @@
 <?php
 
 return [
+    'challenge_required' => 'Complete the security verification before sending an OTP.',
+    'service_unavailable' => 'OTP sending is temporarily unavailable. Please try again later.',
+    'invalid_phone' => 'Enter a valid Vietnamese mobile number.',
+    'invalid_destination' => 'This phone number cannot be used for this operation.',
     'sent' => 'OTP has been sent.',
     'send_code' => 'Send OTP',
     'verification_code' => 'Verification Code',

@@ -1,6 +1,10 @@
 <?php
 
 return [
+    'challenge_required' => 'Selesaikan verifikasi keamanan sebelum mengirim OTP.',
+    'service_unavailable' => 'Pengiriman OTP sementara tidak tersedia. Silakan coba lagi nanti.',
+    'invalid_phone' => 'Masukkan nomor ponsel Vietnam yang valid.',
+    'invalid_destination' => 'Nomor telepon ini tidak dapat digunakan untuk tindakan ini.',
     'sent' => 'Kode OTP telah dikirim.',
     'send_code' => 'Kirim OTP',
     'verification_code' => 'Kode Verifikasi',

@@ -18,6 +18,8 @@ class BankAccountOtpController extends Controller
             return ApiResponse::error(__('bank_account.already_bound'), [], 422);
         }
 
+        $request->validate(['phone' => ['required', 'string', 'max:40']]);
+
         $request->merge([
             'phone' => $otpService->normalizePhone((string) $request->input('phone')),
         ]);
