@@ -37,6 +37,7 @@ class AuditOtpSend
             Log::channel('otp')->info('otp.send', [
                 'request_id' => $id,
                 'route' => $request->route()?->getName(),
+                'entry_point' => $request->is('api/*') ? 'api' : 'web',
                 'purpose' => $purpose,
                 'user_id' => $request->user()?->getAuthIdentifier(),
                 'ip' => $request->ip(),
@@ -47,6 +48,10 @@ class AuditOtpSend
                 'status' => $status,
                 'result' => $status === 429 ? 'rate_limited' : $request->attributes->get('otp_result'),
                 'sms_uid' => $request->attributes->get('otp_sms_uid'),
+                'sms_provider' => $request->attributes->get('otp_sms_provider'),
+                'sms_attempted_at' => $request->attributes->get('otp_sms_attempted_at'),
+                'message_locale' => $request->attributes->get('otp_message_locale'),
+                'message_content_redacted' => $request->attributes->get('otp_message_content_redacted'),
             ]);
         }
     }

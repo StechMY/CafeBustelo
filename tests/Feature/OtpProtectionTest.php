@@ -84,6 +84,8 @@ class OtpProtectionTest extends TestCase
             ->assertUnprocessable()->assertJsonValidationErrors('turnstile_token');
         Http::assertNothingSent();
         $this->assertSame(0, DB::table('phone_otps')->count());
+        Log::shouldHaveReceived('info')->withArgs(fn ($message, $context) => $message === 'otp.send'
+            && $context['message_content_redacted'] === null && $context['sms_attempted_at'] === null);
     }
 
     #[DataProvider('webRoutes')]
@@ -96,15 +98,91 @@ class OtpProtectionTest extends TestCase
         $route === 'settings.password.otp.send' ? $response->assertRedirect() : $response->assertOk();
         Http::assertSentCount(2);
         $this->assertSame($purpose, DB::table('phone_otps')->value('purpose'));
-        Log::shouldHaveReceived('info')->withArgs(function (string $message, array $context): bool {
+        Log::shouldHaveReceived('info')->withArgs(function (string $message, array $context) use ($route): bool {
             $serialized = json_encode($context);
 
             return $message === 'otp.send' && $context['result'] === 'submitted'
                 && $context['sms_uid'] === 'test-batch'
+                && $context['entry_point'] === (str_starts_with($route, 'api.') ? 'api' : 'web')
+                && $context['sms_provider'] === 'abosend'
                 && ! str_contains($serialized, 'one-use-token')
                 && ! str_contains($serialized, 'private-test-secret')
                 && ! str_contains($serialized, '84912345678');
         });
+    }
+
+    public static function messageLocales(): array
+    {
+        return [['en'], ['vi'], ['zh_CN'], ['id']];
+    }
+
+    #[DataProvider('messageLocales')]
+    public function test_audit_records_the_actual_outgoing_message_with_otp_redacted(string $locale): void
+    {
+        app()->setLocale($locale);
+        $this->fakeProvider();
+        $this->postJson(route('api.v1.register.otp.send'), [
+            'phone' => '0912345678', 'turnstile_token' => 'valid-token',
+        ])->assertOk();
+        $sent = Http::recorded(fn ($request) => str_contains($request->url(), 'sms-provider'))->first()[0]['content'];
+        $this->assertSame(1, preg_match('/[0-9]{6}/', $sent, $matches));
+        $redacted = str_replace($matches[0], '******', $sent);
+        Log::shouldHaveReceived('info')->withArgs(fn ($message, $context) => $message === 'otp.send'
+            && $context['message_content_redacted'] === $redacted
+            && $context['message_locale'] === $locale
+            && $context['sms_uid'] === 'test-batch'
+            && $context['purpose'] === 'register'
+            && is_string($context['sms_attempted_at'])
+            && ! str_contains($context['message_content_redacted'], $matches[0]));
+    }
+
+    public function test_snapshot_preserves_prefix_and_spacing_and_does_not_rebuild_a_changed_template(): void
+    {
+        app()->setLocale('en');
+        app('translator')->addLines(['otp.sms_message' => 'Qsms:  :code / :code.'], 'en');
+        Http::fake([
+            'challenges.cloudflare.com/*' => Http::response(['success' => true, 'hostname' => 'otp.test', 'action' => 'otp_register']),
+            'sms-provider.test/*' => function ($request) {
+                $this->assertMatchesRegularExpression('/^Qsms:  ([0-9]{6}) \/ \1\.$/', $request['content']);
+                app('translator')->addLines(['otp.sms_message' => 'New template :code'], 'en');
+
+                return Http::response(['code' => 200, 'data' => ['sendCode' => 'test-batch']]);
+            }]);
+        $this->postJson(route('api.v1.register.otp.send'), [
+            'phone' => '0912345678', 'turnstile_token' => 'valid-token',
+        ])->assertOk();
+        Log::shouldHaveReceived('info')->withArgs(fn ($message, $context) => $message === 'otp.send'
+            && $context['message_content_redacted'] === 'Qsms:  ****** / ******.');
+    }
+
+    public static function submissionFailures(): array
+    {
+        return [['provider_rejected'], ['provider_uncertain']];
+    }
+
+    #[DataProvider('submissionFailures')]
+    public function test_failed_submission_still_records_the_redacted_content(string $result): void
+    {
+        $sent = null;
+        Http::fake([
+            'challenges.cloudflare.com/*' => Http::response(['success' => true, 'hostname' => 'otp.test', 'action' => 'otp_register']),
+            'sms-provider.test/*' => function ($request) use ($result, &$sent) {
+                $sent = $request['content'];
+                if ($result === 'provider_uncertain') {
+                    throw new ConnectionException('timeout');
+                }
+
+                return Http::response(['code' => 403]);
+            }]);
+        $this->postJson(route('api.v1.register.otp.send'), [
+            'phone' => '0912345678', 'turnstile_token' => 'valid-token',
+        ])->assertUnprocessable();
+        $this->assertIsString($sent);
+        $this->assertSame(1, preg_match('/[0-9]{6}/', $sent, $matches));
+        Log::shouldHaveReceived('info')->withArgs(fn ($message, $context) => $message === 'otp.send'
+            && $context['result'] === $result && $context['sms_uid'] === null
+            && $context['message_content_redacted'] === str_replace($matches[0], '******', $sent));
+        $this->assertSame(0, DB::table('phone_otps')->count());
     }
 
     public static function invalidChallenges(): array

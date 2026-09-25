@@ -108,6 +108,12 @@ class OtpService
             'minutes' => config('sms.otp_expire_minutes'),
         ]);
 
+        // Snapshot the actual outgoing content, never the plaintext OTP or a later template.
+        request()->attributes->set('otp_message_content_redacted', str_replace($code, '******', $message));
+        request()->attributes->set('otp_message_locale', app()->getLocale());
+        request()->attributes->set('otp_sms_provider', 'abosend');
+        request()->attributes->set('otp_sms_attempted_at', now()->toIso8601String());
+
         try {
             request()->attributes->set('otp_result', 'provider_uncertain');
             $result = $this->smsClient->send($phone, $message);

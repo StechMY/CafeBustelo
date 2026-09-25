@@ -76,6 +76,24 @@ IP, truncated User-Agent, HMAC phone hash, last four digits, HTTP status, result
 and accepted provider UID. No request body, challenge token, provider secret,
 plaintext OTP or full phone is logged. Restrict access and preserve incident logs.
 
+Each attempted SMS also records `sms_provider`, `sms_attempted_at` (ISO 8601 with
+timezone), `message_locale` and `message_content_redacted`. This is a snapshot of
+the actual outgoing message with every occurrence of the generated OTP replaced
+by `******`, captured immediately before invoking the SMS client. It is not rebuilt
+from a template afterward. `entry_point` is `web` or `api`; `api` describes the route,
+not proof that the caller is the official App. The existing route/purpose and
+`sms_uid` fields tie the snapshot to the provider batch. Rejections/timeouts retain
+the snapshot but may have no batch UID; requests blocked before message creation
+have null snapshot fields. A snapshot records an attempted submission, not proof
+of provider acceptance or delivery.
+
+To investigate a `Qsms:` prefix, search `storage/logs/otp-YYYY-MM-DD.log` for the
+provider batch UID and compare `message_content_redacted` with the provider's
+original API content and final downstream content, masking their OTP as well.
+Preserve case, spacing, punctuation and prefixes during comparison. Content is
+retained for the channel's existing 30-day retention period; this addition needs
+no database migration and cannot recover historical messages before deployment.
+
 Results cover challenge rejection/unavailability, invalid destination, cooldown,
 concurrent sends, throttling, disabled sending, provider rejection/uncertainty,
 accepted-but-not-persisted and submitted. Submission is not final delivery or
