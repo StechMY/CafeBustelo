@@ -1,6 +1,9 @@
 <?php
 
 return [
+    'challenge_load_failed' => '安全验证未能完成。请启用 JavaScript、检查网络后重试；如果持续失败，请更新 iOS 或浏览器。',
+    'challenge_app_required' => '请返回 App 重新打开验证，目前无法连接 App。',
+    'challenge_retry' => '重新验证',
     'challenge_required' => '请先完成安全验证，再发送验证码。',
     'service_unavailable' => '暂时无法发送验证码，请稍后再试。',
     'invalid_phone' => '请输入有效的越南手机号码。',

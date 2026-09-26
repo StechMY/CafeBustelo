@@ -1,6 +1,9 @@
 <?php
 
 return [
+    'challenge_load_failed' => 'Không thể hoàn tất xác minh bảo mật. Hãy bật JavaScript, kiểm tra kết nối và thử lại. Nếu vẫn lỗi, hãy cập nhật iOS hoặc trình duyệt.',
+    'challenge_app_required' => 'Hãy quay lại ứng dụng và mở lại xác minh. Kết nối với ứng dụng không khả dụng.',
+    'challenge_retry' => 'Thử xác minh lại',
     'challenge_required' => 'Vui lòng hoàn tất xác minh bảo mật trước khi gửi OTP.',
     'service_unavailable' => 'Tạm thời không thể gửi OTP. Vui lòng thử lại sau.',
     'invalid_phone' => 'Vui lòng nhập số điện thoại di động Việt Nam hợp lệ.',

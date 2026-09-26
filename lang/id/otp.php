@@ -1,6 +1,9 @@
 <?php
 
 return [
+    'challenge_load_failed' => 'Verifikasi keamanan belum selesai. Aktifkan JavaScript, periksa koneksi, lalu coba lagi. Jika tetap gagal, perbarui iOS atau browser.',
+    'challenge_app_required' => 'Kembali ke aplikasi dan buka verifikasi lagi. Koneksi ke aplikasi tidak tersedia.',
+    'challenge_retry' => 'Ulangi verifikasi',
     'challenge_required' => 'Selesaikan verifikasi keamanan sebelum mengirim OTP.',
     'service_unavailable' => 'Pengiriman OTP sementara tidak tersedia. Silakan coba lagi nanti.',
     'invalid_phone' => 'Masukkan nomor ponsel Vietnam yang valid.',

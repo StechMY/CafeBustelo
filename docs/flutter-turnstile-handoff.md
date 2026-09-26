@@ -27,6 +27,32 @@ WebView 套件（例如 `webview_flutter`），不要無關升級。本次沒有
 
 ## 後端合約
 
+### 2026-09-26：空白驗證頁排查
+
+頁面現在會在 script 載入 20 秒、或 challenge 初始化 30 秒仍未完成時顯示錯誤和
+重試按鈕；開始互動驗證後不使用初始化計時器限制使用者操作時間。
+`error` bridge 訊息可新增 `code` 欄位，既有 `type/purpose/token` 合約不變。
+App 請保留並顯示安全錯誤碼，讓使用者手動重試；不要只顯示空白或在收到 error 後
+立即關閉而不呈現原因。不得記錄 success token。
+
+| code | 排查方向 |
+| --- | --- |
+| `script_load_failed` / `script_timeout` | Cloudflare script 的網路、攔截、CSP、WebView JavaScript 設定 |
+| `challenge_timeout` | script 已載入，但驗證沒有完成；檢查 frame／網路及裝置相容性，不能單憑此碼判定原因 |
+| `render_failed` | 初始化拋出例外；檢查 WebView 設定及裝置上的 JavaScript 錯誤 |
+| `configuration_missing` | 後端沒有設定 Site key |
+| Cloudflare 數字錯誤码，例如 `200500` | 保留原碼，依官方文件排查；`200500` 是 iframe 載入失敗 |
+| `bridge_missing` / `bridge_error`（頁面提示） | 沒有可用的 `OtpChallenge` channel，或呼叫它時發生錯誤；確認載入前已建立 channel |
+
+iPhone 6s / iOS 13.4.1 的 Safari 與 WebView 都需要真機測試，不能以桌面模擬判定
+支援，也不能按 User-Agent 放行。先在該手機 Safari 開啟
+https://debug.challenges.cloudflare.com/ 檢查環境，再以相同網路的新裝置對照。
+檢查 App 是否允許 JavaScript、cookie/storage、Cloudflare frame 及穩定的 User-Agent，
+並使用實際 HTTPS 頁面。舊系統若仍無法通過，需更新 iOS 或使用受支援裝置。
+這次變更改善錯誤診斷，並不保證 Cloudflare 相容於 iOS 13。
+
+官方錯誤碼：https://developers.cloudflare.com/turnstile/troubleshooting/client-side-errors/error-codes/
+
 | 用途 purpose | WebView GET 路徑 | OTP POST 路徑 | Turnstile action | 登入 |
 | --- | --- | --- | --- | --- |
 | `register` | `/otp/challenge/register` | `/api/v1/register/send-otp` | `otp_register` | 不需要 |

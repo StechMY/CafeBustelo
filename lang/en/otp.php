@@ -1,6 +1,9 @@
 <?php
 
 return [
+    'challenge_load_failed' => 'Security verification could not finish. Enable JavaScript, check your connection and retry. If it keeps failing, update iOS or your browser.',
+    'challenge_app_required' => 'Return to the app and open verification again. The app connection is unavailable.',
+    'challenge_retry' => 'Retry verification',
     'challenge_required' => 'Complete the security verification before sending an OTP.',
     'service_unavailable' => 'OTP sending is temporarily unavailable. Please try again later.',
     'invalid_phone' => 'Enter a valid Vietnamese mobile number.',
