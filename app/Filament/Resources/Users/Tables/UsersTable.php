@@ -296,12 +296,12 @@ class UsersTable
                         'username' => $record->username,
                     ]))
                     ->modalSubmitActionLabel(__('filament.continue'))
-                    ->url(fn(User $record): string => URL::temporarySignedRoute(
+                    ->action(fn(User $record) => redirect()->to(URL::temporarySignedRoute(
                         name: 'admin.users.impersonate',
                         expiration: now()->addMinutes(2),
                         parameters: ['user' => $record],
-                    ))
-                    ->openUrlInNewTab(),
+                        absolute: false,
+                    ))),
 
                 Action::make('toggleStatus')
                     ->label(fn(User $record): string => $record->status === 'active' ? __('filament.deactivate') : __('filament.activate'))

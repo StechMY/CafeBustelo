@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
-use Filament\Facades\Filament;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -13,9 +12,9 @@ class ImpersonateUserController extends Controller
 {
     public function __invoke(Request $request, User $user): RedirectResponse
     {
-        abort_unless($request->hasValidSignature(), 403);
+        abort_unless($request->hasValidRelativeSignature(), 403);
 
-        $admin = Filament::auth()->user();
+        $admin = Auth::guard('admin')->user();
 
         abort_unless($admin, 403);
 

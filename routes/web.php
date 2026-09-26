@@ -240,7 +240,7 @@ Route::middleware(['web', 'human.only'])->group(function (): void {
         ->name('contact.index');
 });
 
-Route::middleware(['web', 'signed'])
+Route::middleware(['web', 'signed:relative'])
     ->get('/admin/users/{user}/impersonate', ImpersonateUserController::class)
     ->name('admin.users.impersonate');
 
