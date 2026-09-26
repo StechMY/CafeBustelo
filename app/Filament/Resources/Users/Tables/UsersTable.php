@@ -34,6 +34,8 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Filament\Tables\Enums\FiltersLayout;
 use Illuminate\Support\Facades\URL;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 
 class UsersTable
 {
@@ -290,18 +292,19 @@ class UsersTable
                     ->label(__('filament.login_as_user'))
                     ->icon('heroicon-o-arrow-right-on-rectangle')
                     ->color('warning')
-                    ->requiresConfirmation()
-                    ->modalHeading(__('filament.login_as_user'))
-                    ->modalDescription(fn(User $record): string => __('filament.login_as_user_confirm', [
-                        'username' => $record->username,
-                    ]))
-                    ->modalSubmitActionLabel(__('filament.continue'))
-                    ->action(fn(User $record) => redirect()->to(URL::temporarySignedRoute(
+                    ->url(fn(User $record): string => URL::signedRoute(
                         name: 'admin.users.impersonate',
-                        expiration: now()->addMinutes(2),
-                        parameters: ['user' => $record],
+                        parameters: [
+                            'user' => $record,
+                            // Keep links usable while this admin session remains active.
+                            'nonce' => session()->remember(
+                                'admin_impersonation_nonce.'.Auth::guard('admin')->id(),
+                                fn(): string => Str::random(32),
+                            ),
+                        ],
                         absolute: false,
-                    ))),
+                    ))
+                    ->openUrlInNewTab(),
 
                 Action::make('toggleStatus')
                     ->label(fn(User $record): string => $record->status === 'active' ? __('filament.deactivate') : __('filament.activate'))

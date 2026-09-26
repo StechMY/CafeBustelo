@@ -18,6 +18,14 @@ class ImpersonateUserController extends Controller
 
         abort_unless($admin, 403);
 
+        $nonce = $request->query('nonce');
+        $sessionNonce = $request->session()->get('admin_impersonation_nonce.'.$admin->id);
+        abort_unless(
+            is_string($nonce) && is_string($sessionNonce) && $sessionNonce !== ''
+            && hash_equals($sessionNonce, $nonce),
+            403,
+        );
+
         if ($user->status === 'suspended') {
             return redirect()
                 ->back()
