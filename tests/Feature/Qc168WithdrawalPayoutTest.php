@@ -28,6 +28,8 @@ use App\Support\Api\ApiFormatter;
 use Filament\Actions\Testing\TestAction;
 use Filament\Facades\Filament;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Console\Scheduling\CacheEventMutex;
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Http\Client\Factory;
 use Illuminate\Http\Client\Request as ClientRequest;
 use Illuminate\Support\Carbon;
@@ -849,6 +851,94 @@ class Qc168WithdrawalPayoutTest extends TestCase
         $this->assertDatabaseCount('withdrawal_payout_attempts', 1);
         $this->assertWallet('timing', '0.00', '1000.00');
         $this->assertSame(1, WalletTransaction::query()->count());
+    }
+
+    public function test_withdrawal_scheduler_locks_expire_after_a_crashed_process(): void
+    {
+        $events = collect(app(Schedule::class)->events())->filter(function ($event): bool {
+            return str_contains((string) $event->command, 'qc168:dispatch-approved-withdrawals')
+                || str_contains((string) $event->command, 'qc168:sync-pending-withdrawals');
+        });
+        $this->assertCount(2, $events);
+
+        foreach ($events as $event) {
+            Carbon::setTestNow('2026-09-29 14:29:00');
+            $originalProcess = (new CacheEventMutex(app('cache')))->useStore('database');
+            $this->assertTrue($originalProcess->create($event));
+
+            // Simulate a restart: the original process never releases its database lock.
+            $restartedProcess = (new CacheEventMutex(app('cache')))->useStore('database');
+            $this->assertFalse($restartedProcess->create($event));
+            Carbon::setTestNow('2026-09-29 14:33:59');
+            $this->assertFalse($restartedProcess->create($event));
+            Carbon::setTestNow('2026-09-29 14:34:00');
+            $this->assertTrue($restartedProcess->create($event));
+            $restartedProcess->forget($event);
+        }
+    }
+
+    public function test_dispatch_yields_between_orders_and_resumes_without_duplicate_submissions(): void
+    {
+        Carbon::setTestNow('2026-09-29 14:29:00');
+        $withdrawals = [];
+        for ($index = 0; $index < 3; $index++) {
+            $withdrawal = $this->pendingWithdrawal('dispatch_budget_'.$index);
+            app(WithdrawService::class)->approveWithScheduledGateway($withdrawal, $this->admin());
+            $withdrawal->forceFill(['gateway_release_at' => now()->subMinutes(3 - $index)])->save();
+            $withdrawals[] = $withdrawal;
+        }
+
+        Http::fake(function () {
+            Carbon::setTestNow(now()->addSeconds(45));
+
+            return $this->createOrderResponse();
+        });
+
+        $this->artisan('qc168:dispatch-approved-withdrawals')->assertSuccessful();
+        Http::assertSentCount(1);
+        $this->assertSame(WithdrawRequest::PAYOUT_PENDING, $withdrawals[0]->fresh()->payout_status);
+        $this->assertSame(WithdrawRequest::PAYOUT_WAITING_RELEASE, $withdrawals[1]->fresh()->payout_status);
+        $this->assertSame(WithdrawRequest::PAYOUT_WAITING_RELEASE, $withdrawals[2]->fresh()->payout_status);
+
+        $this->artisan('qc168:dispatch-approved-withdrawals')->assertSuccessful();
+        $this->artisan('qc168:dispatch-approved-withdrawals')->assertSuccessful();
+        $this->artisan('qc168:dispatch-approved-withdrawals')->assertSuccessful();
+        Http::assertSentCount(3);
+        foreach ($withdrawals as $withdrawal) {
+            $this->assertSame(1, $withdrawal->payoutAttempts()->count());
+        }
+        $this->assertWallet('dispatch_budget_0', '0.00', '1000.00');
+        $this->assertSame(3, WalletTransaction::query()->count());
+    }
+
+    public function test_sync_yields_between_orders_and_resumes_remaining_attempts(): void
+    {
+        Carbon::setTestNow('2026-09-29 14:29:00');
+        $first = $this->approvedAndDispatched('sync_budget_first');
+        $second = $this->approvedAndDispatched('sync_budget_second');
+        Carbon::setTestNow(now()->addMinutes(3));
+        Http::swap(new Factory);
+        Http::fake(function (ClientRequest $request) {
+            $this->assertStringEndsWith('/octopus/api/order/get', $request->url());
+            Carbon::setTestNow(now()->addSeconds(45));
+            $attempt = WithdrawalPayoutAttempt::query()
+                ->where('merchant_order_id', $request['merchant_order_id'])->firstOrFail();
+
+            return Http::response([
+                'result' => 'success',
+                'data' => $this->providerPayload($attempt, 'pending'),
+            ]);
+        });
+
+        $this->artisan('qc168:sync-pending-withdrawals')->assertSuccessful();
+        Http::assertSentCount(1);
+        $this->assertNotNull($first->fresh()->gateway_last_synced_at);
+        $this->assertNull($second->fresh()->gateway_last_synced_at);
+
+        $this->artisan('qc168:sync-pending-withdrawals')->assertSuccessful();
+        Http::assertSentCount(2);
+        $this->assertNotNull($second->fresh()->gateway_last_synced_at);
+        $this->assertDatabaseCount('withdrawal_payout_attempts', 2);
     }
 
     public function test_completed_callback_consumes_locked_reserve_exactly_once(): void

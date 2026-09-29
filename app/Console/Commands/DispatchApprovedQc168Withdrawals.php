@@ -22,6 +22,8 @@ class DispatchApprovedQc168Withdrawals extends Command
             return self::SUCCESS;
         }
 
+        // Finish the current order, then yield well before the five-minute scheduler lock expires.
+        $stopAt = now()->addSeconds(45);
         $limit = max(1, min((int) $this->option('limit'), 200));
         $ids = WithdrawRequest::query()
             ->where('status', WithdrawRequest::STATUS_APPROVED)
@@ -37,6 +39,12 @@ class DispatchApprovedQc168Withdrawals extends Command
             ->pluck('id');
 
         foreach ($ids as $id) {
+            if (now()->greaterThanOrEqualTo($stopAt)) {
+                $this->line('Time budget reached; remaining withdrawals will be picked up by the next run.');
+
+                break;
+            }
+
             try {
                 $withdrawRequest = WithdrawRequest::query()->find($id);
                 $attempt = $withdrawRequest ? $payoutService->dispatch($withdrawRequest) : null;

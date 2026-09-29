@@ -22,6 +22,8 @@ class SyncPendingQc168Withdrawals extends Command
             return self::SUCCESS;
         }
 
+        // Finish the current inquiry, then yield well before the five-minute scheduler lock expires.
+        $stopAt = now()->addSeconds(45);
         $limit = max(1, min((int) $this->option('limit'), 200));
         $attempts = WithdrawalPayoutAttempt::query()
             ->where('provider', 'qc168')
@@ -48,6 +50,12 @@ class SyncPendingQc168Withdrawals extends Command
             ->get();
 
         foreach ($attempts as $attempt) {
+            if (now()->greaterThanOrEqualTo($stopAt)) {
+                $this->line('Time budget reached; remaining attempts will be picked up by the next run.');
+
+                break;
+            }
+
             try {
                 $result = $payoutService->syncAttempt($attempt, 'qc168_scheduler_sync');
                 $this->line("{$attempt->merchant_order_id}: {$result['result']}");
