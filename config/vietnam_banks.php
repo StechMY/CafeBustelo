@@ -11,7 +11,7 @@ return [
     |
     */
     'banks' => [
-        'ABBank' => '970425',
+        // 'ABBank' => '970425',
         'ACB' => '970416',
         'Agribank' => '970405',
         'Bac A Bank' => '970409',
