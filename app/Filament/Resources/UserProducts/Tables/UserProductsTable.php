@@ -38,23 +38,25 @@ class UserProductsTable
 
                 TextColumn::make('product.name')
                     ->label(__('filament.product_name'))
-                    ->state(fn (UserProduct $record): string => $record->product?->name
+                    ->state(fn(UserProduct $record): string => $record->product?->name
                         ?? data_get($record->meta, 'product_name_snapshot', '-'))
                     ->searchable()
                     ->sortable(),
 
-                TextColumn::make('product.code')
-                    ->label(__('filament.product_code'))
-                    ->state(fn (UserProduct $record): string => $record->product?->code
-                        ?? data_get($record->meta, 'product_code_snapshot', '-'))
-                    ->searchable()
-                    ->copyable()
-                    ->placeholder('-')
-                    ->toggleable(),
+                TextColumn::make('status')
+                    ->label(__('filament.status'))
+                    ->formatStateUsing(fn(string $state): string => __('filament.user_product_status_' . $state))
+                    ->badge()
+                    ->color(fn(string $state): string => match ($state) {
+                        'active' => 'success',
+                        'expired' => 'gray',
+                        default => 'info',
+                    })
+                    ->sortable(),
 
                 TextColumn::make('product_type_snapshot')
                     ->label(__('filament.product_type'))
-                    ->formatStateUsing(fn (?string $state): string => Product::typeLabel($state) ?: '-')
+                    ->formatStateUsing(fn(?string $state): string => Product::typeLabel($state) ?: '-')
                     ->badge()
                     ->color('info')
                     ->sortable()
@@ -62,12 +64,12 @@ class UserProductsTable
 
                 TextColumn::make('price_snapshot')
                     ->label(__('filament.purchase_price'))
-                    ->prefix(config('app.currency').' ')
+                    ->prefix(config('app.currency') . ' ')
                     ->sortable(),
 
                 TextColumn::make('daily_income_snapshot')
                     ->label(__('filament.income_per_claim'))
-                    ->prefix(config('app.currency').' ')
+                    ->prefix(config('app.currency') . ' ')
                     ->sortable()
                     ->toggleable(),
 
@@ -78,7 +80,7 @@ class UserProductsTable
 
                 TextColumn::make('claim_progress')
                     ->label(__('filament.claim_progress'))
-                    ->state(fn (UserProduct $record): string => $record->claimed_days.' / '.$record->effectiveTotalClaims()),
+                    ->state(fn(UserProduct $record): string => $record->claimed_days . ' / ' . $record->effectiveTotalClaims()),
 
                 TextColumn::make('claimed_days')
                     ->label(__('filament.claimed'))
@@ -87,7 +89,7 @@ class UserProductsTable
 
                 TextColumn::make('effective_total_claims')
                     ->label(__('filament.total_claims'))
-                    ->state(fn (UserProduct $record): string => (string) $record->effectiveTotalClaims())
+                    ->state(fn(UserProduct $record): string => (string) $record->effectiveTotalClaims())
                     ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('missed_days')
@@ -108,21 +110,20 @@ class UserProductsTable
                     ->placeholder('-')
                     ->sortable()
                     ->toggleable(),
+                TextColumn::make('product.code')
+                    ->label(__('filament.product_code'))
+                    ->state(fn(UserProduct $record): string => $record->product?->code
+                        ?? data_get($record->meta, 'product_code_snapshot', '-'))
+                    ->searchable()
+                    ->copyable()
+                    ->placeholder('-')
+                    ->toggleable(),
 
-                TextColumn::make('status')
-                    ->label(__('filament.status'))
-                    ->formatStateUsing(fn (string $state): string => __('filament.user_product_status_'.$state))
-                    ->badge()
-                    ->color(fn (string $state): string => match ($state) {
-                        'active' => 'success',
-                        'expired' => 'gray',
-                        default => 'info',
-                    })
-                    ->sortable(),
+
 
                 TextColumn::make('payment_wallet_type')
                     ->label(__('filament.payment_wallet_type'))
-                    ->state(fn (UserProduct $record): string => match (data_get($record->meta, 'payment_wallet_type')) {
+                    ->state(fn(UserProduct $record): string => match (data_get($record->meta, 'payment_wallet_type')) {
                         'recharge' => __('filament.recharge_wallet'),
                         'withdrawable' => __('filament.withdrawable_wallet'),
                         default => data_get($record->meta, 'payment_wallet_type', '-'),
@@ -156,19 +157,19 @@ class UserProductsTable
                         DatePicker::make('until')
                             ->label(__('filament.end_date')),
                     ])
-                    ->query(fn (Builder $query, array $data): Builder => $query
+                    ->query(fn(Builder $query, array $data): Builder => $query
                         ->when(
                             $data['from'] ?? null,
-                            fn (Builder $query, string $date): Builder => $query->whereDate('user_products.purchased_at', '>=', $date),
+                            fn(Builder $query, string $date): Builder => $query->whereDate('user_products.purchased_at', '>=', $date),
                         )
                         ->when(
                             $data['until'] ?? null,
-                            fn (Builder $query, string $date): Builder => $query->whereDate('user_products.purchased_at', '<=', $date),
+                            fn(Builder $query, string $date): Builder => $query->whereDate('user_products.purchased_at', '<=', $date),
                         )),
 
                 Filter::make('has_missed_claims')
                     ->label(__('filament.has_missed_claims'))
-                    ->query(fn (Builder $query): Builder => $query->where('missed_days', '>', 0)),
+                    ->query(fn(Builder $query): Builder => $query->where('missed_days', '>', 0)),
             ])
             ->recordActions([
                 ViewAction::make(),
