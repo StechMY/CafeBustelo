@@ -152,6 +152,8 @@ Verifies OTP purpose `register`, creates wallets, welcome bonus, login log, and 
 
 `GET /api/v1/products` returns currently purchasable products grouped by available product type. Empty product types are omitted. Each product includes `type`, `type_label`, `product_type`, `product_type_label`, `available_until`, and `available_until_label`; the stored `weekend_special` type displays as `Crazy Weekend`.
 
+Product sale windows repeat daily in the system timezone. `available_from` and `available_until` are nullable `HH:mm:ss` strings (not datetimes); `available_until_label` uses `HH:mm`. A null bound is unrestricted, and a closing time earlier than the opening time spans midnight. Bounds are inclusive, and `available_days` still checks the current calendar weekday. Both catalog visibility and direct purchase requests enforce this window. Existing database datetime columns are retained for compatibility, but their date portions are ignored; no migration is required. The `daily_limit` remains a calendar-day total and is not reset by editing the sale window. Raising it from 5 to 10 after five purchases allows five more today, subject to total stock and per-user limits; it remains 10 tomorrow unless manually changed back.
+
 ```json
 {
   "tabs": [

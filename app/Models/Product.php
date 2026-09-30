@@ -167,17 +167,17 @@ class Product extends Model
 
     public function isWithinAvailablePeriod(): bool
     {
-        $now = now();
+        // Existing datetime columns are retained, but dates no longer restrict sales.
+        $time = now()->format('H:i:s');
+        $from = $this->available_from?->format('H:i:s');
+        $until = $this->available_until?->format('H:i:s');
 
-        if ($this->available_from && $now->lt($this->available_from)) {
-            return false;
+        if ($from !== null && $until !== null && $from > $until) {
+            return $time >= $from || $time <= $until;
         }
 
-        if ($this->available_until && $now->gt($this->available_until)) {
-            return false;
-        }
-
-        return true;
+        return ($from === null || $time >= $from)
+            && ($until === null || $time <= $until);
     }
 
     public function isAvailableToday(): bool

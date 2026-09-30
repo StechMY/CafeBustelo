@@ -1,6 +1,9 @@
 <?php
 
 return [
+    'product_availability_desc' => 'Thiết lập giờ bán hằng ngày, ngày trong tuần và giới hạn số lượng. Sử dụng múi giờ hệ thống.',
+    'available_from_help' => 'Giờ mở bán mỗi ngày. Để trống nếu không giới hạn giờ bắt đầu.',
+    'available_until_help' => 'Giờ kết thúc mỗi ngày. Giờ sớm hơn giờ bắt đầu có nghĩa là qua nửa đêm. Để trống nếu không giới hạn giờ kết thúc.',
     'daily_limit' => 'Giới hạn mỗi ngày (Daily Limit)',
     'daily_limit_help' => 'Tổng số lượt mua sản phẩm của tất cả thành viên mỗi ngày. Để trống nếu không giới hạn. Đặt lại lúc 0 giờ theo múi giờ hệ thống.',
     'min_vip_level' => 'Cấp tối thiểu để mua',

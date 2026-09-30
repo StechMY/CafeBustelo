@@ -151,11 +151,9 @@ class ApiFormatter
             'extra_points' => (int) ($product->extra_points ?? 0),
             'available_days' => $product->available_days ?: [],
             'available_days_label' => self::availableDaysLabel($product),
-            'available_from' => self::dateTime($product->available_from),
-            'available_until' => self::dateTime($product->available_until),
-            'available_until_label' => $product->available_until
-                ? $product->available_until->copy()->timezone(config('app.timezone'))->format('d M Y, h:i A')
-                : null,
+            'available_from' => $product->available_from?->format('H:i:s'),
+            'available_until' => $product->available_until?->format('H:i:s'),
+            'available_until_label' => $product->available_until?->format('H:i'),
             'stock_quantity' => $product->stock_quantity,
             'daily_limit' => $product->daily_limit,
             'daily_limit_reached' => ! $product->hasDailyStock(),

@@ -265,8 +265,9 @@ Use `success` as the first branch. For HTTP 401, clear token and route to login.
 | roi | number | no | Percent ROI | 200 |
 | available_days | array<int> | no | ISO weekdays | `[1,2]` |
 | available_days_label | string | no | Display days | `Monday, Tuesday` |
-| available_from | string datetime | yes | Start availability | null |
-| available_until | string datetime | yes | End availability | null |
+| available_from | string HH:mm:ss | yes | Daily opening time in the system timezone | `15:00:00` |
+| available_until | string HH:mm:ss | yes | Daily closing time in the system timezone | `18:00:00` |
+| available_until_label | string HH:mm | yes | Time-only display label | `18:00` |
 | stock_quantity | integer | yes | Stock cap | 100 |
 | sold_quantity | integer | no | Sold count | 2 |
 | remaining_stock | integer | yes | Remaining stock | 98 |
@@ -275,6 +276,8 @@ Use `success` as the first branch. For HTTP 401, clear token and route to login.
 | can_afford_withdrawable | boolean | no | Withdrawable wallet enough | false |
 | can_purchase | boolean | no | Backend purchase-state hint | true |
 | extra_points | number | no | Product extra points | 0 |
+
+Product availability times repeat daily and no longer contain a date. Display them as time strings rather than parsing them as ISO datetimes. An end time earlier than the start spans midnight (for example `22:00:00`–`02:00:00`); the existing `available_days` filter still applies to the current calendar day. Both bounds are inclusive; a null bound is unrestricted. Use `can_purchase` and the purchase endpoint as the authority instead of comparing against the phone's local clock. `daily_limit` still counts all purchases within the system calendar day; changing the opening time does not reset that count.
 
 ### UserProduct
 

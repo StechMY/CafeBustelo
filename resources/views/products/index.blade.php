@@ -297,8 +297,8 @@
                                 ? null
                                 : max(0, (int) $product->stock_quantity - (int) $product->sold_quantity);
 
-                        $availableFromLabel = $product->available_from?->format('d M Y, h:i A') ?? '-';
-                        $availableUntilLabel = $product->available_until?->format('d M Y, h:i A') ?? '-';
+                        $availableFromLabel = $product->available_from?->format('H:i') ?? '-';
+                        $availableUntilLabel = $product->available_until?->format('H:i') ?? '-';
 
                         $availableDaysLabel = collect($product->available_days ?: [])
                             ->map(fn($day) => \App\Models\Product::weekdayOptions()[(int) $day] ?? $day)
@@ -419,7 +419,7 @@
                                     </div>
 
                                     <div class="mt-0.5 text-[10px] font-black text-[#003b7a] sm:mt-1 sm:text-xs">
-                                        {{ $product->available_until->format('d M Y, h:i A') }}
+                                        {{ $product->available_until->format('H:i') }}
                                     </div>
                                 </div>
                             @endif

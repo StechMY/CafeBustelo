@@ -5,12 +5,12 @@ namespace App\Filament\Resources\Products\Schemas;
 use App\Models\Product;
 use App\Models\VipLevel;
 use Filament\Forms\Components\CheckboxList;
-use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\KeyValue;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\TimePicker;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
@@ -120,14 +120,18 @@ class ProductForm
                     ->schema([
                         Grid::make(2)
                             ->schema([
-                                DateTimePicker::make('available_from')
+                                TimePicker::make('available_from')
                                     ->label(__('filament.available_from'))
+                                    ->format('Y-m-d H:i:s')
+                                    ->timezone(config('app.timezone'))
                                     ->seconds(false)
                                     ->nullable()
                                     ->helperText(__('filament.available_from_help')),
 
-                                DateTimePicker::make('available_until')
+                                TimePicker::make('available_until')
                                     ->label(__('filament.available_until'))
+                                    ->format('Y-m-d H:i:s')
+                                    ->timezone(config('app.timezone'))
                                     ->seconds(false)
                                     ->nullable()
                                     ->helperText(__('filament.available_until_help')),

@@ -59,8 +59,8 @@ class CalculatorController extends Controller
                 'available_days' => $product->available_days ?: [],
                 'available_days_label' => $this->availableDaysLabel($product),
 
-                'available_from' => $product->available_from?->format('Y-m-d H:i'),
-                'available_until' => $product->available_until?->format('Y-m-d H:i'),
+                'available_from' => $product->available_from?->format('H:i'),
+                'available_until' => $product->available_until?->format('H:i'),
 
                 'stock_quantity' => $product->stock_quantity,
                 'sold_quantity' => (int) ($product->sold_quantity ?? 0),

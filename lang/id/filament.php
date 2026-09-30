@@ -1,6 +1,9 @@
 <?php
 
 return [
+    'product_availability_desc' => 'Atur jam penjualan harian, hari dalam minggu, dan batas jumlah. Menggunakan zona waktu sistem.',
+    'available_from_help' => 'Jam mulai penjualan setiap hari. Kosongkan jika tidak ada batas waktu mulai.',
+    'available_until_help' => 'Jam selesai setiap hari. Waktu sebelum jam mulai berarti melewati tengah malam. Kosongkan jika tidak ada batas waktu selesai.',
     'daily_limit' => 'Batas Harian (Daily Limit)',
     'daily_limit_help' => 'Jumlah pembelian produk oleh semua anggota per hari. Kosongkan untuk tanpa batas harian. Dihitung ulang pada tengah malam sesuai zona waktu sistem.',
     'min_vip_level' => 'Level Minimum Pembelian',
