@@ -964,6 +964,55 @@ class Qc168WithdrawalPayoutTest extends TestCase
             ->count());
     }
 
+    public function test_withdrawal_table_shows_handling_and_sync_time_and_sorts_by_payout_schedule(): void
+    {
+        Http::fake();
+        $admin = $this->approvalAdmin('handling-list-admin', ['ViewAny:WithdrawRequest', 'View:WithdrawRequest']);
+        $later = $this->pendingWithdrawal('scheduled_later');
+        $earlier = $this->pendingWithdrawal('scheduled_earlier');
+        $later->forceFill([
+            'status' => 'approved',
+            'gateway_provider' => 'qc168',
+            'approval_mode' => 'gateway_scheduled',
+            'payout_status' => 'processing',
+            'gateway_payment_status' => 'processing',
+            'gateway_release_at' => '2026-10-02 10:34:16',
+            'gateway_submitted_at' => '2026-10-02 10:35:04',
+            'gateway_last_synced_at' => '2026-10-02 12:00:09',
+        ])->save();
+        $earlier->forceFill([
+            'status' => 'approved',
+            'gateway_provider' => 'qc168',
+            'approval_mode' => 'gateway_scheduled',
+            'payout_status' => 'create_failed',
+            'gateway_release_at' => '2026-10-02 10:29:22',
+            'gateway_fail_reason' => 'QC168 rejected the request: 商户余额不足',
+        ])->save();
+
+        $this->actingAs($admin, 'admin');
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+        Livewire::test(ListWithdrawRequests::class)
+            ->assertTableColumnVisible('platform_handling')
+            ->assertTableColumnVisible('gateway_release_at')
+            ->assertTableColumnVisible('gateway_last_synced_at')
+            ->assertTableColumnFormattedStateSet('platform_handling', 'Submitted · Awaiting gateway', $later)
+            ->assertTableColumnFormattedStateSet('platform_handling', 'Attempted · Submission failed', $earlier)
+            ->assertTableColumnStateSet('gateway_last_synced_at', $later->gateway_last_synced_at, $later)
+            ->assertSee('商户余额不足')
+            ->sortTable('gateway_release_at', 'asc')
+            ->assertCanSeeTableRecords([$earlier, $later], inOrder: true)
+            ->sortTable('gateway_release_at', 'desc')
+            ->assertCanSeeTableRecords([$later, $earlier], inOrder: true)
+            ->filterTable('payout_status', 'processing')
+            ->assertCanSeeTableRecords([$later])
+            ->assertCanNotSeeTableRecords([$earlier])
+            ->filterTable('payout_status', 'create_failed')
+            ->assertCanSeeTableRecords([$earlier])
+            ->assertCanNotSeeTableRecords([$later])
+            ->removeTableFilter('payout_status')
+            ->assertCanSeeTableRecords([$later, $earlier], inOrder: true);
+    }
+
     public function test_processing_with_diagnostic_reason_stays_processing_and_is_not_retryable_or_cancellable(): void
     {
         $withdrawal = $this->approvedAndDispatched('processing_warning');

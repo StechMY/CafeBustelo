@@ -118,6 +118,34 @@ class WithdrawRequestsTable
                     )
                     ->wrap(),
 
+                TextColumn::make('platform_handling')
+                    ->label(__('withdraw.platform_handling'))
+                    ->state(fn (WithdrawRequest $record): string => self::handlingState($record))
+                    ->formatStateUsing(fn (string $state): string => __('withdraw.handling_states.'.$state))
+                    ->description(fn (WithdrawRequest $record, string $state): string => self::handlingDescription($record, $state))
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state) {
+                        'completed', 'manual_completed' => 'success',
+                        'submission_failed', 'payout_failed', 'review' => 'danger',
+                        'awaiting_review', 'awaiting_submission', 'uncertain', 'unknown' => 'warning',
+                        'cancelled', 'rejected' => 'gray',
+                        default => 'info',
+                    })
+                    ->tooltip(fn (WithdrawRequest $record): ?string => self::gatewayTechnicalTooltip($record))
+                    ->wrap(),
+
+                TextColumn::make('gateway_release_at')
+                    ->label(__('withdraw.scheduled_at'))
+                    ->dateTime()
+                    ->sortable()
+                    ->placeholder('-'),
+
+                TextColumn::make('gateway_last_synced_at')
+                    ->label(__('withdraw.last_synced_at'))
+                    ->dateTime()
+                    ->sortable()
+                    ->placeholder('-'),
+
                 /*
                 |--------------------------------------------------------------------------
                 | Bank Summary
@@ -292,13 +320,6 @@ class WithdrawRequestsTable
                     ->placeholder('-')
                     ->toggleable(isToggledHiddenByDefault: true),
 
-                TextColumn::make('gateway_release_at')
-                    ->label(__('withdraw.gateway_release_at'))
-                    ->dateTime()
-                    ->sortable()
-                    ->placeholder('-')
-                    ->toggleable(isToggledHiddenByDefault: true),
-
                 TextColumn::make('gateway_current_merchant_order_id')
                     ->label(__('withdraw.merchant_order_id'))
                     ->copyable()
@@ -315,6 +336,15 @@ class WithdrawRequestsTable
                         'approved' => __('filament.approved'),
                         'rejected' => __('filament.rejected'),
                     ]),
+
+                SelectFilter::make('payout_status')
+                    ->label(__('withdraw.payout_status'))
+                    ->options(
+                        collect(__('withdraw.payout_statuses'))
+                            ->except('legacy')
+                            ->map(fn (string $label, string $status): string => "{$label} ({$status})")
+                            ->all()
+                    ),
 
                 /*
                 |--------------------------------------------------------------------------
@@ -1270,6 +1300,81 @@ class WithdrawRequestsTable
                 (float) $record->fee_amount,
                 2
             );
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Platform Handling
+    |--------------------------------------------------------------------------
+    */
+    private static function handlingState(WithdrawRequest $record): string
+    {
+        if ($record->payout_status === WithdrawRequest::PAYOUT_REFUND_REVIEW) {
+            return 'review';
+        }
+
+        if ($record->payout_status === WithdrawRequest::PAYOUT_CANCELLED) {
+            return 'cancelled';
+        }
+
+        if ($record->isPending()) {
+            return 'awaiting_review';
+        }
+
+        if ($record->status === WithdrawRequest::STATUS_REJECTED) {
+            return 'rejected';
+        }
+
+        if (! $record->isApproved()) {
+            return 'unknown';
+        }
+
+        if (blank($record->gateway_provider)
+            && (blank($record->payout_status) || $record->isPayoutCompleted())) {
+            return 'manual_completed';
+        }
+
+        if (self::hasUnknownGatewayStatus($record)) {
+            return 'uncertain';
+        }
+
+        return match ($record->payout_status) {
+            WithdrawRequest::PAYOUT_WAITING_RELEASE => $record->gateway_release_at?->isFuture()
+                ? 'scheduled'
+                : 'awaiting_submission',
+            WithdrawRequest::PAYOUT_CREATE_FAILED => 'submission_failed',
+            WithdrawRequest::PAYOUT_COMPLETED => 'completed',
+            WithdrawRequest::PAYOUT_FAILED,
+            WithdrawRequest::PAYOUT_REJECTED,
+            WithdrawRequest::PAYOUT_OVERDUE => 'payout_failed',
+            WithdrawRequest::PAYOUT_PENDING,
+            WithdrawRequest::PAYOUT_PREPARING,
+            WithdrawRequest::PAYOUT_PROCESSING => 'gateway_pending',
+            WithdrawRequest::PAYOUT_SUBMITTED => in_array($record->gateway_payment_status, [
+                WithdrawalPayoutAttempt::STATUS_NONE,
+                WithdrawalPayoutAttempt::STATUS_PENDING,
+                WithdrawalPayoutAttempt::STATUS_PREPARING,
+                WithdrawalPayoutAttempt::STATUS_PROCESSING,
+            ], true) ? 'gateway_pending' : 'uncertain',
+            default => 'unknown',
+        };
+    }
+
+    private static function handlingDescription(WithdrawRequest $record, string $state): string
+    {
+        $parts = [__('withdraw.handling_help.'.$state)];
+
+        if (in_array($state, ['gateway_pending', 'payout_failed', 'completed'], true)
+            && filled($record->gateway_submitted_at)) {
+            $parts[] = __('withdraw.gateway_submitted_at').': '.self::formatDateTime($record->gateway_submitted_at);
+        }
+
+        if ((self::hasGatewayAttention($record) || self::hasGatewayWarning($record))
+            && ($reason = self::gatewayFailureReason($record)) !== null) {
+            $parts[] = __('withdraw.latest_gateway_error').': '.Str::limit($reason, 140);
+        }
+
+        return implode(' · ', $parts);
     }
 
     /*
