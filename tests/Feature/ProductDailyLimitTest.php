@@ -67,11 +67,21 @@ class ProductDailyLimitTest extends TestCase
         $this->assertDatabaseCount('user_products', 3);
     }
 
-    public function test_daily_sold_out_product_remains_visible_and_direct_requests_are_rejected(): void
+    #[DataProvider('soldOutLimits')]
+    public function test_sold_out_product_remains_visible_and_direct_requests_are_rejected(?int $dailyLimit, ?int $stock): void
     {
-        $product = $this->product(1);
+        $this->travelTo(Carbon::parse('2026-09-30 15:00:00', config('app.timezone')));
+        $product = $this->product($dailyLimit);
+        $product->update([
+            'available_days' => [3],
+            'available_from' => '2026-09-30 15:00:00',
+            'available_until' => '2026-09-30 18:00:00',
+            'stock_quantity' => $stock,
+        ]);
         app(ProductPurchaseService::class)->purchase($this->user(), $product);
+        $product->refresh();
         $buyer = $this->user();
+        $error = __($dailyLimit === 1 ? 'products.product_sold_out' : 'products.product_not_available_now');
 
         $this->actingAs($buyer)->get('/products')
             ->assertOk()
@@ -81,19 +91,61 @@ class ProductDailyLimitTest extends TestCase
 
         $this->from('/products')->post("/products/{$product->id}/purchase", ['wallet_type' => Wallet::TYPE_RECHARGE])
             ->assertRedirect('/products')
-            ->assertSessionHas('error', __('products.product_sold_out'));
+            ->assertSessionHas('error', $error);
 
         Sanctum::actingAs($buyer);
         $this->getJson('/api/v1/products')->assertOk()
-            ->assertJsonPath('data.items.0.daily_limit', 1)
-            ->assertJsonPath('data.items.0.daily_limit_reached', true)
+            ->assertJsonCount(1, 'data.items')
+            ->assertJsonPath('data.items.0.id', $product->id)
+            ->assertJsonPath('data.tabs.0.count', 1)
+            ->assertJsonPath('data.products_by_type.'.$product->product_type.'.0.id', $product->id)
+            ->assertJsonPath('data.items.0.daily_limit', $dailyLimit)
+            ->assertJsonPath('data.items.0.daily_limit_reached', $dailyLimit === 1)
+            ->assertJsonPath('data.items.0.remaining_stock', $stock === null ? null : 0)
             ->assertJsonPath('data.items.0.is_purchasable_now', false)
             ->assertJsonPath('data.items.0.can_purchase', false);
         $this->postJson("/api/v1/products/{$product->id}/purchase", ['wallet_type' => Wallet::TYPE_WITHDRAWABLE])
             ->assertStatus(400)
-            ->assertJsonPath('message', __('products.product_sold_out'));
+            ->assertJsonPath('message', $error);
         $this->assertDatabaseCount('user_products', 1);
         $this->assertDatabaseCount('wallet_transactions', 1);
+        $this->assertEquals(1000, $buyer->wallets()->where('type', Wallet::TYPE_RECHARGE)->value('balance'));
+        $this->assertEquals(1000, $buyer->wallets()->where('type', Wallet::TYPE_WITHDRAWABLE)->value('balance'));
+    }
+
+    public static function soldOutLimits(): array
+    {
+        return [
+            'daily limit reached' => [1, null],
+            'total stock exhausted' => [null, 1],
+            'stock exhausted before daily limit' => [5, 1],
+            'both limits reached' => [1, 1],
+        ];
+    }
+
+    public function test_sold_out_products_still_follow_weekday_time_and_active_status(): void
+    {
+        $product = $this->product(null);
+        $product->update([
+            'available_days' => [3],
+            'available_from' => '2026-09-30 15:00:00',
+            'available_until' => '2026-09-30 18:00:00',
+            'stock_quantity' => 0,
+        ]);
+        $buyer = $this->user();
+        $this->actingAs($buyer);
+        Sanctum::actingAs($buyer);
+
+        foreach (['2026-09-30 14:59:59', '2026-09-30 18:00:01', '2026-10-01 15:00:00'] as $time) {
+            $this->travelTo(Carbon::parse($time, config('app.timezone')));
+            $this->get('/products')->assertOk()->assertDontSee($product->name);
+            $this->getJson('/api/v1/products')->assertOk()->assertJsonCount(0, 'data.items');
+        }
+
+        $this->travelTo(Carbon::parse('2026-09-30 15:00:00', config('app.timezone')));
+        $product->update(['status' => 'inactive']);
+        $this->get('/products')->assertOk()->assertDontSee($product->name);
+        $this->getJson('/api/v1/products')->assertOk()->assertJsonCount(0, 'data.items');
     }
 
     public function test_limit_resets_at_system_midnight_and_counts_completed_or_deleted_purchases(): void
