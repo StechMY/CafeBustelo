@@ -39,6 +39,7 @@ class WithdrawRequestsTable
         $withdrawReleaseHours = app(Qc168Settings::class)->withdrawReleaseHours();
 
         return $table
+            ->extraAttributes(['class' => 'withdraw-requests-table'])
             ->columns([
                 /*
                 |--------------------------------------------------------------------------
@@ -46,6 +47,7 @@ class WithdrawRequestsTable
                 |--------------------------------------------------------------------------
                 */
                 TextColumn::make('user.username')
+                    ->extraCellAttributes(['class' => 'withdraw-customer-cell'])
                     ->label(__('filament.username'))
                     ->searchable()
                     ->sortable()
@@ -67,6 +69,8 @@ class WithdrawRequestsTable
                 |
                 */
                 TextColumn::make('amount')
+                    ->extraCellAttributes(['class' => 'withdraw-amount-cell'])
+                    ->wrap()
                     ->label(__('filament.amount'))
                     ->numeric(decimalPlaces: 2, decimalSeparator: '.', thousandsSeparator: ',')
                     ->prefix(config('app.currency').' ')
@@ -99,6 +103,7 @@ class WithdrawRequestsTable
                 |
                 */
                 TextColumn::make('withdrawal_summary_status')
+                    ->extraCellAttributes(['class' => 'withdraw-status-cell'])
                     ->label(__('filament.status'))
                     ->state(
                         fn (WithdrawRequest $record): string =>
@@ -120,6 +125,7 @@ class WithdrawRequestsTable
                     ->wrap(),
 
                 TextColumn::make('platform_handling')
+                    ->extraCellAttributes(['class' => 'withdraw-handling-cell'])
                     ->label(__('withdraw.platform_handling'))
                     ->state(fn (WithdrawRequest $record): string => self::handlingState($record))
                     ->formatStateUsing(fn (string $state): string => __('withdraw.handling_states.'.$state))
@@ -137,13 +143,15 @@ class WithdrawRequestsTable
 
                 TextColumn::make('gateway_release_at')
                     ->label(__('withdraw.scheduled_at'))
-                    ->dateTime()
+                    ->dateTime('Y-m-d')
+                    ->description(fn (WithdrawRequest $record): ?string => $record->gateway_release_at?->format('H:i:s'))
                     ->sortable()
                     ->placeholder('-'),
 
                 TextColumn::make('gateway_last_synced_at')
                     ->label(__('withdraw.last_synced_at'))
-                    ->dateTime()
+                    ->dateTime('Y-m-d')
+                    ->description(fn (WithdrawRequest $record): ?string => $record->gateway_last_synced_at?->format('H:i:s'))
                     ->sortable()
                     ->placeholder('-'),
 
@@ -153,6 +161,7 @@ class WithdrawRequestsTable
                 |--------------------------------------------------------------------------
                 */
                 TextColumn::make('bank_name')
+                    ->extraCellAttributes(['class' => 'withdraw-bank-cell'])
                     ->label(__('filament.bank_name'))
                     ->searchable()
                     ->weight('medium')
@@ -170,7 +179,8 @@ class WithdrawRequestsTable
                 */
                 TextColumn::make('created_at')
                     ->label(__('filament.submitted_at'))
-                    ->dateTime()
+                    ->dateTime('Y-m-d')
+                    ->description(fn (WithdrawRequest $record): ?string => $record->created_at?->format('H:i:s'))
                     ->sortable(),
 
                 /*
