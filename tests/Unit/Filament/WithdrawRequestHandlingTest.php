@@ -38,7 +38,7 @@ class WithdrawRequestHandlingTest extends TestCase
     {
         $column = $this->handlingColumn($attributes);
 
-        $this->assertSame($label, $column->formatState($column->getState()));
+        $this->assertStringContainsString($label, $column->getTooltip());
     }
 
     public static function handlingCases(): array
@@ -76,7 +76,7 @@ class WithdrawRequestHandlingTest extends TestCase
             'gateway_submitted_at' => '2026-10-02 10:35:04',
         ]);
 
-        $description = $column->getDescriptionBelow();
+        $description = $column->getTooltip();
         $this->assertStringContainsString('Gateway Submitted At: 02 Oct 2026 10:35', $description);
         $this->assertStringContainsString('not yet returned a final result', $description);
         $this->assertStringContainsString('does not establish a gateway fault', $description);
@@ -90,31 +90,29 @@ class WithdrawRequestHandlingTest extends TestCase
             'gateway_submitted_at' => '2026-10-01 10:35:04',
         ]);
 
-        $this->assertStringContainsString('商户余额不足', $column->getDescriptionBelow());
-        $this->assertStringNotContainsString('Gateway Submitted At:', $column->getDescriptionBelow());
         $this->assertStringContainsString('商户余额不足', $column->getTooltip());
+        $this->assertStringNotContainsString('Gateway Submitted At:', $column->getTooltip());
     }
 
     public function test_completed_payout_does_not_show_stale_error_as_an_active_problem(): void
     {
         $column = $this->handlingColumn(['payout_status' => 'completed', 'gateway_fail_reason' => 'Old timeout']);
 
-        $this->assertStringNotContainsString('Old timeout', $column->getDescriptionBelow());
+        $this->assertStringNotContainsString('Old timeout', $column->getTooltip());
     }
 
-    public function test_operational_columns_are_visible_without_enabling_advanced_columns(): void
+    public function test_compact_columns_keep_bank_after_amount_and_schedule_sortable(): void
     {
         $table = WithdrawRequestsTable::configure(Table::make(new ListWithdrawRequests));
 
-        foreach (['platform_handling', 'gateway_release_at', 'gateway_last_synced_at'] as $name) {
-            $column = $table->getColumn($name);
-            $this->assertInstanceOf(TextColumn::class, $column);
-            $this->assertFalse($column->isToggleable());
-        }
-
+        $this->assertNull($table->getColumn('platform_handling'));
+        $this->assertNull($table->getColumn('gateway_last_synced_at'));
+        $this->assertSame([
+            'user.username', 'amount', 'bank_name', 'withdrawal_summary_status',
+            'gateway_release_at', 'created_at',
+        ], array_slice(array_keys($table->getColumns()), 0, 6));
         $this->assertTrue($table->getColumn('gateway_release_at')->isSortable());
-        $this->assertTrue($table->getColumn('gateway_last_synced_at')->isSortable());
-        $this->assertSame('-', $table->getColumn('gateway_last_synced_at')->getPlaceholder());
+        $this->assertFalse($table->getColumn('gateway_release_at')->isToggleable());
     }
 
     private function handlingColumn(array $attributes): TextColumn
@@ -127,7 +125,7 @@ class WithdrawRequestHandlingTest extends TestCase
         $page = new ListWithdrawRequests;
         $table = WithdrawRequestsTable::configure(Table::make($page));
         (new ReflectionProperty($page, 'table'))->setValue($page, $table);
-        $column = $table->getColumn('platform_handling');
+        $column = $table->getColumn('withdrawal_summary_status');
         $this->assertInstanceOf(TextColumn::class, $column);
 
         return $column->record($record);

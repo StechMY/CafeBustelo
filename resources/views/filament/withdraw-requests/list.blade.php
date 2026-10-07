@@ -3,7 +3,6 @@
         .withdraw-requests-table .withdraw-customer-cell { min-width: 8rem; }
         .withdraw-requests-table .withdraw-amount-cell { min-width: 9rem; max-width: 12rem; }
         .withdraw-requests-table .withdraw-status-cell { min-width: 10rem; max-width: 13rem; }
-        .withdraw-requests-table .withdraw-handling-cell { min-width: 12rem; max-width: 17rem; }
         .withdraw-requests-table .withdraw-bank-cell { min-width: 10rem; max-width: 14rem; }
 
         .withdraw-requests-table .fi-ta-text:not(.fi-inline),

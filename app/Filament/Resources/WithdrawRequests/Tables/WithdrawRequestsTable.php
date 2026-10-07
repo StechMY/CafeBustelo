@@ -83,6 +83,23 @@ class WithdrawRequestsTable
 
                 /*
                 |--------------------------------------------------------------------------
+                | Bank Summary
+                |--------------------------------------------------------------------------
+                */
+                TextColumn::make('bank_name')
+                    ->extraCellAttributes(['class' => 'withdraw-bank-cell'])
+                    ->label(__('filament.bank_name'))
+                    ->searchable()
+                    ->weight('medium')
+                    ->placeholder('-')
+                    ->description(
+                        fn (WithdrawRequest $record): ?string =>
+                            self::bankSummary($record)
+                    )
+                    ->wrap(),
+
+                /*
+                |--------------------------------------------------------------------------
                 | Unified Operational Status
                 |--------------------------------------------------------------------------
                 |
@@ -120,25 +137,8 @@ class WithdrawRequestsTable
                     )
                     ->tooltip(
                         fn (WithdrawRequest $record): ?string =>
-                            self::gatewayTechnicalTooltip($record)
+                            self::statusTooltip($record)
                     )
-                    ->wrap(),
-
-                TextColumn::make('platform_handling')
-                    ->extraCellAttributes(['class' => 'withdraw-handling-cell'])
-                    ->label(__('withdraw.platform_handling'))
-                    ->state(fn (WithdrawRequest $record): string => self::handlingState($record))
-                    ->formatStateUsing(fn (string $state): string => __('withdraw.handling_states.'.$state))
-                    ->description(fn (WithdrawRequest $record, string $state): string => self::handlingDescription($record, $state))
-                    ->badge()
-                    ->color(fn (string $state): string => match ($state) {
-                        'completed', 'manual_completed', 'manual_after_failure' => 'success',
-                        'submission_failed', 'payout_failed', 'review' => 'danger',
-                        'awaiting_review', 'awaiting_submission', 'uncertain', 'unknown' => 'warning',
-                        'cancelled', 'rejected' => 'gray',
-                        default => 'info',
-                    })
-                    ->tooltip(fn (WithdrawRequest $record): ?string => self::gatewayTechnicalTooltip($record))
                     ->wrap(),
 
                 TextColumn::make('gateway_release_at')
@@ -147,30 +147,6 @@ class WithdrawRequestsTable
                     ->description(fn (WithdrawRequest $record): ?string => $record->gateway_release_at?->format('H:i:s'))
                     ->sortable()
                     ->placeholder('-'),
-
-                TextColumn::make('gateway_last_synced_at')
-                    ->label(__('withdraw.last_synced_at'))
-                    ->dateTime('Y-m-d')
-                    ->description(fn (WithdrawRequest $record): ?string => $record->gateway_last_synced_at?->format('H:i:s'))
-                    ->sortable()
-                    ->placeholder('-'),
-
-                /*
-                |--------------------------------------------------------------------------
-                | Bank Summary
-                |--------------------------------------------------------------------------
-                */
-                TextColumn::make('bank_name')
-                    ->extraCellAttributes(['class' => 'withdraw-bank-cell'])
-                    ->label(__('filament.bank_name'))
-                    ->searchable()
-                    ->weight('medium')
-                    ->placeholder('-')
-                    ->description(
-                        fn (WithdrawRequest $record): ?string =>
-                            self::bankSummary($record)
-                    )
-                    ->wrap(),
 
                 /*
                 |--------------------------------------------------------------------------
@@ -1319,6 +1295,17 @@ class WithdrawRequestsTable
     | Platform Handling
     |--------------------------------------------------------------------------
     */
+    private static function statusTooltip(WithdrawRequest $record): string
+    {
+        $state = self::handlingState($record);
+
+        return implode(' · ', array_filter([
+            __('withdraw.platform_handling').': '.__('withdraw.handling_states.'.$state),
+            self::handlingDescription($record, $state),
+            self::gatewayTechnicalTooltip($record),
+        ]));
+    }
+
     private static function handlingState(WithdrawRequest $record): string
     {
         if ($record->payout_status === WithdrawRequest::PAYOUT_REFUND_REVIEW

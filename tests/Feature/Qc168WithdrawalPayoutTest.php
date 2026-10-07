@@ -965,7 +965,7 @@ class Qc168WithdrawalPayoutTest extends TestCase
             ->count());
     }
 
-    public function test_withdrawal_table_shows_handling_and_sync_time_and_sorts_by_payout_schedule(): void
+    public function test_withdrawal_table_keeps_handling_in_status_tooltip_and_sorts_by_payout_schedule(): void
     {
         Http::fake();
         $admin = $this->approvalAdmin('handling-list-admin', ['ViewAny:WithdrawRequest', 'View:WithdrawRequest']);
@@ -993,13 +993,15 @@ class Qc168WithdrawalPayoutTest extends TestCase
         $this->actingAs($admin, 'admin');
         Filament::setCurrentPanel(Filament::getPanel('admin'));
         Livewire::test(ListWithdrawRequests::class)
-            ->assertTableColumnVisible('platform_handling')
+            ->assertTableColumnDoesNotExist('platform_handling')
+            ->assertTableColumnVisible('withdrawal_summary_status')
             ->assertTableColumnVisible('gateway_release_at')
-            ->assertTableColumnVisible('gateway_last_synced_at')
-            ->assertTableColumnFormattedStateSet('platform_handling', 'Submitted · Awaiting gateway', $later)
-            ->assertTableColumnFormattedStateSet('platform_handling', 'Attempted · Submission failed', $earlier)
-            ->assertTableColumnStateSet('gateway_last_synced_at', $later->gateway_last_synced_at, $later)
-            ->assertSee('商户余额不足')
+            ->assertTableColumnDoesNotExist('gateway_last_synced_at')
+            ->assertTableColumnExists('withdrawal_summary_status', fn ($column): bool =>
+                str_contains($column->getTooltip(), 'Submitted · Awaiting gateway'), $later)
+            ->assertTableColumnExists('withdrawal_summary_status', fn ($column): bool =>
+                str_contains($column->getTooltip(), 'Attempted · Submission failed')
+                && str_contains($column->getTooltip(), '商户余额不足'), $earlier)
             ->sortTable('gateway_release_at', 'asc')
             ->assertCanSeeTableRecords([$earlier, $later], inOrder: true)
             ->sortTable('gateway_release_at', 'desc')
