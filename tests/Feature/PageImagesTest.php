@@ -48,7 +48,7 @@ class PageImagesTest extends TestCase
         ] as $page => $files) {
             $this->assertSame(
                 array_map(fn (string $file): string => 'page-images/defaults/'.$file, $files),
-                PageImage::query()->forPage($page)->pluck('image_path')->all(),
+                PageImage::query()->visibleForPage($page)->pluck('image_path')->all(),
             );
         }
     }
@@ -70,7 +70,7 @@ class PageImagesTest extends TestCase
         foreach (['dashboard', 'my-team', 'products', 'profile'] as $page) {
             $response = $this->get('/'.$page)->assertOk();
 
-            foreach (PageImage::query()->forPage($page)->get() as $image) {
+            foreach (PageImage::query()->visibleForPage($page)->get() as $image) {
                 $response->assertSee($image->image_url);
             }
 
@@ -136,7 +136,6 @@ class PageImagesTest extends TestCase
         Storage::disk('do_spaces')->assertExists($image->image_path);
 
         $manager
-            ->loadTable()
             ->mountAction(TestAction::make('view')->table($image))
             ->assertActionMounted(TestAction::make('view')->table($image))
             ->unmountAction()
@@ -161,6 +160,34 @@ class PageImagesTest extends TestCase
 
         $manager->callAction(TestAction::make('delete')->table($image));
         $this->assertModelMissing($image);
+    }
+
+    public function test_admin_table_displays_original_images_on_first_load(): void
+    {
+        $admin = $this->admin();
+        $admin->assignRole(Role::findOrCreate('super_admin', 'admin'));
+        $this->actingAs($admin, 'admin');
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+
+        $images = PageImage::query()->get();
+
+        Livewire::test(ManagePageImages::class)
+            ->assertCountTableRecords(8)
+            ->assertCanSeeTableRecords($images)
+            ->filterTable('page', 'dashboard')
+            ->assertCanSeeTableRecords($images->where('page', 'dashboard'))
+            ->assertCanNotSeeTableRecords($images->where('page', '!=', 'dashboard'));
+    }
+
+    public function test_page_images_preserve_native_pagination(): void
+    {
+        $firstPage = PageImage::query()->orderBy('id')->paginate(5, page: 1);
+        $secondPage = PageImage::query()->orderBy('id')->paginate(5, page: 2);
+
+        $this->assertSame(8, $firstPage->total());
+        $this->assertCount(5, $firstPage);
+        $this->assertCount(3, $secondPage);
+        $this->assertEmpty($firstPage->pluck('id')->intersect($secondPage->pluck('id')));
     }
 
     public function test_image_management_requires_admin_permissions(): void

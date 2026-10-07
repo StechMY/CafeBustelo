@@ -39,7 +39,7 @@ class PageImage extends Model
         return Storage::disk('do_spaces')->url($this->image_path);
     }
 
-    public function scopeForPage(Builder $query, string $page): Builder
+    public function scopeVisibleForPage(Builder $query, string $page): Builder
     {
         return $query
             ->where('page', $page)

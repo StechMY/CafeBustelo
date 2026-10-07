@@ -1,5 +1,5 @@
 @php
-    $pageImages = \App\Models\PageImage::query()->forPage($page)->get();
+    $pageImages = \App\Models\PageImage::query()->visibleForPage($page)->get();
 @endphp
 
 @if ($pageImages->isNotEmpty())
