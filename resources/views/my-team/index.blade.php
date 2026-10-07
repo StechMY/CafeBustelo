@@ -361,19 +361,7 @@
                     @endforeach
                 </div>
             </div>
-            <div class="mt-4 grid gap-3 sm:mt-5 sm:gap-4">
-                <img
-                     src="/customer_pic/level_en.jpg"
-                     alt="{{ __('my_team.info_image_1') }}"
-                     class="w-full rounded-[1.35rem] object-cover shadow-xl ring-1 ring-black/5 sm:rounded-[2rem]"
-                     loading="lazy">
-
-                <img
-                     src="/customer_pic/level_vi.jpg"
-                     alt="{{ __('my_team.info_image_2') }}"
-                     class="w-full rounded-[1.35rem] object-cover shadow-xl ring-1 ring-black/5 sm:rounded-[2rem]"
-                     loading="lazy">
-            </div>
+            @include('partials.page-images', ['page' => 'my-team'])
         </div>
     </section>
 @endsection

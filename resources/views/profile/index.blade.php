@@ -578,19 +578,7 @@
                     </div>
                 </aside>
             </div>
-            <div class="mt-4 grid gap-3 sm:mt-5 sm:gap-4">
-                <img
-                     src="/customer_pic/product_commission_en.jpg"
-                     alt="Info Image"
-                     class="w-full rounded-[1.35rem] object-cover shadow-xl ring-1 ring-black/5 sm:rounded-[2rem]"
-                     loading="lazy">
-
-                <img
-                     src="/customer_pic/product_commission_vi.jpg"
-                     alt="Info Image"
-                     class="w-full rounded-[1.35rem] object-cover shadow-xl ring-1 ring-black/5 sm:rounded-[2rem]"
-                     loading="lazy">
-            </div>
+            @include('partials.page-images', ['page' => 'profile'])
         </div>
 
     </section>

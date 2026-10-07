@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Filament\Resources\PageImages\PageImageResource;
 use App\Filament\Widgets\PlatformFinanceChart;
 use App\Filament\Widgets\PlatformOperationStats;
 use App\Filament\Widgets\PlatformOverviewStats;
@@ -96,6 +97,12 @@ class Dashboard extends BaseDashboard
     protected function getHeaderActions(): array
     {
         return [
+            Action::make('pageImages')
+                ->label(__('page_images.images'))
+                ->icon('heroicon-o-photo')
+                ->color('info')
+                ->url(fn (): string => PageImageResource::getUrl())
+                ->visible(fn (): bool => PageImageResource::canViewAny()),
             Action::make('phoneOtpRecords')
                 ->label(__('filament.phone_otp_records'))
                 ->icon('heroicon-o-device-phone-mobile')
