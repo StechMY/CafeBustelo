@@ -1,6 +1,14 @@
 <?php
 
 return [
+    'mark_failed_payout_paid' => 'Setujui · Sudah Dibayar Manual',
+    'mark_paid_description' => 'Hanya untuk pembayaran gateway gagal yang sudah dibayar manual. Tindakan ini menggunakan dana terkunci dan menandai lunas, tanpa pembayaran atau pengembalian dana baru. Status gateway diperiksa kembali.',
+    'manual_payment_reference' => 'Referensi / bukti pembayaran manual',
+    'mark_paid_acknowledgement' => 'Saya memastikan pengguna telah menerima jumlah bersih dan pesanan gateway awal tidak akan membayar lagi.',
+    'mark_paid_success' => 'Penarikan ditandai telah dibayar manual.',
+    'mark_paid_failed' => 'Tidak dapat menandai penarikan lunas.',
+    'mark_paid_not_allowed' => 'Status atau pesanan telah berubah, atau pembayaran / pengembalian dana sudah ada. Muat ulang dan periksa status.',
+    'manual_paid_gateway_review' => 'Gateway melaporkan pembayaran setelah penyelesaian manual. Periksa kemungkinan pembayaran ganda.',
     'withdraw' => 'Tarik Dana',
     'withdraw_center' => 'Pusat Penarikan',
     'hero_title' => 'Tarik Pendapatan Anda',
@@ -63,6 +71,7 @@ return [
     'scheduled_at' => 'Jadwal Pembayaran',
     'platform_handling' => 'Progres Penanganan Platform',
     'handling_states' => [
+        'manual_after_failure' => 'Ditangani · Dibayar manual setelah gagal',
         'awaiting_review' => 'Belum ditangani · Menunggu tinjauan',
         'rejected' => 'Ditangani · Ditolak',
         'scheduled' => 'Disetujui · Menunggu jadwal',
@@ -78,6 +87,7 @@ return [
         'unknown' => 'Periksa catatan pembayaran',
     ],
     'handling_help' => [
+        'manual_after_failure' => 'Pembayaran gateway gagal telah diselesaikan manual; riwayat gateway tetap tersimpan.',
         'awaiting_review' => 'Menunggu persetujuan platform; pembayaran belum dikirim.',
         'rejected' => 'Platform menolak permintaan penarikan ini.',
         'scheduled' => 'Sudah disetujui platform; jadwal pembayaran belum tiba.',

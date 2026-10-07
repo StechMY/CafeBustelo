@@ -200,6 +200,95 @@ class WithdrawService
         });
     }
 
+    public function markFailedPayoutPaid(
+        WithdrawRequest $withdrawRequest,
+        AdminUser $adminUser,
+        string $merchantOrderId,
+        string $paymentReference,
+        string $reason,
+        bool $confirmedPaid,
+        ?string $ip = null,
+    ): WithdrawRequest {
+        $withdrawRequest->refresh();
+        Gate::forUser($adminUser)->authorize('approveManual', $withdrawRequest);
+        $paymentReference = trim($paymentReference);
+        $reason = trim($reason);
+        Validator::make([
+            'payment_reference' => $paymentReference,
+            'reason' => $reason,
+            'confirmed_paid' => $confirmedPaid,
+        ], [
+            'payment_reference' => ['required', 'string', 'max:255'],
+            'reason' => ['required', 'string', 'max:1000'],
+            'confirmed_paid' => ['accepted'],
+        ])->validate();
+
+        $attempt = $withdrawRequest->payoutAttempts()->latest('attempt_no')->first();
+        if (! $withdrawRequest->canMarkPayoutPaid()
+            || ! $attempt?->isSafeFinalFailure()
+            || $attempt->merchant_order_id !== $merchantOrderId) {
+            throw new RuntimeException(__('withdraw.mark_paid_not_allowed'));
+        }
+
+        $definitiveCreateFailure = $attempt->gateway_status === WithdrawalPayoutAttempt::STATUS_CREATE_FAILED
+            && data_get($attempt->provider_meta, 'submission_definitive_failure') === true;
+        if (! $definitiveCreateFailure && ! $attempt->isManuallyConfirmedUnpaid()) {
+            $result = app(Qc168WithdrawalPayoutService::class)->syncAttempt(
+                $attempt, 'filament_manual_paid_check', $adminUser, $reason, $ip,
+            );
+            if (! $result['accepted'] || ! in_array($result['payment_status'], [
+                WithdrawalPayoutAttempt::STATUS_FAILED,
+                WithdrawalPayoutAttempt::STATUS_REJECT,
+                WithdrawalPayoutAttempt::STATUS_OVERDUE,
+            ], true)) {
+                throw new RuntimeException(__('withdraw.mark_paid_not_allowed'));
+            }
+        }
+
+        return DB::transaction(function () use ($withdrawRequest, $adminUser, $attempt, $merchantOrderId, $paymentReference, $reason, $ip): WithdrawRequest {
+            $lockedRequest = WithdrawRequest::query()->whereKey($withdrawRequest->id)->lockForUpdate()->firstOrFail();
+            Gate::forUser($adminUser)->authorize('approveManual', $lockedRequest);
+            $attempts = $lockedRequest->payoutAttempts()->orderByDesc('attempt_no')->lockForUpdate()->get();
+            $latest = $attempts->first();
+            if (! $lockedRequest->canMarkPayoutPaid()
+                || $latest?->id !== $attempt->id
+                || $lockedRequest->gateway_current_merchant_order_id !== $merchantOrderId
+                || $attempts->contains(fn (WithdrawalPayoutAttempt $item): bool => ! $item->isSafeFinalFailure())) {
+                throw new RuntimeException(__('withdraw.mark_paid_not_allowed'));
+            }
+
+            $user = $lockedRequest->user()->lockForUpdate()->firstOrFail();
+            $this->walletService->consumeLocked($user, Wallet::TYPE_WITHDRAWABLE, $lockedRequest->amount);
+            $manualPayout = [
+                'completed_at' => now()->toAtomString(),
+                'admin_user_id' => $adminUser->id,
+                'payment_reference' => $paymentReference,
+                'reason' => $reason,
+                'attempt_id' => $latest->id,
+                'merchant_order_id' => $merchantOrderId,
+                'reserved_amount_consumed' => (string) $lockedRequest->amount,
+                'user_payout_amount' => (string) $lockedRequest->net_amount,
+            ];
+            // Preserve the original approval and provider failure history.
+            $lockedRequest->forceFill([
+                'payout_status' => WithdrawRequest::PAYOUT_COMPLETED,
+                'gateway_meta' => array_merge($lockedRequest->gateway_meta ?? [], ['manual_payout' => $manualPayout]),
+            ])->save();
+            $this->eventRecorder->recordWithdrawal(
+                'withdrawal.failed_payout_manually_completed',
+                $lockedRequest,
+                $latest,
+                $adminUser,
+                'filament',
+                $reason,
+                WithdrawRequest::PAYOUT_COMPLETED,
+                array_merge($manualPayout, ['ip' => $ip]),
+            );
+
+            return $lockedRequest;
+        });
+    }
+
     public function revertManualApproval(
         WithdrawRequest $withdrawRequest,
         AdminUser $adminUser,

@@ -1,6 +1,14 @@
 <?php
 
 return [
+    'mark_failed_payout_paid' => '直接通过 · 已人工付款',
+    'mark_paid_description' => '仅用于网关出款失败、且已在网关外人工付款的订单。操作将核销原冻结金额并标记已付款，不会再次出款或退款；完成前会重新核对网关状态。',
+    'manual_payment_reference' => '人工付款流水号／凭证',
+    'mark_paid_acknowledgement' => '我已确认用户收到人工支付的净额，且原网关订单不会再出款。',
+    'mark_paid_success' => '已标记为人工付款完成。',
+    'mark_paid_failed' => '无法标记为已付款。',
+    'mark_paid_not_allowed' => '订单不再属于确认失败、商户订单已变更，或已经付款／退款。请刷新并核对当前状态。',
+    'manual_paid_gateway_review' => '人工付款后网关又回报付款成功，请核对是否重复付款。',
     'withdraw' => '提现',
     'withdraw_center' => '提现中心',
     'hero_title' => '提现你的收益',
@@ -64,6 +72,7 @@ return [
     'scheduled_at' => '预定出款时间',
     'platform_handling' => '平台处理进度',
     'handling_states' => [
+        'manual_after_failure' => '已处理 · 失败后人工付款',
         'awaiting_review' => '未处理 · 待审核',
         'rejected' => '已处理 · 已拒绝',
         'scheduled' => '已审核 · 等待出款时间',
@@ -79,6 +88,7 @@ return [
         'unknown' => '需要核对出款记录',
     ],
     'handling_help' => [
+        'manual_after_failure' => '网关失败后已人工付款，保留原网关记录。',
         'awaiting_review' => '等待平台审核，尚未提交出款。',
         'rejected' => '平台已拒绝此提现申请。',
         'scheduled' => '平台已审核通过，尚未到预定出款时间。',

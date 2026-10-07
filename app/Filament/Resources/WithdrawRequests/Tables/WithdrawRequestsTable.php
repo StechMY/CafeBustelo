@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\WithdrawRequests\Tables;
 
 use App\Filament\Resources\WithdrawRequests\Actions\ConfirmGatewayUnpaidAction;
+use App\Filament\Resources\WithdrawRequests\Actions\MarkFailedPayoutPaidAction;
 use App\Filament\Resources\WithdrawRequests\Actions\RevertManualApprovalAction;
 use App\Models\WithdrawalPayoutAttempt;
 use App\Models\WithdrawRequest;
@@ -125,7 +126,7 @@ class WithdrawRequestsTable
                     ->description(fn (WithdrawRequest $record, string $state): string => self::handlingDescription($record, $state))
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
-                        'completed', 'manual_completed' => 'success',
+                        'completed', 'manual_completed', 'manual_after_failure' => 'success',
                         'submission_failed', 'payout_failed', 'review' => 'danger',
                         'awaiting_review', 'awaiting_submission', 'uncertain', 'unknown' => 'warning',
                         'cancelled', 'rejected' => 'gray',
@@ -1053,6 +1054,7 @@ class WithdrawRequestsTable
                     |--------------------------------------------------------------------------
                     */
                     ConfirmGatewayUnpaidAction::make(usePreloadedCancellationState: true),
+                    MarkFailedPayoutPaidAction::make(usePreloadedCancellationState: true),
                     RevertManualApprovalAction::make(),
                     Action::make('retry_payout')
                         ->label(__('withdraw.retry_payout'))
@@ -1309,7 +1311,8 @@ class WithdrawRequestsTable
     */
     private static function handlingState(WithdrawRequest $record): string
     {
-        if ($record->payout_status === WithdrawRequest::PAYOUT_REFUND_REVIEW) {
+        if ($record->payout_status === WithdrawRequest::PAYOUT_REFUND_REVIEW
+            || data_get($record->gateway_meta, 'financial_review_reason') === 'provider_completed_after_manual_payout') {
             return 'review';
         }
 
@@ -1327,6 +1330,10 @@ class WithdrawRequestsTable
 
         if (! $record->isApproved()) {
             return 'unknown';
+        }
+
+        if ($record->isManuallySettledPayout()) {
+            return 'manual_after_failure';
         }
 
         if (blank($record->gateway_provider)
@@ -1362,7 +1369,9 @@ class WithdrawRequestsTable
 
     private static function handlingDescription(WithdrawRequest $record, string $state): string
     {
-        $parts = [__('withdraw.handling_help.'.$state)];
+        $parts = [data_get($record->gateway_meta, 'financial_review_reason') === 'provider_completed_after_manual_payout'
+            ? __('withdraw.manual_paid_gateway_review')
+            : __('withdraw.handling_help.'.$state)];
 
         if (in_array($state, ['gateway_pending', 'payout_failed', 'completed'], true)
             && filled($record->gateway_submitted_at)) {

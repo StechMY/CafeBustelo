@@ -172,6 +172,23 @@ class WithdrawRequestInfolist
                             ]),
                     ]),
 
+                Section::make(__('withdraw.mark_failed_payout_paid'))
+                    ->visible(fn (WithdrawRequest $record): bool => $record->isManuallySettledPayout())
+                    ->schema([
+                        TextEntry::make('gateway_meta.manual_payout.completed_at')
+                            ->label(__('withdraw.manually_confirmed_at'))->dateTime(),
+                        TextEntry::make('gateway_meta.manual_payout.admin_user_id')
+                            ->label(__('filament.reviewed_by')),
+                        TextEntry::make('gateway_meta.manual_payout.payment_reference')
+                            ->label(__('withdraw.manual_payment_reference')),
+                        TextEntry::make('gateway_meta.manual_payout.reason')
+                            ->label(__('withdraw.manual_resolution_reason')),
+                        TextEntry::make('gateway_meta.financial_review_reason')
+                            ->label(__('withdraw.platform_handling'))
+                            ->formatStateUsing(fn (): string => __('withdraw.manual_paid_gateway_review'))
+                            ->visible(fn (WithdrawRequest $record): bool => data_get($record->gateway_meta, 'financial_review_reason') === 'provider_completed_after_manual_payout'),
+                    ]),
+
                 Section::make(__('withdraw.payout_attempts'))
                     ->schema([
                         RepeatableEntry::make('payoutAttempts')

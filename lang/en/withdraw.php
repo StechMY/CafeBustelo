@@ -1,6 +1,14 @@
 <?php
 
 return [
+    'mark_failed_payout_paid' => 'Approve · Already Paid Manually',
+    'mark_paid_description' => 'For failed gateway payouts already paid outside the gateway. This consumes the existing reserve and marks the withdrawal paid; it does not send another payment or refund. The gateway status is checked again before completion.',
+    'manual_payment_reference' => 'Manual payment reference / receipt',
+    'mark_paid_acknowledgement' => 'I verified the member received the net amount manually and the original gateway payout will not pay later.',
+    'mark_paid_success' => 'Withdrawal marked as paid manually.',
+    'mark_paid_failed' => 'Unable to mark the withdrawal paid.',
+    'mark_paid_not_allowed' => 'The payout is no longer a confirmed failure, the order changed, or payment/refund already exists. Refresh and review the current status.',
+    'manual_paid_gateway_review' => 'The gateway reported a payment after manual settlement. Reconcile for a possible duplicate payment.',
     'withdraw' => 'Withdraw',
     'withdraw_center' => 'Withdraw Center',
     'hero_title' => 'Withdraw Your Earnings',
@@ -64,6 +72,7 @@ return [
     'scheduled_at' => 'Scheduled Payout At',
     'platform_handling' => 'Platform Handling',
     'handling_states' => [
+        'manual_after_failure' => 'Handled · Paid manually after failure',
         'awaiting_review' => 'Not handled · Awaiting review',
         'rejected' => 'Handled · Rejected',
         'scheduled' => 'Approved · Scheduled',
@@ -79,6 +88,7 @@ return [
         'unknown' => 'Check payout records',
     ],
     'handling_help' => [
+        'manual_after_failure' => 'The failed gateway payout was settled manually; the original provider history is preserved.',
         'awaiting_review' => 'Awaiting platform approval; no payout has been submitted.',
         'rejected' => 'The platform rejected this withdrawal request.',
         'scheduled' => 'Approved by the platform; the scheduled payout time has not arrived.',

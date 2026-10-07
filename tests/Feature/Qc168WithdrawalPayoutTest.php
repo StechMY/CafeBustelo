@@ -39,6 +39,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
 use PDO;
+use PHPUnit\Framework\Attributes\DataProvider;
 use RuntimeException;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -1922,6 +1923,210 @@ class Qc168WithdrawalPayoutTest extends TestCase
 
         $this->assertSame(WithdrawRequest::PAYOUT_PENDING, $withdrawal->fresh()->payout_status);
         $this->assertWallet('tampered', '0.00', '1000.00');
+    }
+
+    #[DataProvider('manualSettlementFailures')]
+    public function test_failed_gateway_payout_can_be_settled_manually_once(string $status): void
+    {
+        $withdrawal = $status === 'create_failed'
+            ? $this->explicitlyRejectedPayout('settled')
+            : $this->approvedAndDispatched('settled');
+        $attempt = $withdrawal->payoutAttempts()->firstOrFail();
+        if ($status !== 'create_failed') {
+            $this->sendCallback($this->providerPayload($attempt, $status))->assertOk();
+            $this->inquiryStatus = $status;
+        }
+        $withdrawal->refresh();
+        $originalMode = $withdrawal->approval_mode;
+        $admin = $this->approvalAdmin('settlement-admin', ['ApproveManual:Withdrawal']);
+        $sentBefore = Http::recorded()->count();
+        $service = app(WithdrawService::class);
+        $service->markFailedPayoutPaid($withdrawal, $admin, $attempt->merchant_order_id, 'BANK-123', 'Paid by bank transfer.', true, '192.0.2.1');
+
+        $withdrawal->refresh();
+        $this->assertTrue($withdrawal->isPayoutCompleted());
+        $this->assertTrue($withdrawal->isManuallySettledPayout());
+        $this->assertSame($originalMode, $withdrawal->approval_mode);
+        $this->assertSame('qc168', $withdrawal->gateway_provider);
+        $this->assertSame($status, $attempt->fresh()->gateway_status);
+        $this->assertSame($status, $withdrawal->gateway_payment_status);
+        $this->assertNull($withdrawal->gateway_completed_at);
+        $this->assertSame('BANK-123', data_get($withdrawal->gateway_meta, 'manual_payout.payment_reference'));
+        $this->assertSame('manual_after_failure', $this->withdrawTableValue('handlingState', $withdrawal));
+        $this->assertFalse($withdrawal->canRetryPayout());
+        $this->assertFalse($withdrawal->canCancelPayout());
+        $this->assertFalse($withdrawal->canSyncPayout());
+        $this->assertFalse($withdrawal->canRevertManualApproval());
+        $this->assertFalse(WithdrawRequest::withReservedFunds()->whereKey($withdrawal->id)->exists());
+        $this->assertDatabaseCount('withdrawal_payout_attempts', 1);
+        $this->assertDatabaseCount('wallet_transactions', 1);
+        $this->assertWallet('settled', '0.00', '0.00');
+        $this->assertCount($sentBefore + ($status === 'create_failed' ? 0 : 1), Http::recorded());
+        $event = PaymentGatewayEvent::where('event_type', 'withdrawal.failed_payout_manually_completed')->sole();
+        $this->assertSame($admin->id, $event->actor_admin_user_id);
+        $this->assertSame('1000.00', data_get($event->payload, 'reserved_amount_consumed'));
+        $this->assertSame('980.00', data_get($event->payload, 'user_payout_amount'));
+
+        try {
+            $service->markFailedPayoutPaid($withdrawal, $admin, $attempt->merchant_order_id, 'BANK-123', 'Repeated click.', true);
+            $this->fail('A repeated settlement must be rejected.');
+        } catch (RuntimeException) {
+            $this->assertWallet('settled', '0.00', '0.00');
+            $this->assertSame(1, PaymentGatewayEvent::where('event_type', 'withdrawal.failed_payout_manually_completed')->count());
+        }
+    }
+
+    public static function manualSettlementFailures(): array
+    {
+        return [['create_failed'], ['failed'], ['reject'], ['overdue']];
+    }
+
+    public function test_manual_settlement_rechecks_provider_and_rejects_processing_completed_and_invalid_replies(): void
+    {
+        $admin = $this->approvalAdmin('settlement-admin', ['ApproveManual:Withdrawal']);
+        foreach (['processing', 'completed', 'refund', 'invalid'] as $status) {
+            $withdrawal = $this->approvedAndDispatched('check-'.$status);
+            $attempt = $withdrawal->payoutAttempts()->firstOrFail();
+            $this->sendCallback($this->providerPayload($attempt, 'failed'))->assertOk();
+            $this->inquiryStatus = $status;
+            try {
+                app(WithdrawService::class)->markFailedPayoutPaid($withdrawal, $admin, $attempt->merchant_order_id, 'BANK-123', 'Already paid.', true);
+                $this->fail('An unsafe provider reply must block manual settlement.');
+            } catch (RuntimeException) {
+                $this->assertFalse($withdrawal->fresh()->isManuallySettledPayout());
+                $this->assertWallet('check-'.$status, '0.00', $status === 'completed' ? '0.00' : '1000.00');
+            }
+        }
+        $this->assertSame(0, PaymentGatewayEvent::where('event_type', 'withdrawal.failed_payout_manually_completed')->count());
+    }
+
+    public function test_manual_settlement_requires_permission_scope_evidence_and_current_order(): void
+    {
+        $withdrawal = $this->explicitlyRejectedPayout('settlement-guards');
+        $admin = $this->approvalAdmin('settlement-admin', []);
+        $service = app(WithdrawService::class);
+        try {
+            $service->markFailedPayoutPaid($withdrawal, $admin, $withdrawal->gateway_current_merchant_order_id, 'BANK-123', 'Paid.', true);
+            $this->fail('Manual approval permission is required.');
+        } catch (AuthorizationException) {
+            $this->assertWallet('settlement-guards', '0.00', '1000.00');
+        }
+        $admin = $this->approvalAdmin('settlement-admin', ['ApproveManual:Withdrawal']);
+        foreach ([[' ', 'Paid.', true], ['BANK-123', ' ', true], ['BANK-123', 'Paid.', false]] as [$reference, $reason, $confirmed]) {
+            try {
+                $service->markFailedPayoutPaid($withdrawal, $admin, $withdrawal->gateway_current_merchant_order_id, $reference, $reason, $confirmed);
+                $this->fail('Evidence and confirmation are required.');
+            } catch (ValidationException) {
+                $this->assertWallet('settlement-guards', '0.00', '1000.00');
+            }
+        }
+        try {
+            $service->markFailedPayoutPaid($withdrawal, $admin, 'STALE-ORDER', 'BANK-123', 'Paid.', true);
+            $this->fail('A stale order must not be settled.');
+        } catch (RuntimeException) {
+            $this->assertWallet('settlement-guards', '0.00', '1000.00');
+        }
+        $admin->forceFill(['managed_user_id' => $this->user('unrelated-settlement-manager')->id])->save();
+        $admin->assignRole(Role::findOrCreate('Support', 'admin'));
+        $this->actingAs($admin, 'admin');
+        $this->expectException(AuthorizationException::class);
+        $service->markFailedPayoutPaid($withdrawal, $admin, $withdrawal->gateway_current_merchant_order_id, 'BANK-123', 'Paid.', true);
+    }
+
+    public function test_manual_settlement_rejects_refunded_or_unresolved_orders(): void
+    {
+        $withdrawal = $this->cancelledCreateFailure('settlement-refunded');
+        $admin = $this->approvalAdmin('settlement-admin', ['ApproveManual:Withdrawal']);
+        // The refund ledger must block settlement even if a stale state says failed.
+        $withdrawal->forceFill(['payout_status' => WithdrawRequest::PAYOUT_CREATE_FAILED])->save();
+        try {
+            app(WithdrawService::class)->markFailedPayoutPaid($withdrawal, $admin, $withdrawal->gateway_current_merchant_order_id, 'BANK-123', 'Paid.', true);
+            $this->fail('Refunded funds cannot be consumed.');
+        } catch (RuntimeException) {
+            $this->assertWallet('settlement-refunded', '1000.00', '0.00');
+        }
+        $withdrawal = $this->uncertainPayout('settlement-uncertain');
+        $this->assertFalse($withdrawal->canMarkPayoutPaid());
+        $this->expectException(RuntimeException::class);
+        app(WithdrawService::class)->markFailedPayoutPaid($withdrawal, $admin, $withdrawal->gateway_current_merchant_order_id, 'BANK-123', 'Paid.', true);
+    }
+
+    public function test_callbacks_after_manual_settlement_never_reopen_or_consume_another_reserve(): void
+    {
+        $withdrawal = $this->explicitlyRejectedPayout('settlement-callback');
+        $attempt = $withdrawal->payoutAttempts()->firstOrFail();
+        $admin = $this->approvalAdmin('settlement-admin', ['ApproveManual:Withdrawal']);
+        app(WithdrawService::class)->markFailedPayoutPaid($withdrawal, $admin, $attempt->merchant_order_id, 'BANK-123', 'Paid.', true);
+        $withdrawal->user->wallets()->where('type', Wallet::TYPE_WITHDRAWABLE)->update(['locked_balance' => 500]);
+
+        foreach (['failed', 'processing', 'refund', 'completed', 'completed', 'failed'] as $status) {
+            $this->sendCallback($this->providerPayload($attempt, $status))->assertOk();
+            $this->assertWallet('settlement-callback', '0.00', '500.00');
+            $this->assertTrue($withdrawal->fresh()->isPayoutCompleted());
+            $this->assertFalse($withdrawal->fresh()->canRetryPayout());
+        }
+        $this->assertSame('review', $this->withdrawTableValue('handlingState', $withdrawal->fresh()));
+        $this->assertSame('completed', $attempt->fresh()->gateway_status);
+        $this->assertSame('provider_completed_after_manual_payout', data_get($withdrawal->fresh()->gateway_meta, 'financial_review_reason'));
+        $this->assertSame(0, PaymentGatewayEvent::where('event_type', 'withdrawal.gateway_completed')->count());
+        $this->assertDatabaseCount('wallet_transactions', 1);
+    }
+
+    public function test_delayed_submission_results_preserve_manual_settlement(): void
+    {
+        $withdrawal = $this->explicitlyRejectedPayout('settlement-delayed', retrySucceeds: true);
+        $attempt = $withdrawal->payoutAttempts()->firstOrFail();
+        $admin = $this->approvalAdmin('settlement-admin', ['ApproveManual:Withdrawal']);
+        app(WithdrawService::class)->markFailedPayoutPaid($withdrawal, $admin, $attempt->merchant_order_id, 'BANK-123', 'Paid.', true);
+
+        $service = app(Qc168WithdrawalPayoutService::class);
+        $method = new \ReflectionMethod($service, 'submitAttempt');
+        $method->invoke($service, $attempt, 'delayed_create_response');
+        $this->assertTrue($withdrawal->fresh()->isPayoutCompleted());
+        $this->assertWallet('settlement-delayed', '0.00', '0.00');
+
+        $method = new \ReflectionMethod($service, 'recordSubmissionFailure');
+        $method->invoke($service, $attempt, new RuntimeException('Delayed failure'), true, 'delayed_create_failure');
+        $this->assertTrue($withdrawal->fresh()->isPayoutCompleted());
+        $this->assertWallet('settlement-delayed', '0.00', '0.00');
+        $this->assertSame(2, PaymentGatewayEvent::where('processing_result', 'status_recorded_after_manual_payout')->count());
+    }
+
+    public function test_manual_settlement_rolls_back_when_audit_fails(): void
+    {
+        $withdrawal = $this->explicitlyRejectedPayout('settlement-rollback');
+        $admin = $this->approvalAdmin('settlement-admin', ['ApproveManual:Withdrawal']);
+        $this->mock(PaymentGatewayEventRecorder::class)->shouldReceive('recordWithdrawal')->once()->andThrow(new RuntimeException('Audit unavailable'));
+        try {
+            app(WithdrawService::class)->markFailedPayoutPaid($withdrawal, $admin, $withdrawal->gateway_current_merchant_order_id, 'BANK-123', 'Paid.', true);
+            $this->fail('Audit failure must roll back settlement.');
+        } catch (RuntimeException $exception) {
+            $this->assertSame('Audit unavailable', $exception->getMessage());
+            $this->assertWallet('settlement-rollback', '0.00', '1000.00');
+            $this->assertFalse($withdrawal->fresh()->isManuallySettledPayout());
+            $this->assertSame(WithdrawRequest::PAYOUT_CREATE_FAILED, $withdrawal->fresh()->payout_status);
+        }
+    }
+
+    public function test_manual_settlement_action_on_list_and_detail_requires_confirmation_and_permission(): void
+    {
+        $withdrawal = $this->explicitlyRejectedPayout('settlement-ui');
+        $admin = $this->approvalAdmin('settlement-admin', ['ViewAny:WithdrawRequest', 'View:WithdrawRequest']);
+        $this->actingAs($admin, 'admin');
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+        Livewire::test(ListWithdrawRequests::class)->assertActionHidden(TestAction::make('mark_failed_payout_paid')->table($withdrawal));
+        $this->approvalAdmin('settlement-admin', ['ApproveManual:Withdrawal']);
+        $admin->refresh();
+        Livewire::test(ListWithdrawRequests::class)->assertActionVisible(TestAction::make('mark_failed_payout_paid')->table($withdrawal));
+        $page = Livewire::test(ViewWithdrawRequest::class, ['record' => $withdrawal->id])
+            ->assertActionVisible('mark_failed_payout_paid');
+        $data = ['merchant_order_id' => $withdrawal->gateway_current_merchant_order_id, 'payment_reference' => 'BANK-123', 'reason' => 'Paid manually.', 'confirmed_paid' => false];
+        $page->callAction('mark_failed_payout_paid', $data)->assertHasActionErrors(['confirmed_paid']);
+        $page->setActionData(array_merge($data, ['confirmed_paid' => true]))->callMountedAction()
+            ->assertHasNoActionErrors()->assertActionHidden('mark_failed_payout_paid')
+            ->assertActionHidden('retry_payout')->assertActionHidden('cancel_payout')
+            ->assertSee('BANK-123');
+        $this->assertTrue($withdrawal->fresh()->isManuallySettledPayout());
     }
 
     private function pendingWithdrawal(string $username): WithdrawRequest

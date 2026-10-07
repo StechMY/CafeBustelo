@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\WithdrawRequests\Pages;
 
 use App\Filament\Resources\WithdrawRequests\Actions\ConfirmGatewayUnpaidAction;
+use App\Filament\Resources\WithdrawRequests\Actions\MarkFailedPayoutPaidAction;
 use App\Filament\Resources\WithdrawRequests\Actions\RevertManualApprovalAction;
 use App\Filament\Resources\WithdrawRequests\WithdrawRequestResource;
 use App\Models\WithdrawRequest;
@@ -254,6 +255,7 @@ class ViewWithdrawRequest extends ViewRecord
                 }),
 
             ConfirmGatewayUnpaidAction::make(),
+            MarkFailedPayoutPaidAction::make(),
             RevertManualApprovalAction::make(),
             Action::make('retry_payout')
                 ->label(__('withdraw.retry_payout'))

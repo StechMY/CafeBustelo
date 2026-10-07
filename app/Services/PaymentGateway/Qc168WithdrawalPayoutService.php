@@ -271,7 +271,7 @@ class Qc168WithdrawalPayoutService
             array_filter(['ip' => $ip, 'result' => $result['result']], fn ($value): bool => $value !== null),
         );
 
-        return $result;
+        return $result + ['payment_status' => strtolower((string) ($payload['payment_status'] ?? ''))];
     }
 
     public function processProviderState(
@@ -315,6 +315,34 @@ class Qc168WithdrawalPayoutService
             }
 
             $incomingStatus = strtolower((string) $payload['payment_status']);
+
+            if ($withdrawRequest->isManuallySettledPayout()) {
+                if (! $lockedAttempt->isCompleted() || $incomingStatus === WithdrawalPayoutAttempt::STATUS_COMPLETED) {
+                    $lockedAttempt->forceFill(
+                        $this->providerAttemptUpdates($lockedAttempt, $payload, $source, $incomingStatus)
+                    )->save();
+                }
+
+                $needsReview = $incomingStatus === WithdrawalPayoutAttempt::STATUS_COMPLETED;
+                if ($needsReview) {
+                    $withdrawRequest->forceFill([
+                        'gateway_meta' => array_merge($withdrawRequest->gateway_meta ?? [], [
+                            'financial_review_reason' => 'provider_completed_after_manual_payout',
+                            'financial_review_detected_at' => now()->toAtomString(),
+                            'financial_review_attempt_id' => $lockedAttempt->id,
+                        ]),
+                    ])->save();
+                }
+
+                $result = $needsReview ? 'financial_review_required' : 'status_recorded_after_manual_payout';
+                $this->eventRecorder->recordWithdrawal(
+                    'withdrawal.gateway_after_manual_payout', $withdrawRequest, $lockedAttempt,
+                    source: $source, paymentStatus: $incomingStatus, payload: $payload, processingResult: $result,
+                );
+
+                // The reserve was already consumed manually; never finalize or reopen it.
+                return ['accepted' => true, 'result' => $result];
+            }
 
             if ($financiallyCancelled) {
                 $lockedAttempt->forceFill(
@@ -625,7 +653,7 @@ class Qc168WithdrawalPayoutService
                 ]),
             ])->save();
 
-            if (! $financiallyCancelled) {
+            if (! $financiallyCancelled && ! $withdrawRequest->isManuallySettledPayout()) {
                 $withdrawRequest->forceFill([
                     'payout_status' => $this->withdrawalStatus($storedStatus),
                     'gateway_submitted_at' => $withdrawRequest->gateway_submitted_at ?: $submittedAt,
@@ -644,9 +672,11 @@ class Qc168WithdrawalPayoutService
                 payload: [
                     'attempt_no' => $lockedAttempt->attempt_no,
                     'submitted_at' => $submittedAt->toAtomString(),
-                    'financial_state_preserved' => $financiallyCancelled,
+                    'financial_state_preserved' => $financiallyCancelled || $withdrawRequest->isManuallySettledPayout(),
                 ],
-                processingResult: $financiallyCancelled ? 'status_recorded_after_cancel' : 'recorded',
+                processingResult: $withdrawRequest->isManuallySettledPayout()
+                    ? 'status_recorded_after_manual_payout'
+                    : ($financiallyCancelled ? 'status_recorded_after_cancel' : 'recorded'),
             );
 
             return $lockedAttempt;
@@ -696,7 +726,7 @@ class Qc168WithdrawalPayoutService
                 ]),
             ])->save();
 
-            if (! $financiallyCancelled) {
+            if (! $financiallyCancelled && ! $withdrawRequest->isManuallySettledPayout()) {
                 $withdrawRequest->forceFill([
                     'payout_status' => $definitive
                         ? WithdrawRequest::PAYOUT_CREATE_FAILED
@@ -717,11 +747,13 @@ class Qc168WithdrawalPayoutService
                     'submission_definitive_failure' => $definitive,
                     'provider_result_error' => $providerRejected,
                     'order_created' => $definitive ? false : null,
-                    'financial_state_preserved' => $financiallyCancelled,
+                    'financial_state_preserved' => $financiallyCancelled || $withdrawRequest->isManuallySettledPayout(),
                 ],
-                processingResult: $financiallyCancelled
+                processingResult: $withdrawRequest->isManuallySettledPayout()
+                    ? 'status_recorded_after_manual_payout'
+                    : ($financiallyCancelled
                     ? 'status_recorded_after_cancel'
-                    : ($definitive ? 'create_failed' : 'submission_uncertain'),
+                    : ($definitive ? 'create_failed' : 'submission_uncertain')),
             );
         });
     }

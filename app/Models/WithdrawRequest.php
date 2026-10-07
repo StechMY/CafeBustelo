@@ -203,6 +203,18 @@ class WithdrawRequest extends Model
         return $this->canRetryPayout($usePreloadedCancellationState);
     }
 
+    public function isManuallySettledPayout(): bool
+    {
+        return filled(data_get($this->gateway_meta, 'manual_payout.completed_at'));
+    }
+
+    public function canMarkPayoutPaid(bool $usePreloadedCancellationState = false): bool
+    {
+        return $this->gateway_provider === self::GATEWAY_QC168
+            && ! $this->isManuallySettledPayout()
+            && $this->canRetryPayout($usePreloadedCancellationState);
+    }
+
     public function canConfirmGatewayUnpaid(bool $usePreloadedCancellationState = false): bool
     {
         return $this->isApproved()

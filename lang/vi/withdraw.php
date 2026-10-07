@@ -1,6 +1,14 @@
 <?php
 
 return [
+    'mark_failed_payout_paid' => 'Duyệt · Đã thanh toán thủ công',
+    'mark_paid_description' => 'Chỉ dùng khi giao dịch qua cổng thất bại và đã thanh toán thủ công. Thao tác ghi nhận đã trả và trừ khoản đang khóa, không gửi thêm tiền hoặc hoàn tiền. Trạng thái cổng sẽ được kiểm tra lại.',
+    'manual_payment_reference' => 'Mã giao dịch / chứng từ thanh toán thủ công',
+    'mark_paid_acknowledgement' => 'Tôi xác nhận khách đã nhận số tiền thực nhận và giao dịch cổng ban đầu sẽ không thanh toán thêm.',
+    'mark_paid_success' => 'Đã ghi nhận thanh toán thủ công.',
+    'mark_paid_failed' => 'Không thể ghi nhận đã thanh toán.',
+    'mark_paid_not_allowed' => 'Trạng thái hoặc mã giao dịch đã thay đổi, hoặc đã thanh toán / hoàn tiền. Vui lòng tải lại và kiểm tra.',
+    'manual_paid_gateway_review' => 'Cổng báo thanh toán thành công sau khi đã trả thủ công. Vui lòng đối soát khả năng trả trùng.',
     'withdraw' => 'Rút tiền',
     'withdraw_center' => 'Trung tâm rút tiền',
     'hero_title' => 'Rút thu nhập của bạn',
@@ -64,6 +72,7 @@ return [
     'scheduled_at' => 'Thời gian chi trả theo lịch',
     'platform_handling' => 'Tiến độ xử lý của nền tảng',
     'handling_states' => [
+        'manual_after_failure' => 'Đã xử lý · Trả thủ công sau thất bại',
         'awaiting_review' => 'Chưa xử lý · Chờ duyệt',
         'rejected' => 'Đã xử lý · Đã từ chối',
         'scheduled' => 'Đã duyệt · Chờ đến lịch',
@@ -79,6 +88,7 @@ return [
         'unknown' => 'Cần kiểm tra hồ sơ chi trả',
     ],
     'handling_help' => [
+        'manual_after_failure' => 'Đã trả thủ công sau khi cổng thất bại; giữ nguyên lịch sử cổng.',
         'awaiting_review' => 'Đang chờ nền tảng duyệt; chưa gửi yêu cầu chi trả.',
         'rejected' => 'Nền tảng đã từ chối yêu cầu rút tiền này.',
         'scheduled' => 'Nền tảng đã duyệt; chưa đến thời gian chi trả theo lịch.',
