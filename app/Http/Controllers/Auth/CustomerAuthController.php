@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Wallet;
 use App\Services\InviteDayBonusService;
+use App\Services\GoldenEggService;
 use App\Services\OtpService;
 use App\Services\PointService;
 use App\Services\WelcomeBonusService;
@@ -71,6 +72,7 @@ class CustomerAuthController extends Controller
         WelcomeBonusService $welcomeBonusService,
         PointService $pointService,
         InviteDayBonusService $inviteDayBonusService,
+        GoldenEggService $goldenEggService,
         OtpService $otpService
     ): RedirectResponse {
         $request->merge([
@@ -124,7 +126,7 @@ class CustomerAuthController extends Controller
                 ->first();
         }
 
-        $user = DB::transaction(function () use ($data, $referrer, $request, $welcomeBonusService, $pointService, $inviteDayBonusService): User {
+        $user = DB::transaction(function () use ($data, $referrer, $request, $welcomeBonusService, $pointService, $inviteDayBonusService, $goldenEggService): User {
             $user = User::query()->create([
                 'name' => $data['name'],
                 'username' => $data['username'],
@@ -163,6 +165,7 @@ class CustomerAuthController extends Controller
                 $pointService->giveInviteDayRegisterPoints($referrer, $user);
             }
             $welcomeBonusService->give($user);
+            $goldenEggService->registerInvitee($user);
 
             return $user;
         });

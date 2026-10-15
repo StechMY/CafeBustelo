@@ -254,6 +254,7 @@ return [
     */
 
     'custom_permissions' => [
+        'Manage:GoldenEgg' => 'Manage Golden Egg Activity',
         'Audit:Recharge' => 'Audit Recharge',
         'Audit:Withdraw' => 'Audit Withdraw',
         'ApproveManual:Withdrawal' => 'Approve Withdrawal Manually',

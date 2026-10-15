@@ -8,6 +8,7 @@ use App\Http\Requests\Api\RegisterRequest;
 use App\Models\User;
 use App\Models\Wallet;
 use App\Services\InviteDayBonusService;
+use App\Services\GoldenEggService;
 use App\Services\OtpService;
 use App\Services\PointService;
 use App\Services\WelcomeBonusService;
@@ -27,6 +28,7 @@ class AuthController extends Controller
         PointService $pointService,
         InviteDayBonusService $inviteDayBonusService,
         OtpService $otpService,
+        GoldenEggService $goldenEggService,
     ): JsonResponse {
         $data = $request->validated();
 
@@ -36,7 +38,7 @@ class AuthController extends Controller
             ->where('referral_code', $data['referral_code'])
             ->firstOrFail();
 
-        $user = DB::transaction(function () use ($data, $request, $referrer, $welcomeBonusService, $pointService, $inviteDayBonusService): User {
+        $user = DB::transaction(function () use ($data, $request, $referrer, $welcomeBonusService, $pointService, $inviteDayBonusService, $goldenEggService): User {
             $user = User::query()->create([
                 'name' => $data['name'],
                 'username' => $data['username'],
@@ -69,6 +71,7 @@ class AuthController extends Controller
                 $pointService->giveInviteDayRegisterPoints($referrer, $user);
             }
             $welcomeBonusService->give($user);
+            $goldenEggService->registerInvitee($user);
 
             return $user;
         });

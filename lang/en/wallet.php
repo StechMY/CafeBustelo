@@ -48,6 +48,7 @@ return [
     'back_to_wallet' => 'Back to Wallet',
 
     'types' => [
+        'golden_egg' => 'Golden Egg Reward',
         'recharge_approved' => 'Recharge Approved',
         'product_purchase' => 'Product Purchase',
         'daily_income' => 'Daily Income',

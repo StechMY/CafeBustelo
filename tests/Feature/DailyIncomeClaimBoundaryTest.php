@@ -79,7 +79,7 @@ class DailyIncomeClaimBoundaryTest extends TestCase
         $pointService->shouldReceive('giveUpgradeDayPurchasePoints')->once();
         $pointService->shouldReceive('giveInviteDayFirstPurchasePoints')->never();
 
-        $userProduct = (new ProductPurchaseService($walletService, $pointService))
+        $userProduct = (new ProductPurchaseService($walletService, $pointService, app(\App\Services\GoldenEggService::class)))
             ->purchase($user, $product);
 
         $this->assertSame('2026-07-12 12:54:00', $userProduct->next_claim_at->toDateTimeString());

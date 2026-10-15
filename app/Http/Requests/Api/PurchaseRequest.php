@@ -15,6 +15,7 @@ class PurchaseRequest extends FormRequest
     {
         return [
             'wallet_type' => ['required', 'string', 'in:recharge,withdrawable'],
+            'coupon_id' => ['nullable', 'integer', 'min:1'],
         ];
     }
 }

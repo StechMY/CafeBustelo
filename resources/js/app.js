@@ -1,4 +1,5 @@
 import './bootstrap';
+import './golden-egg';
 
 import Alpine from 'alpinejs';
 

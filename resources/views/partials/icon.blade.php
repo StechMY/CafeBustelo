@@ -1,5 +1,8 @@
 @props(['name', 'class' => 'h-5 w-5'])
 
+@if ($name === 'golden-egg')
+    <img src="{{ asset('images/golden-egg/vault-egg-icon.webp') }}" alt="" width="96" height="128" {{ $attributes->merge(['class' => $class.' object-contain']) }} aria-hidden="true">
+@else
 @php
     $icons = [
         'home' => '<path d="M3 10.5 12 3l9 7.5"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/>',
@@ -69,3 +72,4 @@
      aria-hidden="true">
     {!! $svg !!}
 </svg>
+@endif

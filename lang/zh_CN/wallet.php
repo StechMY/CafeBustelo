@@ -48,6 +48,7 @@ return [
     'back_to_wallet' => '返回钱包',
 
     'types' => [
+        'golden_egg' => '敲金蛋奖励',
         'recharge_approved' => '充值通过',
         'product_purchase' => '购买产品',
         'daily_income' => '每日收益',

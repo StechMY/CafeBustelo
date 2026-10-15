@@ -23,6 +23,7 @@ use App\Http\Controllers\Api\SalaryController;
 use App\Http\Controllers\Api\SvipController;
 use App\Http\Controllers\Api\WalletController;
 use App\Http\Controllers\Api\WithdrawController;
+use App\Http\Controllers\GoldenEggController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('internal/v1')
@@ -52,6 +53,10 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
         Route::get('/me', [AuthController::class, 'me'])->name('me');
 
         Route::get('/dashboard', DashboardController::class)->name('dashboard');
+
+        Route::get('/golden-egg', [GoldenEggController::class, 'index'])->name('golden-egg.index');
+        Route::post('/golden-egg/draw', [GoldenEggController::class, 'draw'])
+            ->middleware('throttle:30,1')->name('golden-egg.draw');
 
         Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');
         Route::post('/profile', [ProfileController::class, 'update'])->name('profile.update');

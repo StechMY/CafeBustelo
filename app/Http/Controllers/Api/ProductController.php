@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\PurchaseRequest;
 use App\Models\Product;
+use App\Models\PurchaseCoupon;
 use App\Models\UserProduct;
 use App\Services\DailyIncomeClaimService;
 use App\Services\ProductCatalogService;
@@ -23,6 +24,8 @@ class ProductController extends Controller
         $catalog = $productCatalogService->groupedAvailableProducts();
 
         return ApiResponse::success([
+            'coupons' => PurchaseCoupon::query()->availableTo($request->user())
+                ->orderByDesc('discount_percent')->get(['id', 'discount_percent']),
             'tabs' => $catalog['productTypeTabs'],
             'products_by_type' => $catalog['productsByType']
                 ->map(fn ($products) => $products
@@ -36,7 +39,10 @@ class ProductController extends Controller
     public function purchase(PurchaseRequest $request, Product $product, ProductPurchaseService $service): JsonResponse
     {
         try {
-            $userProduct = $service->purchase($request->user(), $product, $request->validated('wallet_type'));
+            $userProduct = $service->purchase(
+                $request->user(), $product, $request->validated('wallet_type'),
+                $request->filled('coupon_id') ? (int) $request->validated('coupon_id') : null,
+            );
 
             return ApiResponse::success([
                 'user_product' => ApiFormatter::userProduct($userProduct->load('product')),

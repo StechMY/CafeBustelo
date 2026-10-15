@@ -506,6 +506,10 @@
                                       method="POST"
                                       action="{{ route('products.purchase', $product) }}"
                                       class="js-purchase-form"
+                                      data-can-order="{{ !$limitReached && $isPurchasableNow && $meetsVipLevelRequirement ? '1' : '0' }}"
+                                      data-price="{{ $product->price }}"
+                                      data-recharge="{{ $rechargeBalance }}"
+                                      data-withdrawable="{{ $withdrawableBalance }}"
                                       data-can-afford="{{ $canAfford ? '1' : '0' }}"
                                       data-can-afford-recharge="{{ $canAffordRecharge ? '1' : '0' }}"
                                       data-can-afford-withdrawable="{{ $canAffordWithdrawable ? '1' : '0' }}"
@@ -514,6 +518,21 @@
                                       data-recharge-balance="{{ number_format((float) $rechargeBalance, 2) }}"
                                       data-withdrawable-balance="{{ number_format((float) $withdrawableBalance, 2) }}">
                                     @csrf
+
+                                    @if ($coupons->isNotEmpty())
+                                        <label class="mb-1 block text-[10px] font-bold text-[#003b7a]">
+                                            {{ __('golden_egg.purchase_coupon') }}
+                                            <select name="coupon_id" class="mt-1 mb-2 w-full rounded-lg border border-[#003b7a]/20 bg-white px-2 py-2 text-[10px] sm:text-xs">
+                                                <option value="" data-percent="0">{{ __('golden_egg.no_coupon') }}</option>
+                                                @foreach ($coupons as $coupon)
+                                                    <option value="{{ $coupon->id }}" data-percent="{{ $coupon->discount_percent }}">{{ __('golden_egg.percent_off', ['percent' => (float) $coupon->discount_percent]) }}</option>
+                                                @endforeach
+                                            </select>
+                                        </label>
+                                        <p class="mb-2 text-[10px] font-bold text-[#003b7a]">
+                                            {{ __('golden_egg.payable') }}: {{ $currency }} <span data-payable>{{ number_format((float) $product->price, 2) }}</span>
+                                        </p>
+                                    @endif
 
                                     <select
                                             name="wallet_type"
@@ -610,6 +629,37 @@
             });
 
             document.querySelectorAll('.js-purchase-form').forEach((form) => {
+                @if ($coupons->isNotEmpty())
+                const couponSelect = form.querySelector('[name="coupon_id"]');
+                if (couponSelect) {
+                    const updatePrice = () => {
+                        const cents = Math.round(Number(form.dataset.price) * 100);
+                        const percent = Math.round(Number(couponSelect.selectedOptions[0].dataset.percent) * 100);
+                        const price = Math.round(cents * (10000 - percent) / 10000) / 100;
+                        const wallets = form.querySelector('[name="wallet_type"]');
+                        for (const option of wallets.options) option.disabled = Number(form.dataset[option.value]) < price;
+                        if (wallets.selectedIndex < 0 || wallets.selectedOptions[0]?.disabled) {
+                            wallets.selectedIndex = Array.from(wallets.options).findIndex(option => !option.disabled);
+                        }
+                        const canAfford = Array.from(wallets.options).some(option => !option.disabled);
+                        const canPurchase = canAfford && form.dataset.canOrder === '1';
+                        form.dataset.canAfford = canAfford ? '1' : '0';
+                        form.dataset.amount = price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                        form.querySelector('[data-payable]').textContent = form.dataset.amount;
+                        const button = form.querySelector('[type="submit"]');
+                        button.disabled = !canPurchase;
+                        button.classList.toggle('bg-[#e4003a]', canPurchase);
+                        button.classList.toggle('text-white', canPurchase);
+                        button.classList.toggle('bg-gray-200', !canPurchase);
+                        button.classList.toggle('text-gray-500', !canPurchase);
+                        button.classList.toggle('cursor-not-allowed', !canPurchase);
+                        if (form.dataset.canOrder === '1') button.textContent = canAfford
+                            ? @json(__('products.purchase_now')) : @json(__('products.insufficient_balance'));
+                    };
+                    couponSelect.addEventListener('change', updatePrice);
+                    updatePrice();
+                }
+                @endif
                 form.addEventListener('submit', async (event) => {
                     event.preventDefault();
 

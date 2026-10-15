@@ -30,36 +30,42 @@
 
                     <div
                          x-data="{ inviteOpen: false }"
-                         class="mt-5 grid grid-cols-2 gap-2 sm:mt-7 sm:flex sm:flex-wrap sm:gap-3">
-                        <a
-                           href="{{ route('products.index') }}"
-                           class="rounded-full bg-[#e4003a] px-3 py-3 text-center text-[11px] font-black uppercase text-white shadow-lg hover:bg-[#c90032] sm:px-6 sm:text-sm">
-                            {{ __('dashboard.buy_product') }}
-                        </a>
+                         class="mt-5 grid gap-2 sm:mt-7 sm:gap-3">
+                        <div class="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center sm:gap-3">
+                            <a
+                               href="{{ route('products.index') }}"
+                               class="rounded-full bg-[#e4003a] px-3 py-3 text-center text-[11px] font-black uppercase text-white shadow-lg hover:bg-[#c90032] sm:px-6 sm:text-sm">
+                                {{ __('dashboard.buy_product') }}
+                            </a>
 
-                        <a
-                           href="{{ route('recharge.index') }}"
-                           class="rounded-full bg-[#003b7a] px-3 py-3 text-center text-[11px] font-black uppercase text-white shadow-lg hover:bg-[#002b59] sm:px-6 sm:text-sm">
-                            {{ __('dashboard.recharge') }}
-                        </a>
+                            <a
+                               href="{{ route('recharge.index') }}"
+                               class="rounded-full bg-[#003b7a] px-3 py-3 text-center text-[11px] font-black uppercase text-white shadow-lg hover:bg-[#002b59] sm:px-6 sm:text-sm">
+                                {{ __('dashboard.recharge') }}
+                            </a>
 
-                        <a
-                           href="{{ route('withdraw.index') }}"
-                           class="rounded-full bg-white px-3 py-3 text-center text-[11px] font-black uppercase text-[#003b7a] shadow-lg hover:bg-white/80 sm:px-6 sm:text-sm">
-                            {{ __('dashboard.withdraw') }}
-                        </a>
+                            <a
+                               href="{{ route('withdraw.index') }}"
+                               class="rounded-full bg-white px-3 py-3 text-center text-[11px] font-black uppercase text-[#003b7a] shadow-lg hover:bg-white/80 sm:px-6 sm:text-sm">
+                                {{ __('dashboard.withdraw') }}
+                            </a>
 
-                        <button
-                                type="button"
-                                class="rounded-full bg-[#2148ff] px-3 py-3 text-center text-[11px] font-black uppercase text-white shadow-lg hover:bg-[#1837d9] sm:px-6 sm:text-sm"
-                                @click="inviteOpen = true">
-                            {{ __('dashboard.invite_team') }}
-                        </button>
+                            <button
+                                    type="button"
+                                    class="rounded-full bg-[#2148ff] px-3 py-3 text-center text-[11px] font-black uppercase text-white shadow-lg hover:bg-[#1837d9] sm:px-6 sm:text-sm"
+                                    @click="inviteOpen = true">
+                                {{ __('dashboard.invite_team') }}
+                            </button>
+                        </div>
 
                         @include('dashboard.partials.invite-modal', [
                             'user' => $user,
                             'inviteUrl' => $inviteUrl,
                         ])
+                        <a href="{{ route('golden-egg.index') }}" class="ge-dashboard-entry">
+                            <div class="ge-dashboard-entry-copy"><strong>{{ __('golden_egg.title') }}</strong><small>{{ __('golden_egg.dashboard_intro') }}</small><span>{{ __('golden_egg.open_game') }} <i class="ph-thin ph-arrow-right" aria-hidden="true"></i></span></div>
+                            <img src="{{ asset('images/golden-egg/vault-egg.webp') }}" alt="" width="1086" height="1448">
+                        </a>
                     </div>
                 </div>
 

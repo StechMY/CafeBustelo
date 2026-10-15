@@ -6,6 +6,7 @@
         // ['label' => __('navigation.check_in'), 'route' => 'check-in.index', 'icon' => 'check-in'],
         // ['label' => __('navigation.contact'), 'route' => 'contact.index', 'icon' => 'contact'],
         ['label' => __('navigation.team'), 'route' => 'my-team.index', 'icon' => 'team'],
+        ['label' => __('golden_egg.title'), 'route' => 'golden-egg.index', 'icon' => 'golden-egg'],
         ['label' => __('navigation.profile'), 'route' => 'profile.index', 'icon' => 'profile'],
     ];
 
@@ -41,7 +42,7 @@
                         {{ $active ? 'bg-[#ffd900] text-[#003b7a]' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     @include('partials.icon', [
                         'name' => $item['icon'],
-                        'class' => 'h-4 w-4',
+                        'class' => $item['icon'] === 'golden-egg' ? 'h-5 w-5' : 'h-4 w-4',
                     ])
                     <span class="whitespace-nowrap">{{ $item['label'] }}</span>
                 </a>

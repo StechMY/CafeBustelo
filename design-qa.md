@@ -1,0 +1,92 @@
+# Golden egg design QA
+
+Verified 2026-10-15. Scope: the selected golden egg design, confirmation, all-nine reward reveal, original dashboard button restoration, navigation icon, and profile rendering fix.
+
+## Findings and completed iterations
+
+No open P0, P1, or P2 findings remain in the reviewed scope.
+
+| Priority | Location and evidence | Impact | Fix and post-fix evidence |
+| --- | --- | --- | --- |
+| P1, fixed | Main screen: the first implementation omitted the logo's yellow backing. `comparison-v1.jpg` compares the selected image and implementation together. | The brand mark lost its intended contrast and proportions. | Use the supplied brand logo in a 102 × 40 yellow container; checked in `comparison-v2.jpg` and `comparison-final.jpg`. |
+| P2, fixed | Cabinet: first-pass eggs projected through the shelves (`comparison-v1.jpg`). | The nine selectable items looked incorrectly assembled. | Reduce egg artwork to 72% of its cell width; checked in `comparison-final.jpg` and `detail-cabinet-final.jpg`. |
+| P2, fixed | Reward reveal: `cash-result.jpg` showed horizontal overflow and tight spacing around the egg and reward text. | The result looked clipped and the prize hierarchy was unclear. | Hide horizontal overflow, add an 8px egg margin, and reduce/reposition the glow. `coupon-result.jpg` shows the corrected result. |
+| P2, fixed | Closing/collecting could expose a redundant landing section and blank space below the game. | The fullscreen flow appeared unfinished. | Remove the duplicate landing section. Close returns to the dashboard; collecting a prize keeps the user in the cabinet. Both paths were exercised in the browser. |
+| P2, fixed | Desktop game: the portrait background created a conspicuous central strip and the heading sat too low (`desktop.jpg`). | Desktop composition did not suit the available space. | Generate and use a separate 16:9 atmosphere; balance the two content rows and place the cabinet to the right. Verified in `desktop-final.jpg`. |
+| P2, fixed | Confirmation: the original consumption note wrapped its final character onto a separate line (`confirmation.jpg`). | The main decision text was harder to scan. | Shorten the note to “将使用 1 次敲蛋机会，奖品即时发放。”; checked in `confirmation-final.jpg`. |
+| P2, fixed | Golden egg navigation item used a generic gift icon. | It did not identify the actual activity. | Use an optimized raster of the gold egg, checked in `menu-egg-icon.jpg` and `egg-icon-proof.jpg`. |
+| P2, fixed | Desktop dashboard: the tall promotion stretched adjacent flex items into vertical capsules; the egg's top was cropped. The first redesign also replaced the user's original button styling, which the user rejected. | Existing brand styling was changed beyond the requested scope. | Restore the exact original red/navy/white/blue pill classes, uppercase bold text, natural widths, and no added icons. Isolate the promotion below the original action row. `original-pills-comparison.jpg` compares the user's reference and restoration; `dashboard-original-pills-desktop.jpg` and `dashboard-original-pills-mobile.jpg` verify the final layout. Desktop buttons are 44px high. |
+| P2, fixed | New all-rewards result: the translucent result background let the main heading and invitation button show through (`all-rewards-desktop-v1.jpg`). | Duplicate text competed with the actual result. | Use an opaque espresso background; retain the generated glow and cabinet. `all-rewards-desktop-final.jpg` and `all-rewards-mobile-final.jpg` show the corrected state. |
+
+## Visual truth and evidence
+
+- Selected option 1: `C:/Users/jiash/.codex/generated_images/01a13d67-9f12-7362-be32-6b7d6259aae3/exec-08b35e73-ecb9-4d4d-8dd6-dc825f7a26f3.png` (853 × 1844).
+- Original dashboard buttons, explicitly requested by the user: `C:/Users/jiash/AppData/Local/Temp/codex-clipboard-ba0c5698-2ed0-4d59-b655-2aba795f4d7a.png` (825 × 80). `original-pills-comparison.jpg` shows this source and the restored buttons together. Source text is English; the verified implementation is Chinese. Natural text width differs by locale; the original classes and colors are preserved.
+- Main implementation: `http://127.0.0.1:8767/golden-egg`, isolated local QA database and authenticated fixture customer. Main comparison state: idle, nine eggs, three available chances, Chinese locale.
+- Normal application with real authentication/database: `http://127.0.0.1:8000`. Its normal authentication/security flow is preserved. Browser reward tests used the isolated QA database, not the real MySQL wallets.
+- Evidence directory: `C:/Users/jiash/OneDrive/Desktop/WorkProject/CafeBustelo/storage/app/private/golden-egg-preview/qa/`. All screenshot filenames in this report resolve there.
+- Full comparison: `comparison-final.jpg`, selected source on the left and rendered `mobile-final.jpg` on the right. Both were opened together and inspected. Earlier full comparisons are `comparison-v1.jpg` and `comparison-v2.jpg`.
+- Focused comparisons: `detail-type-final.jpg`, `detail-cabinet-final.jpg`, and `detail-controls-final.jpg` compare the actual source and implementation crops. Typography, shelf placement, and the CTA are readable at this scale.
+- Functional visual evidence: `confirmation-final.jpg`, `confirmed-animation-final.jpg`, `coupon-result.jpg`, `zero-chances.jpg`, `profile-fixed.jpg`, and `egg-icon-proof.jpg`.
+- Latest result evidence: `all-rewards-mobile-final.jpg`, `all-rewards-360-final.jpg`, and `all-rewards-desktop-final.jpg`. All nine rewards are visible; the fifth cell is the actual 5% coupon award and is marked “你抽中”. Eight rewards had zero stock before this draw. No stock/status copy appears. This is a user-requested extension without a separate result-screen mock; its cabinet materials follow option 1, while layout is checked for clarity and responsive behavior rather than claimed as a same-state source clone.
+- `all-rewards-comparison-final.jpg` compares the translucent-background iteration and final opaque result together at 390 × 844. Both show the fifth-cell 5% award with zero chances; other reward positions intentionally differ because each draw shuffles them. Native final result captures are 390 × 843, 360 × 780, and 1440 × 866; only the one-pixel mobile height is normalized in the comparison.
+- This last draw used a separate disposable SQLite database at port 8769. It did not alter the real login service or the user's regular preview database.
+
+## Viewports and density normalization
+
+| Surface | CSS viewport | Saved screenshot / normalization |
+| --- | --- | --- |
+| Selected mobile reference | Logical target 390 × 844 | Source 853 × 1844, downsampled to 390 × 844 for comparison. No device frame or browser chrome in either panel. |
+| Mobile cabinet | 390 × 844 | `mobile-final.jpg`, 390 × 843; normalized to 390 × 844 for the combined 780 × 844 comparison. |
+| Small mobile cabinet | 360 × 780 | `mobile-360.jpg`, 360 × 778. All nine eggs and persistent controls fit. |
+| Confirmation | 390 × 844 | `confirmation-final.jpg`, 390 × 843. Selected third egg; three chances before confirming. |
+| Desktop cabinet | 1440 × 900 | `desktop-final.jpg`, native capture 1440 × 866. Responsive composition review; there is no separate desktop source mock to claim pixel equivalence against. |
+| Desktop dashboard | 1440 × 900 | `dashboard-original-pills-desktop.jpg`, 1425 × 857 native capture; original 44px-high pills and contained egg banner. |
+| Mobile dashboard | 390 × 844 | `dashboard-original-pills-mobile.jpg`; original colors and two-column pill layout. Normal document scrollbars and in-app screenshot scaling differ from fullscreen dialog captures. DOM at 390px reports content width 375px, visual viewport scale 1, and devicePixelRatio approximately 1. |
+| All-rewards result | 390 × 844; 360 × 780; 1440 × 900 | Latest `all-rewards-*-final.jpg` captures. Mobile stacks the award, nine-cell cabinet, and action; desktop places award/action beside a 380px-wide cabinet. At 360px, the collect button's bottom is approximately 698px within a 780px viewport. No horizontal overflow. |
+
+In-app browser screenshots do not always contain the full requested CSS height. Native sizes are recorded rather than represented as exact CSS-pixel captures. The mobile source comparison is normalized separately; dashboard before/after uses the same browser, viewport, route, user, and idle state. Temporary viewport overrides were reset after testing.
+
+## Required fidelity surfaces
+
+1. **Fonts and typography:** local Noto Serif SC subset for Chinese display text, Georgia for Latin display/numerals, and the existing sans-serif stack for utility text. Checked headline family, weight, line-height, wrapping, chance counter, and CTA in focused comparisons. Confirmation copy has no orphan character. Dashboard buttons retain their original font-black/uppercase styling and sizes, without added icons. Result cells use 16px reward values on mobile, 18px on desktop, and a contrasting selected-prize badge. No truncation in reviewed Chinese states.
+2. **Spacing and layout rhythm:** retain the selected header, two-line heading, arched 3 × 3 cabinet, counter, gold invitation CTA, and secondary links. Egg heads stay below shelves. Desktop uses a two-column composition. Dashboard retains naturally sized pills with the original 12px desktop gap; the banner occupies its own row. Small screens retain the original two-column action grid. The result cabinet shows all nine cells at the checked phone and desktop sizes.
+3. **Colors and visual tokens:** espresso/walnut background, bronze borders, cream `#f8e7c0` display text, and champagne `#edc98c` actions match the chosen direction. Dashboard retains yellow `#ffd900`, original red `#e4003a`, navy `#003b7a`, white, and blue `#2148ff` button fills. The result uses opaque espresso behind the award and cabinet; a pale gold badge identifies the actual winning cell. Metallic appearance comes from raster artwork rather than CSS gradients.
+4. **Image quality and asset fidelity:** generated portrait/wide atmosphere, cabinet, embossed gold egg, progressive crack states, shattered shell, hammer, glow, and metallic button are installed as real optimized WebP assets. The supplied logo remains its original vector. Standard UI icons use Phosphor Thin; the activity navigation icon is the actual egg raster. Transparency and crops were inspected. No drawn CSS/SVG egg or placeholder artwork remains in the activity.
+5. **Copy and content:** invitation copy intentionally changes the selected mock's registration condition to the user's revised first-successful-purchase condition. Registration alone does not earn a chance. Confirmation states one chance is consumed; agent copy states unlimited draws. Reward copy distinguishes recharge-wallet credits and single-use, non-stacking purchase discounts. App text contains no design/build instructions. Chinese was visually reviewed; other translated locale keys are present, but not every locale was visually exercised at every breakpoint.
+
+## Interaction and regression verification
+
+- Select an egg: preview and number appear in a confirmation dialog. Cancel, Escape, and backdrop dismissal do not submit a draw or consume a chance.
+- Confirm: one request starts the GSAP sequence. Browser-observed sequence includes hammer contact, progressively deeper glowing cracks, shattered shell, and the actual result; see `confirmed-animation-final.jpg`.
+- Cancel kept three chances; the subsequent confirmed draw awarded RM 10 and left two. Collect returned to the cabinet. Cash and percentage-coupon outcomes were exercised in the isolated QA environment.
+- Zero chances disables the nine eggs while keeping invitation and rules accessible. Reward history and coupons update after a draw. Retry reuses the pending request identity. Confirmation, reveal, and sheets manage focus/background inertness.
+- Latest complete browser flow: select egg 5, confirm, play the full crack sequence, award the only stocked 5% coupon, and reveal all nine distinct configured rewards. The fifth cell matches the actual award; the other eight zero-stock rewards remain visible. Remaining chances becomes zero and only the collect action is shown. DOM confirms exactly one winning cell, nine results, no stock copy, and no horizontal result overflow. Browser error log was empty.
+- The non-winning reward positions are shuffled only for display. Server weights, stock filtering, transaction boundaries, and idempotent award logic are unchanged. Catalog and draw payloads now provide prize IDs to identify the winning catalog item reliably.
+- Dashboard's invitation button still opens its existing referral dialog after the layout change. Product, recharge, withdrawal, and activity links retain their original routes. The activity close action returns to the dashboard.
+- Profile renders when the app-download URL is absent; disabled quick actions are skipped before route lookup.
+- Browser error logs were empty in the exercised game and final dashboard checks.
+- Earlier relevant backend regression batch: **114 tests, 692 assertions passed** (`storage/app/private/golden-egg-preview/final-regression.log`). Latest golden egg/profile run, including the new zero-stock reveal contract test: **20 tests, 185 assertions passed**. The new contract test also passed after explicit numeric prize-ID serialization: **1 test, 17 assertions**.
+- Final `npm run build` passed after the dashboard changes. `git diff --check` passed; Git emitted line-ending conversion notices only.
+- Final source syntax check passed for 31 changed/new PHP files. Runtime WebP/font/license assets are kept under `public/images/golden-egg`; original generated PNG working files are retained privately under the ignored `storage/app/private/golden-egg-preview/source-assets` directory.
+- Wider-suite limitation: an earlier full run completed 390 tests with 23 errors, 4 failures, and 1 skip (`full-regression.log`). Errors included SQLite migration/table setup and a withdrawal schema/index issue; two failures involved fixed-date maintenance expectations. Two setting-count failures caused by the new default setting seed were corrected, and the affected settings suite passed in the 114-test batch. The entire 390-test suite was not rerun, and no clean baseline was established for the other failures. This report does not claim the full repository suite passes.
+
+## Open questions and follow-up polish
+
+No blocking product question remains for this scope. The real activity is closed with zero seeded stock until an administrator configures and enables it.
+
+- P3: regenerated egg engraving and cabinet geometry vary slightly from the selected mock; the subject, materials, palette, and hierarchy are preserved.
+- P3: native in-app browser JPEG scaling looks slightly softer than the original high-resolution WebP assets. No visible transparency halo or broken asset was found.
+- P3: broader cross-locale visual coverage can be expanded separately; the checked desktop and phone layouts satisfy the current Chinese flow.
+
+## Implementation checklist
+
+- [x] Install all real art assets and their licenses.
+- [x] Compare selected source and implementation together at matching mobile state/scale.
+- [x] Fix identified P1/P2 visual issues and recapture.
+- [x] Verify desktop and mobile dashboard layout after the user's desktop feedback.
+- [x] Exercise confirm/cancel, animation, award, collection, zero-chance, and navigation behavior.
+- [x] Complete relevant regression checks, production build, and browser error inspection.
+- [x] Keep normal local service available and preserve the normal login flow.
+
+final result: passed

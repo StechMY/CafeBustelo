@@ -38,6 +38,7 @@ return [
     'no_transactions_desc' => 'Riwayat transaksi dompet Anda akan muncul di sini.',
     'back_to_wallet' => 'Kembali ke Dompet',
     'types' => [
+        'golden_egg' => 'Hadiah Telur Emas',
         'recharge_approved' => 'Isi Saldo Disetujui',
         'product_purchase' => 'Pembelian Produk',
         'daily_income' => 'Pendapatan Harian',

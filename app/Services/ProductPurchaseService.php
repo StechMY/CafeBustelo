@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Product;
+use App\Models\PurchaseCoupon;
 use App\Models\User;
 use App\Models\UserProduct;
 use App\Models\Wallet;
@@ -14,6 +15,7 @@ class ProductPurchaseService
     public function __construct(
         private readonly WalletService $walletService,
         private readonly PointService $pointService,
+        private readonly GoldenEggService $goldenEggService,
     ) {
     }
 
@@ -21,6 +23,7 @@ class ProductPurchaseService
         User $user,
         Product $product,
         string $walletType = Wallet::TYPE_RECHARGE,
+        ?int $couponId = null,
     ): UserProduct {
         if (! $product->isActive()) {
             throw new RuntimeException(__('products.product_not_available'));
@@ -37,7 +40,7 @@ class ProductPurchaseService
             throw new RuntimeException(__('products.invalid_wallet_type'));
         }
 
-        return DB::transaction(function () use ($user, $product, $walletType): UserProduct {
+        return DB::transaction(function () use ($user, $product, $walletType, $couponId): UserProduct {
             // Serialize this user's purchases across products and payment wallets.
             $user = User::query()
                 ->whereKey($user->id)
@@ -79,13 +82,24 @@ class ProductPurchaseService
             }
 
             $now = now();
+            $coupon = null;
+            $price = (float) $lockedProduct->price;
+            if ($couponId !== null) {
+                $coupon = PurchaseCoupon::query()->availableTo($user)
+                    ->whereKey($couponId)->lockForUpdate()->first();
+                if (! $coupon) {
+                    throw new RuntimeException(__('golden_egg.invalid_coupon'));
+                }
+                $price = $coupon->discountedPrice($lockedProduct->price);
+            }
+
             $claimIntervalHours = $lockedProduct->effectiveClaimIntervalHours();
             $totalClaims = $lockedProduct->effectiveTotalClaims();
 
             $userProduct = UserProduct::query()->create([
                 'user_id' => $user->id,
                 'product_id' => $lockedProduct->id,
-                'price_snapshot' => $lockedProduct->price,
+                'price_snapshot' => $price,
                 'daily_income_snapshot' => $lockedProduct->daily_income,
                 'duration_days_snapshot' => $lockedProduct->duration_days,
                 'claim_interval_hours_snapshot' => $claimIntervalHours,
@@ -102,26 +116,36 @@ class ProductPurchaseService
                     'product_name_snapshot' => $lockedProduct->name,
                     'product_code_snapshot' => $lockedProduct->code,
                     'payment_wallet_type' => $walletType,
+                    'original_price' => $lockedProduct->price,
+                    'coupon_id' => $coupon?->id,
+                    'discount_percent' => $coupon?->discount_percent,
+                    'discount_amount' => round((float) $lockedProduct->price - $price, 2),
                 ],
             ]);
 
-            $this->walletService->debit(
-                user: $user,
-                walletType: $walletType,
-                transactionType: 'product_purchase',
-                amount: $lockedProduct->price,
-                reference: $userProduct,
-                remarks: 'Product purchase: ' . $lockedProduct->name,
-                meta: [
-                    'product_id' => $lockedProduct->id,
-                    'product_name' => $lockedProduct->name,
-                    'product_code' => $lockedProduct->code,
-                    'payment_wallet_type' => $walletType,
-                    'claim_interval_hours' => $claimIntervalHours,
-                    'total_claims' => $totalClaims,
-                    'product_type' => $lockedProduct->product_type,
-                ],
-            );
+            if ($price > 0 || $coupon === null) {
+                $this->walletService->debit(
+                    user: $user,
+                    walletType: $walletType,
+                    transactionType: 'product_purchase',
+                    amount: $price,
+                    reference: $userProduct,
+                    remarks: 'Product purchase: ' . $lockedProduct->name,
+                    meta: [
+                        'product_id' => $lockedProduct->id,
+                        'product_name' => $lockedProduct->name,
+                        'product_code' => $lockedProduct->code,
+                        'payment_wallet_type' => $walletType,
+                        'claim_interval_hours' => $claimIntervalHours,
+                        'total_claims' => $totalClaims,
+                        'product_type' => $lockedProduct->product_type,
+                        'coupon_id' => $coupon?->id,
+                        'discount_percent' => $coupon?->discount_percent,
+                    ],
+                );
+            }
+
+            $coupon?->update(['used_at' => $now, 'user_product_id' => $userProduct->id]);
 
             if ($lockedProduct->stock_quantity !== null) {
                 $lockedProduct->increment('sold_quantity');
@@ -137,6 +161,8 @@ class ProductPurchaseService
                     'activated_at' => $user->activated_at ?? $now,
                 ])->save();
             }
+
+            $this->goldenEggService->qualifyFirstPurchase($user, $userProduct);
 
             return $userProduct;
         }, 3);

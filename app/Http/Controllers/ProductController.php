@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Product;
+use App\Models\PurchaseCoupon;
 use App\Models\UserProduct;
 use App\Models\Wallet;
 use App\Services\ProductCatalogService;
@@ -64,6 +65,7 @@ class ProductController extends Controller
             'activeUserProducts' => $activeUserProducts,
             'ownedProductIdsForUpgradeBonus' => $ownedProductIdsForUpgradeBonus,
             'userProductPurchaseCounts' => $userProductPurchaseCounts,
+            'coupons' => PurchaseCoupon::query()->availableTo($user)->orderByDesc('discount_percent')->get(),
         ]);
     }
 
@@ -75,12 +77,14 @@ class ProductController extends Controller
         try {
             $data = $request->validate([
                 'wallet_type' => ['required', 'string', 'in:recharge,withdrawable'],
+                'coupon_id' => ['nullable', 'integer', 'min:1'],
             ]);
 
             $productPurchaseService->purchase(
                 user: $request->user(),
                 product: $product,
                 walletType: $data['wallet_type'],
+                couponId: isset($data['coupon_id']) ? (int) $data['coupon_id'] : null,
             );
 
             return redirect()

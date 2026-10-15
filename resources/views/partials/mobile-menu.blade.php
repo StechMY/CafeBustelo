@@ -22,6 +22,7 @@
                 ['label' => __('navigation.team'), 'route' => 'my-team.index', 'icon' => 'team'],
                 ['label' => __('navigation.salary'), 'route' => 'salary.index', 'icon' => 'salary'],
                 ['label' => __('navigation.bonus_code'), 'route' => 'bonus-codes.index', 'icon' => 'bonus'],
+                ['label' => __('golden_egg.title'), 'route' => 'golden-egg.index', 'icon' => 'golden-egg'],
             ],
         ],
         [
@@ -152,7 +153,7 @@
                                             {{ $active ? 'bg-[#003b7a] text-white' : 'bg-white/10 text-white' }}">
                                             @include('partials.icon', [
                                                 'name' => $item['icon'],
-                                                'class' => 'h-5 w-5',
+                                                'class' => $item['icon'] === 'golden-egg' ? 'h-7 w-7' : 'h-5 w-5',
                                             ])
                                         </span>
 

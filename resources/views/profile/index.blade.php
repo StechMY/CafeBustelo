@@ -295,6 +295,7 @@
 
                         <div class="mt-4 grid grid-cols-3 gap-2 sm:mt-5 sm:grid-cols-4 sm:gap-3">
                             @foreach ($quickActions as $action)
+                                @continue(! ($action['enabled'] ?? true))
                                 <a
                                    href="{{ isset($action['url']) ? $action['url'] : route($action['route']) }}"
                                    @if ($action['external'] ?? false) target="_blank"
