@@ -54,7 +54,6 @@ class RechargeRequestInfolist
                     ]),
 
                 Section::make(__('filament.payment_detail'))
-                    ->visible(fn($record): bool => $record->isManualDeposit())
                     ->schema([
                         Grid::make(2)
                             ->schema([
@@ -65,6 +64,12 @@ class RechargeRequestInfolist
                                 TextEntry::make('reference_no')
                                     ->label(__('filament.reference_no'))
                                     ->copyable()
+                                    ->visible(fn($record): bool => $record->isManualDeposit())
+                                    ->placeholder('-'),
+
+                                TextEntry::make('admin_remark')
+                                    ->label(__('filament.admin_remark'))
+                                    ->columnSpanFull()
                                     ->placeholder('-'),
                             ]),
                     ]),
@@ -148,10 +153,6 @@ class RechargeRequestInfolist
                                 TextEntry::make('reviewed_at')
                                     ->label(__('filament.reviewed_at'))
                                     ->dateTime()
-                                    ->placeholder('-'),
-
-                                TextEntry::make('admin_remark')
-                                    ->label(__('filament.admin_remark'))
                                     ->placeholder('-'),
                             ]),
                     ]),
