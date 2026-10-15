@@ -15,7 +15,7 @@ return array_replace(require __DIR__.'/../en/golden_egg.php', [
     'confirm_title' => 'Mở quả trứng này?',
     'confirm_egg' => 'Trứng vàng số :number',
     'confirm_note' => 'Dùng một lượt đập trứng. Quà được trao ngay sau khi trứng mở.',
-    'confirm_agent' => 'Bạn có lượt không giới hạn. Lần này không trừ lượt.',
+    'confirm_agent' => 'Quà được trao ngay sau khi trứng mở.',
     'confirm_yes' => 'Xác nhận mở',
     'confirm_cancel' => 'Hủy',
     'chances' => 'Lượt còn lại',
@@ -61,5 +61,5 @@ return array_replace(require __DIR__.'/../en/golden_egg.php', [
     'payable' => 'Thanh toán',
     'go_purchase' => 'Dùng phiếu giảm giá',
     'back' => 'Về trang chủ',
-    'agent' => 'Agent · Không giới hạn lượt',
+    'agent' => 'Agent',
 ]);

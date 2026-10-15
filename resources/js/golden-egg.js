@@ -19,8 +19,12 @@ if (root) {
     const hammer = root.querySelector('.ge-hammer');
     const glow = root.querySelector('.ge-draw-glow');
     const cabinet = root.querySelector('.ge-cabinet');
+    const chanceCounter = root.querySelector('[data-chances]');
     const storageKey = `golden-egg-pending:${config.user_id}`;
-    const money = value => `${config.currency} ${Number(value).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    const money = value => {
+        const [whole, fraction = ''] = String(value).split('.');
+        return `${config.currency}\u00a0${whole.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}.${fraction.padEnd(2, '0').slice(0, 2)}`;
+    };
     const percentOff = value => config.labels.percent_off.replace(':percent', Number(value));
     const resultValue = prize => prize.type === 'cash' ? money(prize.amount) : percentOff(prize.discount_percent);
     let busy = false;
@@ -29,6 +33,7 @@ if (root) {
     let entrance;
     let sheetTrigger;
     let confirmationEgg = null;
+    let agentDisplayChances = Number(chanceCounter.textContent);
 
     try {
         pending = JSON.parse(sessionStorage.getItem(storageKey));
@@ -53,7 +58,7 @@ if (root) {
         root.querySelectorAll('[data-show-rewards], [data-show-rules], [data-invite]').forEach(button => { button.disabled = busy; });
         root.querySelector('[data-again]').hidden = !canPlay();
         root.querySelector('[data-finish]').className = canPlay() ? 'ge-text-button' : 'ge-gold-button';
-        root.querySelector('[data-chances]').textContent = config.is_virtual ? '∞' : config.remaining_chances;
+        chanceCounter.textContent = config.is_virtual ? agentDisplayChances : config.remaining_chances;
         retry.hidden = !pending || busy;
         if (!busy && !pending) {
             status.textContent = !config.is_virtual && !config.enabled ? config.labels.closed
@@ -175,6 +180,32 @@ if (root) {
         }
     }
 
+    function setPrizeValue(element, prize) {
+        const parts = resultValue(prize).split(',');
+        element.replaceChildren();
+        parts.forEach((part, index) => {
+            if (index) element.append(document.createElement('wbr'));
+            element.append(document.createTextNode(part + (index < parts.length - 1 ? ',' : '')));
+        });
+    }
+
+    function fitPrizeValues() {
+        if (reveal.hidden) return;
+        const values = Array.from(reveal.querySelectorAll('[data-result-value], [data-cell-value]'));
+        values.forEach(value => value.style.removeProperty('font-size'));
+        const context = document.createElement('canvas').getContext('2d');
+        const sizes = values.map(value => {
+            const style = getComputedStyle(value);
+            const baseSize = parseFloat(style.fontSize);
+            context.font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+            const textWidth = context.measureText(value.textContent).width
+                + (parseFloat(style.letterSpacing) || 0) * (value.textContent.length - 1);
+            const minimum = value.matches('[data-result-value]') ? 20 : 10;
+            return Math.max(minimum, Math.min(baseSize, baseSize * (value.clientWidth - 2) / textWidth));
+        });
+        values.forEach((value, index) => { value.style.fontSize = `${sizes[index]}px`; });
+    }
+
     function showPrize(prize) {
         // Display positions do not affect the award already chosen by the server.
         const otherPrizes = config.prizes.filter(item => item.id !== prize.prize_id);
@@ -189,16 +220,17 @@ if (root) {
             cell.classList.toggle('ge-result-selected', selected);
             cell.querySelector('[data-result-winner]').hidden = !selected;
             cell.querySelector('[data-cell-icon]').className = `ph-thin ${reward.type === 'cash' ? 'ph-wallet' : 'ph-ticket'}`;
-            cell.querySelector('[data-cell-value]').textContent = resultValue(reward);
+            setPrizeValue(cell.querySelector('[data-cell-value]'), reward);
             cell.querySelector('[data-cell-type]').textContent = config.labels[reward.type];
             cell.setAttribute('aria-label', `${config.labels.confirm_egg.replace(':number', index + 1)}: ${resultValue(reward)}${selected ? `, ${config.labels.your_prize}` : ''}`);
         });
         root.querySelector('[data-result-type]').textContent = config.labels[prize.type];
-        root.querySelector('[data-result-value]').textContent = resultValue(prize);
+        setPrizeValue(root.querySelector('[data-result-value]'), prize);
         root.querySelector('[data-result-name]').textContent = prize.name;
         root.querySelector('[data-result-note]').textContent = config.labels[`${prize.type}_received`];
         scene.inert = true;
         reveal.hidden = false;
+        fitPrizeValues();
         gsap.timeline({ defaults: { ease: 'power3.out' } })
             .fromTo(reveal, { opacity: 0 }, { opacity: 1, duration: .45 })
             .fromTo(root.querySelector('.ge-reveal-egg'), { y: 24, scale: .86, opacity: 0 }, { y: 0, scale: 1, opacity: 1, duration: .9 }, .1)
@@ -282,6 +314,10 @@ if (root) {
             }
             prize = body.data.prize;
             config.remaining_chances = body.data.remaining_chances;
+            if (config.is_virtual) {
+                const jump = Math.floor(Math.random() * 9) + 1;
+                agentDisplayChances = (agentDisplayChances - 1 + jump) % 10 + 1;
+            }
             savePending(null);
         } catch (error) {
             busy = false;
@@ -333,5 +369,7 @@ if (root) {
             status.textContent = config.labels.copy_failed;
         }
     });
+    window.addEventListener('resize', fitPrizeValues);
+    document.fonts.ready.then(fitPrizeValues);
     openGame();
 }

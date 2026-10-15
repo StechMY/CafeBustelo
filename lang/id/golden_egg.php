@@ -15,7 +15,7 @@ return array_replace(require __DIR__.'/../en/golden_egg.php', [
     'confirm_title' => 'Pecahkan telur ini?',
     'confirm_egg' => 'Telur emas :number',
     'confirm_note' => 'Menggunakan satu kesempatan. Hadiah diberikan segera setelah telur terbuka.',
-    'confirm_agent' => 'Kesempatanmu tanpa batas. Ini tidak mengurangi kesempatan.',
+    'confirm_agent' => 'Hadiah diberikan segera setelah telur terbuka.',
     'confirm_yes' => 'Konfirmasi & buka',
     'confirm_cancel' => 'Batal',
     'chances' => 'Kesempatan tersisa',
@@ -61,5 +61,5 @@ return array_replace(require __DIR__.'/../en/golden_egg.php', [
     'payable' => 'Total bayar',
     'go_purchase' => 'Gunakan kupon',
     'back' => 'Kembali ke beranda',
-    'agent' => 'Agent · Undian tanpa batas',
+    'agent' => 'Agent',
 ]);

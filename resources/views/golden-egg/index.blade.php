@@ -37,7 +37,7 @@
                 </div>
             </div>
             <footer class="ge-game-footer">
-                <div class="ge-chance"><span>{{ __('golden_egg.chances') }}</span><strong data-chances>{{ $activity['is_virtual'] ? '∞' : $activity['remaining_chances'] }}</strong><span>{{ __('golden_egg.chance_unit') }}</span></div>
+                <div class="ge-chance"><span>{{ __('golden_egg.chances') }}</span><strong data-chances>{{ $activity['is_virtual'] ? random_int(1, 10) : $activity['remaining_chances'] }}</strong><span>{{ __('golden_egg.chance_unit') }}</span></div>
                 <div class="ge-feedback"><p class="ge-status" data-status role="status" aria-live="polite"></p><button class="ge-retry" type="button" data-retry hidden>{{ __('golden_egg.retry') }}</button></div>
                 <button type="button" class="ge-gold-button ge-invite" data-invite>{{ __('golden_egg.invite') }} <i class="ph-thin ph-arrow-right" aria-hidden="true"></i></button>
                 <nav class="ge-game-links" aria-label="{{ __('golden_egg.title') }}">
