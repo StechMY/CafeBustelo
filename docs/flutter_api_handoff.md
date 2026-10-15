@@ -1,5 +1,11 @@
 # Flutter API Handoff
 
+Golden egg integration: implement [Golden egg App handoff](flutter-golden-egg-handoff.md).
+`GET /api/v1/app-config` now advertises `data.modules.golden_egg = true`;
+the activity endpoints, purchase chances and coupons are ready. New cash rewards
+credit the **withdrawable wallet**. The handoff includes the full API contract,
+native screen flow, idempotent retries, art assets and acceptance checks.
+
 OTP protection update: all three OTP sends now require `turnstile_token`.
 Implement [Flutter Turnstile integration](flutter-turnstile-handoff.md) before
 the backend release; old clients cannot send OTP afterward.

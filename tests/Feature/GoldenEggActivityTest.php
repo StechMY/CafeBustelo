@@ -6,6 +6,7 @@ use App\Filament\Pages\Dashboard;
 use App\Filament\Resources\GoldenEggPrizes\Pages\ManageGoldenEggPrizes;
 use App\Http\Middleware\HumanOnly;
 use App\Models\AdminUser;
+use App\Models\GoldenEggDraw;
 use App\Models\GoldenEggEntry;
 use App\Models\GoldenEggPrize;
 use App\Models\Product;
@@ -16,6 +17,7 @@ use App\Models\Wallet;
 use App\Services\GoldenEggService;
 use App\Services\OtpService;
 use App\Services\ProductPurchaseService;
+use App\Services\WalletService;
 use Filament\Actions\Testing\TestAction;
 use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -49,6 +51,7 @@ class GoldenEggActivityTest extends TestCase
     {
         $this->assertDatabaseCount('golden_egg_prizes', 9);
         $this->assertFalse(Setting::bool(GoldenEggService::SETTING_ENABLED));
+        $this->getJson('/api/v1/app-config')->assertOk()->assertJsonPath('data.modules.golden_egg', true);
         $user = $this->user();
         $this->actingAs($user)->get('/golden-egg')->assertOk()
             ->assertSee('data-egg="9"', false)->assertSee('golden-egg-config');
@@ -241,23 +244,57 @@ class GoldenEggActivityTest extends TestCase
         $this->assertNull(GoldenEggEntry::query()->first()->qualified_at);
     }
 
-    public function test_cash_reward_consumes_one_entry_and_stock_and_replay_never_awards_twice(): void
+    #[DataProvider('drawRoutes')]
+    public function test_cash_reward_credits_withdrawable_wallet_and_replay_never_awards_twice(string $route): void
     {
         $user = $this->user();
+        $user->wallets()->create(['type' => Wallet::TYPE_RECHARGE, 'balance' => 80, 'locked_balance' => 0]);
         $this->chance($user);
         $prize = $this->onlyPrize(['amount' => 25, 'stock' => 1]);
         $request = $this->drawRequest();
-        $this->actingAs($user)->postJson('/golden-egg/draw', $request)->assertOk()
+        if (str_starts_with($route, '/api/')) Sanctum::actingAs($user);
+        else $this->actingAs($user);
+        $this->postJson($route, $request)->assertOk()
             ->assertJsonPath('data.prize.amount', '25.00')->assertJsonPath('data.remaining_chances', 0);
         Setting::setValue(GoldenEggService::SETTING_ENABLED, false);
-        $this->postJson('/golden-egg/draw', array_replace($request, ['egg_number' => 9]))->assertOk()
+        $this->postJson($route, array_replace($request, ['egg_number' => 9]))->assertOk()
             ->assertJsonPath('data.prize.egg_number', 1);
         $this->assertSame(0, $prize->fresh()->stock);
-        $this->assertEquals(25, $user->wallets()->where('type', Wallet::TYPE_RECHARGE)->value('balance'));
+        $this->assertEquals(25, $user->wallets()->where('type', Wallet::TYPE_WITHDRAWABLE)->value('balance'));
+        $this->assertEquals(80, $user->wallets()->where('type', Wallet::TYPE_RECHARGE)->value('balance'));
         $this->assertDatabaseCount('golden_egg_draws', 1);
         $this->assertDatabaseCount('wallet_transactions', 1);
-        $this->assertDatabaseHas('wallet_transactions', ['type' => 'golden_egg', 'wallet_type' => 'recharge']);
+        $this->assertDatabaseHas('wallet_transactions', ['type' => 'golden_egg', 'wallet_type' => 'withdrawable', 'direction' => 'credit']);
         $this->assertNotNull(GoldenEggEntry::query()->first()->used_at);
+        if (str_starts_with($route, '/api/')) {
+            $this->getJson('/api/v1/wallet')->assertOk()
+                ->assertJsonPath('data.wallets.withdrawable.balance', 25)
+                ->assertJsonPath('data.wallets.recharge.balance', 80);
+        }
+    }
+
+    public static function drawRoutes(): array
+    {
+        return [['/golden-egg/draw'], ['/api/v1/golden-egg/draw']];
+    }
+
+    public function test_replaying_a_legacy_cash_draw_keeps_its_original_recharge_credit(): void
+    {
+        $user = $this->user();
+        $prize = $this->onlyPrize(['amount' => 25]);
+        $requestId = (string) Str::uuid();
+        $draw = GoldenEggDraw::query()->create([
+            'user_id' => $user->id, 'prize_id' => $prize->id, 'request_id' => $requestId,
+            'egg_number' => 3, 'prize_name' => $prize->name, 'prize_type' => 'cash',
+            'amount' => 25, 'discount_percent' => 0, 'is_virtual' => false,
+        ]);
+        app(WalletService::class)->credit($user, Wallet::TYPE_RECHARGE, 'golden_egg', 25, $draw);
+
+        $replayed = app(GoldenEggService::class)->draw($user, $requestId, 3);
+        $this->assertSame($draw->id, $replayed->id);
+        $this->assertEquals(25, $user->wallets()->where('type', Wallet::TYPE_RECHARGE)->value('balance'));
+        $this->assertFalse($user->wallets()->where('type', Wallet::TYPE_WITHDRAWABLE)->exists());
+        $this->assertDatabaseCount('wallet_transactions', 1);
     }
 
     public function test_zero_stock_and_weight_are_excluded_and_last_unit_cannot_be_awarded_again(): void
@@ -302,7 +339,9 @@ class GoldenEggActivityTest extends TestCase
             ->assertJsonPath('data.remaining_chances', null);
         GoldenEggPrize::query()->update(['type' => 'coupon', 'discount_percent' => 15, 'amount' => 0]);
         $this->postJson('/golden-egg/draw', $this->drawRequest())->assertOk();
-        $this->assertEquals(150, $agent->wallets()->where('type', 'recharge')->value('balance'));
+        $this->assertEquals(150, $agent->wallets()->where('type', Wallet::TYPE_WITHDRAWABLE)->value('balance'));
+        $this->assertFalse($agent->wallets()->where('type', Wallet::TYPE_RECHARGE)->exists());
+        $this->assertSame(3, $agent->walletTransactions()->where('type', 'golden_egg')->where('wallet_type', 'withdrawable')->count());
         $this->assertDatabaseHas('purchase_coupons', ['user_id' => $agent->id, 'discount_percent' => 15]);
         $this->assertDatabaseCount('golden_egg_entries', 0);
         $this->assertDatabaseCount('golden_egg_draws', 4);

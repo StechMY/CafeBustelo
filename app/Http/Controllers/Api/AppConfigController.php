@@ -37,6 +37,7 @@ class AppConfigController extends Controller
             ])->mapWithKeys(fn (string $type): array => [$type => ApiFormatter::productTypeLabel($type)]),
             'modules' => [
                 'dashboard' => true,
+                'golden_egg' => true,
                 'products' => true,
                 'wallet' => true,
                 'recharge' => true,

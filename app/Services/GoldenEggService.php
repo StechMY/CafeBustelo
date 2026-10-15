@@ -116,7 +116,7 @@ class GoldenEggService
 
             if ($prize->type === 'cash') {
                 $this->walletService->credit(
-                    user: $user, walletType: Wallet::TYPE_RECHARGE, transactionType: 'golden_egg',
+                    user: $user, walletType: Wallet::TYPE_WITHDRAWABLE, transactionType: 'golden_egg',
                     amount: $prize->amount, reference: $draw, remarks: 'Golden egg: '.$prize->name,
                     meta: ['golden_egg_draw_id' => $draw->id, 'is_virtual' => $user->is_virtual],
                 );

@@ -7,10 +7,10 @@
 @section('content')
 <div class="ge-page" data-golden-egg>
     <dialog class="ge-game" data-game aria-labelledby="ge-game-title" tabindex="-1">
+        <button type="button" class="ge-close ge-sound" data-toggle-sound aria-label="{{ __('golden_egg.sound_on') }}" aria-pressed="false"><i class="ph-thin ph-speaker-slash" aria-hidden="true"></i></button>
         <div class="ge-scene" data-scene>
             <header class="ge-game-header">
                 <a class="ge-brand" href="{{ route('dashboard') }}" aria-label="{{ __('golden_egg.back') }}"><img src="{{ asset('cafe-bustelo-logo.svg') }}" alt="Café Bustelo" width="102" height="40"></a>
-                @if ($activity['is_virtual'])<span class="ge-agent">{{ __('golden_egg.agent') }}</span>@endif
                 <button type="button" class="ge-close" data-close-game aria-label="{{ __('golden_egg.close') }}"><i class="ph-thin ph-x" aria-hidden="true"></i></button>
             </header>
             <div class="ge-game-layout">
@@ -120,7 +120,8 @@
     <script type="application/json" id="golden-egg-config">{!! \Illuminate\Support\Js::encode([
         ...$activity, 'user_id' => auth()->id(), 'draw_url' => route('golden-egg.draw'),
         'currency' => config('app.currency'), 'purchase_url' => route('products.index'), 'dashboard_url' => route('dashboard'),
-        'labels' => collect(['preparing', 'cracking', 'closed', 'no_chances', 'sold_out', 'request_failed', 'copied', 'copy_failed', 'cash', 'coupon', 'cash_received', 'coupon_received', 'percent_off', 'coupon_note', 'my_prizes', 'rules', 'confirm_egg', 'your_prize'])->mapWithKeys(fn ($key) => [$key => __('golden_egg.'.$key)])->all(),
+        'audio' => collect(['ambience' => 'ambience', 'hammer' => 'hammer-hit', 'crack' => 'shell-crack', 'reveal' => 'prize-reveal'])->map(fn ($file) => asset('audio/golden-egg/'.$file.'.mp3'))->all(),
+        'labels' => collect(['preparing', 'cracking', 'closed', 'no_chances', 'sold_out', 'request_failed', 'copied', 'copy_failed', 'cash', 'coupon', 'cash_received', 'coupon_received', 'percent_off', 'coupon_note', 'my_prizes', 'rules', 'confirm_egg', 'your_prize', 'sound_on', 'sound_off'])->mapWithKeys(fn ($key) => [$key => __('golden_egg.'.$key)])->all(),
     ]) !!}</script>
 </div>
 @endsection

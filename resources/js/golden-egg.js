@@ -1,11 +1,13 @@
 import '../css/golden-egg.css';
 import '@phosphor-icons/web/thin';
 import { gsap } from 'gsap';
+import { createGoldenEggAudio } from './golden-egg-audio';
 
 const root = document.querySelector('[data-golden-egg]');
 
 if (root) {
     const config = JSON.parse(document.getElementById('golden-egg-config').textContent);
+    const sound = createGoldenEggAudio(root, config);
     const game = root.querySelector('[data-game]');
     const scene = root.querySelector('[data-scene]');
     const stage = root.querySelector('[data-stage]');
@@ -82,6 +84,7 @@ if (root) {
 
     function closeGame() {
         if (busy) return;
+        sound.pause();
         window.location.assign(config.dashboard_url);
     }
 
@@ -207,6 +210,7 @@ if (root) {
     }
 
     function showPrize(prize) {
+        sound.playEffect('reveal', 0.6);
         // Display positions do not affect the award already chosen by the server.
         const otherPrizes = config.prizes.filter(item => item.id !== prize.prize_id);
         for (let i = otherPrizes.length - 1; i > 0; i--) {
@@ -255,6 +259,7 @@ if (root) {
                 .to(hammer, { rotation: -43, x: 0, y: 0, duration: .16, ease: 'power3.in' }, 'first')
                 .to(sealed, { opacity: 0, duration: .13 }, 'first+=.16')
                 .to(one, { opacity: 1, duration: .13 }, 'first+=.16')
+                .call(() => { sound.playEffect('hammer', 0.55); sound.playEffect('crack', 0.25); }, [], 'first+=.16')
                 .to(body, { rotation: -4, x: -3, duration: .06 }, 'first+=.16')
                 .to(body, { rotation: 0, x: 0, duration: .32, ease: 'elastic.out(1,.35)' }, 'first+=.22')
                 .to(hammer, { rotation: 18, y: -16, duration: .5 }, 'first+=.25')
@@ -263,6 +268,7 @@ if (root) {
                 .to(hammer, { rotation: -45, y: 0, duration: .18, ease: 'power3.in' }, 'second')
                 .to(one, { opacity: 0, duration: .16 }, 'second+=.18')
                 .to(two, { opacity: 1, duration: .16 }, 'second+=.18')
+                .call(() => { sound.playEffect('hammer', 0.65); sound.playEffect('crack', 0.4); }, [], 'second+=.18')
                 .to(body, { rotation: 4, x: 4, duration: .07 }, 'second+=.18')
                 .to(body, { rotation: 0, x: 0, duration: .4, ease: 'elastic.out(1,.3)' }, 'second+=.25')
                 .to(hammer, { rotation: 28, y: -22, duration: .55 }, 'second+=.28')
@@ -271,6 +277,7 @@ if (root) {
                 .to(hammer, { rotation: -47, y: 1, duration: .2, ease: 'power4.in' }, 'open')
                 .to(two, { opacity: 0, duration: .2 }, 'open+=.2')
                 .to(shattered, { opacity: 1, duration: .35 }, 'open+=.2')
+                .call(() => { sound.playEffect('hammer', 0.75); sound.playEffect('crack', 0.55); }, [], 'open+=.2')
                 .to(body, { scale: 1.04, duration: .18, yoyo: true, repeat: 1 }, 'open+=.2')
                 .to(hammer, { rotation: -20, x: 65, y: -25, opacity: 0, duration: .5 }, 'open+=.3')
                 .to(glow, { opacity: 1, scale: 1.45, duration: .55, ease: 'power2.out' }, 'open+=.2')

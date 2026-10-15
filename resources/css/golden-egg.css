@@ -30,6 +30,7 @@ html.ge-playing { overflow: hidden; }
 .ge-close i { font-size: 22px; }
 .ge-close:hover { background: #63411d70; }
 .ge-close:disabled { opacity: .3; }
+.ge-sound { position: fixed; top: 18.5px; right: max(65px, calc((100vw - 560px) / 2 + 65px)); z-index: 40; }
 .ge-game-layout { display: flex; flex-direction: column; }
 .ge-game-intro { margin: 10px 26px 0; }
 .ge-game-intro h2 { margin: 0; color: #faeac2; font: 500 clamp(38px, 11.28vw, 57px)/1.13 'Golden Serif', Georgia, 'Songti SC', serif; letter-spacing: .015em; }
@@ -55,7 +56,6 @@ html.ge-playing { overflow: hidden; }
 .ge-status { margin: 0 0 7px; color: #d4b995; font-size: 11px; line-height: 1.5; }
 .ge-status:empty { display: none; }
 .ge-retry { margin-bottom: 10px; color: #f1ce8c; font-size: 12px; text-decoration: underline; text-underline-offset: 4px; }
-.ge-agent { margin-left: auto; margin-right: 14px; color: #cbb08e; font-size: 9px; }
 .ge-invite { width: min(100%, 264px); min-height: 54px; margin-top: 3px; }
 .ge-game-links { display: flex; justify-content: center; gap: 28px; margin: 13px auto 0; width: fit-content; }
 .ge-game-links button { display: flex; align-items: center; gap: 7px; padding: 6px 0; color: #e0b978; font-size: 13px; }
@@ -134,11 +134,13 @@ html.ge-playing { overflow: hidden; }
 .ge-dashboard-entry:hover > img { transform: translateY(-4px) rotate(3deg); }
 .ge-dashboard-entry:hover .ge-dashboard-entry-copy i { transform: translateX(4px); }
 @media (min-width: 600px) and (max-width: 899px) {
+    .ge-sound { right: calc((100vw - 420px) / 2 + 65px); }
     .ge-game { background-size: auto 120%; }
     .ge-scene { max-width: 420px; }
     .ge-game-intro h2 { font-size: 47px; }
 }
 @media (min-width: 900px) {
+    .ge-sound { top: 23px; right: calc(max(0px, (100vw - 1180px) / 2) + 91px); }
     .ge-game { background-image: url('../../public/images/golden-egg/vault-atmosphere-desktop.webp'); background-size: cover; background-position: center center; }
     .ge-scene { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 85px 1fr 1fr; gap: 0 70px; width: min(100%, 1180px); max-width: none; min-height: 100%; padding: 0 42px 36px; }
     .ge-game-header { grid-column: 1 / -1; height: 85px; padding: 0; }
