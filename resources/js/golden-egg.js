@@ -88,6 +88,14 @@ if (root) {
         window.location.assign(config.dashboard_url);
     }
 
+    function dismissGameLayer() {
+        if (busy) return;
+        if (!confirmation.hidden) closeConfirmation();
+        else if (!reveal.hidden) hideReveal();
+        else if (!sheet.hidden) closeSheet();
+        else closeGame();
+    }
+
     function openConfirmation(eggNumber) {
         if (busy) return;
         if (pending) return draw(pending.egg_number);
@@ -351,7 +359,7 @@ if (root) {
     root.querySelector('[data-cancel-confirmation]').addEventListener('click', () => closeConfirmation());
     confirmation.addEventListener('click', event => { if (event.target === confirmation) closeConfirmation(); });
     retry.addEventListener('click', () => pending && draw(pending.egg_number));
-    closeButton.addEventListener('click', closeGame);
+    closeButton.addEventListener('click', dismissGameLayer);
     root.querySelectorAll('[data-show-rewards]').forEach(button => button.addEventListener('click', () => openSheet('prizes', button)));
     root.querySelector('[data-show-rules]').addEventListener('click', event => openSheet('rules', event.currentTarget));
     root.querySelector('[data-close-sheet]').addEventListener('click', closeSheet);
@@ -359,12 +367,7 @@ if (root) {
     root.querySelector('[data-finish]').addEventListener('click', hideReveal);
     game.addEventListener('cancel', event => {
         event.preventDefault();
-        if (!busy) {
-            if (!confirmation.hidden) closeConfirmation();
-            else if (!reveal.hidden) hideReveal();
-            else if (!sheet.hidden) closeSheet();
-            else closeGame();
-        }
+        dismissGameLayer();
     });
     root.querySelector('[data-invite]').addEventListener('click', async () => {
         try {

@@ -7,45 +7,49 @@
 @section('content')
 <div class="ge-page" data-golden-egg>
     <dialog class="ge-game" data-game aria-labelledby="ge-game-title" tabindex="-1">
-        <button type="button" class="ge-close ge-sound" data-toggle-sound aria-label="{{ __('golden_egg.sound_on') }}" aria-pressed="false"><i class="ph-thin ph-speaker-slash" aria-hidden="true"></i></button>
-        <div class="ge-scene" data-scene>
-            <header class="ge-game-header">
-                <a class="ge-brand" href="{{ route('dashboard') }}" aria-label="{{ __('golden_egg.back') }}"><img src="{{ asset('cafe-bustelo-logo.svg') }}" alt="Café Bustelo" width="102" height="40"></a>
+        <header class="ge-game-header">
+            <a class="ge-brand" href="{{ route('dashboard') }}" aria-label="{{ __('golden_egg.back') }}"><img src="{{ asset('cafe-bustelo-logo.svg') }}" alt="Café Bustelo" width="102" height="40"></a>
+            <div class="ge-game-actions">
+                <button type="button" class="ge-close" data-toggle-sound aria-label="{{ __('golden_egg.sound_on') }}" aria-pressed="false"><i class="ph-thin ph-speaker-slash" aria-hidden="true"></i></button>
                 <button type="button" class="ge-close" data-close-game aria-label="{{ __('golden_egg.close') }}"><i class="ph-thin ph-x" aria-hidden="true"></i></button>
-            </header>
-            <div class="ge-game-layout">
-                <div class="ge-game-intro">
-                    <h2 id="ge-game-title">@foreach (explode('\n', __('golden_egg.headline')) as $line){{ $line }}@unless($loop->last)<br>@endunless @endforeach</h2>
-                    <p class="ge-game-subtitle">{{ __('golden_egg.intro') }}</p>
-                </div>
-                <div class="ge-stage" data-stage>
-                    <img class="ge-cabinet" src="{{ asset('images/golden-egg/vault-cabinet.webp') }}" alt="" width="1140" height="1380" fetchpriority="high">
-                    <div class="ge-eggs">
-                        @for ($i = 1; $i <= 9; $i++)
-                            <button class="ge-egg" type="button" data-egg="{{ $i }}" aria-label="{{ __('golden_egg.choose_egg', ['number' => $i]) }}">
-                                <span class="ge-egg-body">
-                                    <img class="ge-egg-frame ge-egg-sealed" src="{{ asset('images/golden-egg/vault-egg.webp') }}" alt="" width="1086" height="1448" draggable="false">
-                                    <img class="ge-egg-frame ge-egg-crack-one" src="{{ asset('images/golden-egg/vault-egg-crack-1.webp') }}" alt="" width="1086" height="1448" draggable="false">
-                                    <img class="ge-egg-frame ge-egg-crack-two" src="{{ asset('images/golden-egg/vault-egg-crack-2.webp') }}" alt="" width="1086" height="1448" draggable="false">
-                                    <img class="ge-egg-frame ge-egg-shattered" src="{{ asset('images/golden-egg/vault-egg-shattered.webp') }}" alt="" width="1086" height="1448" draggable="false">
-                                </span>
-                            </button>
-                        @endfor
-                    </div>
-                    <img class="ge-draw-glow" src="{{ asset('images/golden-egg/vault-glow.webp') }}" alt="" width="1254" height="1254" aria-hidden="true">
-                    <img class="ge-hammer" src="{{ asset('images/golden-egg/vault-hammer.webp') }}" alt="" width="743" height="1380" aria-hidden="true">
-                </div>
             </div>
-            <footer class="ge-game-footer">
-                <div class="ge-chance"><span>{{ __('golden_egg.chances') }}</span><strong data-chances>{{ $activity['is_virtual'] ? random_int(1, 10) : $activity['remaining_chances'] }}</strong><span>{{ __('golden_egg.chance_unit') }}</span></div>
-                <div class="ge-feedback"><p class="ge-status" data-status role="status" aria-live="polite"></p><button class="ge-retry" type="button" data-retry hidden>{{ __('golden_egg.retry') }}</button></div>
-                <button type="button" class="ge-gold-button ge-invite" data-invite>{{ __('golden_egg.invite') }} <i class="ph-thin ph-arrow-right" aria-hidden="true"></i></button>
-                <nav class="ge-game-links" aria-label="{{ __('golden_egg.title') }}">
-                    <button type="button" data-show-rewards><i class="ph-thin ph-gift" aria-hidden="true"></i><span>{{ __('golden_egg.my_prizes') }}</span></button>
-                    <button type="button" data-show-rules><i class="ph-thin ph-file-text" aria-hidden="true"></i><span>{{ __('golden_egg.rules') }}</span></button>
-                </nav>
-                <div class="ge-invite-link" data-invite-link hidden><label for="ge-invite-url">{{ __('golden_egg.your_link') }}</label><input id="ge-invite-url" readonly value="{{ $activity['invite_url'] }}"></div>
-            </footer>
+        </header>
+        <div class="ge-game-body">
+            <div class="ge-scene" data-scene>
+                <div class="ge-game-layout">
+                    <div class="ge-game-intro">
+                        <h2 id="ge-game-title">@foreach (explode('\n', __('golden_egg.headline')) as $line){{ $line }}@unless($loop->last)<br>@endunless @endforeach</h2>
+                        <p class="ge-game-subtitle">{{ __('golden_egg.intro') }}</p>
+                    </div>
+                    <div class="ge-stage" data-stage>
+                        <img class="ge-cabinet" src="{{ asset('images/golden-egg/vault-cabinet.webp') }}" alt="" width="1140" height="1380" fetchpriority="high">
+                        <div class="ge-eggs">
+                            @for ($i = 1; $i <= 9; $i++)
+                                <button class="ge-egg" type="button" data-egg="{{ $i }}" aria-label="{{ __('golden_egg.choose_egg', ['number' => $i]) }}">
+                                    <span class="ge-egg-body">
+                                        <img class="ge-egg-frame ge-egg-sealed" src="{{ asset('images/golden-egg/vault-egg.webp') }}" alt="" width="1086" height="1448" draggable="false">
+                                        <img class="ge-egg-frame ge-egg-crack-one" src="{{ asset('images/golden-egg/vault-egg-crack-1.webp') }}" alt="" width="1086" height="1448" draggable="false">
+                                        <img class="ge-egg-frame ge-egg-crack-two" src="{{ asset('images/golden-egg/vault-egg-crack-2.webp') }}" alt="" width="1086" height="1448" draggable="false">
+                                        <img class="ge-egg-frame ge-egg-shattered" src="{{ asset('images/golden-egg/vault-egg-shattered.webp') }}" alt="" width="1086" height="1448" draggable="false">
+                                    </span>
+                                </button>
+                            @endfor
+                        </div>
+                        <img class="ge-draw-glow" src="{{ asset('images/golden-egg/vault-glow.webp') }}" alt="" width="1254" height="1254" aria-hidden="true">
+                        <img class="ge-hammer" src="{{ asset('images/golden-egg/vault-hammer.webp') }}" alt="" width="743" height="1380" aria-hidden="true">
+                    </div>
+                </div>
+                <footer class="ge-game-footer">
+                    <div class="ge-chance"><span>{{ __('golden_egg.chances') }}</span><strong data-chances>{{ $activity['is_virtual'] ? random_int(1, 10) : $activity['remaining_chances'] }}</strong><span>{{ __('golden_egg.chance_unit') }}</span></div>
+                    <div class="ge-feedback"><p class="ge-status" data-status role="status" aria-live="polite"></p><button class="ge-retry" type="button" data-retry hidden>{{ __('golden_egg.retry') }}</button></div>
+                    <button type="button" class="ge-gold-button ge-invite" data-invite>{{ __('golden_egg.invite') }} <i class="ph-thin ph-arrow-right" aria-hidden="true"></i></button>
+                    <nav class="ge-game-links" aria-label="{{ __('golden_egg.title') }}">
+                        <button type="button" data-show-rewards><i class="ph-thin ph-gift" aria-hidden="true"></i><span>{{ __('golden_egg.my_prizes') }}</span></button>
+                        <button type="button" data-show-rules><i class="ph-thin ph-file-text" aria-hidden="true"></i><span>{{ __('golden_egg.rules') }}</span></button>
+                    </nav>
+                    <div class="ge-invite-link" data-invite-link hidden><label for="ge-invite-url">{{ __('golden_egg.your_link') }}</label><input id="ge-invite-url" readonly value="{{ $activity['invite_url'] }}"></div>
+                </footer>
+            </div>
         </div>
         <section class="ge-confirmation" data-confirmation hidden role="dialog" aria-modal="true" aria-labelledby="ge-confirm-title" aria-describedby="ge-confirm-note">
             <div class="ge-confirm-card">
