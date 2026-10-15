@@ -1,6 +1,8 @@
 <?php
 
 return [
+    'system_settings' => 'Pengaturan sistem',
+    'activities_and_rewards' => 'Aktivitas & hadiah',
     'product_availability_desc' => 'Atur jam penjualan harian, hari dalam minggu, dan batas jumlah. Menggunakan zona waktu sistem.',
     'available_from_help' => 'Jam mulai penjualan setiap hari. Kosongkan jika tidak ada batas waktu mulai.',
     'available_until_help' => 'Jam selesai setiap hari. Waktu sebelum jam mulai berarti melewati tengah malam. Kosongkan jika tidak ada batas waktu selesai.',

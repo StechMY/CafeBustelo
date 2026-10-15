@@ -1,6 +1,8 @@
 <?php
 
 return [
+    'system_settings' => 'System settings',
+    'activities_and_rewards' => 'Activities & rewards',
     'daily_limit' => 'Daily Limit',
     'daily_limit_help' => 'Total purchases per product across all users each day. Leave empty for no daily limit. Resets at midnight in the system time zone.',
     'min_vip_level' => 'Minimum Purchase Level',

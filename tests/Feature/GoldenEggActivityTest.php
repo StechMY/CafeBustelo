@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Filament\Pages\Dashboard;
 use App\Filament\Resources\GoldenEggPrizes\Pages\ManageGoldenEggPrizes;
 use App\Http\Middleware\HumanOnly;
 use App\Models\AdminUser;
@@ -92,19 +93,87 @@ class GoldenEggActivityTest extends TestCase
         }
         $this->assertSame(0, app(GoldenEggService::class)->remainingChances($referrer));
         $this->assertDatabaseCount('user_products', 0);
+        $this->assertSame(0, app(GoldenEggService::class)->remainingChances($invitee));
         $invitee->wallets()->updateOrCreate(['type' => 'recharge'], ['balance' => 150, 'locked_balance' => 0]);
         for ($i = 0; $i < 2; $i++) {
             if ($api) $this->postJson($purchaseUrl, ['wallet_type' => 'recharge'])->assertCreated();
             else $this->post($purchaseUrl, ['wallet_type' => 'recharge'])->assertRedirect('/products')->assertSessionHas('success');
             $this->assertSame(1, app(GoldenEggService::class)->remainingChances($referrer));
+            $this->assertSame($i + 1, app(GoldenEggService::class)->remainingChances($invitee));
         }
         $this->assertNotNull(GoldenEggEntry::query()->first()->qualified_at);
-        $this->assertDatabaseCount('golden_egg_entries', 1);
+        $this->assertDatabaseCount('golden_egg_entries', 3);
     }
 
     public static function registrationRoutes(): array
     {
         return [['/register'], ['/api/v1/register']];
+    }
+
+    #[DataProvider('purchaseProducts')]
+    public function test_each_product_purchase_earns_a_usable_chance_once_per_order(string $type, string $wallet): void
+    {
+        Setting::setValue(GoldenEggService::SETTING_ENABLED, true);
+        $buyer = $this->user();
+        $buyer->wallets()->create(['type' => $wallet, 'balance' => 150, 'locked_balance' => 0]);
+        $product = $this->product();
+        $product->update(['product_type' => $type]);
+        $service = app(GoldenEggService::class);
+        $purchase = app(ProductPurchaseService::class)->purchase($buyer, $product, $wallet);
+
+        $service->givePurchaseChance($buyer, $purchase);
+        $this->assertSame(1, $service->remainingChances($buyer));
+        $this->assertDatabaseCount('golden_egg_entries', 1);
+        $this->assertDatabaseHas('golden_egg_entries', [
+            'user_id' => $buyer->id, 'user_product_id' => $purchase->id, 'invited_user_id' => null,
+        ]);
+        $this->onlyPrize();
+        $draw = $service->draw($buyer, (string) Str::uuid(), 1);
+        $this->assertSame(GoldenEggEntry::query()->sole()->id, $draw->entry_id);
+        $this->assertSame(0, $service->remainingChances($buyer));
+
+        $service->givePurchaseChance($buyer, $purchase);
+        $this->assertSame(0, $service->remainingChances($buyer));
+        app(ProductPurchaseService::class)->purchase($buyer, $product, $wallet);
+        $this->assertSame(1, $service->remainingChances($buyer));
+        $this->assertDatabaseCount('golden_egg_entries', 2);
+    }
+
+    public static function purchaseProducts(): array
+    {
+        return [
+            [Product::TYPE_NORMAL, Wallet::TYPE_RECHARGE],
+            [Product::TYPE_NORMAL, Wallet::TYPE_WITHDRAWABLE],
+            [Product::TYPE_UPGRADE_DAY, Wallet::TYPE_RECHARGE],
+            [Product::TYPE_LIMITED_TIME, Wallet::TYPE_RECHARGE],
+            [Product::TYPE_INVITE_DAY, Wallet::TYPE_RECHARGE],
+            [Product::TYPE_WEEKEND_SPECIAL, Wallet::TYPE_RECHARGE],
+            [Product::TYPE_HOURLY, Wallet::TYPE_RECHARGE],
+        ];
+    }
+
+    public function test_purchase_chances_only_apply_to_new_successful_orders_while_open_and_not_agents(): void
+    {
+        $buyer = $this->user();
+        $buyer->wallets()->create(['type' => 'recharge', 'balance' => 150, 'locked_balance' => 0]);
+        $product = $this->product();
+        app(ProductPurchaseService::class)->purchase($buyer, $product);
+        Setting::setValue(GoldenEggService::SETTING_ENABLED, true);
+        $this->actingAs($buyer)->get('/golden-egg')->assertOk();
+        $this->assertSame(0, app(GoldenEggService::class)->remainingChances($buyer));
+
+        app(ProductPurchaseService::class)->purchase($buyer, $product);
+        $this->assertSame(1, app(GoldenEggService::class)->remainingChances($buyer));
+        Setting::setValue(GoldenEggService::SETTING_ENABLED, false);
+        app(ProductPurchaseService::class)->purchase($buyer, $product);
+        $this->assertSame(1, app(GoldenEggService::class)->remainingChances($buyer));
+
+        Setting::setValue(GoldenEggService::SETTING_ENABLED, true);
+        $agent = $this->user(['is_virtual' => true]);
+        $agent->wallets()->create(['type' => 'recharge', 'balance' => 50, 'locked_balance' => 0]);
+        app(ProductPurchaseService::class)->purchase($agent, $product);
+        $this->assertDatabaseCount('golden_egg_entries', 1);
+        $this->assertNull(app(GoldenEggService::class)->remainingChances($agent));
     }
 
     public function test_reveal_catalog_includes_sold_out_rewards_but_the_draw_still_excludes_them(): void
@@ -150,7 +219,10 @@ class GoldenEggActivityTest extends TestCase
             app(ProductPurchaseService::class)->purchase($invitee, $product);
         }
         $this->actingAs($user)->get('/golden-egg')->assertOk();
-        $this->assertDatabaseCount('golden_egg_entries', 0);
+        $this->assertSame(0, app(GoldenEggService::class)->remainingChances($user));
+        $this->assertSame(1, app(GoldenEggService::class)->remainingChances($oldInvitee));
+        $this->assertSame(0, GoldenEggEntry::query()->whereNotNull('invited_user_id')->count());
+        $this->assertDatabaseCount('golden_egg_entries', 1);
     }
 
     public function test_first_purchase_while_closed_does_not_defer_reward_until_later_purchase(): void
@@ -307,6 +379,7 @@ class GoldenEggActivityTest extends TestCase
                 $this->assertNull($coupon->fresh()->used_at);
                 $this->assertDatabaseCount('user_products', 0);
                 $this->assertDatabaseCount('wallet_transactions', 0);
+                $this->assertSame(0, app(GoldenEggService::class)->remainingChances($buyer));
             }
         }
     }
@@ -341,6 +414,46 @@ class GoldenEggActivityTest extends TestCase
         $this->assertSame('0.00', $purchase->price_snapshot);
         $this->assertNotNull($free->fresh()->used_at);
         $this->assertDatabaseCount('wallet_transactions', 0);
+        $this->assertSame(1, app(GoldenEggService::class)->remainingChances($user));
+    }
+
+    public function test_dashboard_and_prize_page_share_the_same_activity_switch(): void
+    {
+        $admin = AdminUser::query()->create(['username' => 'egg-dashboard-admin', 'password' => 'password', 'status' => 'active']);
+        foreach (['ViewAny:GoldenEggPrize', 'Manage:GoldenEgg'] as $permission) {
+            $admin->givePermissionTo(Permission::findOrCreate($permission, 'admin'));
+        }
+        $this->actingAs($admin, 'admin');
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+        $dashboard = Livewire::test(Dashboard::class)
+            ->assertActionVisible('goldenEggSettings')
+            ->assertActionExists('maintenanceNoticeSettings')
+            ->assertActionExists('welcomeBonusSettings')
+            ->assertActionExists('pointsSettings')
+            ->callAction('goldenEggSettings', ['enabled' => true])
+            ->assertHasNoActionErrors();
+        $this->assertTrue(Setting::bool(GoldenEggService::SETTING_ENABLED));
+
+        Livewire::test(ManageGoldenEggPrizes::class)
+            ->mountAction('activity_settings')
+            ->assertActionDataSet(['enabled' => true])
+            ->setActionData(['enabled' => false])
+            ->callMountedAction()
+            ->assertHasNoActionErrors();
+        $this->assertFalse(Setting::bool(GoldenEggService::SETTING_ENABLED));
+        $dashboard->mountAction('goldenEggSettings')->assertActionDataSet(['enabled' => false]);
+    }
+
+    public function test_dashboard_activity_switch_requires_manage_permission(): void
+    {
+        $admin = AdminUser::query()->create(['username' => 'egg-viewer', 'password' => 'password', 'status' => 'active']);
+        $this->actingAs($admin, 'admin');
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+        Livewire::test(Dashboard::class)
+            ->assertActionHidden('goldenEggSettings')
+            ->call('mountAction', 'goldenEggSettings')
+            ->assertActionNotMounted('goldenEggSettings');
+        $this->assertFalse(Setting::bool(GoldenEggService::SETTING_ENABLED));
     }
 
     public function test_admin_can_edit_nine_prizes_switch_unlimited_stock_and_enable_the_activity(): void

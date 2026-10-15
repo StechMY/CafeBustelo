@@ -1,6 +1,8 @@
 <?php
 
 return [
+    'system_settings' => 'Cài đặt hệ thống',
+    'activities_and_rewards' => 'Hoạt động và phần thưởng',
     'product_availability_desc' => 'Thiết lập giờ bán hằng ngày, ngày trong tuần và giới hạn số lượng. Sử dụng múi giờ hệ thống.',
     'available_from_help' => 'Giờ mở bán mỗi ngày. Để trống nếu không giới hạn giờ bắt đầu.',
     'available_until_help' => 'Giờ kết thúc mỗi ngày. Giờ sớm hơn giờ bắt đầu có nghĩa là qua nửa đêm. Để trống nếu không giới hạn giờ kết thúc.',

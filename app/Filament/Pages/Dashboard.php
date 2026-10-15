@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Filament\Resources\GoldenEggPrizes\GoldenEggPrizeResource;
 use App\Filament\Resources\PageImages\PageImageResource;
 use App\Filament\Widgets\PlatformFinanceChart;
 use App\Filament\Widgets\PlatformOperationStats;
@@ -12,11 +13,13 @@ use App\Models\AdminUser;
 use App\Models\PhoneOtp;
 use App\Models\Product;
 use App\Models\Setting;
+use App\Services\GoldenEggService;
 use App\Services\MaintenanceNoticeService;
 use App\Services\PointService;
 use App\Services\Settings\Qc168Settings;
 use App\Services\WelcomeBonusService;
 use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\DatePicker;
@@ -34,6 +37,8 @@ use Illuminate\Support\Str;
 class Dashboard extends BaseDashboard
 {
     use HasFiltersForm;
+
+    protected string $view = 'filament.dashboard.index';
 
     public function getTitle(): string
     {
@@ -96,7 +101,7 @@ class Dashboard extends BaseDashboard
 
     protected function getHeaderActions(): array
     {
-        return [
+        $systemActions = [
             Action::make('pageImages')
                 ->label(__('page_images.images'))
                 ->icon('heroicon-o-photo')
@@ -245,6 +250,34 @@ class Dashboard extends BaseDashboard
                         ->title(__('filament.maintenance_notice_settings_saved'))
                         ->success()
                         ->send();
+                }),
+        ];
+
+        $activityActions = [
+            Action::make('goldenEggSettings')
+                ->label(__('golden_egg.admin_title'))
+                ->icon('heroicon-o-gift')
+                ->color('warning')
+                ->visible(fn (): bool => Filament::auth()->user()?->can('Manage:GoldenEgg') ?? false)
+                ->authorize(fn (): bool => Filament::auth()->user()?->can('Manage:GoldenEgg') ?? false)
+                ->modalHeading(__('golden_egg.admin_title'))
+                ->modalWidth('lg')
+                ->modalSubmitActionLabel(__('filament-actions::edit.single.modal.actions.save.label'))
+                ->fillForm(fn (): array => ['enabled' => Setting::bool(GoldenEggService::SETTING_ENABLED)])
+                ->schema([
+                    Toggle::make('enabled')->label(__('golden_egg.enable_activity'))
+                        ->helperText(__('golden_egg.enable_help')),
+                ])
+                ->extraModalFooterActions([
+                    Action::make('manageGoldenEggPrizes')
+                        ->label(__('golden_egg.manage_prizes'))
+                        ->url(fn (): string => GoldenEggPrizeResource::getUrl())
+                        ->visible(fn (): bool => GoldenEggPrizeResource::canViewAny())
+                        ->color('gray'),
+                ])
+                ->action(function (array $data): void {
+                    Setting::setValue(GoldenEggService::SETTING_ENABLED, (bool) $data['enabled']);
+                    Notification::make()->title(__('golden_egg.settings_saved'))->success()->send();
                 }),
             Action::make('welcomeBonusSettings')
                 ->label(__('filament.welcome_bonus_settings'))
@@ -414,6 +447,23 @@ class Dashboard extends BaseDashboard
                         ->success()
                         ->send();
                 }),
+        ];
+
+        return [
+            ActionGroup::make($systemActions)
+                ->extraDropdownAttributes(['data-dashboard-settings-menu' => ''])
+                ->label(__('filament.system_settings'))
+                ->icon('heroicon-o-cog-6-tooth')
+                ->color('gray')
+                ->button()
+                ->dropdownWidth('sm'),
+            ActionGroup::make($activityActions)
+                ->extraDropdownAttributes(['data-dashboard-settings-menu' => ''])
+                ->label(__('filament.activities_and_rewards'))
+                ->icon('heroicon-o-gift')
+                ->color('warning')
+                ->button()
+                ->dropdownWidth('sm'),
         ];
     }
 }

@@ -88,7 +88,7 @@
                             </div>
                         </section>
                     </div>
-                    <div data-rules-panel hidden><ol class="ge-rules">@foreach (['rule_invite', 'rule_draw', 'rule_cash', 'rule_coupon'] as $rule)<li>{{ __('golden_egg.'.$rule) }}</li>@endforeach</ol></div>
+                    <div data-rules-panel hidden><ol class="ge-rules">@foreach (['rule_purchase', 'rule_invite', 'rule_draw', 'rule_cash', 'rule_coupon'] as $rule)<li>{{ __('golden_egg.'.$rule) }}</li>@endforeach</ol></div>
                 </div>
             </div>
         </section>

@@ -50,6 +50,18 @@ class GoldenEggService
             ->where('user_id', $user->id)->whereNotNull('qualified_at')->whereNull('used_at')->count();
     }
 
+    public function givePurchaseChance(User $buyer, UserProduct $purchase): void
+    {
+        if ($buyer->is_virtual || ! Setting::bool(self::SETTING_ENABLED)) {
+            return;
+        }
+
+        GoldenEggEntry::query()->firstOrCreate(
+            ['user_product_id' => $purchase->id],
+            ['user_id' => $buyer->id, 'qualified_at' => now()],
+        );
+    }
+
     public function draw(User $user, string $requestId, int $eggNumber): GoldenEggDraw
     {
         if ($eggNumber < 1 || $eggNumber > 9) {

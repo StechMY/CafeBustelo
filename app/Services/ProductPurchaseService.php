@@ -163,6 +163,7 @@ class ProductPurchaseService
             }
 
             $this->goldenEggService->qualifyFirstPurchase($user, $userProduct);
+            $this->goldenEggService->givePurchaseChance($user, $userProduct);
 
             return $userProduct;
         }, 3);
