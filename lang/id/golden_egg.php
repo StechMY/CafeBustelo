@@ -28,7 +28,7 @@ return array_replace(require __DIR__.'/../en/golden_egg.php', [
     'rewards_intro' => 'Hadiah saldo dan diskon untuk pembelian berikutnya.',
     'rules' => 'Cara bermain',
     'rule_purchase' => 'Saat aktivitas dibuka, setiap pembelian produk yang berhasil memberi pembeli satu kesempatan. Pembelian ulang dan pembelian dengan kupon juga dihitung. Pembelian gagal dan pesanan lama tidak dihitung.',
-    'rule_invite' => 'Teman baru harus mendaftar melalui tautanmu saat aktivitas dibuka. Pembelian pertamanya yang berhasil memberimu satu kesempatan, hanya sekali per teman. Pendaftaran saja tidak cukup. Aktivitas juga harus terbuka saat pembelian; undangan lama tidak dihitung.',
+    'rule_invite' => 'Teman yang mendaftar melalui tautan undanganmu memberimu satu kesempatan ketika pembelian pertamanya berhasil saat aktivitas dibuka, tanpa batasan waktu pendaftaran. Pendaftaran saja tidak cukup, dan setiap teman hanya memberi hadiah sekali. Jika pembelian pertama terjadi saat aktivitas ditutup, pembelian berikutnya tidak memberi hadiah undangan.',
     'rule_draw' => 'Pilih telur mana saja. Hadiah dipilih secara acak dari hadiah yang tersedia. Setiap undian berhasil memakai satu kesempatan.',
     'rule_cash' => 'Hadiah uang langsung masuk ke dompet yang dapat ditarik.',
     'rule_coupon' => 'Kupon berlaku untuk satu pembelian produk. Maksimal satu kupon per transaksi, tidak dapat digabung. Diskon 10% berarti membayar 90% harga asli.',

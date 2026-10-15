@@ -27,7 +27,7 @@ return [
     'rewards_intro' => 'Wallet surprises and something off your next purchase.',
     'rules' => 'How to play',
     'rule_purchase' => 'While the activity is open, every successful purchase of any product gives the buyer one chance. Repeat purchases and purchases using a coupon count too. Failed purchases and historical orders earn no chance.',
-    'rule_invite' => 'Invite a new friend to register while the activity is open. Their first successful purchase earns you one chance, once per friend. Registration alone earns no chance. The activity must also be open at purchase; previous invitations are not included.',
+    'rule_invite' => 'A friend registered through your invitation earns you one chance when their first successful purchase happens while the activity is open, regardless of when they registered. Registration alone earns no chance, and each friend rewards you once. If their first purchase happens while the activity is closed, later purchases do not earn an invitation reward.',
     'rule_draw' => 'Pick any egg. The prize is randomly drawn from the rewards still available. Each successful draw uses one chance.',
     'rule_cash' => 'Cash rewards go straight into your withdrawable wallet.',
     'rule_coupon' => 'A discount coupon is valid for one product purchase. Select one at checkout; coupons cannot be combined. 10% off means you pay 90% of the price.',
@@ -79,7 +79,7 @@ return [
     'activity_settings' => 'Activity settings',
     'manage_prizes' => 'Manage prizes',
     'enable_activity' => 'Open golden egg activity',
-    'enable_help' => 'While open, every successful product purchase gives the buyer one chance. New referred users also give their inviter one chance after their first successful purchase. No historical purchases or invitations are credited. Agents can draw at any time without consuming real stock.',
+    'enable_help' => 'While open, every successful product purchase gives the buyer one chance. A referred user also gives their inviter one chance when their first successful purchase happens while open, regardless of registration time. Previously completed orders are not replayed. Agents can draw at any time without consuming real stock.',
     'settings_saved' => 'Activity settings saved',
     'admin_help' => 'Configure the nine prize types here. Unlimited stock has no limit; zero stock excludes a prize for real users. Agents ignore weight and stock, draw all nine prizes with equal chances, and receive actual awards. Egg position does not determine the prize.',
 ];

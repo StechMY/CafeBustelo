@@ -28,7 +28,7 @@ return array_replace(require __DIR__.'/../en/golden_egg.php', [
     'rewards_intro' => 'Tiền thưởng vào ví và phiếu giảm giá cho lần mua tiếp theo.',
     'rules' => 'Cách tham gia',
     'rule_purchase' => 'Khi hoạt động mở, mỗi lần mua thành công bất kỳ sản phẩm nào tặng người mua một lượt. Mua lại và dùng phiếu giảm giá đều được tính. Đơn thất bại và đơn cũ không được tặng lượt.',
-    'rule_invite' => 'Bạn mới đăng ký qua liên kết mời khi hoạt động mở và mua hàng thành công lần đầu sẽ mang đến một lượt đập trứng, một lần mỗi người. Chỉ đăng ký không được lượt. Hoạt động cũng phải mở khi mua; lời mời cũ không được tính.',
+    'rule_invite' => 'Bạn bè đăng ký qua liên kết mời của bạn và mua hàng thành công lần đầu khi hoạt động mở sẽ tặng bạn một lượt, không giới hạn thời điểm đăng ký. Chỉ đăng ký không được lượt, mỗi người bạn chỉ được tính một lần. Nếu lần mua đầu tiên diễn ra khi hoạt động đóng, các lần mua sau không được tính thưởng lời mời.',
     'rule_draw' => 'Chọn bất kỳ quả trứng nào. Hệ thống chọn ngẫu nhiên từ phần thưởng còn khả dụng. Mỗi lần nhận quà sử dụng một lượt.',
     'rule_cash' => 'Tiền thưởng được cộng trực tiếp vào ví có thể rút.',
     'rule_coupon' => 'Phiếu dùng một lần khi mua sản phẩm. Mỗi đơn chọn tối đa một phiếu, không cộng dồn. Giảm 10% nghĩa là thanh toán 90% giá gốc.',

@@ -40,6 +40,11 @@ class GoldenEggService
             return;
         }
 
+        GoldenEggEntry::query()->firstOrCreate(
+            ['invited_user_id' => $invitee->id],
+            ['user_id' => $invitee->referrer_id],
+        );
+
         GoldenEggEntry::query()->where('invited_user_id', $invitee->id)
             ->whereNull('qualified_at')->update(['qualified_at' => now()]);
     }

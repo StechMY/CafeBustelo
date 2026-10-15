@@ -61,9 +61,9 @@ class GoldenEggActivityTest extends TestCase
     }
 
     #[DataProvider('registrationRoutes')]
-    public function test_referral_earns_one_chance_only_after_first_successful_purchase_on_web_and_api(string $route): void
+    public function test_referral_earns_one_chance_only_after_first_successful_purchase_on_web_and_api(string $route, bool $enabledAtRegistration): void
     {
-        Setting::setValue(GoldenEggService::SETTING_ENABLED, true);
+        Setting::setValue(GoldenEggService::SETTING_ENABLED, $enabledAtRegistration);
         $referrer = $this->user();
         $this->withoutMiddleware(HumanOnly::class);
         $this->partialMock(OtpService::class, function ($mock): void {
@@ -80,11 +80,12 @@ class GoldenEggActivityTest extends TestCase
 
         $invitee = User::query()->where('username', 'new-friend')->firstOrFail();
         app(GoldenEggService::class)->registerInvitee($invitee);
-        $this->assertDatabaseCount('golden_egg_entries', 1);
-        $this->assertNull(GoldenEggEntry::query()->first()->qualified_at);
+        $this->assertDatabaseCount('golden_egg_entries', $enabledAtRegistration ? 1 : 0);
+        if ($enabledAtRegistration) $this->assertNull(GoldenEggEntry::query()->first()->qualified_at);
         $this->assertSame(0, app(GoldenEggService::class)->remainingChances($referrer));
         $this->assertSame(0, app(GoldenEggService::class)->remainingChances($invitee));
 
+        Setting::setValue(GoldenEggService::SETTING_ENABLED, true);
         $product = $this->product();
         $api = str_starts_with($route, '/api/');
         $purchaseUrl = ($api ? '/api/v1' : '').'/products/'.$product->id.'/purchase';
@@ -110,7 +111,7 @@ class GoldenEggActivityTest extends TestCase
 
     public static function registrationRoutes(): array
     {
-        return [['/register'], ['/api/v1/register']];
+        return [['/register', true], ['/api/v1/register', true], ['/register', false], ['/api/v1/register', false]];
     }
 
     #[DataProvider('purchaseProducts')]
@@ -208,7 +209,7 @@ class GoldenEggActivityTest extends TestCase
         $this->assertDatabaseCount('golden_egg_draws', 1);
     }
 
-    public function test_closed_and_virtual_invitations_do_not_earn_chances_and_history_is_not_backfilled(): void
+    public function test_registration_while_closed_qualifies_on_first_purchase_but_virtual_invitees_do_not(): void
     {
         $user = $this->user();
         $oldInvitee = $this->user(['referrer_id' => $user->id]);
@@ -222,10 +223,10 @@ class GoldenEggActivityTest extends TestCase
             app(ProductPurchaseService::class)->purchase($invitee, $product);
         }
         $this->actingAs($user)->get('/golden-egg')->assertOk();
-        $this->assertSame(0, app(GoldenEggService::class)->remainingChances($user));
+        $this->assertSame(1, app(GoldenEggService::class)->remainingChances($user));
         $this->assertSame(1, app(GoldenEggService::class)->remainingChances($oldInvitee));
-        $this->assertSame(0, GoldenEggEntry::query()->whereNotNull('invited_user_id')->count());
-        $this->assertDatabaseCount('golden_egg_entries', 1);
+        $this->assertSame(1, GoldenEggEntry::query()->whereNotNull('invited_user_id')->count());
+        $this->assertDatabaseCount('golden_egg_entries', 2);
     }
 
     public function test_first_purchase_while_closed_does_not_defer_reward_until_later_purchase(): void
