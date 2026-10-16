@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class PurchaseCoupon extends Model
 {
@@ -17,6 +18,16 @@ class PurchaseCoupon extends Model
     public function scopeAvailableTo(Builder $query, User $user): Builder
     {
         return $query->where('user_id', $user->id)->whereNull('used_at');
+    }
+
+    public function draw(): BelongsTo
+    {
+        return $this->belongsTo(GoldenEggDraw::class, 'golden_egg_draw_id');
+    }
+
+    public function purchase(): BelongsTo
+    {
+        return $this->belongsTo(UserProduct::class, 'user_product_id')->withTrashed();
     }
 
     public function discountedPrice(float|string $price): float

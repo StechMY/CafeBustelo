@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 use App\Filament\Resources\BankAccountReviewRequests\BankAccountReviewRequestResource;
+use App\Filament\Resources\GoldenEggDraws\GoldenEggDrawResource;
 use App\Filament\Resources\UserProducts\UserProductResource;
 use BezhanSalleh\FilamentShield\Resources\Roles\RoleResource;
 use Filament\Pages\Dashboard;
@@ -189,6 +190,10 @@ return [
                 'delete',
             ],
             UserProductResource::class => [
+                'viewAny',
+                'view',
+            ],
+            GoldenEggDrawResource::class => [
                 'viewAny',
                 'view',
             ],

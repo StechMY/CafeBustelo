@@ -18,6 +18,14 @@
 
 后台权限为 `ViewAny:GoldenEggPrize`、`View:GoldenEggPrize`、`Update:GoldenEggPrize`；活动开关另需 `Manage:GoldenEgg`。超级管理员沿用现有 Shield 权限机制。
 
+## 后台对账与抽奖记录
+
+- 「用户管理 → 用户产品 → 详情」的购买资料显示原价、折扣券编号和中奖名称、减免百分比、减免金额、实际付款。使用购买时保存的 `meta` 和 `price_snapshot`，不读取商品当前价格来重算历史账目。无券旧订单以购买金额作为原价；若用券订单的原价或减免快照缺失，明确显示「未记录」。
+- 「平台管理 → 金蛋抽奖记录」（`/admin/golden-egg-draws`）提供只读列表和详情，包括中奖人、中奖时间、所选金蛋编号、奖品名称、现金金额或折扣比例。列表可按用户或奖品搜索，并筛选奖品类型、优惠券已使用／未使用、虚拟用户。
+- 现金奖励显示「已入账」；折扣券按 `used_at` 显示「已使用／未使用」，已使用时列出使用时间和订单编号。券记录缺失会单独标示，不误报为未使用。软删除的订单仍显示关联编号和「已删除」，不提供失效链接；订单永久删除后保留券的已使用状态，订单缺失显示「未记录」。
+- 订单的折扣券链接可进入对应中奖记录，中奖记录的使用订单可回到订单详情。跨页链接仅在管理员拥有目标资源的列表和详情权限、且记录属于其可管理范围时出现。受限客服只能查看其管理下线的记录。
+- 新增权限 `ViewAny:GoldenEggDraw`、`View:GoldenEggDraw`，通过迁移 `2026_10_16_000001_add_golden_egg_draw_view_permissions` 安装。部署执行 `php artisan migrate --force`；普通管理员按需在角色管理分配这两项查看权限，订单链接还需要 `ViewAny:UserProduct` 和 `View:UserProduct`。此功能不修改历史订单、券状态或钱包金额，也不新增发奖接口。
+
 ## 已确认的规则
 
 - 活动开放期间，每笔成功购买任意产品，购买者获得一次机会。适用于全部六类产品、两种付款钱包和优惠券购买（含 100% 券）。重复购买可继续获得机会；同一购买记录的 `user_product_id` 唯一，重试不会重复发放。付款失败、历史订单、活动关闭期间的订单不发放或补发。Agent 仍使用原有持续抽奖规则，不另累计购买次数。
@@ -78,5 +86,7 @@ App 同事／AI agent 的完整接入说明：[Flutter／App 金蛋接入](flutt
 ## 验证
 
 `tests/Feature/GoldenEggActivityTest.php` 覆盖网页/API 注册不发放、活动开启前后注册均在开放期间首购发放一次、付款失败和重复购买、关闭期间首购不补发、虚拟号排除，以及机会与库存、请求重放、agent 实际发奖、发奖回滚、券快照与归属、一次性兑换、金额舍入及后台编辑。
+
+`tests/Feature/Filament/GoldenEggDrawResourceTest.php` 覆盖对账快照、旧订单和全额优惠、已使用／未使用筛选、删除订单后的状态、只读权限、客服范围及订单与中奖记录之间的授权链接。原有订单资源测试同时运行。
 
 Windows 本地 PHP 可通过 `php -d extension=pdo_sqlite vendor/phpunit/phpunit/phpunit tests/Feature/GoldenEggActivityTest.php` 临时启用 SQLite 运行。此测试显式使用内存数据库。

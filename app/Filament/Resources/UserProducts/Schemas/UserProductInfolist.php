@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\UserProducts\Schemas;
 
+use App\Filament\Resources\GoldenEggDraws\GoldenEggDrawResource;
 use App\Models\Product;
 use App\Models\UserProduct;
 use Filament\Infolists\Components\TextEntry;
@@ -93,11 +94,46 @@ class UserProductInfolist
                     ]),
 
                 Section::make(__('filament.purchase_information'))
+                    ->columnSpanFull()
                     ->schema([
                         Grid::make(3)
                             ->schema([
+                                TextEntry::make('original_price')
+                                    ->label(__('golden_egg.original_price'))
+                                    ->state(fn (UserProduct $record) => data_get($record->meta, 'original_price')
+                                        ?? ($record->purchaseCoupon || data_get($record->meta, 'coupon_id') ? null : $record->price_snapshot))
+                                    ->numeric(2)
+                                    ->prefix(config('app.currency').' ')
+                                    ->placeholder(__('golden_egg.not_recorded')),
+
+                                TextEntry::make('used_coupon')
+                                    ->label(__('golden_egg.purchase_coupon'))
+                                    ->state(fn (UserProduct $record) => $record->purchaseCoupon?->id ?? data_get($record->meta, 'coupon_id'))
+                                    ->formatStateUsing(fn ($state, UserProduct $record): string => '#'.$state
+                                        .($record->purchaseCoupon?->draw ? ' · '.$record->purchaseCoupon->draw->prize_name : ''))
+                                    ->url(fn (UserProduct $record): ?string => ($draw = $record->purchaseCoupon?->draw)
+                                        && GoldenEggDrawResource::canAccess() && GoldenEggDrawResource::canView($draw)
+                                            ? GoldenEggDrawResource::getUrl('view', ['record' => $draw]) : null)
+                                    ->placeholder(__('golden_egg.no_coupon')),
+
+                                TextEntry::make('discount_percent')
+                                    ->label(__('golden_egg.discount_percent'))
+                                    ->state(fn (UserProduct $record) => data_get($record->meta, 'discount_percent')
+                                        ?? $record->purchaseCoupon?->discount_percent ?? 0)
+                                    ->suffix('%'),
+
+                                TextEntry::make('discount_amount')
+                                    ->label(__('golden_egg.discount_amount'))
+                                    ->state(fn (UserProduct $record) => data_get($record->meta, 'discount_amount',
+                                        $record->purchaseCoupon || data_get($record->meta, 'coupon_id') ? null : 0))
+                                    ->numeric(2)
+                                    ->prefix(config('app.currency').' ')
+                                    ->placeholder(__('golden_egg.not_recorded')),
+
                                 TextEntry::make('price_snapshot')
-                                    ->label(__('filament.purchase_price'))
+                                    ->label(__('golden_egg.paid_amount'))
+                                    ->numeric(2)
+                                    ->weight('bold')
                                     ->prefix(config('app.currency').' '),
 
                                 TextEntry::make('daily_income_snapshot')
