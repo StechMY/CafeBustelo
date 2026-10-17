@@ -258,6 +258,25 @@ class ProductDailyLimitTest extends TestCase
         $this->assertNull($product->fresh()->daily_limit);
     }
 
+    public function test_admin_product_coupon_setting_defaults_to_allowed_and_can_be_changed(): void
+    {
+        $this->actingAsAdmin();
+        Livewire::test(CreateProduct::class)->assertFormSet(['allow_coupons' => true])->fillForm([
+            'name' => 'Coupon Product', 'code' => 'COUPON',
+            'price' => 50, 'daily_income' => 1, 'duration_days' => 10,
+        ])->call('create')->assertHasNoFormErrors();
+        $product = Product::query()->where('code', 'COUPON')->firstOrFail();
+        $this->assertTrue($product->allow_coupons);
+
+        foreach ([false, true] as $allowed) {
+            Livewire::test(EditProduct::class, ['record' => $product->id])
+                ->assertFormSet(['allow_coupons' => ! $allowed])
+                ->fillForm(['allow_coupons' => $allowed])
+                ->call('save')->assertHasNoFormErrors();
+            $this->assertSame($allowed, $product->fresh()->allow_coupons);
+        }
+    }
+
     #[DataProvider('invalidLimits')]
     public function test_admin_rejects_invalid_limits(int|float $limit): void
     {

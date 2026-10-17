@@ -432,7 +432,11 @@ class GoldenEggActivityTest extends TestCase
         $user->wallets()->create(['type' => 'withdrawable', 'balance' => 46, 'locked_balance' => 0]);
         $product = $this->product();
         Sanctum::actingAs($user);
-        $this->getJson('/api/v1/products')->assertOk()->assertJsonCount(2, 'data.coupons');
+        $this->assertTrue($product->allow_coupons);
+        $this->assertTrue($product->fresh()->allow_coupons);
+        $this->getJson('/api/v1/products')->assertOk()->assertJsonCount(2, 'data.coupons')
+            ->assertJsonPath('data.items.0.allow_coupons', true)
+            ->assertJsonPath('data.products_by_type.'.Product::TYPE_NORMAL.'.0.allow_coupons', true);
         $this->postJson('/api/v1/products/'.$product->id.'/purchase', [
             'wallet_type' => 'withdrawable', 'coupon_id' => [$coupon->id, $secondCoupon->id],
         ])->assertUnprocessable();
@@ -442,6 +446,81 @@ class GoldenEggActivityTest extends TestCase
         $this->assertEquals(1, $user->wallets()->where('type', 'withdrawable')->value('balance'));
         $this->assertNull($secondCoupon->fresh()->used_at);
         $this->assertDatabaseHas('wallet_transactions', ['amount' => 45, 'type' => 'product_purchase']);
+    }
+
+    #[DataProvider('couponCheckoutRoutes')]
+    public function test_disabled_product_rejects_coupons_without_side_effects_but_allows_full_price_purchase(bool $api, string $wallet): void
+    {
+        $user = $this->user();
+        $coupon = $this->coupon($user, 10);
+        $user->wallets()->create(['type' => $wallet, 'balance' => 100, 'locked_balance' => 0]);
+        $product = $this->product();
+        $product->update(['allow_coupons' => false, 'stock_quantity' => 3]);
+        $url = ($api ? '/api/v1' : '').'/products/'.$product->id.'/purchase';
+        $data = ['wallet_type' => $wallet, 'coupon_id' => $coupon->id];
+
+        if ($api) {
+            Sanctum::actingAs($user);
+            $this->getJson('/api/v1/products')->assertOk()
+                ->assertJsonPath('data.items.0.allow_coupons', false)
+                ->assertJsonPath('data.products_by_type.'.Product::TYPE_NORMAL.'.0.allow_coupons', false);
+            $this->postJson($url, $data)->assertStatus(400)
+                ->assertJsonPath('message', __('golden_egg.product_coupons_disabled'));
+        } else {
+            $this->actingAs($user)->get('/products')->assertOk()
+                ->assertDontSee('<select name="coupon_id"', false)
+                ->assertSee(__('golden_egg.product_coupons_disabled'));
+            $this->from('/products')->post($url, $data)->assertRedirect('/products')
+                ->assertSessionHas('error', __('golden_egg.product_coupons_disabled'));
+        }
+
+        $this->assertEquals(100, $user->wallets()->where('type', $wallet)->value('balance'));
+        $this->assertNull($coupon->fresh()->used_at);
+        $this->assertNull($coupon->fresh()->user_product_id);
+        $this->assertDatabaseCount('user_products', 0);
+        $this->assertDatabaseCount('wallet_transactions', 0);
+        $this->assertSame(0, $product->fresh()->sold_quantity);
+        $this->assertSame(0, app(GoldenEggService::class)->remainingChances($user));
+
+        if ($api) {
+            $this->postJson($url, ['wallet_type' => $wallet])->assertCreated();
+        } else {
+            $this->post($url, ['wallet_type' => $wallet])->assertRedirect('/products')->assertSessionHas('success');
+        }
+        $this->assertDatabaseHas('user_products', ['product_id' => $product->id, 'price_snapshot' => 50]);
+        $this->assertEquals(50, $user->wallets()->where('type', $wallet)->value('balance'));
+        $this->assertNull($coupon->fresh()->used_at);
+        $this->assertSame(1, $product->fresh()->sold_quantity);
+        $this->assertSame(1, app(GoldenEggService::class)->remainingChances($user));
+
+        $product->update(['allow_coupons' => true]);
+        if ($api) {
+            $this->postJson($url, $data)->assertCreated();
+        } else {
+            $this->get('/products')->assertOk()->assertSee('<select name="coupon_id"', false);
+            $this->post($url, $data)->assertRedirect('/products')->assertSessionHas('success');
+        }
+        $this->assertEquals(5, $user->wallets()->where('type', $wallet)->value('balance'));
+        $this->assertNotNull($coupon->fresh()->used_at);
+    }
+
+    public static function couponCheckoutRoutes(): array
+    {
+        return [[false, 'recharge'], [false, 'withdrawable'], [true, 'recharge'], [true, 'withdrawable']];
+    }
+
+    public function test_coupon_eligibility_uses_the_locked_product_setting_even_for_agents(): void
+    {
+        $user = $this->user();
+        $coupon = $this->coupon($user, 100);
+        $user->update(['is_virtual' => true]);
+        $product = $this->product();
+        Product::query()->whereKey($product->id)->update(['allow_coupons' => false]);
+        $this->assertTrue($product->allow_coupons);
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage(__('golden_egg.product_coupons_disabled'));
+        app(ProductPurchaseService::class)->purchase($user, $product, couponId: $coupon->id);
     }
 
     public function test_coupon_rounding_and_full_discount_work_without_a_positive_wallet_debit(): void

@@ -140,6 +140,7 @@ class ApiFormatter
             'product_type_label' => self::productTypeLabel($product->product_type),
             'price' => $price,
             'formatted_price' => self::formattedMoney($price),
+            'allow_coupons' => (bool) $product->allow_coupons,
             'daily_income' => $incomePerClaim,
             'income_per_claim' => $incomePerClaim,
             'duration_days' => (int) $product->duration_days,

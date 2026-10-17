@@ -519,7 +519,7 @@
                                       data-withdrawable-balance="{{ number_format((float) $withdrawableBalance, 2) }}">
                                     @csrf
 
-                                    @if ($coupons->isNotEmpty())
+                                    @if ($product->allow_coupons && $coupons->isNotEmpty())
                                         <label class="mb-1 block text-[10px] font-bold text-[#003b7a]">
                                             {{ __('golden_egg.purchase_coupon') }}
                                             <select name="coupon_id" class="mt-1 mb-2 w-full rounded-lg border border-[#003b7a]/20 bg-white px-2 py-2 text-[10px] sm:text-xs">
@@ -532,6 +532,8 @@
                                         <p class="mb-2 text-[10px] font-bold text-[#003b7a]">
                                             {{ __('golden_egg.payable') }}: {{ $currency }} <span data-payable>{{ number_format((float) $product->price, 2) }}</span>
                                         </p>
+                                    @elseif (! $product->allow_coupons)
+                                        <p class="mb-2 text-[10px] font-bold text-[#003b7a]">{{ __('golden_egg.product_coupons_disabled') }}</p>
                                     @endif
 
                                     <select

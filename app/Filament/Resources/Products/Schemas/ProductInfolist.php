@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Products\Schemas;
 
 use App\Models\Product;
+use Filament\Infolists\Components\IconEntry;
 use Filament\Infolists\Components\ImageEntry;
 use Filament\Infolists\Components\KeyValueEntry;
 use Filament\Infolists\Components\TextEntry;
@@ -95,6 +96,10 @@ class ProductInfolist
                                 TextEntry::make('invite_bonus')
                                     ->label(__('filament.invite_bonus'))
                                     ->prefix(config('app.currency') . " "),
+
+                                IconEntry::make('allow_coupons')
+                                    ->label(__('golden_egg.allow_product_coupons'))
+                                    ->boolean(),
                             ]),
                     ]),
 

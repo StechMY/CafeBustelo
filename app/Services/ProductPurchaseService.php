@@ -85,6 +85,10 @@ class ProductPurchaseService
             $coupon = null;
             $price = (float) $lockedProduct->price;
             if ($couponId !== null) {
+                if (! $lockedProduct->allow_coupons) {
+                    throw new RuntimeException(__('golden_egg.product_coupons_disabled'));
+                }
+
                 $coupon = PurchaseCoupon::query()->availableTo($user)
                     ->whereKey($couponId)->lockForUpdate()->first();
                 if (! $coupon) {

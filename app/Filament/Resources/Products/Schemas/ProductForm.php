@@ -11,6 +11,7 @@ use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\TimePicker;
+use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
@@ -195,6 +196,12 @@ class ProductForm
                                     ->minValue(1)
                                     ->step(1)
                                     ->helperText(__('filament.max_purchase_per_user_help')),
+
+                                Toggle::make('allow_coupons')
+                                    ->label(__('golden_egg.allow_product_coupons'))
+                                    ->helperText(__('golden_egg.allow_product_coupons_help'))
+                                    ->default(true)
+                                    ->columnSpanFull(),
 
                                 TextInput::make('daily_income')
                                     ->label(__('filament.income_per_claim'))

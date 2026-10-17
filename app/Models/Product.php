@@ -25,6 +25,10 @@ class Product extends Model
 
     public const TYPE_HOURLY = 'hourly';
 
+    protected $attributes = [
+        'allow_coupons' => true,
+    ];
+
     protected $fillable = [
         'name',
         'code',
@@ -39,6 +43,7 @@ class Product extends Model
         'total_claims',
         'extra_points',
         'price',
+        'allow_coupons',
         'image_path',
         'daily_income',
         'duration_days',
@@ -55,6 +60,7 @@ class Product extends Model
     {
         return [
             'price' => 'decimal:2',
+            'allow_coupons' => 'boolean',
             'daily_income' => 'decimal:2',
             'upgrade_bonus' => 'decimal:2',
             'invite_bonus' => 'decimal:2',
