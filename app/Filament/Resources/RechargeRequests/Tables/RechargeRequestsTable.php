@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources\RechargeRequests\Tables;
 
+use App\Filament\Resources\RechargeRequests\Actions\ApproveManualRechargeAction;
+use App\Filament\Resources\RechargeRequests\Actions\ReverseManualRechargeAction;
 use App\Models\RechargeRequest;
 use App\Services\PaymentGateway\Qc168CallbackService;
 use App\Services\RechargeApprovalService;
@@ -603,73 +605,8 @@ class RechargeRequestsTable
                     | Manual Approve
                     |--------------------------------------------------------------------------
                     */
-                    Action::make('approve')
-                        ->label(__('filament.approve'))
-                        ->icon('heroicon-o-check-circle')
-                        ->color('success')
-                        ->visible(
-                            fn (RechargeRequest $record): bool =>
-                                $record->status === 'pending'
-                                && $record->isManualDeposit()
-                        )
-                        ->authorize(
-                            fn (RechargeRequest $record): bool =>
-                                Gate::allows(
-                                    'audit',
-                                    $record
-                                )
-                        )
-                        ->form([
-                            Textarea::make('admin_remark')
-                                ->label(
-                                    __('filament.admin_remark')
-                                )
-                                ->rows(3),
-                        ])
-                        ->requiresConfirmation()
-                        ->action(function (
-                            RechargeRequest $record,
-                            array $data
-                        ): void {
-                            abort_unless(
-                                Gate::allows(
-                                    'audit',
-                                    $record
-                                ),
-                                403
-                            );
-
-                            try {
-                                app(
-                                    RechargeApprovalService::class
-                                )->approve(
-                                    rechargeRequest: $record,
-                                    adminUser:
-                                        Filament::auth()->user(),
-                                    adminRemark:
-                                        $data['admin_remark'] ?? null,
-                                );
-
-                                Notification::make()
-                                    ->title(
-                                        __(
-                                            'filament.recharge_approved'
-                                        )
-                                    )
-                                    ->success()
-                                    ->send();
-                            } catch (Throwable $exception) {
-                                report($exception);
-
-                                Notification::make()
-                                    ->title(
-                                        __('filament.approve_failed')
-                                    )
-                                    ->body($exception->getMessage())
-                                    ->danger()
-                                    ->send();
-                            }
-                        }),
+                    ApproveManualRechargeAction::make(),
+                    ReverseManualRechargeAction::make(),
 
                     /*
                     |--------------------------------------------------------------------------

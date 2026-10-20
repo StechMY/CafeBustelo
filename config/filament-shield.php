@@ -261,6 +261,7 @@ return [
     'custom_permissions' => [
         'Manage:GoldenEgg' => 'Manage Golden Egg Activity',
         'Audit:Recharge' => 'Audit Recharge',
+        'ReverseApproval:Recharge' => 'Reverse Manual Recharge Approval',
         'Audit:Withdraw' => 'Audit Withdraw',
         'ApproveManual:Withdrawal' => 'Approve Withdrawal Manually',
         'ApproveScheduledGateway:Withdrawal' => 'Approve Scheduled Gateway Withdrawal',

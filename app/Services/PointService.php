@@ -188,6 +188,7 @@ class PointService
             // Ledger order distinguishes approvals made within the same second.
             $firstDeposit = $user->walletTransactions()
                 ->where('type', 'recharge_approved')
+                ->whereHasMorph('reference', [\App\Models\RechargeRequest::class], fn ($query) => $query->where('status', 'approved'))
                 ->orderBy('id')
                 ->first();
 

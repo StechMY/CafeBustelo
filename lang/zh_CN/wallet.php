@@ -48,6 +48,7 @@ return [
     'back_to_wallet' => '返回钱包',
 
     'types' => [
+        'recharge_reversed' => '充值误批冲正',
         'golden_egg' => '敲金蛋奖励',
         'recharge_approved' => '充值通过',
         'product_purchase' => '购买产品',

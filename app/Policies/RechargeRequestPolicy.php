@@ -17,6 +17,11 @@ class RechargeRequestPolicy
         return $user->can('Audit:Recharge');
     }
 
+    public function reverseApproval(AuthUser $user, RechargeRequest $rechargeRequest): bool
+    {
+        return $user->can('ReverseApproval:Recharge');
+    }
+
     public function syncGateway(AuthUser $user, RechargeRequest $rechargeRequest): bool
     {
         return $user->can('SyncGateway:Recharge');
