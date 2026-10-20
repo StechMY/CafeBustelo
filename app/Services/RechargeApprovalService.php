@@ -72,27 +72,6 @@ class RechargeApprovalService
         });
     }
 
-    public function approveManually(
-        RechargeRequest $request,
-        AdminUser $admin,
-        string $confirmedAmount,
-        bool $confirmedReceived,
-        ?string $remark = null,
-    ): RechargeRequest {
-        return DB::transaction(function () use ($request, $admin, $confirmedAmount, $confirmedReceived, $remark): RechargeRequest {
-            $request = RechargeRequest::query()->whereKey($request->id)->lockForUpdate()->firstOrFail();
-            Gate::forUser($admin)->authorize('audit', $request);
-            abort_unless($admin->canAccessUserRecord($request->user), 403);
-            $this->ensureManual($request);
-            $this->validateConfirmation($request, $confirmedAmount, $confirmedReceived);
-
-            return $this->approve($request, $admin, $remark, [
-                'confirmed_amount' => $confirmedAmount,
-                'confirmed_received' => true,
-            ]);
-        });
-    }
-
     public function reverseManualApproval(
         RechargeRequest $request,
         AdminUser $admin,

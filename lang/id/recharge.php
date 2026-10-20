@@ -55,7 +55,6 @@ return [
     'reverse_approval' => 'Batalkan persetujuan dan tolak',
     'reversal_description' => 'Kurangi deposit manual ini dari dompet isi ulang dan akumulasi deposit, lalu tolak permintaan. Transaksi asli tetap disimpan dengan transaksi pembalik. Dana terpakai atau hadiah terkait memerlukan rekonsiliasi manual.',
     'confirm_amount' => 'Masukkan kembali jumlah deposit',
-    'confirm_received' => 'Saya telah mencocokkan pemain, jumlah, dan bukti dengan dana yang benar-benar diterima bank serta memastikan tidak ada kredit ganda.',
     'reversal_reason' => 'Alasan pembatalan persetujuan',
     'confirm_reversal' => 'Saya memastikan persetujuan ini keliru dan menyetujui pengurangan deposit serta penolakan permintaan.',
     'reversal_success' => 'Persetujuan dibatalkan dan deposit ditolak',
@@ -68,5 +67,5 @@ return [
     'reversed_remark' => 'Persetujuan dibatalkan dan ditolak: :reason',
     'manual_only' => 'Tindakan ini hanya mendukung deposit manual tanpa catatan pembayaran gateway.',
     'amount_mismatch' => 'Jumlah yang dimasukkan harus sama persis dengan jumlah deposit saat ini.',
-    'no_receipt' => 'Tidak ada bukti pembayaran terlampir. Periksa dana yang diterima bank sebelum menyetujui.',
+    'no_receipt' => 'Tidak ada bukti pembayaran terlampir.',
 ];

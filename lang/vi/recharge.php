@@ -55,7 +55,6 @@ return [
     'reverse_approval' => 'Hủy duyệt nhầm và từ chối',
     'reversal_description' => 'Trừ khoản nạp thủ công này khỏi ví nạp và tổng nạp, rồi từ chối yêu cầu. Giữ giao dịch gốc và thêm giao dịch hoàn tác. Tiền đã dùng hoặc phần thưởng liên quan cần đối soát thủ công.',
     'confirm_amount' => 'Nhập lại số tiền nạp',
-    'confirm_received' => 'Tôi đã đối chiếu người chơi, số tiền, chứng từ với tiền thực nhận tại ngân hàng và xác nhận chưa ghi có trùng.',
     'reversal_reason' => 'Lý do hủy phê duyệt',
     'confirm_reversal' => 'Tôi xác nhận đã duyệt nhầm và đồng ý trừ lại khoản nạp, từ chối yêu cầu này.',
     'reversal_success' => 'Đã hủy phê duyệt và từ chối khoản nạp',
@@ -68,5 +67,5 @@ return [
     'reversed_remark' => 'Hủy duyệt nhầm và từ chối: :reason',
     'manual_only' => 'Thao tác chỉ áp dụng cho khoản nạp thủ công không có giao dịch cổng thanh toán.',
     'amount_mismatch' => 'Số tiền nhập phải khớp chính xác với số tiền nạp hiện tại.',
-    'no_receipt' => 'Không có chứng từ đính kèm. Kiểm tra tiền thực nhận tại ngân hàng trước khi duyệt.',
+    'no_receipt' => 'Không có chứng từ đính kèm.',
 ];

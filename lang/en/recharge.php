@@ -55,7 +55,6 @@ return [
     'reverse_approval' => 'Reverse approval and reject',
     'reversal_description' => 'Deduct this manual deposit from the recharge wallet and accumulated recharge, then reject the request. The original credit will be preserved with a reversal entry. Used funds or related rewards require manual reconciliation.',
     'confirm_amount' => 'Re-enter the deposit amount',
-    'confirm_received' => 'I checked the player, amount and receipt against the actual bank receipt of funds; this payment has not been credited before.',
     'reversal_reason' => 'Reason for reversing the approval',
     'confirm_reversal' => 'I confirm this was an incorrect approval and authorize deducting the amount and rejecting this deposit.',
     'reversal_success' => 'Approval reversed and deposit rejected',
@@ -68,5 +67,5 @@ return [
     'reversed_remark' => 'Approval reversed and rejected: :reason',
     'manual_only' => 'This action only supports manual deposits without gateway payment records.',
     'amount_mismatch' => 'The entered amount must exactly match the current deposit amount.',
-    'no_receipt' => 'No payment receipt is attached. Check the actual bank receipt of funds before approving.',
+    'no_receipt' => 'No payment receipt is attached.',
 ];

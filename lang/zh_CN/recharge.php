@@ -55,7 +55,6 @@ return [
     'reverse_approval' => '撤销误批并拒绝',
     'reversal_description' => '扣回本笔人工充值的钱包余额和累计充值，并将订单设为拒绝。保留原入账流水，新增冲正记录。款项已使用或涉及奖励时须人工核账。',
     'confirm_amount' => '重新输入本笔充值金额',
-    'confirm_received' => '我已核对玩家、金额及凭证，并确认银行实际到账且此笔款项没有重复入账。',
     'reversal_reason' => '撤销误批原因',
     'confirm_reversal' => '我确认这是误批，同意扣回本笔充值金额并拒绝该订单。',
     'reversal_success' => '已撤销误批并拒绝充值',
@@ -68,5 +67,5 @@ return [
     'reversed_remark' => '撤销误批并拒绝：:reason',
     'manual_only' => '此操作仅支持没有网关付款记录的人工充值。',
     'amount_mismatch' => '输入金额必须与该订单当前的充值金额完全一致。',
-    'no_receipt' => '未附付款凭证，请在批准前核对银行实际到账记录。',
+    'no_receipt' => '未附付款凭证。',
 ];

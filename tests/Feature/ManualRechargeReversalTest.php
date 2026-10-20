@@ -206,15 +206,15 @@ class ManualRechargeReversalTest extends TestCase
     }
 
     #[DataProvider('invalidConfirmations')]
-    public function test_approval_requires_matching_amount_and_actual_receipt_confirmation(string $amount, bool $confirmed): void
+    public function test_reversal_requires_matching_amount_and_confirmation(string $amount, bool $confirmed): void
     {
-        $request = $this->pending();
+        $request = $this->approved();
         try {
-            app(RechargeApprovalService::class)->approveManually($request, $this->admin, $amount, $confirmed);
-            $this->fail('Invalid confirmation must not credit the wallet.');
+            app(RechargeApprovalService::class)->reverseManualApproval($request, $this->admin, $amount, $confirmed, 'Mistake');
+            $this->fail('Invalid confirmation must not reverse the deposit.');
         } catch (ValidationException) {
-            $this->assertTrue($request->fresh()->isPending());
-            $this->assertDatabaseCount('wallet_transactions', 0);
+            $this->assertTrue($request->fresh()->isApproved());
+            $this->assertDatabaseCount('wallet_transactions', 1);
         }
     }
 
@@ -265,7 +265,7 @@ class ManualRechargeReversalTest extends TestCase
         $this->mock(InviteDayBonusService::class)->shouldReceive('handleApprovedRecharge')
             ->once()->andThrow(new RuntimeException('Bonus write failure'));
         try {
-            app(RechargeApprovalService::class)->approveManually($request, $this->admin, '450000', true);
+            app(RechargeApprovalService::class)->approve($request, $this->admin);
             $this->fail('Expected bonus failure.');
         } catch (RuntimeException $exception) {
             $this->assertSame('Bonus write failure', $exception->getMessage());
@@ -303,20 +303,16 @@ class ManualRechargeReversalTest extends TestCase
         $this->assertSame('450000.00', $this->wallet()->balance);
     }
 
-    public function test_table_and_detail_share_confirmation_and_reversal_actions(): void
+    public function test_original_detail_approval_without_extra_confirmation_can_still_be_reversed(): void
     {
         $request = $this->pending();
         $this->actingAs($this->admin, 'admin');
         Filament::setCurrentPanel(Filament::getPanel('admin'));
-        Livewire::test(ListRechargeRequests::class)
-            ->callAction(TestAction::make('approve')->table($request), data: [])
-            ->assertHasActionErrors(['confirmed_amount' => 'required', 'confirmed' => 'accepted']);
-        Livewire::test(ListRechargeRequests::class)
-            ->callAction(TestAction::make('approve')->table($request), data: ['confirmed_amount' => '1', 'confirmed' => true])
-            ->assertHasActionErrors(['confirmed_amount']);
         $this->assertTrue($request->fresh()->isPending());
         Livewire::test(ViewRechargeRequest::class, ['record' => $request->id])
-            ->callAction('approve', data: ['confirmed_amount' => '450000', 'confirmed' => true])
+            ->mountAction('approve')
+            ->assertDontSee(__('recharge.confirm_amount'))
+            ->callMountedAction()
             ->assertHasNoActionErrors();
         $this->assertTrue($request->fresh()->isApproved());
         Livewire::test(ListRechargeRequests::class)
@@ -335,7 +331,9 @@ class ManualRechargeReversalTest extends TestCase
         $this->actingAs($this->admin, 'admin');
         Filament::setCurrentPanel(Filament::getPanel('admin'));
         Livewire::test(ListRechargeRequests::class)
-            ->callAction(TestAction::make('approve')->table($request), data: ['confirmed_amount' => '450000', 'confirmed' => true])
+            ->mountAction(TestAction::make('approve')->table($request))
+            ->assertDontSee(__('recharge.confirm_amount'))
+            ->callMountedAction()
             ->assertHasNoActionErrors();
         $this->assertTrue($request->fresh()->isApproved());
         Livewire::test(ViewRechargeRequest::class, ['record' => $request->id])
@@ -374,8 +372,8 @@ class ManualRechargeReversalTest extends TestCase
 
     private function approved(): RechargeRequest
     {
-        return app(RechargeApprovalService::class)->approveManually(
-            $this->pending(), $this->admin, '450000', true, 'Initial approval',
+        return app(RechargeApprovalService::class)->approve(
+            $this->pending(), $this->admin, 'Initial approval',
         );
     }
 
