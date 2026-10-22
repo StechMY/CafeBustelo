@@ -21,6 +21,7 @@ use Filament\Facades\Filament;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Textarea;
 use Filament\Notifications\Notification;
+use Filament\Schemas\Components\Fieldset;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
@@ -39,6 +40,12 @@ class WithdrawRequestsTable
         $withdrawReleaseHours = app(Qc168Settings::class)->withdrawReleaseHours();
 
         return $table
+            ->header(fn ($livewire) => view('filament.tables.request-summary', [
+                'summary' => $livewire->getFilteredTableQuery()->toBase()->reorder()->select([])
+                    ->selectRaw('COUNT(*) as records, COALESCE(SUM(amount), 0) as amount, COALESCE(SUM(fee_amount), 0) as fee, COALESCE(SUM(net_amount), 0) as net')
+                    ->first(),
+                'withdrawal' => true,
+            ]))
             ->extraAttributes(['class' => 'withdraw-requests-table'])
             ->columns([
                 /*
@@ -317,6 +324,28 @@ class WithdrawRequestsTable
             ->defaultSort('created_at', 'desc')
 
             ->filters([
+                Filter::make('approved_at')
+                    ->label(__('request-summary.approval_date'))
+                    ->form([
+                        Fieldset::make(__('request-summary.approval_date'))
+                            ->columns(1)
+                            ->schema([
+                                DatePicker::make('from')->label(__('filament.start_date')),
+                                DatePicker::make('until')->label(__('filament.end_date')),
+                            ]),
+                    ])
+                    ->query(fn (Builder $query, array $data): Builder => $query
+                        ->when(filled($data['from'] ?? null) || filled($data['until'] ?? null),
+                            fn (Builder $query) => $query->where('status', 'approved'))
+                        ->when($data['from'] ?? null,
+                            fn (Builder $query, $date) => $query->where('reviewed_at', '>=', Carbon::parse($date)->startOfDay()))
+                        ->when($data['until'] ?? null,
+                            fn (Builder $query, $date) => $query->where('reviewed_at', '<', Carbon::parse($date)->addDay()->startOfDay())))
+                    ->indicateUsing(fn (array $data): array => array_filter([
+                        filled($data['from'] ?? null) ? __('request-summary.approval_date').' · '.__('filament.start_date').': '.$data['from'] : null,
+                        filled($data['until'] ?? null) ? __('request-summary.approval_date').' · '.__('filament.end_date').': '.$data['until'] : null,
+                    ])),
+
                 SelectFilter::make('status')
                     ->options([
                         'pending' => __('filament.pending'),
