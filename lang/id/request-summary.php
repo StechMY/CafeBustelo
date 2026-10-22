@@ -1,6 +1,9 @@
 <?php
 
 return [
+    'dashboard_paid' => 'Total penarikan dasbor (tanpa pengguna virtual)',
+    'paid_date' => 'Tanggal statistik penarikan (hanya yang sudah dibayar)',
+    'paid_date_help' => 'Menggunakan waktu penyelesaian gateway, atau waktu peninjauan jika kosong, dalam zona waktu sistem. Ini adalah status saat ini, bukan salinan historis. Gabungkan dengan filter total penarikan untuk mencocokkan dasbor.',
     'approval_date' => 'Tanggal persetujuan (hanya yang disetujui)',
     'heading' => 'Total hasil filter',
     'scope' => 'Semua catatan yang sesuai di seluruh halaman dalam izin akses Anda, mengikuti filter dan pencarian aktif.',

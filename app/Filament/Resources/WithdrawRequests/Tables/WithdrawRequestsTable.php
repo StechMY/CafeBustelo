@@ -324,6 +324,40 @@ class WithdrawRequestsTable
             ->defaultSort('created_at', 'desc')
 
             ->filters([
+                Filter::make('dashboard_paid')
+                    ->label(__('request-summary.dashboard_paid'))
+                    ->query(fn (Builder $query): Builder => $query->paid()
+                        ->whereHas('user', fn (Builder $users): Builder => $users->where('is_virtual', false))),
+
+                Filter::make('paid_at')
+                    ->label(__('request-summary.paid_date'))
+                    ->form([
+                        Fieldset::make(__('request-summary.paid_date'))
+                            ->columns(1)
+                            ->schema([
+                                DatePicker::make('from')->label(__('filament.start_date'))
+                                    ->helperText(__('request-summary.paid_date_help')),
+                                DatePicker::make('until')->label(__('filament.end_date')),
+                            ]),
+                    ])
+                    ->query(fn (Builder $query, array $data): Builder => $query
+                        ->when(filled($data['from'] ?? null) || filled($data['until'] ?? null),
+                            fn (Builder $query): Builder => $query->paid())
+                        ->when($data['from'] ?? null,
+                            fn (Builder $query, $date): Builder => $query->whereRaw(
+                                'COALESCE(gateway_completed_at, reviewed_at) >= ?',
+                                [Carbon::parse($date)->startOfDay()],
+                            ))
+                        ->when($data['until'] ?? null,
+                            fn (Builder $query, $date): Builder => $query->whereRaw(
+                                'COALESCE(gateway_completed_at, reviewed_at) < ?',
+                                [Carbon::parse($date)->addDay()->startOfDay()],
+                            )))
+                    ->indicateUsing(fn (array $data): array => array_filter([
+                        filled($data['from'] ?? null) ? __('request-summary.paid_date').' · '.__('filament.start_date').': '.$data['from'] : null,
+                        filled($data['until'] ?? null) ? __('request-summary.paid_date').' · '.__('filament.end_date').': '.$data['until'] : null,
+                    ])),
+
                 Filter::make('approved_at')
                     ->label(__('request-summary.approval_date'))
                     ->form([

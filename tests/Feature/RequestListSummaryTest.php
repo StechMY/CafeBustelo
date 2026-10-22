@@ -137,6 +137,57 @@ class RequestListSummaryTest extends TestCase
         $this->assertSummary($component, 2, 200.02, $model);
     }
 
+    public function test_paid_statistics_dates_use_completion_then_review_time_and_include_legacy_paid_records(): void
+    {
+        $gateway = $this->record(WithdrawRequest::class, [
+            'reviewed_at' => '2026-10-20 12:00:00', 'gateway_provider' => 'qc168',
+            'gateway_completed_at' => '2026-10-22 00:00:00',
+        ]);
+        $manual = $this->record(WithdrawRequest::class, ['reviewed_at' => '2026-10-22 23:59:59']);
+        $legacy = $this->record(WithdrawRequest::class, ['payout_status' => null, 'gateway_provider' => null]);
+        $yesterday = $this->record(WithdrawRequest::class, ['gateway_completed_at' => '2026-10-21 23:59:59']);
+        $tomorrow = $this->record(WithdrawRequest::class, ['gateway_completed_at' => '2026-10-23 00:00:00']);
+        $processing = $this->record(WithdrawRequest::class, ['payout_status' => 'processing']);
+        $unknownDate = $this->record(WithdrawRequest::class, ['reviewed_at' => null]);
+        $component = Livewire::test(ListWithdrawRequests::class)
+            ->filterTable('paid_at', ['from' => '2026-10-22', 'until' => '2026-10-22'])
+            ->assertCanSeeTableRecords([$gateway, $manual, $legacy])
+            ->assertCanNotSeeTableRecords([$yesterday, $tomorrow, $processing, $unknownDate])
+            ->assertCountTableRecords(3);
+        $this->assertSummary($component, 3, 300.03, WithdrawRequest::class);
+        $component->filterTable('paid_at', ['from' => null, 'until' => '2026-10-22'])
+            ->assertCountTableRecords(4);
+        $component->filterTable('paid_at', ['from' => '2026-10-22', 'until' => null])
+            ->assertCountTableRecords(4);
+        $component->removeTableFilter('paid_at')->assertCountTableRecords(7);
+    }
+
+    public function test_dashboard_total_filter_excludes_virtual_and_unpaid_records_without_expanding_support_scope(): void
+    {
+        $root = $this->user('root');
+        $this->player->update(['referrer_id' => $root->id]);
+        $this->admin->update(['managed_user_id' => $root->id]);
+        $this->admin->assignRole(Role::findOrCreate('Support', 'admin'));
+        $virtual = $this->user('virtual-player');
+        $virtual->update(['referrer_id' => $root->id, 'is_virtual' => true]);
+        $outside = $this->user('outside');
+        $paid = $this->record(WithdrawRequest::class);
+        $legacy = $this->record(WithdrawRequest::class, ['payout_status' => null]);
+        $this->record(WithdrawRequest::class, ['user_id' => $virtual->id]);
+        $this->record(WithdrawRequest::class, ['user_id' => $outside->id]);
+        $this->record(WithdrawRequest::class, ['payout_status' => 'failed']);
+        $this->record(WithdrawRequest::class, ['payout_status' => 'cancelled', 'status' => 'rejected']);
+        $component = Livewire::test(ListWithdrawRequests::class)
+            ->filterTable('dashboard_paid')
+            ->assertCountTableRecords(2)
+            ->assertCanSeeTableRecords([$paid, $legacy]);
+        $this->assertSummary($component, 2, 200.02, WithdrawRequest::class);
+        $component->filterTable('paid_at', ['from' => '2026-10-22', 'until' => '2026-10-22'])
+            ->assertCountTableRecords(2);
+        $this->assertSummary($component, 2, 200.02, WithdrawRequest::class);
+        $component->removeTableFilter('dashboard_paid')->assertCountTableRecords(3);
+    }
+
     private function assertSummary($component, int $count, float $amount, string $model): void
     {
         $summary = $component->instance()->getTable()->getHeader()->getData()['summary'];
