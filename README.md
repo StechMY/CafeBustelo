@@ -7,6 +7,46 @@
 <a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
 </p>
 
+## Database backups
+
+Deploy `composer.json`, `composer.lock`, and the configuration files, then run
+these commands in the production project directory:
+
+```bash
+composer install --no-dev --optimize-autoloader
+php artisan config:cache
+php artisan backup:run --only-db
+```
+
+The server needs PHP's ZIP extension and the database dump executable on its
+`PATH`: `mysqldump` for MySQL, `mariadb-dump` for MariaDB, `pg_dump` for
+PostgreSQL, or `sqlite3` for SQLite. The PHP user must be able to write to
+`storage`. Spatie Laravel Backup is pinned to 9.3.6 to retain PHP 8.2 support;
+newer 9.x releases require PHP 8.3. Use a Linux
+production server, as Windows is not officially supported by the package.
+
+Backups use the existing `DB_CONNECTION` and database credentials, and upload
+to DigitalOcean Spaces using `DO_SPACES_KEY`, `DO_SPACES_SECRET`,
+`DO_SPACES_REGION`, `DO_SPACES_BUCKET`, and `DO_SPACES_ENDPOINT` (the origin
+endpoint, not the CDN URL). The Spaces key needs write and list access.
+Each run uploads a timestamped ZIP containing the SQL dump to
+`<DO_SPACES_ROOT>/backups/database/<timestamp>.zip` in the configured bucket;
+`DO_SPACES_ROOT` defaults to `cafebustelo`. The separate `backups` disk writes
+private objects, independently of the public image disk. Local files under
+`storage/app/backup-temp` are temporary and removed after a successful backup.
+Only the database is included; uploads and application files are not backed up.
+
+Check for `Backup completed!` and a zero exit status, then list the remote backups:
+
+```bash
+php artisan backup:list
+```
+
+Download the ZIP through the Spaces console and verify restoration into a
+separate test database before relying on a backup. Keep this prefix private in
+any bucket access policies. No schedule, automatic cleanup, or email notifications
+are enabled; run the command whenever a backup is needed and manage storage usage.
+
 ## About Laravel
 
 Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
