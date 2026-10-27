@@ -68,22 +68,26 @@ class CommissionService
         $earnerHighestActiveProductPrice = UserProduct::query()
             ->where('user_id', $earner->id)
             ->where('status', 'active')
-            ->max('price_snapshot');
+            ->get(['price_snapshot', 'meta'])
+            ->max(fn (UserProduct $product): float => (float) ($product->meta['original_price'] ?? $product->price_snapshot));
 
         if ($earnerHighestActiveProductPrice === null) {
             return;
         }
 
+        $sourceProductPrice = (float) ($userProduct->meta['original_price'] ?? $userProduct->price_snapshot);
+
         /**
          * Rule:
          * Earner's highest active product must be >= source product price.
+         * Use purchase-time original prices so coupons do not change product tiers.
          *
          * Example:
          * - Earner P3, downline claims P5 => no commission.
          * - Earner P5, downline claims P3 => can receive.
          * - Earner P3, downline claims P3 => can receive.
          */
-        if ((float) $earnerHighestActiveProductPrice < (float) $userProduct->price_snapshot) {
+        if ((float) $earnerHighestActiveProductPrice < $sourceProductPrice) {
             return;
         }
 
@@ -124,6 +128,7 @@ class CommissionService
                 'source' => 'daily_income_claim',
                 'commission_level_name' => $commissionLevelName,
                 'source_product_price_snapshot' => (float) $userProduct->price_snapshot,
+                'source_product_qualification_price' => $sourceProductPrice,
                 'earner_highest_active_product_price' => (float) $earnerHighestActiveProductPrice,
             ],
         ]);
