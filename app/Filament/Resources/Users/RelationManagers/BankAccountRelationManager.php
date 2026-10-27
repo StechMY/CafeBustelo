@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Users\RelationManagers;
 
+use App\Models\AdminUser;
 use App\Support\Qc168VietnamBank;
 use Filament\Actions\CreateAction;
 use Filament\Actions\EditAction;
@@ -138,7 +139,101 @@ class BankAccountRelationManager extends RelationManager
                 TextColumn::make('bound_at')
                     ->label(__('bank_account.bound_at'))
                     ->dateTime('d M Y, h:i A'),
+TextColumn::make('binding_admin')
 
+    ->label('绑定／审核管理员')
+
+    ->state(function (Model $record): string {
+
+        $meta = $record->meta ?? [];
+
+        if (($meta['source'] ?? null) === 'admin_bind') {
+
+            $action = '直接绑定';
+
+            $id = $meta['admin_user_id'] ?? null;
+
+        } elseif (($meta['source'] ?? null) === 'bank_account_review') {
+
+            $action = '审核通过';
+
+            $id = $meta['approved_by'] ?? null;
+
+        } else {
+
+            return '未记录';
+
+        }
+
+        if (blank($id)) {
+
+            return "{$action}：未记录管理员";
+
+        }
+
+        $admin = AdminUser::withTrashed()
+
+            ->find($id, ['id', 'username', 'deleted_at']);
+
+        if (! $admin) {
+
+            return "{$action}：管理员不存在（ID: {$id}）";
+
+        }
+
+        $deleted = $admin->trashed() ? '，已删除' : '';
+
+        return "{$action}：{$admin->username}（ID: {$id}{$deleted}）";
+
+    })
+
+    ->wrap(),
+
+TextColumn::make('last_changed_admin')
+
+    ->label('最近后台修改人')
+
+    ->state(function (Model $record): string {
+
+        $id = data_get(
+
+            $record->meta,
+
+            'last_changed_by_admin_user_id'
+
+        );
+
+        if (blank($id)) {
+
+            return '未记录';
+
+        }
+
+        $admin = AdminUser::withTrashed()
+
+            ->find($id, ['id', 'username', 'deleted_at']);
+
+        if (! $admin) {
+
+            return "管理员不存在（ID: {$id}）";
+
+        }
+
+        $deleted = $admin->trashed() ? '，已删除' : '';
+
+        return "{$admin->username}（ID: {$id}{$deleted}）";
+
+    })
+
+    ->wrap(),
+
+TextColumn::make('meta.last_changed_at')
+
+    ->label('最近后台修改时间')
+
+    ->dateTime('d M Y, h:i A')
+
+    ->placeholder('未记录'),
                 TextColumn::make('updated_at')
                     ->label(__('filament.updated_at'))
                     ->dateTime('d M Y, h:i A')
