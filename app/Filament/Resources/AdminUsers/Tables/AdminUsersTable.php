@@ -2,7 +2,10 @@
 
 namespace App\Filament\Resources\AdminUsers\Tables;
 
+use App\Filament\Resources\AdminUsers\AdminUserResource;
+use App\Filament\Resources\Users\UserResource;
 use App\Models\AdminUser;
+use App\Models\RechargeRequest;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -199,6 +202,19 @@ class AdminUsersTable
                             ->success()
                             ->send();
                     }),
+                Action::make('viewTeam')
+                    ->label(__('filament.team'))
+                    ->icon('heroicon-o-users')
+                    ->visible(fn (AdminUser $record): bool => self::canViewTeam($record))
+                    ->modalHeading(fn (AdminUser $record): string => __('filament.team_of') . $record->username)
+                    ->modalWidth('7xl')
+                    ->modalSubmitAction(false)
+                    ->modalCancelActionLabel(__('filament.close'))
+                    ->modalContent(function (AdminUser $record) {
+                        abort_unless(self::canViewTeam($record), 403);
+
+                        return self::teamView($record->managedUser);
+                    }),
                 ViewAction::make(),
 
                 EditAction::make()
@@ -229,6 +245,57 @@ class AdminUsersTable
                         ->visible(fn(): bool => auth('admin')->user()?->hasRole('super_admin') ?? false),
                 ]),
             ]);
+    }
+
+    private static function canViewTeam(AdminUser $record): bool
+    {
+        $admin = auth('admin')->user();
+
+        return $admin instanceof AdminUser
+            && $record->managedUser !== null
+            && AdminUserResource::canView($record)
+            && UserResource::canViewAny()
+            && UserResource::canView($record->managedUser)
+            && (! $admin->hasDownlineRestriction()
+                || (int) $admin->managed_user_id === (int) $record->managed_user_id);
+    }
+
+    private static function teamView(User $root): \Illuminate\Contracts\View\View
+    {
+        $firstRecharge = RechargeRequest::query()
+            ->whereColumn('user_id', 'users.id')
+            ->where('status', 'approved')
+            ->orderByRaw('reviewed_at IS NULL')
+            ->orderBy('reviewed_at')
+            ->orderBy('id')
+            ->limit(1);
+
+        $query = User::query()
+            ->select(['id', 'referrer_id', 'username', 'name', 'status', 'is_virtual'])
+            ->addSelect([
+                'first_recharge_amount' => (clone $firstRecharge)->select('amount'),
+                'first_recharge_at' => (clone $firstRecharge)->select('reviewed_at'),
+            ]);
+        $root = (clone $query)->findOrFail($root->id);
+        $members = collect();
+        $visited = [$root->id];
+        $parents = [$root->id];
+
+        // Query one level at a time, retaining unpaid parents and guarding cycles.
+        while ($parents !== []) {
+            $children = (clone $query)->whereIn('referrer_id', $parents)
+                ->whereNotIn('id', $visited)->orderBy('username')->orderBy('id')->get();
+            $parents = $children->modelKeys();
+            array_push($visited, ...$parents);
+            $members = $members->concat($children);
+        }
+
+        return view('filament.resources.admin-users.team-tree', [
+            'root' => $root,
+            'childrenByParent' => $members->groupBy('referrer_id'),
+            'memberCount' => $members->count(),
+            'rechargedCount' => $members->whereNotNull('first_recharge_amount')->count(),
+        ]);
     }
 
     private static function generateUniqueReferralCode(): string
