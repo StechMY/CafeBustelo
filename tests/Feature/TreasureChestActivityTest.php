@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Filament\Pages\Dashboard;
 use App\Filament\Resources\TreasureChestClaims\Pages\ManageTreasureChestClaims;
+use App\Filament\Resources\Users\Pages\ListUsers;
 use App\Models\AdminUser;
 use App\Models\Product;
 use App\Models\PurchaseCoupon;
@@ -16,6 +17,7 @@ use App\Services\GoldenEggService;
 use App\Services\ProductPurchaseService;
 use App\Services\TreasureChestService;
 use Filament\Facades\Filament;
+use Filament\Actions\Testing\TestAction;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Livewire\Livewire;
@@ -23,6 +25,7 @@ use PDO;
 use PHPUnit\Framework\Attributes\DataProvider;
 use RuntimeException;
 use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class TreasureChestActivityTest extends TestCase
@@ -333,6 +336,97 @@ class TreasureChestActivityTest extends TestCase
             'virtual account after end' => [true, true, null, '2026-11-01 12:00:00', 'ended'],
             'virtual account while closed' => [false, true, null, null, 'closed'],
         ];
+    }
+
+    public function test_admin_can_add_virtual_keys_with_audit_details_without_resetting_claims(): void
+    {
+        $admin = $this->keyAdmin();
+        $virtual = $this->user(['is_virtual' => true]);
+        $this->keys($virtual, 1);
+        $this->open();
+        app(TreasureChestService::class)->claim($virtual, 1);
+        Setting::setValue(TreasureChestService::SETTING_ENABLED, false);
+        Livewire::test(ListUsers::class)
+            ->assertActionVisible(TestAction::make('addTreasureKeys')->table($virtual))
+            ->mountAction(TestAction::make('addTreasureKeys')->table($virtual))
+            ->assertMountedActionModalSee('Current total: 1 keys.')
+            ->setActionData(['keys' => 39, 'remarks' => 'Demo account setup'])
+            ->callMountedAction()->assertHasNoActionErrors();
+        $this->assertDatabaseHas('treasure_key_entries', [
+            'user_id' => $virtual->id, 'keys' => 39, 'admin_user_id' => $admin->id,
+            'remarks' => 'Demo account setup', 'user_product_id' => null,
+        ]);
+        $this->assertSame(40, app(TreasureChestService::class)->totalKeys($virtual));
+        $this->assertFalse(app(TreasureChestService::class)->activity($virtual)['enabled']);
+        $this->open();
+        $activity = app(TreasureChestService::class)->activity($virtual);
+        $this->assertTrue($activity['chests'][0]['claimed']);
+        $this->assertTrue($activity['chests'][8]['claimable']);
+        app(TreasureChestService::class)->claim($virtual, 9);
+        app(TreasureChestService::class)->claim($virtual, 9);
+        $this->assertSame(60, app(TreasureChestService::class)->totalKeys($virtual));
+        $this->assertDatabaseCount('treasure_chest_claims', 2);
+        $this->assertDatabaseCount('purchase_coupons', 1);
+    }
+
+    public function test_manual_keys_reject_invalid_quantities_and_require_remarks(): void
+    {
+        $this->keyAdmin();
+        $virtual = $this->user(['is_virtual' => true]);
+        foreach ([0, -1, 1.5, 'abc', 4294967296] as $keys) {
+            Livewire::test(ListUsers::class)
+                ->callAction(TestAction::make('addTreasureKeys')->table($virtual), ['keys' => $keys, 'remarks' => 'Demo'])
+                ->assertHasActionErrors(['keys']);
+        }
+        Livewire::test(ListUsers::class)
+            ->callAction(TestAction::make('addTreasureKeys')->table($virtual), ['keys' => 40, 'remarks' => ''])
+            ->assertHasActionErrors(['remarks']);
+        $this->assertDatabaseCount('treasure_key_entries', 0);
+    }
+
+    public function test_manual_keys_reject_regular_users_and_missing_permissions(): void
+    {
+        $admin = $this->keyAdmin();
+        $real = $this->user();
+        $virtual = $this->user(['is_virtual' => true]);
+        Livewire::test(ListUsers::class)
+            ->assertActionHidden(TestAction::make('addTreasureKeys')->table($real))
+            ->mountAction(TestAction::make('addTreasureKeys')->table($real))
+            ->assertActionNotMounted('addTreasureKeys');
+        foreach (['Manage:TreasureChest', 'Update:User'] as $permission) {
+            $admin->revokePermissionTo($permission);
+            Livewire::test(ListUsers::class)
+                ->assertActionHidden(TestAction::make('addTreasureKeys')->table($virtual))
+                ->mountAction(TestAction::make('addTreasureKeys')->table($virtual))
+                ->assertActionNotMounted('addTreasureKeys');
+            $admin->givePermissionTo($permission);
+        }
+        $this->assertDatabaseCount('treasure_key_entries', 0);
+    }
+
+    public function test_manual_keys_respect_support_user_scope(): void
+    {
+        $admin = $this->keyAdmin();
+        $root = $this->user();
+        $own = $this->user(['is_virtual' => true, 'referrer_id' => $root->id]);
+        $other = $this->user(['is_virtual' => true]);
+        $admin->update(['managed_user_id' => $root->id]);
+        $admin->assignRole(Role::findOrCreate('Support', 'admin'));
+        Livewire::test(ListUsers::class)->assertCanSeeTableRecords([$own])->assertCanNotSeeTableRecords([$other])
+            ->mountAction(TestAction::make('addTreasureKeys')->table($other))->assertActionNotMounted('addTreasureKeys');
+        $this->assertDatabaseCount('treasure_key_entries', 0);
+    }
+
+    private function keyAdmin(): AdminUser
+    {
+        $admin = AdminUser::query()->create(['username' => 'key-admin', 'password' => 'password', 'status' => 'active']);
+        foreach (['ViewAny:User', 'Update:User', 'Manage:TreasureChest'] as $permission) {
+            $admin->givePermissionTo(Permission::findOrCreate($permission, 'admin'));
+        }
+        $this->actingAs($admin, 'admin');
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+
+        return $admin;
     }
 
     private function open(): void

@@ -1,6 +1,10 @@
 <?php
 
 return [
+    'add_keys' => '加宝箱钥匙',
+    'keys_to_add' => '本次增加钥匙数',
+    'manual_keys_help' => '当前累计 :count 把钥匙。本次增加会计入宝箱解锁门槛，不重置已领取的宝箱。领取奖励仍须在活动开放期间进行。',
+    'keys_added' => '宝箱钥匙已增加',
     'admin_title' => '宝箱活动',
     'scheduled' => '活动尚未开始，请查看下方开始时间。',
     'ended' => '活动已结束。',

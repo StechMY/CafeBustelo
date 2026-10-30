@@ -1,6 +1,10 @@
 <?php
 
 return [
+    'add_keys' => 'Tambah kunci peti',
+    'keys_to_add' => 'Jumlah kunci yang ditambahkan',
+    'manual_keys_help' => 'Total saat ini: :count kunci. Kunci tambahan dihitung untuk membuka peti tanpa mengatur ulang peti yang sudah diklaim. Hadiah hanya dapat diklaim saat acara dibuka.',
+    'keys_added' => 'Kunci peti ditambahkan',
     'admin_title' => 'Acara peti harta',
     'scheduled' => 'Acara belum dimulai. Lihat waktu mulai di bawah.',
     'ended' => 'Acara ini telah berakhir.',

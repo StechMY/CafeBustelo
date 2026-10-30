@@ -1,6 +1,10 @@
 <?php
 
 return [
+    'add_keys' => 'Thêm chìa khóa rương',
+    'keys_to_add' => 'Số chìa khóa cần thêm',
+    'manual_keys_help' => 'Hiện có :count chìa khóa. Chìa khóa thêm được tính vào mốc mở rương, không đặt lại rương đã nhận. Chỉ có thể nhận thưởng khi sự kiện đang mở.',
+    'keys_added' => 'Đã thêm chìa khóa rương',
     'admin_title' => 'Sự kiện rương báu',
     'scheduled' => 'Sự kiện chưa bắt đầu. Vui lòng xem thời gian bắt đầu bên dưới.',
     'ended' => 'Sự kiện đã kết thúc.',

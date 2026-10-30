@@ -2,10 +2,15 @@
 
 namespace App\Filament\Resources\Users\Tables;
 
+use App\Filament\Resources\TreasureChestClaims\TreasureChestClaimResource;
+use App\Filament\Resources\Users\UserResource;
+use App\Models\TreasureKeyEntry;
 use App\Models\User;
 use App\Models\Wallet;
 use App\Services\AdminTopUpService;
 use App\Services\AdminWalletDecreaseService;
+use App\Services\TreasureChestService;
+use App\Support\FilamentSupportScope;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
@@ -435,6 +440,40 @@ class UsersTable
                                 ->danger()
                                 ->send();
                         }
+                    }),
+
+                Action::make('addTreasureKeys')
+                    ->label(__('treasure_chest.add_keys'))
+                    ->icon('heroicon-o-key')
+                    ->color('warning')
+                    ->visible(fn(?User $record): bool => $record?->is_virtual === true)
+                    ->authorize(fn(?User $record): bool => $record?->is_virtual === true
+                        && TreasureChestClaimResource::canViewAny()
+                        && UserResource::canEdit($record)
+                        && FilamentSupportScope::canAccessUser($record))
+                    ->modalHeading(fn(User $record): string => __('treasure_chest.add_keys').' · '.$record->username)
+                    ->modalDescription(fn(User $record): string => __('treasure_chest.manual_keys_help', [
+                        'count' => app(TreasureChestService::class)->totalKeys($record),
+                    ]))
+                    ->schema([
+                        TextInput::make('keys')->label(__('treasure_chest.keys_to_add'))
+                            ->required()->integer()->minValue(1)->maxValue(4294967295)->step(1),
+                        TextInput::make('remarks')->label(__('filament.remarks'))
+                            ->required()->maxLength(255),
+                    ])
+                    ->action(function (User $record, array $data): void {
+                        DB::transaction(function () use ($record, $data): void {
+                            $user = User::query()->whereKey($record->id)->lockForUpdate()->firstOrFail();
+                            abort_unless($user->is_virtual && TreasureChestClaimResource::canViewAny()
+                                && UserResource::canEdit($user) && FilamentSupportScope::canAccessUser($user), 403);
+                            TreasureKeyEntry::query()->create([
+                                'user_id' => $user->id, 'keys' => $data['keys'],
+                                'admin_user_id' => Filament::auth()->id(), 'remarks' => $data['remarks'],
+                            ]);
+                        }, 3);
+                        Notification::make()->title(__('treasure_chest.keys_added'))
+                            ->body(__('treasure_chest.key_count', ['count' => app(TreasureChestService::class)->totalKeys($record)]))
+                            ->success()->send();
                     }),
 
                 Action::make('viewTeam')

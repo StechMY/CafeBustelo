@@ -1,6 +1,10 @@
 <?php
 
 return [
+    'add_keys' => 'Add chest keys',
+    'keys_to_add' => 'Keys to add',
+    'manual_keys_help' => 'Current total: :count keys. Added keys count toward chest thresholds and do not reset claimed chests. Rewards can only be claimed while the activity is open.',
+    'keys_added' => 'Chest keys added',
     'admin_title' => 'Treasure chest activity',
     'scheduled' => 'The activity has not started yet. See the start time below.',
     'ended' => 'This activity has ended.',
