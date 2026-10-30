@@ -1,6 +1,20 @@
 <?php
 
 return [
+    'configuration' => 'Pengaturan peti harta',
+    'configuration_help' => 'Perubahan berlaku untuk pembelian dan klaim berikutnya. Pesanan lama tidak dihitung ulang dan peti yang sudah diklaim tidak direset. Hadiah lama tetap sama. Isi 0 untuk meniadakan jenis hadiah; setiap peti harus memiliki minimal satu hadiah.',
+    'display_settings' => 'Tampilan teks hadiah',
+    'show_rewards' => 'Tampilkan hadiah pada kartu peti',
+    'show_rewards_help' => 'Matikan untuk menyembunyikan uang, kunci bonus dan diskon pada kartu. Ambang kunci tetap terlihat; hadiah aktual muncul setelah klaim berhasil.',
+    'purchase_rules' => 'Kunci dari pembelian produk',
+    'purchase_rules_help' => 'Setiap pembelian yang sesuai oleh teman yang diundang langsung memberikan kunci kepada pengundang. Tambah atau hapus aturan; menghapus semua aturan menghentikan hadiah kunci pembelian.',
+    'add_product_rule' => 'Tambah aturan produk',
+    'match_weekend_price' => 'Cocokkan juga produk akhir pekan dengan harga asli ini',
+    'match_weekend_price_help' => 'Gunakan harga asli pesanan untuk produk akhir pekan dengan kode berbeda. Kecocokan kode diutamakan. Harga ini tidak mengubah harga jual produk.',
+    'reward_keys' => 'Kunci bonus',
+    'duplicate_product' => 'Hanya satu aturan yang diizinkan per produk.',
+    'duplicate_price' => 'Hanya satu aturan harga akhir pekan yang diizinkan per harga asli.',
+    'reward_required' => 'Setiap peti harus memiliki minimal satu hadiah lebih besar dari 0.',
     'add_keys' => 'Tambah kunci peti',
     'keys_to_add' => 'Jumlah kunci yang ditambahkan',
     'manual_keys_help' => 'Total saat ini: :count kunci. Kunci tambahan dihitung untuk membuka peti tanpa mengatur ulang peti yang sudah diklaim. Hadiah hanya dapat diklaim saat acara dibuka.',

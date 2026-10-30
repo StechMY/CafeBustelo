@@ -10,6 +10,7 @@ use App\Models\TreasureKeyEntry;
 use App\Models\User;
 use App\Models\UserProduct;
 use App\Models\Wallet;
+use App\Services\Settings\TreasureChestSettings;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -56,12 +57,20 @@ class TreasureChestService
         }
         $code = strtoupper(str_replace('-', '', $purchase->meta['product_code_snapshot'] ?? ''));
         $keys = 0;
-        foreach (config('treasure_chest.products') as $product) {
+        $products = app(TreasureChestSettings::class)->rules()['products'];
+        // An explicitly configured product takes precedence over a weekend price fallback.
+        foreach ($products as $product) {
+            if ($code === strtoupper(str_replace('-', '', $product['code']))) {
+                $keys = $product['keys'];
+                break;
+            }
+        }
+        foreach ($keys === 0 ? $products : [] as $product) {
             // Weekend products may have custom production codes; match their original price too.
             $weekendMatch = $purchase->product_type_snapshot === Product::TYPE_WEEKEND_SPECIAL
-                && str_starts_with($product['code'], 'W') && str_contains($product['code'], '-')
+                && $product['match_weekend_price']
                 && (float) ($purchase->meta['original_price'] ?? 0) === (float) $product['price'];
-            if ($code === str_replace('-', '', $product['code']) || $weekendMatch) {
+            if ($weekendMatch) {
                 $keys = $product['keys'];
                 break;
             }
@@ -89,7 +98,7 @@ class TreasureChestService
 
     public function claim(User $user, int $number): TreasureChestClaim
     {
-        $prize = config('treasure_chest.prizes.'.$number);
+        $prize = app(TreasureChestSettings::class)->rules()['prizes'][$number] ?? null;
         if (! $prize) {
             throw new RuntimeException(__('treasure_chest.invalid_chest'));
         }
@@ -134,8 +143,12 @@ class TreasureChestService
         $status = $this->activityStatus();
         $enabled = $status === 'active';
         $chests = [];
-        foreach (config('treasure_chest.prizes') as $number => $prize) {
+        $rules = app(TreasureChestSettings::class)->rules();
+        foreach ($rules['prizes'] as $number => $prize) {
             $claim = $claims->firstWhere('chest_number', $number);
+            if ($claim) {
+                $prize = $claim->only(['threshold', 'amount', 'keys', 'discount_percent']);
+            }
             $chests[] = [
                 'number' => $number, ...$prize, 'claimed' => $claim !== null,
                 'claimable' => $enabled && ! $claim && $keys >= $prize['threshold'],
@@ -148,7 +161,8 @@ class TreasureChestService
             'status' => $status, 'status_message' => $enabled ? null : __('treasure_chest.'.$status),
             'starts_at' => Setting::getValue(self::SETTING_START),
             'ends_at' => Setting::getValue(self::SETTING_END), 'timezone' => config('app.timezone'),
-            'products' => config('treasure_chest.products'),
+            'products' => $rules['products'],
+            'show_rewards' => Setting::bool(TreasureChestSettings::SHOW_REWARDS),
             'invite_url' => url('/register?ref='.$user->referral_code),
         ];
     }

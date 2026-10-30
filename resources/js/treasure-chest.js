@@ -53,10 +53,22 @@ if (root) {
         for (const chest of activity.chests) {
             const card = root.querySelector(`[data-chest="${chest.number}"]`);
             const button = card.querySelector('[data-claim]');
+            card.querySelector('[data-required-keys]').textContent = config.labels.required_keys.replace(':count', chest.threshold);
             const label = config.labels[chest.claimed ? 'claimed' : chest.claimable ? 'claim' : 'locked'];
             card.classList.toggle('is-claimed', chest.claimed);
             card.classList.toggle('is-available', chest.claimable);
             card.querySelector('.tc-sprite').classList.toggle('tc-sprite-open', chest.claimed);
+            const rewards = card.querySelector('.tc-rewards');
+            rewards.hidden = !activity.show_rewards;
+            const rewardLabels = [];
+            if (Number(chest.amount) > 0) rewardLabels.push(`${Number(chest.amount).toLocaleString('en-US')} VND`);
+            if (Number(chest.keys) > 0) rewardLabels.push(config.labels.key_count.replace(':count', chest.keys));
+            if (Number(chest.discount_percent) > 0) rewardLabels.push(config.labels.percent_off.replace(':percent', Number(chest.discount_percent)));
+            rewards.replaceChildren(...rewardLabels.map(value => {
+                const item = document.createElement('li');
+                item.textContent = value;
+                return item;
+            }));
             card.querySelector('.tc-seal i').className = `ph-thin ${chest.claimed ? 'ph-check' : chest.claimable ? 'ph-key' : 'ph-lock-key'}`;
             button.disabled = busy || !chest.claimable;
             button.textContent = label;

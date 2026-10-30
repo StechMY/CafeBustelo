@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Filament\Pages\Dashboard;
+use App\Filament\Pages\TreasureChestConfiguration;
 use App\Filament\Resources\TreasureChestClaims\Pages\ManageTreasureChestClaims;
 use App\Filament\Resources\Users\Pages\ListUsers;
 use App\Models\AdminUser;
@@ -16,6 +17,7 @@ use App\Models\Wallet;
 use App\Services\GoldenEggService;
 use App\Services\ProductPurchaseService;
 use App\Services\TreasureChestService;
+use App\Services\Settings\TreasureChestSettings;
 use Filament\Facades\Filament;
 use Filament\Actions\Testing\TestAction;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -415,6 +417,102 @@ class TreasureChestActivityTest extends TestCase
         Livewire::test(ListUsers::class)->assertCanSeeTableRecords([$own])->assertCanNotSeeTableRecords([$other])
             ->mountAction(TestAction::make('addTreasureKeys')->table($other))->assertActionNotMounted('addTreasureKeys');
         $this->assertDatabaseCount('treasure_key_entries', 0);
+    }
+
+    public function test_configuration_page_loads_defaults_and_saves_custom_rewards_and_product_rules(): void
+    {
+        $this->keyAdmin();
+        $custom = $this->product('NEW-PRODUCT', 123000);
+        $settings = app(TreasureChestSettings::class);
+        $data = $settings->formData();
+        $this->assertSame(config('treasure_chest.prizes'), $data['prizes']);
+        $this->assertFalse($data['show_rewards']);
+        $data['show_rewards'] = true;
+        $data['prizes'][1] = ['threshold' => 3, 'amount' => 12345, 'keys' => 2, 'discount_percent' => 7.5];
+        $data['products'] = [['code' => $custom->code, 'price' => 123000, 'keys' => 3, 'match_weekend_price' => false]];
+        Livewire::test(TreasureChestConfiguration::class)->assertOk()->set('data.products', [])
+            ->fillForm($data)->call('save')->assertHasNoFormErrors();
+        $this->assertSame(3, $settings->rules()['prizes'][1]['threshold']);
+        $this->assertCount(1, $settings->rules()['products']);
+        $referrer = $this->user();
+        $buyer = $this->user(['referrer_id' => $referrer->id]);
+        $this->fund($buyer);
+        $this->open();
+        app(ProductPurchaseService::class)->purchase($buyer, $this->product());
+        $this->assertSame(0, app(TreasureChestService::class)->totalKeys($referrer));
+        app(ProductPurchaseService::class)->purchase($buyer, $custom);
+        $claim = app(TreasureChestService::class)->claim($referrer, 1);
+        $this->assertEquals(12345, $claim->amount);
+        $this->assertEquals(7.5, PurchaseCoupon::query()->sole()->discount_percent);
+        $this->assertSame(5, app(TreasureChestService::class)->totalKeys($referrer));
+        $this->assertEquals(12345, $referrer->wallets()->where('type', Wallet::TYPE_WITHDRAWABLE)->value('balance'));
+
+        $data['prizes'][1] = ['threshold' => 99, 'amount' => 999999, 'keys' => 30, 'discount_percent' => 80];
+        $data['products'] = [];
+        $settings->save($data);
+        $again = app(TreasureChestService::class)->claim($referrer, 1);
+        $this->assertSame($claim->id, $again->id);
+        $chest = app(TreasureChestService::class)->activity($referrer)['chests'][0];
+        $this->assertSame(3, $chest['threshold']);
+        $this->assertEquals(12345, $chest['amount']);
+        app(ProductPurchaseService::class)->purchase($buyer, $custom);
+        $this->assertSame(5, app(TreasureChestService::class)->totalKeys($referrer));
+        $this->assertDatabaseCount('purchase_coupons', 1);
+    }
+
+    public function test_reward_visibility_is_shared_by_settings_page_quick_settings_and_member_page(): void
+    {
+        $this->keyAdmin();
+        $user = $this->user();
+        $this->actingAs($user, 'web')->get('/treasure-chest')->assertOk()->assertSee('class="tc-rewards"  hidden', false);
+        $this->getJson('/api/v1/treasure-chest')->assertOk()->assertJsonPath('data.show_rewards', false);
+        Livewire::test(TreasureChestConfiguration::class)->fillForm(['show_rewards' => true])->call('save')->assertHasNoFormErrors();
+        $this->get('/treasure-chest')->assertOk()->assertDontSee('class="tc-rewards"  hidden', false);
+        Livewire::test(Dashboard::class)->mountAction('treasureChestSettings')->assertActionDataSet(['show_rewards' => true])
+            ->setActionData(['show_rewards' => false])->callMountedAction()->assertHasNoActionErrors();
+        Livewire::test(TreasureChestConfiguration::class)->assertSchemaStateSet(['show_rewards' => false], 'form');
+    }
+
+    public function test_configuration_requires_manage_permission_even_on_save(): void
+    {
+        $admin = $this->keyAdmin();
+        $page = Livewire::test(TreasureChestConfiguration::class)->assertOk();
+        $admin->revokePermissionTo('Manage:TreasureChest');
+        Livewire::test(TreasureChestConfiguration::class)->assertForbidden();
+        $page->call('save')->assertForbidden();
+        $this->assertNull(Setting::getValue(TreasureChestSettings::RULES));
+    }
+
+    public function test_configuration_rejects_invalid_rewards_and_duplicate_purchase_rules_atomically(): void
+    {
+        $this->keyAdmin();
+        $data = app(TreasureChestSettings::class)->formData();
+        $data['prizes'][1]['threshold'] = 0;
+        $data['prizes'][2]['amount'] = -1;
+        $data['prizes'][3]['discount_percent'] = 101;
+        $data['prizes'][4]['keys'] = 1.5;
+        Livewire::test(TreasureChestConfiguration::class)->fillForm($data)->call('save')
+            ->assertHasFormErrors(['prizes.1.threshold', 'prizes.2.amount', 'prizes.3.discount_percent', 'prizes.4.keys']);
+        $data = app(TreasureChestSettings::class)->formData();
+        $data['prizes'][1] = ['threshold' => 1, 'amount' => 0, 'keys' => 0, 'discount_percent' => 0];
+        $data['products'][] = $data['products'][0];
+        Livewire::test(TreasureChestConfiguration::class)->fillForm($data)->call('save')->assertHasFormErrors(['prizes.1.amount']);
+        $this->assertNull(Setting::getValue(TreasureChestSettings::RULES));
+        $this->assertFalse(Setting::bool(TreasureChestSettings::SHOW_REWARDS));
+    }
+
+    public function test_explicit_product_rule_takes_priority_over_weekend_price_fallback(): void
+    {
+        $settings = app(TreasureChestSettings::class);
+        $data = $settings->formData();
+        $data['products'][] = ['code' => 'CUSTOM-WEEKEND', 'price' => 2300000, 'keys' => 17, 'match_weekend_price' => false];
+        $settings->save($data);
+        $this->open();
+        $referrer = $this->user();
+        $buyer = $this->user(['referrer_id' => $referrer->id]);
+        $this->fund($buyer);
+        app(ProductPurchaseService::class)->purchase($buyer, $this->product('CUSTOM-WEEKEND', 2300000, Product::TYPE_WEEKEND_SPECIAL));
+        $this->assertSame(17, app(TreasureChestService::class)->totalKeys($referrer));
     }
 
     private function keyAdmin(): AdminUser

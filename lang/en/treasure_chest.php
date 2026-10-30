@@ -1,6 +1,20 @@
 <?php
 
 return [
+    'configuration' => 'Treasure chest rules',
+    'configuration_help' => 'Changes apply to future purchases and claims. Past orders are not backfilled and claimed chests are not reset. Existing rewards keep their original values. Set a reward to 0 to omit it; each chest needs at least one reward.',
+    'display_settings' => 'Reward text visibility',
+    'show_rewards' => 'Show rewards on chest cards',
+    'show_rewards_help' => 'Turn off to hide cash, bonus keys and discounts on the cards. Key thresholds remain visible; actual rewards appear after a successful claim.',
+    'purchase_rules' => 'Purchase rewards',
+    'purchase_rules_help' => 'Each matching purchase by a directly invited friend earns keys for the inviter. Add or remove rules; removing all rules stops purchase key awards.',
+    'add_product_rule' => 'Add product rule',
+    'match_weekend_price' => 'Also match weekend products at this original price',
+    'match_weekend_price_help' => 'Matches weekend products with different codes using the original order price. Product code matches take priority. This price does not change the product selling price.',
+    'reward_keys' => 'Bonus keys',
+    'duplicate_product' => 'Only one rule is allowed per product.',
+    'duplicate_price' => 'Only one weekend price rule is allowed for each original price.',
+    'reward_required' => 'Each chest must have at least one reward greater than 0.',
     'add_keys' => 'Add chest keys',
     'keys_to_add' => 'Keys to add',
     'manual_keys_help' => 'Current total: :count keys. Added keys count toward chest thresholds and do not reset claimed chests. Rewards can only be claimed while the activity is open.',

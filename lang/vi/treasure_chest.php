@@ -1,6 +1,20 @@
 <?php
 
 return [
+    'configuration' => 'Cấu hình rương báu',
+    'configuration_help' => 'Thay đổi áp dụng cho đơn mua và lượt nhận tiếp theo. Không bù đơn cũ hay đặt lại rương đã nhận; phần thưởng đã nhận giữ nguyên. Nhập 0 để bỏ loại thưởng; mỗi rương cần ít nhất một phần thưởng.',
+    'display_settings' => 'Hiển thị nội dung phần thưởng',
+    'show_rewards' => 'Hiển thị phần thưởng trên thẻ rương',
+    'show_rewards_help' => 'Tắt để ẩn tiền, chìa khóa thưởng và giảm giá trên thẻ. Mốc chìa khóa vẫn hiện; phần thưởng thực tế hiện sau khi nhận thành công.',
+    'purchase_rules' => 'Mua sản phẩm nhận chìa khóa',
+    'purchase_rules_help' => 'Mỗi lần người được mời trực tiếp mua sản phẩm phù hợp, người mời nhận chìa khóa. Có thể thêm hoặc xóa quy tắc; xóa hết sẽ ngừng tặng chìa khóa từ đơn mua.',
+    'add_product_rule' => 'Thêm quy tắc sản phẩm',
+    'match_weekend_price' => 'Khớp cả sản phẩm cuối tuần có cùng giá gốc',
+    'match_weekend_price_help' => 'Dùng giá gốc đơn hàng cho sản phẩm cuối tuần khác mã. Khớp mã được ưu tiên. Giá này không thay đổi giá bán sản phẩm.',
+    'reward_keys' => 'Chìa khóa thưởng',
+    'duplicate_product' => 'Mỗi sản phẩm chỉ được có một quy tắc.',
+    'duplicate_price' => 'Mỗi mức giá gốc chỉ được có một quy tắc giá cuối tuần.',
+    'reward_required' => 'Mỗi rương phải có ít nhất một phần thưởng lớn hơn 0.',
     'add_keys' => 'Thêm chìa khóa rương',
     'keys_to_add' => 'Số chìa khóa cần thêm',
     'manual_keys_help' => 'Hiện có :count chìa khóa. Chìa khóa thêm được tính vào mốc mở rương, không đặt lại rương đã nhận. Chỉ có thể nhận thưởng khi sự kiện đang mở.',

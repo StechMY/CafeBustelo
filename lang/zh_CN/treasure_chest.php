@@ -1,6 +1,20 @@
 <?php
 
 return [
+    'configuration' => '宝箱规则配置',
+    'configuration_help' => '调整后用于后续购买和领取，不补发旧订单，不重置已领宝箱；已领取奖励保留原记录。奖励填 0 表示不发放该类型，每箱至少设置一种奖励。',
+    'display_settings' => '奖励文字显示',
+    'show_rewards' => '显示宝箱卡片的奖励文字',
+    'show_rewards_help' => '关闭后隐藏卡片上的金额、赠送钥匙和折扣文字；解锁门槛仍显示，领取成功后展示实际奖励。',
+    'purchase_rules' => '购买产品获得钥匙',
+    'purchase_rules_help' => '直属好友每次购买匹配产品，邀请人获得对应钥匙。可添加或删除规则；删除全部规则后购买不再发钥匙。',
+    'add_product_rule' => '添加产品规则',
+    'match_weekend_price' => '同时匹配同原价的周末产品',
+    'match_weekend_price_help' => '用于代码不同的周末产品，按订单原价匹配。产品代码匹配优先；此处价格不会修改产品售价。',
+    'reward_keys' => '奖励钥匙数',
+    'duplicate_product' => '同一产品只能设置一条规则。',
+    'duplicate_price' => '同一周末产品原价只能设置一条价格匹配规则。',
+    'reward_required' => '每个宝箱至少设置一种大于 0 的奖励。',
     'add_keys' => '加宝箱钥匙',
     'keys_to_add' => '本次增加钥匙数',
     'manual_keys_help' => '当前累计 :count 把钥匙。本次增加会计入宝箱解锁门槛，不重置已领取的宝箱。领取奖励仍须在活动开放期间进行。',

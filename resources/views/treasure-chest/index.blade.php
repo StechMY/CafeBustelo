@@ -26,11 +26,11 @@
                     <div class="tc-sprite {{ $chest['number'] === 9 ? 'tc-sprite-ultimate' : '' }} {{ $chest['claimed'] ? 'tc-sprite-open' : '' }}"></div>
                     <span class="tc-seal"><i class="ph-thin {{ $chest['claimed'] ? 'ph-check' : ($chest['claimable'] ? 'ph-key' : 'ph-lock-key') }}"></i></span>
                 </div>
-                <p class="tc-threshold"><i class="ph-thin ph-key" aria-hidden="true"></i>{{ __('treasure_chest.required_keys', ['count' => $chest['threshold']]) }}</p>
-                <ul class="tc-rewards">
-                    @if($chest['amount'])<li>{{ number_format($chest['amount']) }} VND</li>@endif
-                    @if($chest['keys'])<li>{{ __('treasure_chest.key_count', ['count' => $chest['keys']]) }}</li>@endif
-                    @if($chest['discount_percent'])<li>{{ __('golden_egg.percent_off', ['percent' => $chest['discount_percent']]) }}</li>@endif
+                <p class="tc-threshold"><i class="ph-thin ph-key" aria-hidden="true"></i><span data-required-keys>{{ __('treasure_chest.required_keys', ['count' => $chest['threshold']]) }}</span></p>
+                <ul class="tc-rewards" @if(!$activity['show_rewards']) hidden @endif>
+                    @if($chest['amount'] > 0)<li>{{ number_format($chest['amount'], fmod((float) $chest['amount'], 1) ? 2 : 0) }} VND</li>@endif
+                    @if($chest['keys'] > 0)<li>{{ __('treasure_chest.key_count', ['count' => $chest['keys']]) }}</li>@endif
+                    @if($chest['discount_percent'] > 0)<li>{{ __('golden_egg.percent_off', ['percent' => (float) $chest['discount_percent']]) }}</li>@endif
                 </ul>
                 <button type="button" data-claim="{{ $chest['number'] }}" aria-label="{{ __('treasure_chest.chest_number', ['number' => $chest['number']]).' · '.__($chest['claimed'] ? 'treasure_chest.claimed' : ($chest['claimable'] ? 'treasure_chest.claim' : 'treasure_chest.locked')) }}" @disabled(!$chest['claimable'])>{{ __($chest['claimed'] ? 'treasure_chest.claimed' : ($chest['claimable'] ? 'treasure_chest.claim' : 'treasure_chest.locked')) }}</button>
             </article>
@@ -86,7 +86,7 @@
             <header class="tc-earn-heading"><div><h2 id="tc-earn-title">{{ __('treasure_chest.earn_keys') }}</h2><p>{{ __('treasure_chest.earn_hint') }}</p></div><i class="ph-thin ph-key" aria-hidden="true"></i></header>
             <ul class="tc-product-rewards">
                 @foreach($activity['products'] as $product)
-                    <li><div class="tc-product-detail"><h3>{{ $product['code'] }}</h3><span>{{ number_format($product['price']) }} <small>VND</small></span></div><div class="tc-product-keys"><i class="ph-thin ph-key" aria-hidden="true"></i><strong>{{ $product['keys'] }}</strong><span>{{ __('treasure_chest.keys') }}</span></div></li>
+                    <li><div class="tc-product-detail"><h3>{{ $product['code'] }}</h3><span>{{ number_format($product['price'], fmod((float) $product['price'], 1) ? 2 : 0) }} <small>VND</small></span></div><div class="tc-product-keys"><i class="ph-thin ph-key" aria-hidden="true"></i><strong>{{ $product['keys'] }}</strong><span>{{ __('treasure_chest.keys') }}</span></div></li>
                 @endforeach
             </ul>
             <footer class="tc-earn-footer"><span><i class="ph-thin ph-clock" aria-hidden="true"></i>{{ __('treasure_chest.purchase_time_note') }}</span><a href="{{ route('products.index') }}">{{ __('dashboard.view_products') }}<i class="ph-thin ph-arrow-up-right" aria-hidden="true"></i></a></footer>
@@ -94,7 +94,7 @@
     </section>
     <script type="application/json" id="treasure-chest-config">{!! json_encode([
         'url' => route('treasure-chest.claim'), 'activity' => $activity,
-        'labels' => collect(['claim', 'claimed', 'locked', 'claiming', 'success', 'retry', 'key_count', 'chest_number', 'ultimate', 'link_copied', 'copy_manual'])->mapWithKeys(fn($key) => [$key => __('treasure_chest.'.$key)])
+        'labels' => collect(['claim', 'claimed', 'locked', 'claiming', 'success', 'retry', 'key_count', 'required_keys', 'chest_number', 'ultimate', 'link_copied', 'copy_manual'])->mapWithKeys(fn($key) => [$key => __('treasure_chest.'.$key)])
             ->put('percent_off', __('golden_egg.percent_off')),
     ], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) !!}</script>
 </section>
