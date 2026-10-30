@@ -16,6 +16,7 @@ class ProductPurchaseService
         private readonly WalletService $walletService,
         private readonly PointService $pointService,
         private readonly GoldenEggService $goldenEggService,
+        private readonly TreasureChestService $treasureChestService,
     ) {
     }
 
@@ -168,6 +169,7 @@ class ProductPurchaseService
 
             $this->goldenEggService->qualifyFirstPurchase($user, $userProduct);
             $this->goldenEggService->givePurchaseChance($user, $userProduct);
+            $this->treasureChestService->givePurchaseKeys($user, $userProduct);
 
             return $userProduct;
         }, 3);

@@ -48,6 +48,7 @@ return [
     'back_to_wallet' => 'Back to Wallet',
 
     'types' => [
+        'treasure_chest' => 'Treasure Chest Reward',
         'recharge_reversed' => 'Recharge Approval Reversed',
         'golden_egg' => 'Golden Egg Reward',
         'recharge_approved' => 'Recharge Approved',

@@ -62,6 +62,10 @@
                             'user' => $user,
                             'inviteUrl' => $inviteUrl,
                         ])
+                        <a href="{{ route('treasure-chest.index') }}" class="tc-dashboard-entry">
+                            <i class="ph-thin ph-treasure-chest" aria-hidden="true"></i>
+                            <div><strong>{{ __('treasure_chest.title') }}</strong><small>{{ __('treasure_chest.intro') }}</small></div>
+                        </a>
                         <a href="{{ route('golden-egg.index') }}" class="ge-dashboard-entry">
                             <div class="ge-dashboard-entry-copy"><strong>{{ __('golden_egg.title') }}</strong><small>{{ __('golden_egg.dashboard_intro') }}</small><span>{{ __('golden_egg.open_game') }} <i class="ph-thin ph-arrow-right" aria-hidden="true"></i></span></div>
                             <img src="{{ asset('images/golden-egg/vault-egg.webp') }}" alt="" width="1086" height="1448">

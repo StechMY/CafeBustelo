@@ -48,6 +48,7 @@ return [
     'back_to_wallet' => 'Quay lại ví',
 
     'types' => [
+        'treasure_chest' => 'Thưởng rương kho báu',
         'recharge_reversed' => 'Hoàn tác phê duyệt nạp tiền',
         'golden_egg' => 'Thưởng trứng vàng',
         'recharge_approved' => 'Nạp tiền đã duyệt',

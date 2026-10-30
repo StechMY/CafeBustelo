@@ -48,6 +48,7 @@ return [
     'back_to_wallet' => '返回钱包',
 
     'types' => [
+        'treasure_chest' => '宝箱奖励',
         'recharge_reversed' => '充值误批冲正',
         'golden_egg' => '敲金蛋奖励',
         'recharge_approved' => '充值通过',

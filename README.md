@@ -47,6 +47,31 @@ separate test database before relying on a backup. Keep this prefix private in
 any bucket access policies. No schedule, automatic cleanup, or email notifications
 are enabled; run the command whenever a backup is needed and manage storage usage.
 
+## Treasure chest activity
+
+Deploy the code, run `php artisan migrate --force`, build assets with `npm run build`,
+and refresh cached configuration with `php artisan config:cache`. The activity is
+disabled by default. In **Platform Management → Treasure chests → Activity settings**,
+set the start time, optional end time, and enable the activity. Times use the existing
+`TIMEZONE` environment setting (`Asia/Ho_Chi_Minh` for Vietnam). Non-super-admin
+operators need the `Manage:TreasureChest` permission.
+
+Each qualifying purchase by a directly invited user awards keys to the inviter,
+regardless of registration date or earlier purchases. Only purchases completed while
+the activity is enabled and within its time window count; previous purchases are not
+backfilled. The start is inclusive and the end is exclusive. Product codes, original
+prices, key counts and the nine fixed rewards are in `config/treasure_chest.php`.
+Weekend products with custom codes are also matched by their weekend product type
+and original price. Coupons do not reduce the number of keys earned.
+
+Keys are never spent. Chest reward keys also unlock later chests. Each chest can be
+claimed once per user; disabling and reopening does not reset progress. Cash rewards
+go to the withdrawable wallet and purchase coupons use the existing checkout rules.
+The member page is `/treasure-chest`; API clients use `GET /api/v1/treasure-chest`
+and `POST /api/v1/treasure-chest/claim` with `chest_number` (1–9). Repeating a claim
+returns the original reward without paying it again. Virtual accounts do not earn
+keys or claim these rewards.
+
 ## About Laravel
 
 Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:

@@ -24,6 +24,7 @@ use App\Http\Controllers\Api\SvipController;
 use App\Http\Controllers\Api\WalletController;
 use App\Http\Controllers\Api\WithdrawController;
 use App\Http\Controllers\GoldenEggController;
+use App\Http\Controllers\TreasureChestController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('internal/v1')
@@ -55,6 +56,9 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
         Route::get('/dashboard', DashboardController::class)->name('dashboard');
 
         Route::get('/golden-egg', [GoldenEggController::class, 'index'])->name('golden-egg.index');
+        Route::get('/treasure-chest', [TreasureChestController::class, 'index'])->name('treasure-chest.index');
+        Route::post('/treasure-chest/claim', [TreasureChestController::class, 'claim'])
+            ->middleware('throttle:30,1')->name('treasure-chest.claim');
         Route::post('/golden-egg/draw', [GoldenEggController::class, 'draw'])
             ->middleware('throttle:30,1')->name('golden-egg.draw');
 
