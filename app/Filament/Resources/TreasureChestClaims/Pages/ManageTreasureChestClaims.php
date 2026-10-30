@@ -32,7 +32,7 @@ class ManageTreasureChestClaims extends ManageRecords
                     'ends_at' => Setting::getValue(TreasureChestService::SETTING_END) ?: null,
                 ])
                 ->schema([
-                    Toggle::make('enabled')->label(__('golden_egg.enable_activity')),
+                    Toggle::make('enabled')->label(__('treasure_chest.enable_activity')),
                     DateTimePicker::make('starts_at')->label(__('treasure_chest.starts_at'))
                         ->format('Y-m-d H:i:s')->timezone(config('app.timezone'))->required()->seconds(false),
                     DateTimePicker::make('ends_at')->label(__('treasure_chest.ends_at'))

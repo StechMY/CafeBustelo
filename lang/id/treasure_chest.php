@@ -1,6 +1,21 @@
 <?php
 
 return [
+    'enable_activity' => 'Aktifkan acara peti hadiah',
+    'open_activity' => 'Jelajahi peti hadiah',
+    'rule_invite_title' => 'Undang teman berbelanja',
+    'rule_invite_text' => 'Setiap pembelian yang memenuhi syarat oleh teman undangan langsung selama acara memberi kunci. Pembelian berulang dihitung, tanpa batas tanggal pendaftaran.',
+    'rule_keep_title' => 'Simpan setiap kunci',
+    'rule_keep_text' => 'Membuka peti tidak mengurangi kunci. Kunci hadiah juga dihitung untuk membuka peti berikutnya.',
+    'rule_collect_title' => 'Klaim setiap peti sekali',
+    'rule_collect_text' => 'Uang masuk ke dompet penarikan. Kupon diskon dapat dipakai saat membeli produk yang mendukung kupon.',
+    'invite_title' => 'Undang teman. Buka hadiah.',
+    'invite_hint' => 'Bagikan tautan pribadi untuk mengumpulkan kunci dari belanja teman.',
+    'copy_link' => 'Salin tautan',
+    'link_copied' => 'Tautan undangan disalin.',
+    'copy_manual' => 'Pilih dan salin tautan undangan Anda.',
+    'earn_hint' => 'Teman berbelanja, Anda mendapat kunci. Setiap pesanan yang memenuhi syarat dihitung.',
+    'purchase_time_note' => 'Berdasarkan waktu pembelian selama acara.',
     'title' => 'Sembilan peti hadiah',
     'intro' => 'Undang teman berbelanja, kumpulkan kunci dan buka sembilan hadiah.',
     'total_keys' => 'Total kunci',

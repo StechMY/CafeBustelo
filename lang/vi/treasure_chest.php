@@ -1,6 +1,21 @@
 <?php
 
 return [
+    'enable_activity' => 'Mở sự kiện rương kho báu',
+    'open_activity' => 'Khám phá kho báu',
+    'rule_invite_title' => 'Mời bạn mua sản phẩm',
+    'rule_invite_text' => 'Mỗi lần bạn trực tiếp giới thiệu mua sản phẩm hợp lệ trong sự kiện, bạn nhận chìa khóa. Mua nhiều lần đều được tính, không phụ thuộc ngày đăng ký.',
+    'rule_keep_title' => 'Giữ mọi chìa khóa',
+    'rule_keep_text' => 'Mở rương không trừ chìa khóa. Chìa khóa thưởng cũng được cộng để mở rương tiếp theo.',
+    'rule_collect_title' => 'Mỗi rương nhận một lần',
+    'rule_collect_text' => 'Tiền thưởng vào ví có thể rút. Phiếu giảm giá dùng khi thanh toán sản phẩm cho phép sử dụng phiếu.',
+    'invite_title' => 'Mời bạn. Mở thêm quà.',
+    'invite_hint' => 'Chia sẻ liên kết riêng để tích chìa khóa từ mỗi lần bạn bè mua hàng.',
+    'copy_link' => 'Sao chép',
+    'link_copied' => 'Đã sao chép liên kết mời.',
+    'copy_manual' => 'Hãy chọn và sao chép liên kết mời.',
+    'earn_hint' => 'Bạn bè mua sản phẩm, bạn nhận chìa khóa. Mỗi đơn hợp lệ đều được tính.',
+    'purchase_time_note' => 'Tính theo thời gian mua trong sự kiện.',
     'title' => 'Chín rương kho báu',
     'intro' => 'Mời bạn mua sản phẩm, tích chìa khóa và mở chín phần quà.',
     'total_keys' => 'Chìa khóa tích lũy',

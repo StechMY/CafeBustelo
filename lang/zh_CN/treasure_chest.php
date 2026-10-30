@@ -1,6 +1,21 @@
 <?php
 
 return [
+    'enable_activity' => '开放宝箱活动',
+    'open_activity' => '探索九重宝藏',
+    'rule_invite_title' => '邀请好友购买',
+    'rule_invite_text' => '直属好友在活动期间每次购买指定产品，你都能获得钥匙。重复购买也计算，不限制好友注册时间。',
+    'rule_keep_title' => '钥匙只增不减',
+    'rule_keep_text' => '开启宝箱不扣除钥匙。宝箱赠送的钥匙也计入累计，继续解锁下一重奖励。',
+    'rule_collect_title' => '每箱领取一次',
+    'rule_collect_text' => '现金奖励进入可提现钱包；折扣券可在购买支持用券的产品时使用。',
+    'invite_title' => '邀好友，解锁更多宝藏',
+    'invite_hint' => '分享你的专属链接，让好友的每笔购买为你积累钥匙。',
+    'copy_link' => '复制链接',
+    'link_copied' => '邀请链接已复制。',
+    'copy_manual' => '请选择并复制邀请链接。',
+    'earn_hint' => '好友购买指定产品，你获得对应钥匙，每笔符合条件的订单都计算。',
+    'purchase_time_note' => '以活动期间的购买时间为准。',
     'title' => '九宫格宝箱',
     'intro' => '邀请好友购买，累计钥匙，解锁九重奖励。',
     'total_keys' => '累计钥匙',

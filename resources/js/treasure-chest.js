@@ -20,6 +20,19 @@ if (root) {
     let revealTimeline;
     let trigger;
 
+    root.querySelector('[data-copy-invite]').addEventListener('click', async () => {
+        const input = root.querySelector('#tc-invite');
+        const status = root.querySelector('[data-copy-feedback]');
+        try {
+            await navigator.clipboard.writeText(input.value);
+            status.textContent = config.labels.link_copied;
+        } catch {
+            input.focus();
+            input.select();
+            status.textContent = config.labels.copy_manual;
+        }
+    });
+
     const media = gsap.matchMedia();
     media.add({
         reduce: '(prefers-reduced-motion: reduce)',

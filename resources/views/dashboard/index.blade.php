@@ -8,22 +8,22 @@
         $inviteUrl = url('/register?ref=' . $user->referral_code);
     @endphp
 
-    <section class="overflow-hidden bg-[#ffd900]">
+    <section class="dashboard-welcome overflow-hidden bg-[#ffd900]">
         <div class="mx-auto max-w-7xl px-3 py-3 sm:px-6 sm:py-8 lg:px-8">
-            <div class="grid gap-5 lg:grid-cols-[1.45fr_0.85fr] lg:items-center">
+            <div class="dashboard-welcome-grid">
                 <div>
                     <div
-                         class="mb-3 inline-flex rounded-full bg-white/70 px-3 py-1.5 text-[10px] font-black uppercase tracking-wide shadow sm:px-4 sm:py-2 sm:text-xs">
+                         class="dashboard-welcome-label">
                         {{ __('dashboard.member_dashboard') }}
                     </div>
 
                     <h1
-                        class="max-w-3xl text-3xl font-black uppercase leading-[0.9] tracking-tight text-[#003b7a] sm:text-6xl lg:text-7xl">
+                        class="dashboard-welcome-title">
                         {{ __('dashboard.hero_title') }}
                     </h1>
 
                     <p
-                       class="mt-2 max-w-2xl overflow-hidden text-xs font-bold leading-relaxed text-[#003b7a]/80 sm:mt-5 sm:text-base">
+                       class="dashboard-welcome-description">
                         {{ __('dashboard.welcome_user', ['name' => $user->name]) }}
                         {{ __('dashboard.hero_description') }}
                     </p>
@@ -62,19 +62,11 @@
                             'user' => $user,
                             'inviteUrl' => $inviteUrl,
                         ])
-                        <a href="{{ route('treasure-chest.index') }}" class="tc-dashboard-entry">
-                            <i class="ph-thin ph-treasure-chest" aria-hidden="true"></i>
-                            <div><strong>{{ __('treasure_chest.title') }}</strong><small>{{ __('treasure_chest.intro') }}</small></div>
-                        </a>
-                        <a href="{{ route('golden-egg.index') }}" class="ge-dashboard-entry">
-                            <div class="ge-dashboard-entry-copy"><strong>{{ __('golden_egg.title') }}</strong><small>{{ __('golden_egg.dashboard_intro') }}</small><span>{{ __('golden_egg.open_game') }} <i class="ph-thin ph-arrow-right" aria-hidden="true"></i></span></div>
-                            <img src="{{ asset('images/golden-egg/vault-egg.webp') }}" alt="" width="1086" height="1448">
-                        </a>
                     </div>
                 </div>
 
                 <div
-                     class="hidden rounded-[1.5rem] border-4 border-[#003b7a] bg-white p-4 shadow-[7px_7px_0_#003b7a] sm:block sm:rounded-[2rem] sm:p-6 sm:shadow-[10px_10px_0_#003b7a]">
+                     class="dashboard-account hidden sm:block">
                     <div class="flex items-start justify-between gap-3">
                         <div class="min-w-0">
                             <div class="text-xs font-black uppercase text-[#e4003a] sm:text-sm">
@@ -106,6 +98,16 @@
                         </div>
                     </div>
                 </div>
+            </div>
+            <div class="dashboard-activities">
+                <a href="{{ route('treasure-chest.index') }}" class="tc-dashboard-entry">
+                    <img src="{{ asset('images/treasure-chest/invitation-banner.png') }}" alt="" width="1536" height="512">
+                    <div class="tc-dashboard-copy"><strong>{{ __('treasure_chest.title') }}</strong><small>{{ __('treasure_chest.intro') }}</small><span>{{ __('treasure_chest.open_activity') }} <i class="ph-thin ph-arrow-right" aria-hidden="true"></i></span></div>
+                </a>
+                <a href="{{ route('golden-egg.index') }}" class="ge-dashboard-entry">
+                    <div class="ge-dashboard-entry-copy"><strong>{{ __('golden_egg.title') }}</strong><small>{{ __('golden_egg.dashboard_intro') }}</small><span>{{ __('golden_egg.open_game') }} <i class="ph-thin ph-arrow-right" aria-hidden="true"></i></span></div>
+                    <img src="{{ asset('images/golden-egg/vault-egg.webp') }}" alt="" width="1086" height="1448">
+                </a>
             </div>
         </div>
     </section>

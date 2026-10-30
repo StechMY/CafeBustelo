@@ -1,6 +1,21 @@
 <?php
 
 return [
+    'enable_activity' => 'Enable treasure chest activity',
+    'open_activity' => 'Explore the treasure chests',
+    'rule_invite_title' => 'Invite friends to shop',
+    'rule_invite_text' => 'Each qualifying purchase by a directly invited friend during the activity earns keys. Repeat purchases count, regardless of registration date.',
+    'rule_keep_title' => 'Keep every key',
+    'rule_keep_text' => 'Opening chests never deducts keys. Bonus keys from rewards also count toward your next chest.',
+    'rule_collect_title' => 'Claim each chest once',
+    'rule_collect_text' => 'Cash goes to your withdrawable wallet. Discount coupons can be used at checkout for eligible products.',
+    'invite_title' => 'Invite friends. Unlock more.',
+    'invite_hint' => 'Share your personal link to start collecting keys together.',
+    'copy_link' => 'Copy link',
+    'link_copied' => 'Invitation link copied.',
+    'copy_manual' => 'Select and copy your invitation link.',
+    'earn_hint' => 'Your friend’s purchase. Your keys. Every qualifying order counts.',
+    'purchase_time_note' => 'Based on purchase time during the activity.',
     'title' => 'Treasure chests',
     'intro' => 'Invite friends, collect keys and unlock nine rewards.',
     'total_keys' => 'Total keys',
