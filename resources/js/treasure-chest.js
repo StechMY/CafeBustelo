@@ -48,6 +48,7 @@ if (root) {
     const render = () => {
         root.querySelector('[data-total-keys]').textContent = activity.total_keys;
         root.querySelector('[data-closed]').hidden = activity.enabled;
+        root.querySelector('[data-closed]').textContent = activity.status_message ?? '';
         root.querySelector('.tc-grid').setAttribute('aria-busy', String(busy));
         for (const chest of activity.chests) {
             const card = root.querySelector(`[data-chest="${chest.number}"]`);

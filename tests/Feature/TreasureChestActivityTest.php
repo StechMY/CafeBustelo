@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Filament\Pages\Dashboard;
 use App\Filament\Resources\TreasureChestClaims\Pages\ManageTreasureChestClaims;
 use App\Models\AdminUser;
 use App\Models\Product;
@@ -11,6 +12,7 @@ use App\Models\TreasureKeyEntry;
 use App\Models\User;
 use App\Models\UserProduct;
 use App\Models\Wallet;
+use App\Services\GoldenEggService;
 use App\Services\ProductPurchaseService;
 use App\Services\TreasureChestService;
 use Filament\Facades\Filament;
@@ -203,20 +205,43 @@ class TreasureChestActivityTest extends TestCase
         $this->assertSame(40, app(TreasureChestService::class)->totalKeys($user));
     }
 
-    public function test_virtual_accounts_and_unlisted_products_do_not_earn_keys(): void
+    public function test_unlisted_products_do_not_earn_keys(): void
     {
         $this->open();
         $referrer = $this->user();
-        $virtualReferrer = $this->user(['is_virtual' => true]);
-        foreach ([[$referrer, true, 'T1'], [$virtualReferrer, false, 'T1'], [$referrer, false, 'UNLISTED']] as [$inviter, $virtual, $code]) {
-            $buyer = $this->user(['referrer_id' => $inviter->id, 'is_virtual' => $virtual]);
-            $this->fund($buyer);
-            $product = Product::query()->where('code', $code)->first() ?? $this->product($code);
-            app(ProductPurchaseService::class)->purchase($buyer, $product);
-        }
+        $buyer = $this->user(['referrer_id' => $referrer->id]);
+        $this->fund($buyer);
+        app(ProductPurchaseService::class)->purchase($buyer, $this->product('UNLISTED'));
         $this->assertDatabaseCount('treasure_key_entries', 0);
-        $this->keys($virtualReferrer, 40);
-        $this->actingAs($virtualReferrer)->postJson('/treasure-chest/claim', ['chest_number' => 1])->assertStatus(400);
+    }
+
+    #[DataProvider('virtualReferrals')]
+    public function test_virtual_accounts_earn_purchase_keys_and_claim_rewards_once(bool $virtualReferrer, bool $virtualBuyer): void
+    {
+        $this->open();
+        $referrer = $this->user(['is_virtual' => $virtualReferrer]);
+        $buyer = $this->user(['referrer_id' => $referrer->id, 'is_virtual' => $virtualBuyer]);
+        $this->fund($buyer);
+        $product = $this->product('W4', 19500000);
+        $purchase = app(ProductPurchaseService::class)->purchase($buyer, $product);
+        app(TreasureChestService::class)->givePurchaseKeys($buyer, $purchase);
+        app(ProductPurchaseService::class)->purchase($buyer, $product);
+        $this->assertSame(40, app(TreasureChestService::class)->totalKeys($referrer));
+        $this->assertDatabaseCount('treasure_key_entries', 2);
+        $this->actingAs($referrer)->getJson('/api/v1/treasure-chest')->assertOk()
+            ->assertJsonPath('data.enabled', true)->assertJsonPath('data.status', 'active');
+        foreach (range(1, 2) as $attempt) {
+            $this->postJson('/treasure-chest/claim', ['chest_number' => 9])->assertOk()
+                ->assertJsonPath('data.activity.total_keys', 60);
+        }
+        $this->assertDatabaseCount('treasure_chest_claims', 1);
+        $this->assertDatabaseCount('purchase_coupons', 1);
+        $this->assertEquals(500000, $referrer->wallets()->where('type', Wallet::TYPE_WITHDRAWABLE)->value('balance'));
+    }
+
+    public static function virtualReferrals(): array
+    {
+        return [[true, false], [false, true], [true, true]];
     }
 
     public function test_admin_settings_require_permission_and_validate_dates(): void
@@ -236,6 +261,78 @@ class TreasureChestActivityTest extends TestCase
         ])->assertHasNoActionErrors();
         $this->assertTrue(app(TreasureChestService::class)->isActiveAt());
         $this->assertSame('2026-11-01 00:00:00', Setting::getValue(TreasureChestService::SETTING_START));
+    }
+
+    public function test_dashboard_settings_open_member_activity_and_share_settings_with_claims_page(): void
+    {
+        $admin = AdminUser::query()->create(['username' => 'chest-dashboard', 'password' => 'password', 'status' => 'active']);
+        $admin->givePermissionTo(Permission::findOrCreate('Manage:TreasureChest', 'admin'));
+        $this->actingAs($admin, 'admin');
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+        Livewire::test(Dashboard::class)
+            ->assertActionVisible('treasureChestSettings')
+            ->callAction('treasureChestSettings', [
+                'enabled' => true, 'starts_at' => '2026-11-01 00:00:00', 'ends_at' => '2026-10-31 00:00:00',
+            ])->assertHasActionErrors(['ends_at']);
+        $this->assertFalse(Setting::bool(TreasureChestService::SETTING_ENABLED));
+
+        Livewire::test(Dashboard::class)->callAction('treasureChestSettings', [
+            'enabled' => true, 'starts_at' => '2026-11-01 00:00:00', 'ends_at' => null,
+        ])->assertHasNoActionErrors();
+        $this->assertFalse(Setting::bool(GoldenEggService::SETTING_ENABLED));
+        $user = $this->user();
+        $this->keys($user, 1);
+        $this->actingAs($user, 'web')->getJson('/api/v1/treasure-chest')->assertOk()
+            ->assertJsonPath('data.status', 'active')->assertJsonPath('data.enabled', true)
+            ->assertJsonPath('data.chests.0.claimable', true);
+
+        Livewire::test(ManageTreasureChestClaims::class)->mountAction('activity_settings')
+            ->assertActionDataSet(['enabled' => true, 'starts_at' => '2026-11-01 00:00:00', 'ends_at' => null])
+            ->setActionData(['enabled' => false])->callMountedAction()->assertHasNoActionErrors();
+        Livewire::test(Dashboard::class)->mountAction('treasureChestSettings')
+            ->assertActionDataSet(['enabled' => false]);
+        $this->getJson('/api/v1/treasure-chest')->assertOk()->assertJsonPath('data.status', 'closed');
+    }
+
+    public function test_dashboard_settings_cannot_be_used_without_treasure_permission(): void
+    {
+        $admin = AdminUser::query()->create(['username' => 'chest-viewer', 'password' => 'password', 'status' => 'active']);
+        $admin->givePermissionTo(Permission::findOrCreate('Manage:GoldenEgg', 'admin'));
+        $this->actingAs($admin, 'admin');
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+        Livewire::test(Dashboard::class)->assertActionHidden('treasureChestSettings')
+            ->call('mountAction', 'treasureChestSettings')->assertActionNotMounted('treasureChestSettings');
+        $this->assertFalse(Setting::bool(TreasureChestService::SETTING_ENABLED));
+    }
+
+    #[DataProvider('unavailableStatuses')]
+    public function test_unavailable_activity_explains_the_reason_on_web_and_api(bool $enabled, bool $virtual, ?string $start, ?string $end, string $status): void
+    {
+        Setting::setValue(TreasureChestService::SETTING_ENABLED, $enabled);
+        Setting::setValue(TreasureChestService::SETTING_START, $start ?? '');
+        Setting::setValue(TreasureChestService::SETTING_END, $end ?? '');
+        $user = $this->user(['is_virtual' => $virtual]);
+        $this->keys($user, 40);
+        $message = __('treasure_chest.'.$status);
+        $this->actingAs($user)->get('/treasure-chest')->assertOk()->assertSee($message);
+        $this->getJson('/api/v1/treasure-chest')->assertOk()
+            ->assertJsonPath('data.status', $status)->assertJsonPath('data.status_message', $message)
+            ->assertJsonPath('data.enabled', false)->assertJsonPath('data.chests.0.claimable', false);
+        $this->postJson('/treasure-chest/claim', ['chest_number' => 1])->assertStatus(400)->assertJsonPath('message', $message);
+        $this->assertDatabaseCount('treasure_chest_claims', 0);
+        $this->assertDatabaseCount('wallet_transactions', 0);
+    }
+
+    public static function unavailableStatuses(): array
+    {
+        return [
+            'switch off' => [false, false, null, null, 'closed'],
+            'before start' => [true, false, '2026-11-01 12:00:01', null, 'scheduled'],
+            'at end' => [true, false, null, '2026-11-01 12:00:00', 'ended'],
+            'virtual account before start' => [true, true, '2026-11-01 12:00:01', null, 'scheduled'],
+            'virtual account after end' => [true, true, null, '2026-11-01 12:00:00', 'ended'],
+            'virtual account while closed' => [false, true, null, null, 'closed'],
+        ];
     }
 
     private function open(): void

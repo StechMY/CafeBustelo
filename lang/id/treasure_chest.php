@@ -1,6 +1,9 @@
 <?php
 
 return [
+    'admin_title' => 'Acara peti harta',
+    'scheduled' => 'Acara belum dimulai. Lihat waktu mulai di bawah.',
+    'ended' => 'Acara ini telah berakhir.',
     'enable_activity' => 'Aktifkan acara peti hadiah',
     'open_activity' => 'Jelajahi peti hadiah',
     'rule_invite_title' => 'Undang teman berbelanja',

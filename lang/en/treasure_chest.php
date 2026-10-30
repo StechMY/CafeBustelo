@@ -1,6 +1,9 @@
 <?php
 
 return [
+    'admin_title' => 'Treasure chest activity',
+    'scheduled' => 'The activity has not started yet. See the start time below.',
+    'ended' => 'This activity has ended.',
     'enable_activity' => 'Enable treasure chest activity',
     'open_activity' => 'Explore the treasure chests',
     'rule_invite_title' => 'Invite friends to shop',

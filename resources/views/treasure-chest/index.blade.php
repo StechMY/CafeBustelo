@@ -13,7 +13,7 @@
         <p>{{ __('treasure_chest.intro') }}</p>
     </header>
     <div class="tc-balance"><i class="ph-thin ph-key" aria-hidden="true"></i><span>{{ __('treasure_chest.total_keys') }}</span><strong data-total-keys>{{ $activity['total_keys'] }}</strong></div>
-    <p class="tc-notice" data-closed @if($activity['enabled']) hidden @endif>{{ __('treasure_chest.closed') }}</p>
+    <p class="tc-notice" data-closed @if($activity['enabled']) hidden @endif>{{ $activity['status_message'] }}</p>
     @if($activity['starts_at'] || $activity['ends_at'])
         <p class="tc-schedule">{{ $activity['starts_at'] }} — {{ $activity['ends_at'] ?: __('treasure_chest.no_end') }} ({{ $activity['timezone'] }})</p>
     @endif

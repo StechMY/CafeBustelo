@@ -1,6 +1,9 @@
 <?php
 
 return [
+    'admin_title' => '宝箱活动',
+    'scheduled' => '活动尚未开始，请查看下方开始时间。',
+    'ended' => '活动已结束。',
     'enable_activity' => '开放宝箱活动',
     'open_activity' => '探索九重宝藏',
     'rule_invite_title' => '邀请好友购买',

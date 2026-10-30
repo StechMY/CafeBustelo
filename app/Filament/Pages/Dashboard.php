@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Filament\Actions\TreasureChestSettingsAction;
 use App\Filament\Resources\GoldenEggPrizes\GoldenEggPrizeResource;
 use App\Filament\Resources\PageImages\PageImageResource;
 use App\Filament\Widgets\PlatformFinanceChart;
@@ -254,6 +255,7 @@ class Dashboard extends BaseDashboard
         ];
 
         $activityActions = [
+            TreasureChestSettingsAction::make('treasureChestSettings'),
             Action::make('goldenEggSettings')
                 ->label(__('golden_egg.admin_title'))
                 ->icon('heroicon-o-gift')

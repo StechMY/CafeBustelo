@@ -1,6 +1,9 @@
 <?php
 
 return [
+    'admin_title' => 'Sự kiện rương báu',
+    'scheduled' => 'Sự kiện chưa bắt đầu. Vui lòng xem thời gian bắt đầu bên dưới.',
+    'ended' => 'Sự kiện đã kết thúc.',
     'enable_activity' => 'Mở sự kiện rương kho báu',
     'open_activity' => 'Khám phá kho báu',
     'rule_invite_title' => 'Mời bạn mua sản phẩm',

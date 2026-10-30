@@ -27,20 +27,31 @@ class TreasureChestService
 
     public function isActiveAt(?CarbonInterface $time = null): bool
     {
+        return $this->activityStatus($time) === 'active';
+    }
+
+    private function activityStatus(?CarbonInterface $time = null): string
+    {
         if (! Setting::bool(self::SETTING_ENABLED)) {
-            return false;
+            return 'closed';
         }
         $time ??= now();
         $start = Setting::getValue(self::SETTING_START);
         $end = Setting::getValue(self::SETTING_END);
 
-        return (! $start || $time->gte(Carbon::parse($start, config('app.timezone'))))
-            && (! $end || $time->lt(Carbon::parse($end, config('app.timezone'))));
+        if ($start && $time->lt(Carbon::parse($start, config('app.timezone')))) {
+            return 'scheduled';
+        }
+        if ($end && $time->gte(Carbon::parse($end, config('app.timezone')))) {
+            return 'ended';
+        }
+
+        return 'active';
     }
 
     public function givePurchaseKeys(User $buyer, UserProduct $purchase): void
     {
-        if (! $buyer->referrer_id || $buyer->is_virtual || ! $this->isActiveAt($purchase->purchased_at)) {
+        if (! $buyer->referrer_id || ! $this->isActiveAt($purchase->purchased_at)) {
             return;
         }
         $code = strtoupper(str_replace('-', '', $purchase->meta['product_code_snapshot'] ?? ''));
@@ -61,7 +72,7 @@ class TreasureChestService
 
         DB::transaction(function () use ($buyer, $purchase, $keys): void {
             $referrer = User::query()->whereKey($buyer->referrer_id)->lockForUpdate()->first();
-            if (! $referrer || $referrer->is_virtual || $referrer->id === $buyer->id) {
+            if (! $referrer || $referrer->id === $buyer->id) {
                 return;
             }
             TreasureKeyEntry::query()->firstOrCreate(['user_product_id' => $purchase->id], [
@@ -89,8 +100,9 @@ class TreasureChestService
             if ($existing) {
                 return $existing;
             }
-            if ($user->is_virtual || ! $this->isActiveAt()) {
-                throw new RuntimeException(__('treasure_chest.closed'));
+            $status = $this->activityStatus();
+            if ($status !== 'active') {
+                throw new RuntimeException(__('treasure_chest.'.$status));
             }
             if ($this->totalKeys($user) < $prize['threshold']) {
                 throw new RuntimeException(__('treasure_chest.not_enough_keys'));
@@ -119,7 +131,8 @@ class TreasureChestService
     {
         $claims = TreasureChestClaim::query()->where('user_id', $user->id)->orderBy('chest_number')->get();
         $keys = $this->totalKeys($user);
-        $enabled = ! $user->is_virtual && $this->isActiveAt();
+        $status = $this->activityStatus();
+        $enabled = $status === 'active';
         $chests = [];
         foreach (config('treasure_chest.prizes') as $number => $prize) {
             $claim = $claims->firstWhere('chest_number', $number);
@@ -132,6 +145,7 @@ class TreasureChestService
 
         return [
             'enabled' => $enabled, 'total_keys' => $keys, 'chests' => $chests,
+            'status' => $status, 'status_message' => $enabled ? null : __('treasure_chest.'.$status),
             'starts_at' => Setting::getValue(self::SETTING_START),
             'ends_at' => Setting::getValue(self::SETTING_END), 'timezone' => config('app.timezone'),
             'products' => config('treasure_chest.products'),
