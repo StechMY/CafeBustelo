@@ -57,6 +57,7 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
 
         Route::get('/golden-egg', [GoldenEggController::class, 'index'])->name('golden-egg.index');
         Route::get('/treasure-chest', [TreasureChestController::class, 'index'])->name('treasure-chest.index');
+        Route::get('/treasure-chest/history', [TreasureChestController::class, 'history'])->name('treasure-chest.history');
         Route::post('/treasure-chest/claim', [TreasureChestController::class, 'claim'])
             ->middleware('throttle:30,1')->name('treasure-chest.claim');
         Route::post('/golden-egg/draw', [GoldenEggController::class, 'draw'])

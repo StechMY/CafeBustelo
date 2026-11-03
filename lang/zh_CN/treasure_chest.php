@@ -1,6 +1,13 @@
 <?php
 
 return [
+    'key_history' => '钥匙获取记录',
+    'history_hint' => '查看购买奖励、宝箱赠送和后台添加的每一笔钥匙。',
+    'history_purchase' => '直属会员购买',
+    'history_chest' => '宝箱赠送',
+    'history_manual' => '后台添加',
+    'history_empty' => '暂无钥匙获取记录。',
+    'history_unavailable' => '详情已不可用',
     'configuration' => '宝箱规则配置',
     'configuration_help' => '调整后用于后续购买和领取，不补发旧订单，不重置已领宝箱；已领取奖励保留原记录。奖励填 0 表示不发放该类型，每箱至少设置一种奖励。',
     'display_settings' => '奖励文字显示',

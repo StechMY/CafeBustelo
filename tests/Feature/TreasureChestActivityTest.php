@@ -515,6 +515,65 @@ class TreasureChestActivityTest extends TestCase
         $this->assertSame(17, app(TreasureChestService::class)->totalKeys($referrer));
     }
 
+    public function test_key_history_combines_sources_and_keeps_purchase_snapshot_without_exposing_other_users(): void
+    {
+        $originalTimezone = date_default_timezone_get();
+        date_default_timezone_set('Asia/Ho_Chi_Minh');
+        $this->beforeApplicationDestroyed(fn () => date_default_timezone_set($originalTimezone));
+        $this->open();
+        $owner = $this->user();
+        $buyer = $this->user(['referrer_id' => $owner->id, 'created_at' => now()->subYear()]);
+        $this->fund($buyer);
+        $product = $this->product();
+        $purchase = app(ProductPurchaseService::class)->purchase($buyer, $product);
+        $product->update(['code' => 'RENAMED', 'name' => 'Renamed product']);
+        $purchase->delete(); // Soft-deleted purchases still explain previously awarded keys.
+        $this->travel(1)->minutes();
+        TreasureKeyEntry::query()->create(['user_id' => $owner->id, 'keys' => 7, 'remarks' => 'Private admin note']);
+        $this->travel(1)->minutes();
+        $service = app(TreasureChestService::class);
+        $service->claim($owner, 4);
+        $service->claim($owner, 1); // Cash-only rewards do not appear in key history.
+        $this->keys($buyer, 999);
+        $service->claim($buyer, 5);
+
+        Sanctum::actingAs($owner);
+        $response = $this->getJson('/api/v1/treasure-chest/history?user_id='.$buyer->id)->assertOk()
+            ->assertJsonPath('data.pagination.total', 3)
+            ->assertJsonPath('data.items.0.source', 'chest')
+            ->assertJsonPath('data.items.0.chest_number', 4)
+            ->assertJsonPath('data.items.0.keys', 2)
+            ->assertJsonPath('data.items.0.created_at', '2026-11-01T12:02:00+07:00')
+            ->assertJsonPath('data.items.1.source', 'manual')
+            ->assertJsonPath('data.items.1.keys', 7)
+            ->assertJsonPath('data.items.2.source', 'purchase')
+            ->assertJsonPath('data.items.2.username', $buyer->username)
+            ->assertJsonPath('data.items.2.product_code', 'T1')
+            ->assertDontSee('Private admin note')->assertDontSee('RENAMED');
+        $this->assertSame($service->totalKeys($owner), array_sum(array_column($response->json('data.items'), 'keys')));
+        $this->actingAs($owner)->get('/treasure-chest/history')->assertOk()
+            ->assertSee($buyer->username)->assertSee('T1')->assertSee('Chest 4')->assertSee('+7');
+        $this->get('/treasure-chest')->assertSee(route('treasure-chest.history'));
+    }
+
+    public function test_key_history_requires_authentication_and_handles_empty_and_paginated_results(): void
+    {
+        $this->get('/treasure-chest/history')->assertRedirect(route('login'));
+        $this->getJson('/api/v1/treasure-chest/history')->assertUnauthorized();
+        $owner = $this->user();
+        $this->actingAs($owner)->get('/treasure-chest/history')->assertOk()->assertSee('No keys earned yet.');
+        foreach (range(1, 21) as $keys) {
+            $this->keys($owner, $keys);
+        }
+        Sanctum::actingAs($owner);
+        $this->getJson('/api/v1/treasure-chest/history')->assertOk()
+            ->assertJsonCount(20, 'data.items')->assertJsonPath('data.pagination.total', 21)
+            ->assertJsonPath('data.items.0.keys', 21)->assertJsonPath('data.items.19.keys', 2);
+        $this->getJson('/api/v1/treasure-chest/history?page=2')->assertOk()
+            ->assertJsonCount(1, 'data.items')->assertJsonPath('data.items.0.keys', 1);
+        $this->get('/treasure-chest/history?page=2')->assertOk()->assertSee('+1');
+    }
+
     private function keyAdmin(): AdminUser
     {
         $admin = AdminUser::query()->create(['username' => 'key-admin', 'password' => 'password', 'status' => 'active']);

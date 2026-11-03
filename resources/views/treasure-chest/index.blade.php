@@ -13,6 +13,7 @@
         <p>{{ __('treasure_chest.intro') }}</p>
     </header>
     <div class="tc-balance"><i class="ph-thin ph-key" aria-hidden="true"></i><span>{{ __('treasure_chest.total_keys') }}</span><strong data-total-keys>{{ $activity['total_keys'] }}</strong></div>
+    <a class="tc-history-link" href="{{ route('treasure-chest.history') }}"><i class="ph-thin ph-clock-counter-clockwise" aria-hidden="true"></i>{{ __('treasure_chest.key_history') }}<i class="ph-thin ph-caret-right" aria-hidden="true"></i></a>
     <p class="tc-notice" data-closed @if($activity['enabled']) hidden @endif>{{ $activity['status_message'] }}</p>
     @if($activity['starts_at'] || $activity['ends_at'])
         <p class="tc-schedule">{{ $activity['starts_at'] }} — {{ $activity['ends_at'] ?: __('treasure_chest.no_end') }} ({{ $activity['timezone'] }})</p>

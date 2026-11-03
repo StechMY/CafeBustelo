@@ -29,4 +29,11 @@ class TreasureChestController extends Controller
             return ApiResponse::error($exception->getMessage());
         }
     }
+
+    public function history(Request $request, TreasureChestService $service): View|JsonResponse
+    {
+        $history = $service->keyHistory($request->user());
+
+        return $request->is('api/*') ? ApiResponse::paginated($history, fn (array $entry) => $entry) : view('treasure-chest.history', compact('history'));
+    }
 }

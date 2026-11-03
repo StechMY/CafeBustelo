@@ -12,6 +12,7 @@ use App\Models\UserProduct;
 use App\Models\Wallet;
 use App\Services\Settings\TreasureChestSettings;
 use Carbon\CarbonInterface;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
@@ -94,6 +95,36 @@ class TreasureChestService
     {
         return (int) TreasureKeyEntry::query()->where('user_id', $user->id)->sum('keys')
             + (int) TreasureChestClaim::query()->where('user_id', $user->id)->sum('keys');
+    }
+
+    public function keyHistory(User $user): LengthAwarePaginator
+    {
+        $entries = DB::table('treasure_key_entries as entries')
+            ->leftJoin('users as buyers', 'buyers.id', '=', 'entries.invited_user_id')
+            ->leftJoin('user_products as purchases', 'purchases.id', '=', 'entries.user_product_id')
+            ->where('entries.user_id', $user->id)
+            ->select(['entries.id', 'entries.keys', 'entries.created_at', 'buyers.username', 'purchases.meta'])
+            ->selectRaw("CASE WHEN entries.user_product_id IS NOT NULL OR entries.invited_user_id IS NOT NULL THEN 'purchase' ELSE 'manual' END as source, NULL as chest_number");
+        $claims = DB::table('treasure_chest_claims')
+            ->where('user_id', $user->id)->where('keys', '>', 0)
+            ->select(['id', 'keys', 'created_at'])
+            ->selectRaw("NULL as username, NULL as meta, 'chest' as source, chest_number");
+
+        return DB::query()->fromSub($entries->unionAll($claims), 'history')
+            ->orderByDesc('created_at')->orderByDesc('id')->orderBy('source')
+            ->paginate(20)->through(function ($entry): array {
+                $meta = json_decode($entry->meta ?? '{}', true) ?? [];
+
+                return [
+                    'keys' => (int) $entry->keys,
+                    'source' => $entry->source,
+                    'username' => $entry->username,
+                    'product_code' => $meta['product_code_snapshot'] ?? null,
+                    'product_name' => $meta['product_name_snapshot'] ?? null,
+                    'chest_number' => $entry->chest_number === null ? null : (int) $entry->chest_number,
+                    'created_at' => Carbon::parse($entry->created_at, config('app.timezone'))->toIso8601String(),
+                ];
+            });
     }
 
     public function claim(User $user, int $number): TreasureChestClaim

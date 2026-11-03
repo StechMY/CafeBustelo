@@ -1,6 +1,13 @@
 <?php
 
 return [
+    'key_history' => 'Key history',
+    'history_hint' => 'Every key earned, including purchases, chest rewards and manual additions.',
+    'history_purchase' => 'Invited member purchase',
+    'history_chest' => 'Chest reward',
+    'history_manual' => 'Added by administrator',
+    'history_empty' => 'No keys earned yet.',
+    'history_unavailable' => 'Details unavailable',
     'configuration' => 'Treasure chest rules',
     'configuration_help' => 'Changes apply to future purchases and claims. Past orders are not backfilled and claimed chests are not reset. Existing rewards keep their original values. Set a reward to 0 to omit it; each chest needs at least one reward.',
     'display_settings' => 'Reward text visibility',

@@ -1,6 +1,13 @@
 <?php
 
 return [
+    'key_history' => 'Riwayat kunci',
+    'history_hint' => 'Lihat kunci dari pembelian, hadiah peti, dan penambahan admin.',
+    'history_purchase' => 'Pembelian anggota undangan langsung',
+    'history_chest' => 'Hadiah peti',
+    'history_manual' => 'Ditambahkan admin',
+    'history_empty' => 'Belum ada riwayat kunci.',
+    'history_unavailable' => 'Detail tidak tersedia',
     'configuration' => 'Pengaturan peti harta',
     'configuration_help' => 'Perubahan berlaku untuk pembelian dan klaim berikutnya. Pesanan lama tidak dihitung ulang dan peti yang sudah diklaim tidak direset. Hadiah lama tetap sama. Isi 0 untuk meniadakan jenis hadiah; setiap peti harus memiliki minimal satu hadiah.',
     'display_settings' => 'Tampilan teks hadiah',

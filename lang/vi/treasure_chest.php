@@ -1,6 +1,13 @@
 <?php
 
 return [
+    'key_history' => 'Lịch sử nhận chìa khóa',
+    'history_hint' => 'Xem chìa khóa từ giao dịch mua, phần thưởng rương và quản trị viên.',
+    'history_purchase' => 'Thành viên được mời trực tiếp mua hàng',
+    'history_chest' => 'Phần thưởng rương',
+    'history_manual' => 'Quản trị viên thêm',
+    'history_empty' => 'Chưa có lịch sử nhận chìa khóa.',
+    'history_unavailable' => 'Không còn thông tin',
     'configuration' => 'Cấu hình rương báu',
     'configuration_help' => 'Thay đổi áp dụng cho đơn mua và lượt nhận tiếp theo. Không bù đơn cũ hay đặt lại rương đã nhận; phần thưởng đã nhận giữ nguyên. Nhập 0 để bỏ loại thưởng; mỗi rương cần ít nhất một phần thưởng.',
     'display_settings' => 'Hiển thị nội dung phần thưởng',
