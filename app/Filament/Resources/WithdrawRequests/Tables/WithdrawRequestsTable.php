@@ -23,6 +23,7 @@ use Filament\Forms\Components\Textarea;
 use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Fieldset;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\ViewColumn;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -147,6 +148,13 @@ class WithdrawRequestsTable
                             self::statusTooltip($record)
                     )
                     ->wrap(),
+
+                ViewColumn::make('admin_remark')
+                    ->label(__('withdraw.admin_remark'))
+                    ->width('1%')
+                    ->view('filament.withdraw-requests.remark')
+                    ->disabledClick()
+                    ->searchable(),
 
                 TextColumn::make('gateway_release_at')
                     ->label(__('withdraw.scheduled_at'))
@@ -324,6 +332,13 @@ class WithdrawRequestsTable
             ->defaultSort('created_at', 'desc')
 
             ->filters([
+                Filter::make('has_admin_remark')
+                    ->label(__('withdraw.has_admin_remark'))
+                    ->query(fn (Builder $query): Builder => $query->whereRaw(
+                        "TRIM(REPLACE(REPLACE(REPLACE(admin_remark, ?, ''), ?, ''), ?, '')) <> ''",
+                        ["\t", "\r", "\n"],
+                    )),
+
                 Filter::make('dashboard_paid')
                     ->label(__('request-summary.dashboard_paid'))
                     ->query(fn (Builder $query): Builder => $query->paid()

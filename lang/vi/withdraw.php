@@ -34,6 +34,7 @@ return [
     'no_requests_desc' => 'Gửi yêu cầu rút tiền đầu tiên để rút thu nhập của bạn.',
     'withdraw_detail' => 'Chi tiết rút tiền',
     'admin_remark' => 'Ghi chú quản trị viên',
+    'has_admin_remark' => 'Có ghi chú của quản trị viên',
     'back_to_withdraw' => 'Quay lại rút tiền',
 
     'withdraw_disabled' => 'Chức năng rút tiền của bạn hiện đang bị tắt. Vui lòng liên hệ chăm sóc khách hàng.',

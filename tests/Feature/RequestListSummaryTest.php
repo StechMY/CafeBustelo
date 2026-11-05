@@ -110,6 +110,28 @@ class RequestListSummaryTest extends TestCase
         $this->assertSummary($component, 1, 100.01, $model);
     }
 
+    public function test_withdrawal_remarks_can_be_viewed_filtered_and_searched(): void
+    {
+        $remark = "多付登记 REF-731\n<em>已核对</em>";
+        $noted = $this->record(WithdrawRequest::class, ['admin_remark' => $remark]);
+        $other = $this->record(WithdrawRequest::class, ['admin_remark' => 'Other reference']);
+        $blank = $this->record(WithdrawRequest::class, ['admin_remark' => " \t\r\n"]);
+        $empty = $this->record(WithdrawRequest::class);
+
+        Livewire::test(ListWithdrawRequests::class)
+            ->assertSeeHtml('data-fi-modal-id="withdraw-remark-'.$noted->id.'"')
+            ->assertDontSeeHtml('data-fi-modal-id="withdraw-remark-'.$blank->id.'"')
+            ->assertDontSeeHtml('data-fi-modal-id="withdraw-remark-'.$empty->id.'"')
+            ->assertSee($remark)
+            ->assertDontSeeHtml('<em>已核对</em>')
+            ->filterTable('has_admin_remark')
+            ->assertCanSeeTableRecords([$noted, $other])
+            ->assertCountTableRecords(2)
+            ->searchTable('REF-731')
+            ->assertCanSeeTableRecords([$noted])
+            ->assertCountTableRecords(1);
+    }
+
     public function test_withdrawal_summary_can_be_limited_to_completed_payouts(): void
     {
         $this->record(WithdrawRequest::class);

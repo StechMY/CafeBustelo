@@ -34,6 +34,7 @@ return [
     'no_requests_desc' => 'Submit your first withdraw request to cash out your earnings.',
     'withdraw_detail' => 'Withdraw Detail',
     'admin_remark' => 'Admin Remark',
+    'has_admin_remark' => 'Has admin remark',
     'back_to_withdraw' => 'Back to Withdraw',
 
     'withdraw_disabled' => 'Your withdraw function is currently disabled. Please contact customer service.',

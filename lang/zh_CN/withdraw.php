@@ -34,6 +34,7 @@ return [
     'no_requests_desc' => '提交你的第一个提现申请来提取收益。',
     'withdraw_detail' => '提现详情',
     'admin_remark' => '管理员备注',
+    'has_admin_remark' => '有管理员备注',
     'back_to_withdraw' => '返回提现',
 
     'withdraw_disabled' => '你的提现功能目前已被关闭，请联系客服。',

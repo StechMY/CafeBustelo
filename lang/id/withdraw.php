@@ -34,6 +34,7 @@ return [
     'no_requests_desc' => 'Kirim permintaan penarikan pertama Anda untuk mencairkan pendapatan.',
     'withdraw_detail' => 'Detail Penarikan',
     'admin_remark' => 'Catatan Admin',
+    'has_admin_remark' => 'Memiliki catatan admin',
     'back_to_withdraw' => 'Kembali ke Penarikan',
     'withdraw_disabled' => 'Fungsi penarikan Anda sedang dinonaktifkan. Silakan hubungi layanan pelanggan.',
     'account_not_active' => 'Akun Anda tidak aktif. Silakan aktifkan akun sebelum menarik dana.',
