@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class CustomerAuthController extends Controller
@@ -41,7 +42,15 @@ class CustomerAuthController extends Controller
 
         if (! Auth::guard('web')->attemptWhen(
             $credentials,
-            fn (User $user): bool => $user->status !== 'suspended',
+            function (User $user): bool {
+                if ($user->status === 'suspended') {
+                    throw ValidationException::withMessages([
+                        'username' => __('auth.account_suspended'),
+                    ]);
+                }
+
+                return true;
+            },
             $request->boolean('remember'),
         )) {
             return back()

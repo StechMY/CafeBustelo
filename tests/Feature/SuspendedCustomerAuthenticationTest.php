@@ -32,7 +32,7 @@ class SuspendedCustomerAuthenticationTest extends TestCase
 
         $this->post('/login', [
             'username' => $user->username, 'password' => 'password', 'remember' => true,
-        ])->assertSessionHasErrors('username');
+        ])->assertSessionHasErrors(['username' => __('auth.account_suspended')]);
         $this->assertGuest('web');
 
         $this->postJson('/api/v1/login', [
@@ -59,6 +59,16 @@ class SuspendedCustomerAuthenticationTest extends TestCase
                 'username' => $user->username, 'password' => 'password',
             ])->assertOk()->assertJsonStructure(['data' => ['access_token']]);
         }
+    }
+
+    public function test_incorrect_password_does_not_show_a_suspension_message(): void
+    {
+        $user = $this->customer('suspended');
+
+        $this->post('/login', [
+            'username' => $user->username, 'password' => 'wrong-password',
+        ])->assertSessionHasErrors(['username' => 'Invalid username or password.']);
+        $this->assertGuest('web');
     }
 
     public function test_suspension_revokes_tokens_and_remember_me_credentials(): void
