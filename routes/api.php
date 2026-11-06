@@ -49,7 +49,7 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
     Route::get('/app-config', AppConfigController::class)->name('app-config');
     Route::get('/contact', ContactController::class)->name('contact');
 
-    Route::middleware('auth:sanctum')->group(function (): void {
+    Route::middleware(['auth:sanctum', 'customer.not-suspended'])->group(function (): void {
         Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
         Route::get('/me', [AuthController::class, 'me'])->name('me');
 

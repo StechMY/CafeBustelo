@@ -101,6 +101,10 @@ class AuthController extends Controller
             ], 401);
         }
 
+        if ($user->status === 'suspended') {
+            return ApiResponse::error(__('auth.account_suspended'), [], 401);
+        }
+
         $this->recordLogin($request, $user, 'login');
 
         $token = $user->createToken($data['device_name'] ?? 'flutter')->plainTextToken;

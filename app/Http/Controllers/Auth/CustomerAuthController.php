@@ -39,7 +39,11 @@ class CustomerAuthController extends Controller
             'password' => ['required', 'string'],
         ]);
 
-        if (! Auth::attempt($credentials, $request->boolean('remember'))) {
+        if (! Auth::guard('web')->attemptWhen(
+            $credentials,
+            fn (User $user): bool => $user->status !== 'suspended',
+            $request->boolean('remember'),
+        )) {
             return back()
                 ->withErrors([
                     'username' => 'Invalid username or password.',

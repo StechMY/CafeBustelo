@@ -1,6 +1,7 @@
 <?php
 
 return [
+    'account_suspended' => 'Tài khoản của bạn đã bị đình chỉ. Vui lòng liên hệ bộ phận hỗ trợ.',
     'login' => 'Đăng nhập',
     'register' => 'Đăng ký',
     'logout' => 'Đăng xuất',

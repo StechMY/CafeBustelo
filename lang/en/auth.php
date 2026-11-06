@@ -1,6 +1,7 @@
 <?php
 
 return [
+    'account_suspended' => 'Your account has been suspended. Please contact support.',
     'login' => 'Login',
     'register' => 'Register',
     'logout' => 'Logout',

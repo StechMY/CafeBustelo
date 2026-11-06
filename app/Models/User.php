@@ -131,6 +131,12 @@ class User extends Authenticatable
 
     protected static function booted(): void
     {
+        static::updating(function (self $user): void {
+            if ($user->isDirty('status') && $user->status === 'suspended') {
+                $user->setRememberToken(null);
+            }
+        });
+
         static::created(function (self $user): void {
             $user->recordReachedVipLevelTimes(previousRecharge: -1, previousActiveTeamSize: -1);
 
@@ -140,6 +146,10 @@ class User extends Authenticatable
         });
 
         static::updated(function (self $user): void {
+            if ($user->wasChanged('status') && $user->status === 'suspended') {
+                $user->tokens()->delete();
+            }
+
             $rechargeChanged = $user->wasChanged('accumulated_recharge');
             $teamChanged = $user->status === 'active' && $user->wasChanged(['status', 'referrer_id']);
 

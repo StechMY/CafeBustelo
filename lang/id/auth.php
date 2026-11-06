@@ -1,6 +1,7 @@
 <?php
 
 return [
+    'account_suspended' => 'Akun Anda telah ditangguhkan. Silakan hubungi layanan pelanggan.',
     'login' => 'Masuk',
     'register' => 'Daftar',
     'logout' => 'Keluar',

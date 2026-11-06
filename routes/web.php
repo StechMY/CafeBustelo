@@ -93,10 +93,10 @@ Route::post('/register/send-otp', [RegisterOtpController::class, 'send'])
     ->name('register.otp.send');
 
 Route::post('/bank-account/send-otp', [BankAccountOtpController::class, 'send'])
-    ->middleware(['auth', 'otp.audit:bank_account', 'throttle:otp-send', 'otp.challenge:bank_account'])
+    ->middleware(['auth', 'customer.not-suspended', 'otp.audit:bank_account', 'throttle:otp-send', 'otp.challenge:bank_account'])
     ->name('bank-account.otp.send');
 
-Route::middleware(['guest', 'web', 'human.only'])->group(function (): void {
+Route::middleware(['customer.not-suspended', 'guest', 'web', 'human.only'])->group(function (): void {
     Route::get('/login', [CustomerAuthController::class, 'showLogin'])
         ->name('login');
 
@@ -110,7 +110,7 @@ Route::middleware(['guest', 'web', 'human.only'])->group(function (): void {
         ->name('register.store');
 });
 
-Route::middleware('auth')->group(function (): void {
+Route::middleware(['auth', 'customer.not-suspended'])->group(function (): void {
     Route::get('/dashboard', DashboardController::class)
         ->name('dashboard');
 

@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\EnsureDashboardApiClient;
 use App\Http\Middleware\HumanOnly;
+use App\Http\Middleware\RejectSuspendedCustomer;
 use App\Http\Middleware\SetLocale;
 use App\Support\Api\ApiResponse;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -52,6 +53,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'ability' => CheckForAnyAbility::class,
             'dashboard.api-client' => EnsureDashboardApiClient::class,
             'human.only' => HumanOnly::class,
+            'customer.not-suspended' => RejectSuspendedCustomer::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

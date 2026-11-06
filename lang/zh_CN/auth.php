@@ -1,6 +1,7 @@
 <?php
 
 return [
+    'account_suspended' => '您的账号已被暂停，请联系客服。',
     'login' => '登录',
     'register' => '注册',
     'logout' => '退出',
