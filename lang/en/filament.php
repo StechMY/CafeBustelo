@@ -531,7 +531,7 @@ return [
     'invite_day_first_purchase_help' => 'Also rewards the direct inviter when a member registers and makes their first product purchase on the same invite day. Uses product extra points, or the Upgrade Day amount when extra points are 0. Any required first deposit must qualify before purchase.',
     'invite_day_points_amount' => 'Invite Day Points Amount',
     'invite_day_require_first_deposit' => 'Require first deposit for invite bonus',
-    'invite_day_require_first_deposit_help' => 'When enabled, the invited user must register on an invite day and have their first deposit approved on that same date, meeting the minimum. Later dates or deposits cannot qualify for the registration reward.',
+    'invite_day_require_first_deposit_help' => 'When enabled, the invited user must register on an invite day, have their first deposit approved that same day for at least the minimum, then successfully purchase a product that day. The inviter is rewarded once after purchase. Later dates or top-ups do not qualify.',
     'invite_day_first_deposit_min_amount' => 'Minimum first deposit amount',
     'invite_day_first_deposit_min_amount_help' => 'The first deposit approved on the registration date must meet this amount. A later deposit cannot make up for a first deposit below the minimum.',
     'points_cash_exchange_enabled' => 'Enable Points to Cash',

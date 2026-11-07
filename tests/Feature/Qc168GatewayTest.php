@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Filament\Resources\RechargeRequests\Tables\RechargeRequestsTable;
 use App\Models\PaymentGatewayEvent;
 use App\Models\PointTransaction;
+use App\Models\Product;
 use App\Models\RechargeMethod;
 use App\Models\RechargeRequest;
 use App\Models\Setting;
@@ -15,6 +16,7 @@ use App\Services\PaymentGateway\Qc168BalanceService;
 use App\Services\PaymentGateway\Qc168CallbackService;
 use App\Services\PaymentGateway\Qc168Gateway;
 use App\Services\PointService;
+use App\Services\ProductPurchaseService;
 use App\Services\RechargeApprovalService;
 use Illuminate\Http\Client\Request as ClientRequest;
 use Illuminate\Http\UploadedFile;
@@ -485,7 +487,7 @@ class Qc168GatewayTest extends TestCase
     }
 
     #[DataProvider('inviteDayApprovalDates')]
-    public function test_gateway_completion_runs_first_deposit_invite_hook_once(string $registeredAt, string $approvedAt, string $expectedPoints): void
+    public function test_gateway_deposit_only_awards_invitation_points_after_qualifying_purchase(string $registeredAt, string $approvedAt, string $expectedPoints): void
     {
         $this->travelTo(Carbon::parse($approvedAt));
         Setting::setValue(PointService::SETTING_POINTS_ENABLED, true);
@@ -517,6 +519,16 @@ class Qc168GatewayTest extends TestCase
 
         $this->assertSame('approved', $recharge->fresh()->status);
         $this->assertSame('1000.00', Wallet::query()->where('user_id', $user->id)->where('type', Wallet::TYPE_RECHARGE)->value('balance'));
+        $this->assertSame('0.00', $referrer->fresh()->points_balance);
+        $this->assertDatabaseCount('point_transactions', 0);
+
+        $product = Product::query()->create([
+            'name' => 'Invite Product', 'code' => 'GATEWAY-INVITE', 'price' => 50,
+            'daily_income' => 1, 'duration_days' => 2, 'status' => 'active',
+        ]);
+        app(ProductPurchaseService::class)->purchase($user, $product);
+        $this->sendCallback($payload)->assertOk();
+
         $this->assertSame($expectedPoints, $referrer->fresh()->points_balance);
         $this->assertSame($expectedPoints === '0.00' ? 0 : 1, PointTransaction::query()
             ->where('type', PointTransaction::TYPE_INVITE_DAY_REGISTER)

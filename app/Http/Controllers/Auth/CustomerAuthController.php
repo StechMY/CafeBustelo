@@ -5,10 +5,8 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Wallet;
-use App\Services\InviteDayBonusService;
 use App\Services\GoldenEggService;
 use App\Services\OtpService;
-use App\Services\PointService;
 use App\Services\WelcomeBonusService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -83,8 +81,6 @@ class CustomerAuthController extends Controller
     public function register(
         Request $request,
         WelcomeBonusService $welcomeBonusService,
-        PointService $pointService,
-        InviteDayBonusService $inviteDayBonusService,
         GoldenEggService $goldenEggService,
         OtpService $otpService
     ): RedirectResponse {
@@ -139,7 +135,7 @@ class CustomerAuthController extends Controller
                 ->first();
         }
 
-        $user = DB::transaction(function () use ($data, $referrer, $request, $welcomeBonusService, $pointService, $inviteDayBonusService, $goldenEggService): User {
+        $user = DB::transaction(function () use ($data, $referrer, $request, $welcomeBonusService, $goldenEggService): User {
             $user = User::query()->create([
                 'name' => $data['name'],
                 'username' => $data['username'],
@@ -174,9 +170,6 @@ class CustomerAuthController extends Controller
                 'locked_balance' => 0,
             ]);
 
-            if ($referrer && $inviteDayBonusService->shouldGiveOnRegistration()) {
-                $pointService->giveInviteDayRegisterPoints($referrer, $user);
-            }
             $welcomeBonusService->give($user);
             $goldenEggService->registerInvitee($user);
 

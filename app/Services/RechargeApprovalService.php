@@ -19,7 +19,6 @@ class RechargeApprovalService
 {
     public function __construct(
         private readonly WalletService $walletService,
-        private readonly InviteDayBonusService $inviteDayBonusService,
     ) {}
 
     public function approve(
@@ -64,9 +63,6 @@ class RechargeApprovalService
             );
 
             $user->increment('accumulated_recharge', (float) $lockedRequest->amount);
-
-            // Keep bonuses inside the approval lock so reversal cannot race a late award.
-            $this->inviteDayBonusService->handleApprovedRecharge($lockedRequest);
 
             return $lockedRequest;
         });

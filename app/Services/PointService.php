@@ -134,7 +134,6 @@ class PointService
         }
 
         $alreadyGiven = PointTransaction::query()
-            ->where('user_id', $referrer->id)
             ->where('type', PointTransaction::TYPE_INVITE_DAY_REGISTER)
             ->where('reference_type', $newUser::class)
             ->where('reference_id', $newUser->id)

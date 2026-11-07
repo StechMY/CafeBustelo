@@ -2,12 +2,15 @@
 
 namespace Tests\Feature;
 
+use App\Http\Middleware\HumanOnly;
+use App\Models\PointTransaction;
 use App\Models\Product;
 use App\Models\RechargeRequest;
 use App\Models\Setting;
 use App\Models\User;
 use App\Models\Wallet;
 use App\Services\InviteDayBonusService;
+use App\Services\OtpService;
 use App\Services\PointService;
 use App\Services\ProductPurchaseService;
 use App\Services\RechargeApprovalService;
@@ -69,6 +72,8 @@ class InviteDayFirstPurchaseTest extends TestCase
         [$referrer, $user] = $this->invitedUser($registeredAt);
         Carbon::setTestNow(Carbon::parse($purchasedAt));
 
+        // Isolate the retained, disabled extra reward from the invitation reward.
+        Setting::setValue(PointService::SETTING_INVITE_DAY_AMOUNT, 0);
         $purchase = app(ProductPurchaseService::class)->purchase($user, $this->product($extraPoints));
         // Exercise the retained calculation directly; purchases no longer call it.
         app(PointService::class)->giveInviteDayFirstPurchasePoints($user, $purchase);
@@ -146,31 +151,30 @@ class InviteDayFirstPurchaseTest extends TestCase
     {
         Setting::setValue(PointService::SETTING_INVITE_DAY_REQUIRE_FIRST_DEPOSIT, true);
         Setting::setValue(PointService::SETTING_INVITE_DAY_FIRST_DEPOSIT_MIN_AMOUNT, 100);
-        Setting::setValue(PointService::SETTING_INVITE_DAY_AMOUNT, 0);
         [$referrer, $user] = $this->invitedUser();
         $laterApproval = $this->deposit($user, 100, 'pending');
         $firstApproval = $this->deposit($user, 50, 'pending');
 
         app(RechargeApprovalService::class)->approve($firstApproval, null);
         app(RechargeApprovalService::class)->approve($laterApproval, null);
-        $purchase = app(ProductPurchaseService::class)->purchase($user, $this->product());
-        app(PointService::class)->giveInviteDayFirstPurchasePoints($user, $purchase);
+        app(ProductPurchaseService::class)->purchase($user, $this->product());
 
         $this->assertEquals(0, $referrer->fresh()->points_balance);
         $this->assertDatabaseCount('point_transactions', 0);
     }
 
-    public function test_web_and_api_purchases_do_not_add_first_purchase_points_to_existing_invitation_points(): void
+    public function test_web_and_api_purchases_award_invitation_points_only_once_after_recharge(): void
     {
         Setting::setValue(PointService::SETTING_INVITE_DAY_REQUIRE_FIRST_DEPOSIT, true);
         Setting::setValue(PointService::SETTING_INVITE_DAY_FIRST_DEPOSIT_MIN_AMOUNT, 100);
         [$referrer, $user] = $this->invitedUser();
         app(RechargeApprovalService::class)->approve($this->deposit($user, 100, 'pending'), null);
-        $this->assertEquals(20, $referrer->fresh()->points_balance);
+        $this->assertEquals(0, $referrer->fresh()->points_balance);
 
         Sanctum::actingAs($user);
         $product = $this->product(30);
         $this->postJson("/api/v1/products/{$product->id}/purchase", ['wallet_type' => Wallet::TYPE_RECHARGE])->assertCreated();
+        $this->assertEquals(20, $referrer->fresh()->points_balance);
 
         $this->actingAs($user, 'web')
             ->post(route('products.purchase', $this->product(80)), ['wallet_type' => Wallet::TYPE_WITHDRAWABLE])
@@ -194,28 +198,28 @@ class InviteDayFirstPurchaseTest extends TestCase
             ->assertDontSee('When an invited member registers and makes their first product purchase on the same invite day');
     }
 
-    public function test_ineligible_first_purchase_cannot_be_replaced_by_a_later_product_or_deleted_order(): void
+    public function test_deleting_a_rewarded_order_does_not_allow_another_invitation_reward(): void
     {
         [$referrer, $user] = $this->invitedUser();
-        Setting::setValue(PointService::SETTING_INVITE_DAY_ENABLED, false);
         $firstPurchase = app(ProductPurchaseService::class)->purchase($user, $this->product(30));
         $firstPurchase->delete();
 
-        Setting::setValue(PointService::SETTING_INVITE_DAY_ENABLED, true);
         app(ProductPurchaseService::class)->purchase($user, $this->product(50));
 
-        $this->assertEquals(0, $referrer->fresh()->points_balance);
-        $this->assertDatabaseCount('point_transactions', 0);
+        $this->assertEquals(20, $referrer->fresh()->points_balance);
+        $this->assertDatabaseCount('point_transactions', 1);
     }
 
-    public function test_purchase_before_qualifying_first_deposit_is_not_rewarded_later(): void
+    public function test_purchase_before_qualifying_first_deposit_requires_another_purchase_to_award(): void
     {
         Setting::setValue(PointService::SETTING_INVITE_DAY_REQUIRE_FIRST_DEPOSIT, true);
         Setting::setValue(PointService::SETTING_INVITE_DAY_FIRST_DEPOSIT_MIN_AMOUNT, 100);
         [$referrer, $user] = $this->invitedUser();
         app(ProductPurchaseService::class)->purchase($user, $this->product(30), Wallet::TYPE_WITHDRAWABLE);
+        $this->assertEquals(0, $referrer->fresh()->points_balance);
 
         app(RechargeApprovalService::class)->approve($this->deposit($user, 100, 'pending'), null);
+        $this->assertEquals(0, $referrer->fresh()->points_balance);
         app(ProductPurchaseService::class)->purchase($user, $this->product(50));
 
         $this->assertEquals(20, $referrer->fresh()->points_balance);
@@ -250,14 +254,11 @@ class InviteDayFirstPurchaseTest extends TestCase
         Setting::setValue(PointService::SETTING_INVITE_DAY_FIRST_DEPOSIT_MIN_AMOUNT, 100);
         [$referrer, $user] = $this->invitedUser($registeredAt);
 
-        $this->assertFalse(app(InviteDayBonusService::class)->shouldGiveOnRegistration());
-
         Carbon::setTestNow(Carbon::parse($approvedAt));
-        $recharge = app(RechargeApprovalService::class)->approve($this->deposit($user, 100, 'pending'), null);
-        app(InviteDayBonusService::class)->handleApprovedRecharge($recharge);
+        app(RechargeApprovalService::class)->approve($this->deposit($user, 100, 'pending'), null);
 
-        $this->assertEquals($eligible ? 20 : 0, $referrer->fresh()->points_balance);
-        $this->assertDatabaseCount('point_transactions', $eligible ? 1 : 0);
+        $this->assertEquals(0, $referrer->fresh()->points_balance);
+        $this->assertDatabaseCount('point_transactions', 0);
 
         app(ProductPurchaseService::class)->purchase($user, $this->product(30));
 
@@ -283,25 +284,27 @@ class InviteDayFirstPurchaseTest extends TestCase
 
         app(RechargeApprovalService::class)->approve($this->deposit($user, 99, 'pending'), null);
         app(RechargeApprovalService::class)->approve($this->deposit($user, 100, 'pending'), null);
+        app(ProductPurchaseService::class)->purchase($user, $this->product());
 
         $this->assertEquals(0, $referrer->fresh()->points_balance);
         $this->assertDatabaseCount('point_transactions', 0);
     }
 
-    public function test_registration_reward_still_applies_without_a_deposit_when_requirement_is_disabled(): void
+    public function test_purchase_is_required_even_when_first_deposit_requirement_is_disabled(): void
     {
         Setting::setValue(PointService::SETTING_INVITE_DAY_REQUIRE_FIRST_DEPOSIT, false);
         [$referrer, $user] = $this->invitedUser();
 
-        $this->assertTrue(app(InviteDayBonusService::class)->shouldGiveOnRegistration());
-        app(PointService::class)->giveInviteDayRegisterPoints($referrer, $user);
-        app(PointService::class)->giveInviteDayRegisterPoints($referrer, $user);
+        $this->assertEquals(0, $referrer->fresh()->points_balance);
+        $purchase = app(ProductPurchaseService::class)->purchase($user, $this->product());
+        app(InviteDayBonusService::class)->handlePurchase($user, $purchase);
+        app(InviteDayBonusService::class)->handlePurchase($user, $purchase);
 
         $this->assertEquals(20, $referrer->fresh()->points_balance);
         $this->assertDatabaseCount('point_transactions', 1);
     }
 
-    public function test_failed_purchase_can_be_retried_without_awarding_referrer_points(): void
+    public function test_failed_purchase_only_awards_referrer_points_after_successful_retry(): void
     {
         [$referrer, $user] = $this->invitedUser();
         $wallet = $user->wallets()->where('type', Wallet::TYPE_RECHARGE)->firstOrFail();
@@ -319,11 +322,11 @@ class InviteDayFirstPurchaseTest extends TestCase
         $this->assertDatabaseCount('point_transactions', 0);
         $wallet->update(['balance' => 100]);
         app(ProductPurchaseService::class)->purchase($user, $product);
-        $this->assertEquals(0, $referrer->fresh()->points_balance);
-        $this->assertDatabaseCount('point_transactions', 0);
+        $this->assertEquals(20, $referrer->fresh()->points_balance);
+        $this->assertDatabaseCount('point_transactions', 1);
     }
 
-    public function test_purchase_still_awards_buyer_upgrade_points_without_referrer_reward(): void
+    public function test_invitation_reward_preserves_buyer_upgrade_points_and_only_rewards_direct_referrer(): void
     {
         Setting::setValue(PointService::SETTING_UPGRADE_DAY_ENABLED, true);
         Setting::setValue(PointService::SETTING_UPGRADE_DAY_WEEKDAYS, '[4]');
@@ -334,9 +337,153 @@ class InviteDayFirstPurchaseTest extends TestCase
         app(ProductPurchaseService::class)->purchase($user, $this->product(30));
 
         $this->assertEquals(30, $user->fresh()->points_balance);
-        $this->assertEquals(0, $referrer->fresh()->points_balance);
+        $this->assertEquals(20, $referrer->fresh()->points_balance);
         $this->assertEquals(0, $ancestor->fresh()->points_balance);
+        $this->assertDatabaseCount('point_transactions', 2);
+    }
+
+    #[DataProvider('registrationRoutes')]
+    public function test_registration_never_awards_invitation_points(string $route, bool $requireDeposit): void
+    {
+        $this->withoutMiddleware(HumanOnly::class);
+        Setting::setValue(PointService::SETTING_INVITE_DAY_REQUIRE_FIRST_DEPOSIT, $requireDeposit);
+        $referrer = $this->user();
+        $referrer->update(['referral_code' => 'INVITER']);
+        $this->partialMock(OtpService::class)->shouldReceive('verify')->once()->with('84912345678', 'register', '123456');
+        $data = [
+            'name' => 'New Member', 'username' => 'new_member', 'phone' => '84912345678',
+            'otp_code' => '123456', 'referral_code' => 'INVITER',
+            'password' => 'password123', 'password_confirmation' => 'password123',
+        ];
+
+        if (str_starts_with($route, '/api/')) {
+            $this->postJson($route, $data)->assertCreated();
+        } else {
+            $this->post($route, $data)->assertRedirect('/dashboard');
+        }
+
+        $this->assertDatabaseHas('users', ['username' => 'new_member', 'referrer_id' => $referrer->id]);
+        $this->assertEquals(0, $referrer->fresh()->points_balance);
+        $this->assertDatabaseCount('point_transactions', 0);
+    }
+
+    public static function registrationRoutes(): array
+    {
+        return [['/register', false], ['/api/v1/register', false], ['/register', true], ['/api/v1/register', true]];
+    }
+
+    #[DataProvider('firstDepositRules')]
+    public function test_invitation_purchase_reward_preserves_first_approved_deposit_rules(array $deposits, float $expected): void
+    {
+        Setting::setValue(PointService::SETTING_INVITE_DAY_REQUIRE_FIRST_DEPOSIT, true);
+        Setting::setValue(PointService::SETTING_INVITE_DAY_FIRST_DEPOSIT_MIN_AMOUNT, 100);
+        [$referrer, $user] = $this->invitedUser();
+        $approvals = [];
+        foreach ($deposits as [$amount, $status, $reviewedAt]) {
+            $deposit = $this->deposit($user, $amount, $status === 'approved' ? 'pending' : $status);
+            if ($status === 'approved') {
+                $approvals[] = [$deposit, $reviewedAt];
+            }
+        }
+        usort($approvals, fn (array $a, array $b): int => strcmp($a[1], $b[1]));
+        foreach ($approvals as [$deposit, $reviewedAt]) {
+            Carbon::setTestNow(Carbon::parse($reviewedAt));
+            app(RechargeApprovalService::class)->approve($deposit, null);
+        }
+        $this->assertEquals(0, $referrer->fresh()->points_balance);
+        Carbon::setTestNow(Carbon::parse('2026-09-17 10:00:00'));
+        app(ProductPurchaseService::class)->purchase($user, $this->product());
+        $this->assertEquals($expected > 0 ? 20 : 0, $referrer->fresh()->points_balance);
+    }
+
+    #[DataProvider('purchaseDates')]
+    public function test_purchase_must_be_on_registration_day_after_qualifying_deposit(string $purchasedAt, bool $eligible): void
+    {
+        Setting::setValue(PointService::SETTING_INVITE_DAY_REQUIRE_FIRST_DEPOSIT, true);
+        Setting::setValue(PointService::SETTING_INVITE_DAY_FIRST_DEPOSIT_MIN_AMOUNT, 100);
+        [$referrer, $user] = $this->invitedUser();
+        $recharge = app(RechargeApprovalService::class)->approve($this->deposit($user, 100, 'pending'), null);
+        $this->assertEquals(0, $referrer->fresh()->points_balance);
+        Carbon::setTestNow(Carbon::parse($purchasedAt));
+        $purchase = app(ProductPurchaseService::class)->purchase($user, $this->product(80));
+
+        $this->assertEquals($eligible ? 20 : 0, $referrer->fresh()->points_balance);
+        if (! $eligible) {
+            $this->assertDatabaseCount('point_transactions', 0);
+            return;
+        }
+        $entry = PointTransaction::sole();
+        $this->assertSame('invite_day_register', $entry->type);
+        $this->assertSame('product_purchase', $entry->meta['source']);
+        $this->assertSame($recharge->id, $entry->meta['recharge_request_id']);
+        $this->assertSame($purchase->id, $entry->meta['user_product_id']);
+    }
+
+    public static function purchaseDates(): array
+    {
+        return [
+            'registration day' => ['2026-09-17 23:59:59', true],
+            'midnight on next invite day' => ['2026-09-18 00:00:00', false],
+            'non-invite day' => ['2026-09-21 10:00:00', false],
+            'next week' => ['2026-09-24 10:00:00', false],
+        ];
+    }
+
+    #[DataProvider('invitationSettings')]
+    public function test_purchase_preserves_invitation_activity_settings(array $settings, int $expected): void
+    {
+        foreach ($settings as $key => $value) {
+            Setting::setValue($key, $value);
+        }
+        [$referrer, $user] = $this->invitedUser();
+        app(ProductPurchaseService::class)->purchase($user, $this->product(80));
+        $this->assertEquals($expected, $referrer->fresh()->points_balance);
+        $this->assertDatabaseCount('point_transactions', $expected > 0 ? 1 : 0);
+    }
+
+    public static function invitationSettings(): array
+    {
+        return [
+            'points disabled' => [[PointService::SETTING_POINTS_ENABLED => false], 0],
+            'invitation disabled' => [[PointService::SETTING_INVITE_DAY_ENABLED => false], 0],
+            'outside configured invitation days' => [[PointService::SETTING_INVITE_DAY_WEEKDAYS => '[1]'], 0],
+            'zero reward' => [[PointService::SETTING_INVITE_DAY_AMOUNT => 0], 0],
+            'configured invitation amount' => [[PointService::SETTING_INVITE_DAY_AMOUNT => 15], 15],
+        ];
+    }
+
+    public function test_legacy_invitation_reward_is_not_reissued_on_purchase_even_after_referrer_changes(): void
+    {
+        [$referrer, $user] = $this->invitedUser();
+        app(PointService::class)->giveInviteDayRegisterPoints($referrer, $user);
+        app(ProductPurchaseService::class)->purchase($user, $this->product());
+        $newReferrer = $this->user();
+        $user->update(['referrer_id' => $newReferrer->id]);
+        app(ProductPurchaseService::class)->purchase($user, $this->product());
+
+        $this->assertEquals(20, $referrer->fresh()->points_balance);
+        $this->assertEquals(0, $newReferrer->fresh()->points_balance);
         $this->assertDatabaseCount('point_transactions', 1);
+    }
+
+    public function test_reward_write_failure_rolls_back_purchase_and_wallet_debit(): void
+    {
+        [$referrer, $user] = $this->invitedUser();
+        PointTransaction::creating(fn () => throw new RuntimeException('Reward write failure'));
+        try {
+            app(ProductPurchaseService::class)->purchase($user, $this->product());
+            $this->fail('Expected reward write failure.');
+        } catch (RuntimeException $exception) {
+            $this->assertSame('Reward write failure', $exception->getMessage());
+        } finally {
+            PointTransaction::flushEventListeners();
+        }
+
+        $this->assertEquals(0, $referrer->fresh()->points_balance);
+        $this->assertEquals(1000, $user->wallets()->where('type', Wallet::TYPE_RECHARGE)->value('balance'));
+        $this->assertDatabaseCount('user_products', 0);
+        $this->assertDatabaseCount('wallet_transactions', 0);
+        $this->assertDatabaseCount('point_transactions', 0);
     }
 
     private function invitedUser(string $registeredAt = '2026-09-17 09:00:00'): array

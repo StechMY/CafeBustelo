@@ -15,6 +15,7 @@ class ProductPurchaseService
     public function __construct(
         private readonly WalletService $walletService,
         private readonly PointService $pointService,
+        private readonly InviteDayBonusService $inviteDayBonusService,
         private readonly GoldenEggService $goldenEggService,
         private readonly TreasureChestService $treasureChestService,
     ) {
@@ -157,6 +158,7 @@ class ProductPurchaseService
             }
 
             $this->pointService->giveUpgradeDayPurchasePoints($user, $userProduct);
+            $this->inviteDayBonusService->handlePurchase($user, $userProduct);
             // Temporarily disabled: first-purchase points for the direct inviter.
             // $this->pointService->giveInviteDayFirstPurchasePoints($user, $userProduct);
 

@@ -13,7 +13,7 @@ return [
     'no_vip_level_requirement' => 'Tanpa batasan level',
     'end_date' => 'Tanggal Akhir',
     'invite_day_require_first_deposit' => 'Wajib deposit pertama untuk bonus undangan',
-    'invite_day_require_first_deposit_help' => 'Jika diaktifkan, pengguna yang diundang harus mendaftar pada hari undangan dan deposit pertamanya harus disetujui pada tanggal yang sama serta mencapai jumlah minimum. Tanggal atau deposit berikutnya tidak memenuhi syarat hadiah pendaftaran.',
+    'invite_day_require_first_deposit_help' => 'Jika diaktifkan, anggota yang diundang harus mendaftar pada hari undangan, memiliki deposit pertama yang disetujui pada hari yang sama dan memenuhi jumlah minimum, lalu berhasil membeli produk pada hari itu. Pengundang menerima hadiah sekali setelah pembelian. Tanggal atau deposit berikutnya tidak memenuhi syarat.',
     'invite_day_first_deposit_min_amount' => 'Jumlah minimum deposit pertama',
     'invite_day_first_deposit_min_amount_help' => 'Deposit pertama yang disetujui pada tanggal pendaftaran harus mencapai jumlah ini. Deposit berikutnya tidak dapat menutupi kekurangan deposit pertama untuk mendapat hadiah.',
     'product_type_weekend_special' => 'Akhir Pekan Gila',

@@ -532,7 +532,7 @@ return [
     'invite_day_first_purchase_help' => '同一邀请日当天注册并完成首次购买，还会奖励直接邀请人。分数优先使用产品额外积分，填 0 时使用升级日积分数量；如要求首充，首购前必须满足首充门槛。',
     'invite_day_points_amount' => '邀请日积分数量',
     'invite_day_require_first_deposit' => '邀请奖励需首充',
-    'invite_day_require_first_deposit_help' => '开启后，被邀请人须在邀请日当天注册，且首笔充值须在同一天审核通过并达到最低金额，邀请人才获得注册奖励。跨日或后续充值不补发。',
+    'invite_day_require_first_deposit_help' => '开启后，被邀请人须在邀请日当天注册，首笔充值须当天审核通过并达到最低金额，然后在当天成功购买产品，上级才获得一次邀请奖励。跨日或后续充值不补发，重复购买不重复奖励。',
     'invite_day_first_deposit_min_amount' => '首充最低金额',
     'invite_day_first_deposit_min_amount_help' => '注册当天审核通过的首笔充值须达到此金额；首笔金额不足，后续充值不能补足领奖。',
     'points_cash_exchange_enabled' => '开启积分兑换现金',

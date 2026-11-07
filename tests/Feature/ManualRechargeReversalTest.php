@@ -11,7 +11,6 @@ use App\Models\Setting;
 use App\Models\User;
 use App\Models\Wallet;
 use App\Models\WalletTransaction;
-use App\Services\InviteDayBonusService;
 use App\Services\PointService;
 use App\Services\RechargeApprovalService;
 use App\Services\WalletService;
@@ -259,23 +258,23 @@ class ManualRechargeReversalTest extends TestCase
         $this->assertDatabaseCount('wallet_transactions', 1);
     }
 
-    public function test_bonus_failure_cannot_leave_a_partially_approved_deposit(): void
+    public function test_wallet_credit_failure_cannot_leave_a_partially_approved_deposit(): void
     {
         $request = $this->pending();
-        $this->mock(InviteDayBonusService::class)->shouldReceive('handleApprovedRecharge')
-            ->once()->andThrow(new RuntimeException('Bonus write failure'));
+        $this->mock(WalletService::class)->shouldReceive('credit')
+            ->once()->andThrow(new RuntimeException('Wallet write failure'));
         try {
             app(RechargeApprovalService::class)->approve($request, $this->admin);
-            $this->fail('Expected bonus failure.');
+            $this->fail('Expected wallet failure.');
         } catch (RuntimeException $exception) {
-            $this->assertSame('Bonus write failure', $exception->getMessage());
+            $this->assertSame('Wallet write failure', $exception->getMessage());
         }
         $this->assertTrue($request->fresh()->isPending());
         $this->assertSame('0.00', $this->user->fresh()->accumulated_recharge);
         $this->assertDatabaseCount('wallet_transactions', 0);
     }
 
-    public function test_an_actual_first_deposit_bonus_blocks_automatic_reversal(): void
+    public function test_a_legacy_first_deposit_bonus_blocks_automatic_reversal(): void
     {
         $referrer = User::create([
             'username' => 'referrer', 'name' => 'Referrer', 'phone' => '84912345679',
@@ -292,6 +291,10 @@ class ManualRechargeReversalTest extends TestCase
             Setting::setValue($key, $value);
         }
         $request = $this->approved();
+        app(PointService::class)->giveInviteDayRegisterPoints($referrer, $this->user, [
+            'source' => 'first_approved_recharge',
+            'recharge_request_id' => $request->id,
+        ]);
         $this->assertSame('10.00', $referrer->fresh()->points_balance);
         try {
             $this->reverse($request);
