@@ -5,6 +5,25 @@
         .withdraw-requests-table .withdraw-status-cell { min-width: 10rem; max-width: 13rem; }
         .withdraw-requests-table .withdraw-bank-cell { min-width: 10rem; max-width: 14rem; }
 
+        /* The menu is teleported outside the sticky action cells. */
+        @layer components {
+            .fi-dropdown-panel.withdraw-actions-menu {
+                max-width: min(24rem, calc(100vw - 2rem)) !important;
+            }
+        }
+
+        .withdraw-actions-menu .fi-dropdown-list-item {
+            align-items: flex-start;
+            white-space: normal;
+        }
+
+        .withdraw-actions-menu .fi-dropdown-list-item-label {
+            white-space: normal;
+            overflow-wrap: anywhere;
+            overflow: visible;
+            text-overflow: clip;
+        }
+
         .withdraw-requests-table .fi-ta-text:not(.fi-inline),
         .withdraw-requests-table .fi-ta-header-cell {
             padding-inline: 0.625rem;

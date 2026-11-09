@@ -1341,6 +1341,9 @@ class WithdrawRequestsTable
 
                     RestoreAction::make(),
                 ])
+                    ->dropdownTeleport()
+                    ->dropdownPlacement('bottom-end')
+                    ->dropdownWidth('withdraw-actions-menu')
                     ->icon('heroicon-o-ellipsis-horizontal'),
             ])
 
