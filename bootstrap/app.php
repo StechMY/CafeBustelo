@@ -32,9 +32,13 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\AuditOtpSend::class,
         );
         $middleware->validateCsrfTokens(except: [
+            'payment-gateway/ydpay/*/callback',
             'payment-gateway/qc168/callback',
             'payment-gateway/qc168/withdrawal/callback',
         ]);
+
+        $middleware->trimStrings(except: [fn (Request $request) => $request->is('payment-gateway/ydpay/*/callback')]);
+        $middleware->convertEmptyStringsToNull(except: [fn (Request $request) => $request->is('payment-gateway/ydpay/*/callback')]);
 
         $middleware->trustProxies(
             headers: Request::HEADER_X_FORWARDED_FOR |

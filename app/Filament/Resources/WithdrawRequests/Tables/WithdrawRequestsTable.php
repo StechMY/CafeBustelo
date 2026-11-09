@@ -701,6 +701,23 @@ class WithdrawRequestsTable
                 |--------------------------------------------------------------------------
                 */
                 ActionGroup::make([
+                    Action::make('approve_ydpay')
+                        ->label(fn (): string => 'YDPAY · '.app(\App\Services\Settings\YdPaySettings::class)->releaseHours().'h')
+                        ->icon('heroicon-o-clock')
+                        ->visible(fn (WithdrawRequest $record): bool => $record->isPending() && (bool) config('services.ydpay.enabled'))
+                        ->disabled(fn (): bool => ! app(\App\Services\PaymentGateway\YdPayGateway::class)->isAvailable('withdraw'))
+                        ->tooltip(fn (): ?string => app(\App\Services\PaymentGateway\YdPayGateway::class)->isAvailable('withdraw') ? null : str_replace('QC168', 'YDPAY', __('withdraw.gateway_unavailable')))
+                        ->authorize(fn (WithdrawRequest $record): bool => Gate::allows('approveScheduledGateway', $record))
+                        ->requiresConfirmation()
+                        ->modalDescription(fn (): string => str_replace('QC168', 'YDPAY', __('filament.qc168_withdraw_release_hours_help')))
+                        ->action(function (WithdrawRequest $record): void {
+                            try {
+                                app(\App\Services\PaymentGateway\YdPayWithdrawalService::class)->approve($record, Filament::auth()->user());
+                                Notification::make()->title('YDPAY: waiting release')->success()->send();
+                            } catch (Throwable $exception) {
+                                Notification::make()->title($exception->getMessage())->danger()->send();
+                            }
+                        }),
                     /*
                     |--------------------------------------------------------------------------
                     | Approve Manually
@@ -1685,11 +1702,11 @@ class WithdrawRequestsTable
         $reasonLower = Str::lower((string) $reason);
 
         if (data_get($record->gateway_meta, 'financial_review_reason') === 'provider_completed_after_cancel') {
-            return self::ui(
+            return str_replace('QC168', strtoupper($record->gateway_provider ?: 'QC168'), self::ui(
                 'withdraw.gateway_completed_after_cancel_review',
                 'QC168 reported this payout completed after the user was refunded. Financial review is required immediately.',
                 '用户退款后 QC168 又报告出款完成，必须立即进行财务审核。'
-            );
+            ));
         }
 
         if (self::hasUnknownGatewayStatus($record)) {

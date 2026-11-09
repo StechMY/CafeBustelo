@@ -45,6 +45,12 @@ class RechargeController extends Controller
                     'enabled' => $gateway->isAvailable(),
                     'provider' => RechargeRequest::GATEWAY_QC168,
                 ],
+                [
+                    'key' => RechargeRequest::METHOD_GATEWAY,
+                    'label' => 'YDPAY',
+                    'enabled' => app(\App\Services\PaymentGateway\YdPayGateway::class)->isAvailable(),
+                    'provider' => 'ydpay',
+                ],
             ],
             'methods' => $methods
                 ->map(fn (RechargeMethod $method): array => ApiFormatter::rechargeMethod($method))

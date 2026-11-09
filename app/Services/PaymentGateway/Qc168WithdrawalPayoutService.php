@@ -40,6 +40,10 @@ class Qc168WithdrawalPayoutService
         WithdrawRequest $withdrawRequest,
         string $source = 'qc168_scheduler',
     ): ?WithdrawalPayoutAttempt {
+        if ($withdrawRequest->gateway_provider === 'ydpay') {
+            return app(YdPayWithdrawalService::class)->dispatch($withdrawRequest);
+        }
+
         if (! $this->gateway->isWithdrawalAvailable()) {
             return null;
         }
@@ -55,6 +59,10 @@ class Qc168WithdrawalPayoutService
         string $reason,
         ?string $ip = null,
     ): ?WithdrawalPayoutAttempt {
+        if ($withdrawRequest->gateway_provider === 'ydpay') {
+            return app(YdPayWithdrawalService::class)->retry($withdrawRequest, $adminUser, $reason, $ip);
+        }
+
         if (! $this->gateway->isWithdrawalAvailable()) {
             throw new RuntimeException(__('withdraw.gateway_unavailable'));
         }
@@ -116,6 +124,10 @@ class Qc168WithdrawalPayoutService
         ?string $reason = null,
         ?string $ip = null,
     ): array {
+        if ($withdrawRequest->gateway_provider === 'ydpay') {
+            return app(YdPayWithdrawalService::class)->sync($withdrawRequest, $source, $adminUser, $reason, $ip);
+        }
+
         $attempt = $withdrawRequest->payoutAttempts()->latest('attempt_no')->first();
 
         if (! $attempt) {
@@ -131,6 +143,10 @@ class Qc168WithdrawalPayoutService
         string $reason,
         ?string $ip = null,
     ): WithdrawRequest {
+        if ($withdrawRequest->gateway_provider === 'ydpay') {
+            return app(YdPayWithdrawalService::class)->cancel($withdrawRequest, $adminUser, $reason, $ip);
+        }
+
         $attempt = $withdrawRequest->payoutAttempts()->latest('attempt_no')->first();
 
         if ($withdrawRequest->payout_status === WithdrawRequest::PAYOUT_CANCELLED

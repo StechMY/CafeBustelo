@@ -7,7 +7,7 @@
         $manualAvailable = $rechargeMethods->isNotEmpty();
         $requestedDepositMethod = old('deposit_method');
         $defaultDepositMethod = match (true) {
-            $requestedDepositMethod === 'gateway' && $gatewayAvailable => 'gateway',
+            $requestedDepositMethod === 'gateway' && ($gatewayAvailable || $ydpayAvailable) => 'gateway',
             $manualAvailable => 'manual',
             default => 'gateway',
         };
@@ -23,7 +23,7 @@
                 <p class="mt-2 text-xs font-bold text-[#003b7a]/70 sm:text-sm">{{ __('recharge.submit_desc') }}</p>
             </div>
 
-            @if (! $manualAvailable && ! $gatewayAvailable)
+            @if (! $manualAvailable && ! $gatewayAvailable && ! $ydpayAvailable)
                 <div class="rounded-xl bg-red-50 p-4 text-sm font-black text-red-700">{{ __('recharge.no_recharge_method_available') }}</div>
             @else
                 <form
@@ -32,6 +32,7 @@
                     class="space-y-4"
                     x-data="{
                         depositMethod: @js($defaultDepositMethod),
+                        gatewayProvider: @js(old('provider', $gatewayAvailable ? 'qc168' : 'ydpay')),
                         selectedMethodId: @js((string) old('recharge_method_id', $rechargeMethods->first()?->id)),
                         submitting: false,
                         copied: null,
@@ -59,6 +60,7 @@
                 >
                     @csrf
                     <input type="hidden" name="deposit_method" x-bind:value="depositMethod">
+                    <input type="hidden" name="provider" x-bind:value="gatewayProvider">
 
                     <div>
                         <div class="mb-2 text-xs font-black uppercase text-[#003b7a] sm:text-sm">{{ __('recharge.deposit_method') }}</div>
@@ -69,7 +71,7 @@
                                     <span class="mt-1 block text-xs font-bold text-[#003b7a]/65">{{ __('recharge.manual_deposit_desc') }}</span>
                                 </button>
                             @endif
-                            @if ($gatewayAvailable)
+                            @if ($gatewayAvailable || $ydpayAvailable)
                                 <button type="button" class="rounded-2xl border-2 p-4 text-left transition" x-bind:class="depositMethod === 'gateway' ? 'border-[#003b7a] bg-[#ffd900]' : 'border-[#003b7a]/20 bg-white'" x-on:click="depositMethod = 'gateway'">
                                     <span class="block font-black text-[#003b7a]">{{ __('recharge.payment_gateway') }}</span>
                                     <span class="mt-1 block text-xs font-bold text-[#003b7a]/65">{{ __('recharge.payment_gateway_desc') }}</span>
@@ -152,7 +154,10 @@
                     </div>
 
                     <div x-show="depositMethod === 'gateway'" x-cloak class="rounded-2xl bg-[#fff8c7] p-4 text-sm font-bold text-[#003b7a]">
-                        <div class="font-black uppercase">QC168</div>
+                        <select name="gateway_choice" x-model="gatewayProvider" class="rounded border p-2">
+                            @if ($gatewayAvailable)<option value="qc168">QC168</option>@endif
+                            @if ($ydpayAvailable)<option value="ydpay">YDPAY</option>@endif
+                        </select>
                         <p class="mt-1">{{ __('recharge.payment_gateway_desc') }}</p>
                     </div>
 

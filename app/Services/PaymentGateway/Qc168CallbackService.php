@@ -136,6 +136,12 @@ class Qc168CallbackService
 
     public function sync(RechargeRequest $rechargeRequest): array
     {
+        if ($rechargeRequest->gateway_provider === 'ydpay') {
+            $payload = app(YdPayGateway::class)->query($rechargeRequest->merchant_order_id, 'deposit');
+
+            return ['accepted' => true, 'result' => app(\App\Services\Recharge\YdPayRechargeService::class)->process($payload, 'sync')];
+        }
+
         $rechargeRequest->forceFill(['gateway_last_synced_at' => now()])->save();
 
         $response = $this->gateway->getOrder((string) $rechargeRequest->merchant_order_id);

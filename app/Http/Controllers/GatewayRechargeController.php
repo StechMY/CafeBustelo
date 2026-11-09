@@ -18,10 +18,13 @@ class GatewayRechargeController extends Controller
     {
         $data = $request->validate([
             'amount' => RechargeAmountRules::rules(),
+            'provider' => ['nullable', 'in:qc168,ydpay'],
         ]);
 
         try {
-            $rechargeRequest = $service->create($request->user(), $data['amount']);
+            $rechargeRequest = ($data['provider'] ?? 'qc168') === 'ydpay'
+                ? app(\App\Services\Recharge\YdPayRechargeService::class)->create($request->user(), (string) $data['amount'], $request->ip())
+                : $service->create($request->user(), $data['amount']);
         } catch (Qc168GatewayException $exception) {
             report($exception);
 

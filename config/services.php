@@ -35,6 +35,18 @@ return [
         ],
     ],
 
+    'ydpay' => [
+        'enabled' => env('YDPAY_ENABLED', false),
+        'base_url' => env('YDPAY_BASE_URL', 'https://gateway.ydpay.vip'),
+        'merchant_id' => env('YDPAY_MERCHANT_ID'),
+        'secret' => env('YDPAY_SECRET'),
+        'deposit_enabled' => env('YDPAY_DEPOSIT_ENABLED', false),
+        'withdraw_enabled' => env('YDPAY_WITHDRAW_ENABLED', false),
+        'deposit_gateway_id' => env('YDPAY_DEPOSIT_GATEWAY_ID'),
+        'withdraw_gateway_id' => env('YDPAY_WITHDRAW_GATEWAY_ID'),
+        'callback_ips' => array_filter(array_map('trim', explode(',', env('YDPAY_CALLBACK_IPS', '38.22.88.53')))),
+    ],
+
     'qc168' => [
         'enabled' => env('QC168_ENABLED', false),
         'base_url' => env('QC168_BASE_URL'),

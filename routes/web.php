@@ -66,6 +66,12 @@ use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', '/dashboard');
 
+Route::post('/payment-gateway/ydpay/deposit/callback', \App\Http\Controllers\PaymentGateway\YdPayCallbackController::class)
+    ->middleware('throttle:120,1')->name('payment-gateway.ydpay.deposit.callback');
+
+Route::post('/payment-gateway/ydpay/withdraw/callback', \App\Http\Controllers\PaymentGateway\YdPayCallbackController::class)
+    ->middleware('throttle:120,1')->name('payment-gateway.ydpay.withdraw.callback');
+
 Route::get('/otp/challenge/{purpose}', function (string $purpose) {
     return response()->view('otp.app-challenge', compact('purpose'))
         ->header('Cache-Control', 'no-store');

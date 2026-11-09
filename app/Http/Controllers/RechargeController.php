@@ -47,6 +47,7 @@ class RechargeController extends Controller
             'user' => $request->user(),
             'rechargeMethods' => $rechargeMethods,
             'gatewayAvailable' => $gateway->isAvailable(),
+            'ydpayAvailable' => app(\App\Services\PaymentGateway\YdPayGateway::class)->isAvailable(),
         ]);
     }
 

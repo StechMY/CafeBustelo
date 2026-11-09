@@ -150,6 +150,7 @@ class Dashboard extends BaseDashboard
                         ->success()
                         ->send();
                 }),
+            \App\Filament\Actions\YdPaySettingsAction::make(),
             Action::make('paymentGatewaySettings')
                 ->label(__('filament.payment_gateway_settings'))
                 ->icon('heroicon-o-banknotes')
