@@ -32,7 +32,7 @@
                     class="space-y-4"
                     x-data="{
                         depositMethod: @js($defaultDepositMethod),
-                        gatewayProvider: @js(old('provider', $gatewayAvailable ? 'qc168' : 'ydpay')),
+                        gatewayProvider: @js($gatewayAvailable && old('provider', 'qc168') === 'qc168' ? 'qc168' : 'ydpay'),
                         selectedMethodId: @js((string) old('recharge_method_id', $rechargeMethods->first()?->id)),
                         submitting: false,
                         copied: null,

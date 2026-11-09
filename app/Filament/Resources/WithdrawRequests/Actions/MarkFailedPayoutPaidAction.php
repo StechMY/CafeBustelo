@@ -18,6 +18,7 @@ class MarkFailedPayoutPaidAction
     public static function make(bool $usePreloadedCancellationState = false): Action
     {
         return Action::make('mark_failed_payout_paid')
+            ->hidden() // QC168 retired from the UI; retain legacy processing.
             ->label('QC168 · '.__('withdraw.mark_failed_payout_paid'))
             ->icon('heroicon-o-check-circle')
             ->color('success')

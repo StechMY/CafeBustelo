@@ -484,6 +484,7 @@ class RechargeRequestsTable
                 |--------------------------------------------------------------------------
                 */
                 Action::make('syncGatewayAttention')
+                    ->hidden(fn (RechargeRequest $record): bool => $record->gateway_provider === 'qc168')
                     ->label(fn (RechargeRequest $record): string => $record->gatewayProviderLabel().' · '.__('filament.sync_gateway_status'))
                     ->icon('heroicon-o-arrow-path')
                     ->color('warning')
@@ -565,6 +566,7 @@ class RechargeRequestsTable
                     |--------------------------------------------------------------------------
                     */
                     Action::make('syncGateway')
+                        ->hidden(fn (RechargeRequest $record): bool => $record->gateway_provider === 'qc168')
                         ->label(fn (RechargeRequest $record): string => $record->gatewayProviderLabel().' · '.__('filament.sync_gateway_status'))
                         ->icon('heroicon-o-arrow-path')
                         ->color('info')

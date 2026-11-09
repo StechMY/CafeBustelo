@@ -554,6 +554,7 @@ class WithdrawRequestsTable
             ->recordActions([
                 
                                 Action::make('cancel_schedule')
+                    ->hidden() // QC168 retired from the UI; retain legacy processing.
                     ->label('Cancel Schedule')
                     ->icon('heroicon-o-arrow-uturn-left')
                     ->color('warning')
@@ -633,6 +634,7 @@ class WithdrawRequestsTable
                 |
                 */
                 Action::make('sync_gateway_attention')
+                    ->hidden(fn (WithdrawRequest $record): bool => $record->gateway_provider === 'qc168')
                     ->label(fn (WithdrawRequest $record): string => $record->gatewayProviderLabel().' · '.__('withdraw.sync_gateway'))
                     ->icon('heroicon-o-arrow-path')
                     ->color('warning')
@@ -793,6 +795,7 @@ class WithdrawRequestsTable
                     |--------------------------------------------------------------------------
                     */
                     Action::make('approve_gateway_scheduled')
+                        ->hidden() // QC168 retired from the UI; retain legacy processing.
                         ->label(
                             fn (): string =>
                                 __(
@@ -915,6 +918,7 @@ class WithdrawRequestsTable
                     |--------------------------------------------------------------------------
                     */
                     Action::make('approve_gateway_instant')
+                        ->hidden() // QC168 retired from the UI; retain legacy processing.
                         ->label(
                             __('withdraw.approve_gateway_instant')
                         )
@@ -1126,6 +1130,7 @@ class WithdrawRequestsTable
                     MarkFailedPayoutPaidAction::make(usePreloadedCancellationState: true),
                     RevertManualApprovalAction::make(),
                     Action::make('retry_payout')
+                        ->hidden(fn (WithdrawRequest $record): bool => $record->gateway_provider === 'qc168')
                         ->label(fn (WithdrawRequest $record): string => $record->gatewayProviderLabel().' · '.__('withdraw.retry_payout'))
                         ->icon('heroicon-o-arrow-path')
                         ->color('warning')
@@ -1198,6 +1203,7 @@ class WithdrawRequestsTable
                     |--------------------------------------------------------------------------
                     */
                     Action::make('cancel_payout')
+                        ->hidden(fn (WithdrawRequest $record): bool => $record->gateway_provider === 'qc168')
                         ->label(fn (WithdrawRequest $record): string => $record->gatewayProviderLabel().' · '.__('withdraw.cancel_payout'))
                         ->icon('heroicon-o-no-symbol')
                         ->color('danger')
@@ -1274,6 +1280,7 @@ class WithdrawRequestsTable
                     |
                     */
                     Action::make('sync_gateway')
+                        ->hidden(fn (WithdrawRequest $record): bool => $record->gateway_provider === 'qc168')
                         ->label(fn (WithdrawRequest $record): string => $record->gatewayProviderLabel().' · '.__('withdraw.sync_gateway'))
                         ->icon(
                             'heroicon-o-arrow-path-rounded-square'

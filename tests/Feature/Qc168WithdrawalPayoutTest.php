@@ -1283,17 +1283,19 @@ class Qc168WithdrawalPayoutTest extends TestCase
         $this->assertDatabaseCount('withdrawal_payout_attempts', 1);
     }
 
-    public function test_manual_unpaid_action_is_available_on_list_and_details_and_validates_confirmation(): void
+    public function test_retired_manual_unpaid_action_is_hidden_and_legacy_service_validates_confirmation(): void
     {
         $withdrawal = $this->uncertainPayout('manual_ui');
         $admin = $this->approvalAdmin('resolve-admin', ['ViewAny:WithdrawRequest', 'View:WithdrawRequest', 'CancelGateway:Withdrawal', 'RetryGateway:Withdrawal']);
         $this->actingAs($admin, 'admin');
         Filament::setCurrentPanel(Filament::getPanel('admin'));
         Livewire::test(ListWithdrawRequests::class)
-            ->assertActionVisible(TestAction::make('confirm_gateway_unpaid')->table($withdrawal));
+            ->assertActionHidden(TestAction::make('confirm_gateway_unpaid')->table($withdrawal))
+            ->assertActionHidden(TestAction::make('sync_gateway_attention')->table($withdrawal));
 
-        $page = Livewire::test(ViewWithdrawRequest::class, ['record' => $withdrawal->getRouteKey()])
-            ->assertActionVisible('confirm_gateway_unpaid')
+        Livewire::test(ViewWithdrawRequest::class, ['record' => $withdrawal->getRouteKey()])
+            ->assertActionHidden('confirm_gateway_unpaid')
+            ->assertActionHidden('sync_gateway')
             ->assertActionHidden('retry_payout')
             ->assertActionHidden('cancel_payout');
         $data = [
@@ -1302,14 +1304,18 @@ class Qc168WithdrawalPayoutTest extends TestCase
             'reason' => 'Provider confirmed closure.',
             'confirmed_unpaid' => false,
         ];
-        $page->callAction('confirm_gateway_unpaid', $data)
-            ->assertHasActionErrors(['confirmed_unpaid']);
-        $page->setActionData(array_merge($data, ['confirmed_unpaid' => true]))
-            ->callMountedAction()
-            ->assertHasNoActionErrors()
+        $service = app(Qc168WithdrawalPayoutService::class);
+        try {
+            $service->confirmUnpaid($withdrawal, $admin, $data['merchant_order_id'], $data['provider_confirmation'], $data['reason'], false);
+            $this->fail('Legacy confirmation must still require acknowledgement.');
+        } catch (ValidationException) {
+            $this->assertFalse($withdrawal->fresh()->canCancelPayout());
+        }
+        $service->confirmUnpaid($withdrawal, $admin, $data['merchant_order_id'], $data['provider_confirmation'], $data['reason'], true);
+        Livewire::test(ViewWithdrawRequest::class, ['record' => $withdrawal->getRouteKey()])
             ->assertActionHidden('confirm_gateway_unpaid')
-            ->assertActionVisible('retry_payout')
-            ->assertActionVisible('cancel_payout');
+            ->assertActionHidden('retry_payout')
+            ->assertActionHidden('cancel_payout');
         $this->assertTrue($withdrawal->fresh()->canCancelPayout());
         $this->assertWallet('manual_ui', '0.00', '1000.00');
     }
@@ -1327,24 +1333,22 @@ class Qc168WithdrawalPayoutTest extends TestCase
         }
     }
 
-    public function test_manual_unpaid_table_action_binds_order_and_records_confirmation_only_once(): void
+    public function test_manual_unpaid_table_action_stays_hidden_and_legacy_service_records_confirmation_only_once(): void
     {
         $withdrawal = $this->uncertainPayout('manual_table');
         $admin = $this->approvalAdmin('resolve-admin', ['ViewAny:WithdrawRequest', 'View:WithdrawRequest', 'CancelGateway:Withdrawal']);
         $this->actingAs($admin, 'admin');
         Filament::setCurrentPanel(Filament::getPanel('admin'));
         Livewire::test(ListWithdrawRequests::class)
-            ->mountAction(TestAction::make('confirm_gateway_unpaid')->table($withdrawal))
-            ->assertActionDataSet(['merchant_order_id' => $withdrawal->gateway_current_merchant_order_id])
-            ->setActionData([
-                'merchant_order_id' => $withdrawal->gateway_current_merchant_order_id,
-                'provider_confirmation' => 'QC168 confirms unpaid and no future payment.',
-                'reason' => 'Resolve timeout.',
-                'confirmed_unpaid' => true,
-            ])
-            ->callMountedAction()
-            ->assertHasNoActionErrors()
-            ->assertActionVisible(TestAction::make('cancel_payout')->table($withdrawal));
+            ->assertActionHidden(TestAction::make('confirm_gateway_unpaid')->table($withdrawal));
+        app(Qc168WithdrawalPayoutService::class)->confirmUnpaid(
+            $withdrawal, $admin, $withdrawal->gateway_current_merchant_order_id,
+            'QC168 confirms unpaid and no future payment.', 'Resolve timeout.', true,
+        );
+        Livewire::test(ListWithdrawRequests::class)
+            ->assertActionHidden(TestAction::make('cancel_payout')->table($withdrawal))
+            ->assertActionHidden(TestAction::make('retry_payout')->table($withdrawal))
+            ->assertActionHidden(TestAction::make('sync_gateway')->table($withdrawal));
 
         try {
             app(Qc168WithdrawalPayoutService::class)->confirmUnpaid(
@@ -2110,7 +2114,7 @@ class Qc168WithdrawalPayoutTest extends TestCase
         }
     }
 
-    public function test_manual_settlement_action_on_list_and_detail_requires_confirmation_and_permission(): void
+    public function test_retired_manual_settlement_action_stays_hidden_even_with_permission(): void
     {
         $withdrawal = $this->explicitlyRejectedPayout('settlement-ui');
         $admin = $this->approvalAdmin('settlement-admin', ['ViewAny:WithdrawRequest', 'View:WithdrawRequest']);
@@ -2119,13 +2123,13 @@ class Qc168WithdrawalPayoutTest extends TestCase
         Livewire::test(ListWithdrawRequests::class)->assertActionHidden(TestAction::make('mark_failed_payout_paid')->table($withdrawal));
         $this->approvalAdmin('settlement-admin', ['ApproveManual:Withdrawal']);
         $admin->refresh();
-        Livewire::test(ListWithdrawRequests::class)->assertActionVisible(TestAction::make('mark_failed_payout_paid')->table($withdrawal));
-        $page = Livewire::test(ViewWithdrawRequest::class, ['record' => $withdrawal->id])
-            ->assertActionVisible('mark_failed_payout_paid');
+        Livewire::test(ListWithdrawRequests::class)->assertActionHidden(TestAction::make('mark_failed_payout_paid')->table($withdrawal));
+        Livewire::test(ViewWithdrawRequest::class, ['record' => $withdrawal->id])
+            ->assertActionHidden('mark_failed_payout_paid');
         $data = ['merchant_order_id' => $withdrawal->gateway_current_merchant_order_id, 'payment_reference' => 'BANK-123', 'reason' => 'Paid manually.', 'confirmed_paid' => false];
-        $page->callAction('mark_failed_payout_paid', $data)->assertHasActionErrors(['confirmed_paid']);
-        $page->setActionData(array_merge($data, ['confirmed_paid' => true]))->callMountedAction()
-            ->assertHasNoActionErrors()->assertActionHidden('mark_failed_payout_paid')
+        app(WithdrawService::class)->markFailedPayoutPaid($withdrawal, $admin, $data['merchant_order_id'], $data['payment_reference'], $data['reason'], true);
+        Livewire::test(ViewWithdrawRequest::class, ['record' => $withdrawal->id])
+            ->assertActionHidden('mark_failed_payout_paid')
             ->assertActionHidden('retry_payout')->assertActionHidden('cancel_payout')
             ->assertSee('BANK-123');
         $this->assertTrue($withdrawal->fresh()->isManuallySettledPayout());

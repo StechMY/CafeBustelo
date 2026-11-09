@@ -18,6 +18,7 @@ class ConfirmGatewayUnpaidAction
     public static function make(bool $usePreloadedCancellationState = false): Action
     {
         return Action::make('confirm_gateway_unpaid')
+            ->hidden() // QC168 retired from the UI; retain legacy processing.
             ->label('QC168 · '.__('withdraw.confirm_gateway_unpaid'))
             ->icon('heroicon-o-shield-check')
             ->color('warning')

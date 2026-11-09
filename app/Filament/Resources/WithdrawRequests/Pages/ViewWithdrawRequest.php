@@ -86,6 +86,7 @@ class ViewWithdrawRequest extends ViewRecord
                 }),
 
             Action::make('approve_gateway_scheduled')
+                ->hidden() // QC168 retired from the UI; retain legacy processing.
                 ->label(fn (): string => __('withdraw.approve_gateway_scheduled_delay', [
                     'hours' => app(Qc168Settings::class)->withdrawReleaseHours(),
                 ]))
@@ -143,6 +144,7 @@ class ViewWithdrawRequest extends ViewRecord
                 }),
 
             Action::make('approve_gateway_instant')
+                ->hidden() // QC168 retired from the UI; retain legacy processing.
                 ->label(__('withdraw.approve_gateway_instant'))
                 ->icon('heroicon-o-bolt')
                 ->color('danger')
@@ -260,6 +262,7 @@ class ViewWithdrawRequest extends ViewRecord
             MarkFailedPayoutPaidAction::make(),
             RevertManualApprovalAction::make(),
             Action::make('retry_payout')
+                ->hidden(fn (WithdrawRequest $record): bool => $record->gateway_provider === 'qc168')
                 ->label(fn (WithdrawRequest $record): string => $record->gatewayProviderLabel().' · '.__('withdraw.retry_payout'))
                 ->icon('heroicon-o-arrow-path')
                 ->color('warning')
@@ -300,6 +303,7 @@ class ViewWithdrawRequest extends ViewRecord
                 }),
 
             Action::make('cancel_payout')
+                ->hidden(fn (WithdrawRequest $record): bool => $record->gateway_provider === 'qc168')
                 ->label(fn (WithdrawRequest $record): string => $record->gatewayProviderLabel().' · '.__('withdraw.cancel_payout'))
                 ->icon('heroicon-o-no-symbol')
                 ->color('danger')
@@ -340,6 +344,7 @@ class ViewWithdrawRequest extends ViewRecord
                 }),
 
             Action::make('sync_gateway')
+                ->hidden(fn (WithdrawRequest $record): bool => $record->gateway_provider === 'qc168')
                 ->label(fn (WithdrawRequest $record): string => $record->gatewayProviderLabel().' · '.__('withdraw.sync_gateway'))
                 ->icon('heroicon-o-arrow-path-rounded-square')
                 ->color('info')

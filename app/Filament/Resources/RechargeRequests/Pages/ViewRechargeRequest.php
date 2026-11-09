@@ -37,6 +37,7 @@ class ViewRechargeRequest extends ViewRecord
             // EditAction::make(),
 
             Action::make('syncGateway')
+                ->hidden(fn (RechargeRequest $record): bool => $record->gateway_provider === 'qc168')
                 ->label(fn (RechargeRequest $record): string => $record->gatewayProviderLabel().' · '.__('filament.sync_gateway_status'))
                 ->icon('heroicon-o-arrow-path')
                 ->color('info')

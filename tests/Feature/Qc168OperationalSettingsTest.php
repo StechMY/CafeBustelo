@@ -106,32 +106,29 @@ class Qc168OperationalSettingsTest extends TestCase
         $this->assertDatabaseCount('settings', 0);
     }
 
-    public function test_authorized_admin_can_toggle_only_three_operational_settings(): void
+    public function test_qc168_settings_entry_is_hidden_while_legacy_service_keeps_its_guards(): void
     {
         $admin = $this->admin('gateway-settings-admin');
         $admin->givePermissionTo($this->permission(Qc168Settings::MANAGE_PERMISSION));
         $this->actingAs($admin, 'admin');
 
         Livewire::test(Dashboard::class)
-            ->assertActionVisible('paymentGatewaySettings')
-            ->callAction('paymentGatewaySettings', [
-                'deposit_enabled' => false,
-                'withdraw_enabled' => true,
-                'withdraw_release_hours' => 12,
-            ])
-            ->assertHasNoActionErrors();
+            ->assertActionHidden('paymentGatewaySettings');
+        app(Qc168Settings::class)->save([
+            'deposit_enabled' => false,
+            'withdraw_enabled' => true,
+            'withdraw_release_hours' => 12,
+        ], $admin, '127.0.0.1');
 
         $this->assertFalse(app(Qc168Settings::class)->depositEnabled());
         $this->assertTrue(app(Qc168Settings::class)->withdrawEnabled());
         $this->assertSame(12, app(Qc168Settings::class)->withdrawReleaseHours());
 
-        Livewire::test(Dashboard::class)
-            ->callAction('paymentGatewaySettings', [
-                'deposit_enabled' => true,
-                'withdraw_enabled' => false,
-                'withdraw_release_hours' => 24,
-            ])
-            ->assertHasNoActionErrors();
+        app(Qc168Settings::class)->save([
+            'deposit_enabled' => true,
+            'withdraw_enabled' => false,
+            'withdraw_release_hours' => 24,
+        ], $admin, '127.0.0.1');
 
         $this->assertSame([
             Qc168Settings::KEY_DEPOSIT_ENABLED,
@@ -248,8 +245,8 @@ class Qc168OperationalSettingsTest extends TestCase
 
         Livewire::test(ViewWithdrawRequest::class, ['record' => $withdrawal->getRouteKey()])
             ->assertActionEnabled('approve_manual')
-            ->assertActionDisabled('approve_gateway_scheduled')
-            ->assertActionDisabled('approve_gateway_instant')
+            ->assertActionHidden('approve_gateway_scheduled')
+            ->assertActionHidden('approve_gateway_instant')
             ->assertActionEnabled('reject');
 
         try {

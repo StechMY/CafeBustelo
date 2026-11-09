@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\RechargeMethod;
 use App\Models\RechargeRequest;
 use App\Models\Wallet;
-use App\Services\PaymentGateway\Qc168Gateway;
 use App\Support\RechargeAmountRules;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -35,7 +34,7 @@ class RechargeController extends Controller
         ]);
     }
 
-    public function create(Request $request, Qc168Gateway $gateway): View
+    public function create(Request $request): View
     {
         $rechargeMethods = RechargeMethod::query()
             ->where('status', RechargeMethod::STATUS_ACTIVE)
@@ -46,7 +45,7 @@ class RechargeController extends Controller
         return view('recharge.create', [
             'user' => $request->user(),
             'rechargeMethods' => $rechargeMethods,
-            'gatewayAvailable' => $gateway->isAvailable(),
+            'gatewayAvailable' => false, // QC168 is no longer offered for new deposits.
             'ydpayAvailable' => app(\App\Services\PaymentGateway\YdPayGateway::class)->isAvailable(),
         ]);
     }

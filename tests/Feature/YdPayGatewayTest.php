@@ -7,6 +7,7 @@ use App\Filament\Resources\RechargeRequests\Pages\ListRechargeRequests;
 use App\Filament\Resources\RechargeRequests\Pages\ViewRechargeRequest;
 use App\Filament\Resources\WithdrawRequests\Pages\ListWithdrawRequests;
 use App\Filament\Resources\WithdrawRequests\Pages\ViewWithdrawRequest;
+use App\Http\Controllers\Api\RechargeController;
 use App\Models\AdminUser;
 use App\Models\PaymentGatewayEvent;
 use App\Models\RechargeRequest;
@@ -27,6 +28,7 @@ use Filament\Actions\Testing\TestAction;
 use Filament\Facades\Filament;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Http;
 use Livewire\Livewire;
@@ -81,6 +83,13 @@ class YdPayGatewayTest extends TestCase
             && str_contains($request->header('Content-Type')[0], 'application/x-www-form-urlencoded'));
         $this->assertSame('pending', $order->status);
         $this->assertSame(0, WalletTransaction::query()->count());
+        $this->actingAs($order->user)->withSession(['_old_input' => ['provider' => 'qc168']])
+            ->get(route('recharge.create'))->assertOk()->assertViewHas('gatewayAvailable', false)
+            ->assertSee('value="ydpay"', false)->assertDontSee('value="qc168"', false);
+        $apiRequest = Request::create('/api/v1/recharge');
+        $apiRequest->setUserResolver(fn () => $order->user);
+        $response = app(RechargeController::class)->index($apiRequest);
+        $this->assertSame(['ydpay'], collect($response->getData(true)['data']['deposit_methods'])->pluck('provider')->filter()->values()->all());
     }
 
     public function test_missing_or_invalid_proxy_blocks_approval_and_outbound_requests(): void
@@ -306,6 +315,7 @@ class YdPayGatewayTest extends TestCase
         $this->actingAs($admin, 'admin');
         Livewire::test(Dashboard::class)
             ->assertActionVisible('ydpaySettings')
+            ->assertActionHidden('paymentGatewaySettings')
             ->callAction('ydpaySettings', ['deposit_enabled' => true, 'withdraw_enabled' => false, 'withdraw_release_hours' => 12])
             ->assertHasNoActionErrors();
         $this->assertTrue(app(YdPayGateway::class)->isAvailable());
@@ -587,7 +597,11 @@ class YdPayGatewayTest extends TestCase
         Http::fake(['gateway.example/api/pay/query_order' => Http::response($this->depositPayload($order, '1'))]);
         Livewire::test(ListRechargeRequests::class)
             ->assertCanSeeTableRecords([$order, $other])
+            ->assertActionHidden(TestAction::make('syncGateway')->table($other))
+            ->assertActionHidden(TestAction::make('syncGatewayAttention')->table($other))
             ->filterTable('gateway_provider', 'ydpay')->assertCanSeeTableRecords([$order])->assertCanNotSeeTableRecords([$other]);
+        Livewire::test(ViewRechargeRequest::class, ['record' => $other->getRouteKey()])
+            ->assertActionHidden('syncGateway');
         Livewire::test(ViewRechargeRequest::class, ['record' => $order->getRouteKey()])
             ->assertSee('YDPAY')->assertActionVisible('syncGateway')->callAction('syncGateway')->assertHasNoActionErrors()
             ->assertRedirect();
@@ -598,7 +612,7 @@ class YdPayGatewayTest extends TestCase
         $this->assertSame(0, WalletTransaction::query()->count());
     }
 
-    public function test_admin_withdrawal_list_and_detail_offer_separate_provider_modes_and_obey_toggle(): void
+    public function test_admin_withdrawal_list_and_detail_offer_ydpay_modes_and_hide_retired_qc168_actions(): void
     {
         [$request] = $this->payout(false);
         $this->loginAdmin();
@@ -607,10 +621,13 @@ class YdPayGatewayTest extends TestCase
         $this->mock(Qc168Gateway::class)->shouldReceive('isWithdrawalAvailable')->andReturn(true);
         $view = Livewire::test(ViewWithdrawRequest::class, ['record' => $request->getRouteKey()])
             ->assertActionEnabled('approve_ydpay')->assertActionEnabled('approve_ydpay_instant')
-            ->assertSee('YDPAY · Approve')->assertSee('QC168 · Approve');
+            ->assertSee('YDPAY · Approve')->assertDontSee('QC168 · Approve')
+            ->assertActionHidden('approve_gateway_scheduled')->assertActionHidden('approve_gateway_instant');
         Livewire::test(ListWithdrawRequests::class)
             ->assertActionEnabled(TestAction::make('approve_ydpay')->table($request))
-            ->assertActionEnabled(TestAction::make('approve_ydpay_instant')->table($request));
+            ->assertActionEnabled(TestAction::make('approve_ydpay_instant')->table($request))
+            ->assertActionHidden(TestAction::make('approve_gateway_scheduled')->table($request))
+            ->assertActionHidden(TestAction::make('approve_gateway_instant')->table($request));
         Setting::setValue('ydpay_withdraw_enabled', false);
         $view->assertActionDisabled('approve_ydpay')->assertActionDisabled('approve_ydpay_instant')->assertActionEnabled('reject');
         Http::assertNothingSent();

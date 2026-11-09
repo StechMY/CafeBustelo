@@ -7,7 +7,6 @@ use App\Http\Requests\Api\RechargeStoreRequest;
 use App\Models\RechargeMethod;
 use App\Models\RechargeRequest;
 use App\Models\Wallet;
-use App\Services\PaymentGateway\Qc168Gateway;
 use App\Support\Api\ApiFormatter;
 use App\Support\Api\ApiResponse;
 use Illuminate\Http\JsonResponse;
@@ -15,7 +14,7 @@ use Illuminate\Http\Request;
 
 class RechargeController extends Controller
 {
-    public function index(Request $request, Qc168Gateway $gateway): JsonResponse
+    public function index(Request $request): JsonResponse
     {
         $user = $request->user();
         $wallet = Wallet::query()->where('user_id', $user->id)->where('type', Wallet::TYPE_RECHARGE)->first();
@@ -39,12 +38,7 @@ class RechargeController extends Controller
                     'label' => __('recharge.manual_deposit'),
                     'enabled' => $methods->isNotEmpty(),
                 ],
-                [
-                    'key' => RechargeRequest::METHOD_GATEWAY,
-                    'label' => __('recharge.payment_gateway'),
-                    'enabled' => $gateway->isAvailable(),
-                    'provider' => RechargeRequest::GATEWAY_QC168,
-                ],
+                // QC168 is no longer offered for new deposits; historical records remain accessible.
                 [
                     'key' => RechargeRequest::METHOD_GATEWAY,
                     'label' => 'YDPAY',

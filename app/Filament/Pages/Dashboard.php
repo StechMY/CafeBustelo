@@ -152,6 +152,7 @@ class Dashboard extends BaseDashboard
                 }),
             \App\Filament\Actions\YdPaySettingsAction::make(),
             Action::make('paymentGatewaySettings')
+                ->hidden() // QC168 retired from the UI; retain legacy processing.
                 ->label('QC168')
                 ->icon('heroicon-o-banknotes')
                 ->color('info')
