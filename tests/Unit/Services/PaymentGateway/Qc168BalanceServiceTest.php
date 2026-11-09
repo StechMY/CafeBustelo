@@ -24,6 +24,7 @@ class Qc168BalanceServiceTest extends TestCase
         config([
             'cache.default' => 'array',
             'services.qc168.enabled' => true,
+            'services.ydpay.enabled' => false,
             'services.qc168.base_url' => 'https://gateway.example',
             'services.qc168.oc_key' => 'test-key',
             'services.qc168.secret' => 'test-secret',
@@ -302,7 +303,7 @@ class Qc168BalanceServiceTest extends TestCase
             ),
         ]);
 
-        $component = Livewire::test('admin-qc168-balance-indicator');
+        $component = Livewire::test('admin-payment-gateway-balance-indicator');
 
         Http::assertNothingSent();
 
@@ -326,7 +327,7 @@ class Qc168BalanceServiceTest extends TestCase
             throw new ConnectionException('timeout');
         });
 
-        Livewire::test('admin-qc168-balance-indicator')
+        Livewire::test('admin-payment-gateway-balance-indicator')
             ->call('loadBalance')
             ->assertSee(__('filament.qc168_balance_unavailable'));
 

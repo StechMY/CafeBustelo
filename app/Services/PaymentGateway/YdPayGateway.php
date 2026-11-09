@@ -118,6 +118,11 @@ class YdPayGateway
         return $this->request($endpoint, ['mchOrderNo' => $merchantOrderId, 'executeNotify' => 'false']);
     }
 
+    public function queryBalance(): array
+    {
+        return $this->request('/api/agentpay/query_balance', []);
+    }
+
     private function request(string $endpoint, array $payload): array
     {
         $proxy = $this->outboundProxy();

@@ -1,7 +1,9 @@
 <?php
 
 use App\Services\PaymentGateway\Qc168BalanceService;
+use App\Services\PaymentGateway\YdPayBalanceService;
 use Illuminate\Support\Carbon;
+use Livewire\Attributes\Computed;
 use Livewire\Attributes\Locked;
 use Livewire\Component;
 
@@ -27,24 +29,35 @@ new class extends Component {
     #[Locked]
     public string $health = 'unknown';
 
-    public function mount(Qc168BalanceService $balanceService): void
+    #[Computed]
+    public function provider(): string
     {
-        $this->applyState($balanceService->getCachedBalance());
+        return config('services.ydpay.enabled') ? 'ydpay' : 'qc168';
     }
 
-    public function loadBalance(Qc168BalanceService $balanceService): void
+    private function balanceService(): YdPayBalanceService|Qc168BalanceService
     {
-        $this->applyState($balanceService->getBalance());
+        return app($this->provider === 'ydpay' ? YdPayBalanceService::class : Qc168BalanceService::class);
     }
 
-    public function pollBalance(Qc168BalanceService $balanceService): void
+    public function mount(): void
     {
-        $this->applyState($balanceService->getBalance());
+        $this->applyState($this->balanceService()->getCachedBalance());
     }
 
-    public function refreshBalance(Qc168BalanceService $balanceService): void
+    public function loadBalance(): void
     {
-        $this->applyState($balanceService->refresh());
+        $this->applyState($this->balanceService()->getBalance());
+    }
+
+    public function pollBalance(): void
+    {
+        $this->applyState($this->balanceService()->getBalance());
+    }
+
+    public function refreshBalance(): void
+    {
+        $this->applyState($this->balanceService()->refresh());
     }
 
     private function applyState(array $state): void
@@ -80,6 +93,7 @@ new class extends Component {
 ?>
 
 @php
+    $translationPrefix = 'filament.' . $this->provider . '_';
     $status = match (true) {
         $health === 'danger' => 'danger',
         $health === 'provider_error', $isStale && $balance !== null => 'warning',
@@ -88,20 +102,20 @@ new class extends Component {
     };
 
     $tooltip = match (true) {
-        $health === 'disabled' => __('filament.qc168_gateway_disabled'),
-        $health === 'configuration_incomplete' => __('filament.qc168_configuration_incomplete'),
-        $balance !== null && (!$isAvailable || $isStale) => __('filament.qc168_balance_last_known', [
+        $health === 'disabled' => __($translationPrefix . 'gateway_disabled'),
+        $health === 'configuration_incomplete' => __($translationPrefix . 'configuration_incomplete'),
+        $balance !== null && (!$isAvailable || $isStale) => __($translationPrefix . 'balance_last_known', [
             'time' => $fetchedAt ?? '-',
         ]),
-        $health === 'danger' => __('filament.qc168_balance_zero'),
-        $balance === null => __('filament.qc168_balance_unavailable'),
-        default => __('filament.qc168_balance_updated_at', [
+        $health === 'danger' => __($translationPrefix . 'balance_zero'),
+        $balance === null => __($translationPrefix . 'balance_unavailable'),
+        default => __($translationPrefix . 'balance_updated_at', [
             'time' => $fetchedAt ?? '-',
         ]),
     };
 
     if ($merchantName !== null) {
-        $tooltip .= "\n" . __('filament.qc168_merchant') . ': ' . $merchantName;
+        $tooltip .= "\n" . __($translationPrefix . 'merchant') . ': ' . $merchantName;
     }
 
     $currencyPrefix = match (strtolower($currency)) {
@@ -163,20 +177,20 @@ new class extends Component {
             <x-filament::icon icon="heroicon-o-banknotes" class="sms-balance-icon" />
 
             <span class="sms-balance-label">
-                {{ __('filament.qc168_balance') }}
+                {{ __($translationPrefix . 'balance') }}
             </span>
 
             @if ($health === 'disabled')
                 <span class="sms-balance-number">
-                    {{ __('filament.qc168_gateway_disabled_short') }}
+                    {{ __($translationPrefix . 'gateway_disabled_short') }}
                 </span>
             @elseif ($health === 'configuration_incomplete')
                 <span class="sms-balance-number">
-                    {{ __('filament.qc168_configuration_incomplete_short') }}
+                    {{ __($translationPrefix . 'configuration_incomplete_short') }}
                 </span>
             @elseif ($fullBalance !== null)
-                <span class="sms-balance-number qc168-balance-full">{{ $fullBalance }}</span>
-                <span class="sms-balance-number qc168-balance-compact">{{ $compactBalance }}</span>
+                <span class="sms-balance-number gateway-balance-full">{{ $fullBalance }}</span>
+                <span class="sms-balance-number gateway-balance-compact">{{ $compactBalance }}</span>
 
                 @if (! $isAvailable || $isStale)
                     <x-filament::icon
@@ -186,7 +200,7 @@ new class extends Component {
                 @endif
             @else
                 <span class="sms-balance-number">
-                    {{ __('filament.qc168_balance_unavailable') }}
+                    {{ __($translationPrefix . 'balance_unavailable') }}
                 </span>
             @endif
         </div>
@@ -199,8 +213,8 @@ new class extends Component {
             wire:click="refreshBalance"
             wire:target="refreshBalance"
             wire:loading.attr="disabled"
-            title="{{ __('filament.qc168_balance_refresh') }}"
-            aria-label="{{ __('filament.qc168_balance_refresh') }}"
+            title="{{ __($translationPrefix . 'balance_refresh') }}"
+            aria-label="{{ __($translationPrefix . 'balance_refresh') }}"
         >
             <span wire:loading.remove wire:target="refreshBalance">
                 <x-filament::icon icon="heroicon-o-arrow-path" class="sms-balance-refresh-icon" />
@@ -208,7 +222,7 @@ new class extends Component {
 
             <span wire:loading wire:target="refreshBalance">
                 <span class="sms-balance-spinner"></span>
-                <span class="sr-only">{{ __('filament.qc168_balance_refreshing') }}</span>
+                <span class="sr-only">{{ __($translationPrefix . 'balance_refreshing') }}</span>
             </span>
         </button>
     </div>

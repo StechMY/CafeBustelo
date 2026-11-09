@@ -14,7 +14,7 @@
         min-width: 0;
     }
 
-    .qc168-balance-compact {
+    .gateway-balance-compact {
         display: none;
     }
 
@@ -23,11 +23,11 @@
             gap: 5px;
         }
 
-        .qc168-balance-full {
+        .gateway-balance-full {
             display: none;
         }
 
-        .qc168-balance-compact {
+        .gateway-balance-compact {
             display: inline-block;
         }
     }
@@ -83,7 +83,7 @@
         <livewire:admin-sms-balance-indicator />
     </div>
 
-    <div data-balance-provider="qc168">
-        <livewire:admin-qc168-balance-indicator />
+    <div data-balance-provider="{{ config('services.ydpay.enabled') ? 'ydpay' : 'qc168' }}">
+        <livewire:admin-payment-gateway-balance-indicator />
     </div>
 </div>
