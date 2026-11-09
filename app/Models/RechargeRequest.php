@@ -30,11 +30,16 @@ class RechargeRequest extends Model
             && ($this->gateway_provider !== 'ydpay' || $this->gateway_payment_status === 'completed');
     }
 
+    public function isGatewayExpired(): bool
+    {
+        return $this->isGatewayDeposit() && $this->gateway_provider === 'ydpay' && $this->gateway_payment_status === 'expired';
+    }
+
     public function gatewayStatusLabel(): string
     {
         if ($this->gateway_provider === 'ydpay') {
             $raw = data_get($this->gateway_meta, 'ydpay_status');
-            $key = 'ydpay.deposit_statuses.'.($this->requiresGatewayReview() ? $this->gateway_payment_status : ($raw ?? $this->gateway_payment_status));
+            $key = 'ydpay.deposit_statuses.'.($this->requiresGatewayReview() || $this->isGatewayExpired() ? $this->gateway_payment_status : ($raw ?? $this->gateway_payment_status));
             if (__($key) !== $key) {
                 return __($key);
             }

@@ -1,6 +1,10 @@
 <?php
 
 return [
+    'deposit_expiry_minutes' => 'Thời hạn nạp tiền chưa thanh toán',
+    'deposit_expiry_help' => '1–1440 phút, mặc định 60. Áp dụng cho đơn mới. Sau thời hạn, chỉ đánh dấu hết hạn tại hệ thống khi truy vấn xác nhận chưa thanh toán; vẫn đối soát tiền đến muộn.',
+    'minutes' => 'phút',
+    'deposit_expired_help' => 'Thời hạn thanh toán đã kết thúc. Vui lòng không dùng liên kết cũ để trả tiền. Nếu đã thanh toán, đừng trả lại; hệ thống sẽ tiếp tục kiểm tra xác nhận.',
     'approve_instant_confirmation' => 'Duyệt yêu cầu và gửi thanh toán YDPAY thực ngay. Tiền vẫn bị khóa; chỉ trạng thái YDPAY 2 đã xác minh mới xác nhận thanh toán.',
     'deposit_statuses' => [
         '0' => '0 · Đã khởi tạo (chưa trả)',
@@ -16,6 +20,7 @@ return [
         'completed' => 'Đã thanh toán',
         'failed' => 'Thất bại',
         'closed' => 'Đã đóng',
+        'expired' => 'Hết hạn tại hệ thống (chưa thanh toán)',
         'refund_review' => 'Đã hoàn tiền — cần đối soát',
         'sandbox_review' => 'Phát hiện thanh toán thử — cần kiểm tra',
     ],

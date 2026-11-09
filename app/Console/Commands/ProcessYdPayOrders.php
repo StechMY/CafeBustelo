@@ -29,6 +29,7 @@ class ProcessYdPayOrders extends Command
         }
         $limit = max(1, min(100, (int) $this->option('limit')));
         $stopAt = now()->addSeconds(45);
+        // Locally expired deposits remain pending financially so late payments are still reconciled.
         $orders = RechargeRequest::query()->where('gateway_provider', 'ydpay')->where('status', 'pending')
             ->whereRaw($business === 'deposit' ? '1 = 1' : '1 = 0')
             ->orderBy('gateway_last_synced_at')->limit($limit)->get();

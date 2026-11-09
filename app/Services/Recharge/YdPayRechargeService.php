@@ -7,6 +7,8 @@ use App\Models\User;
 use App\Services\PaymentGateway\PaymentGatewayEventRecorder;
 use App\Services\PaymentGateway\YdPayGateway;
 use App\Services\RechargeApprovalService;
+use App\Services\Settings\YdPaySettings;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 use Throwable;
@@ -34,6 +36,7 @@ class YdPayRechargeService
             'gateway_currency' => 'vnd', 'gateway_payment_status' => 'create_pending',
             'gateway_channel' => (string) config('services.ydpay.deposit_gateway_id'),
             'payment_method_name' => 'YDPAY', 'status' => 'pending',
+            'gateway_meta' => ['deposit_expires_at' => now()->addMinutes(app(YdPaySettings::class)->depositExpiryMinutes())->toAtomString()],
         ]);
 
         try {
@@ -140,7 +143,7 @@ class YdPayRechargeService
                     'gateway_meta' => array_merge($order->gateway_meta ?? [], ['ydpay_status' => $status,
                         'financial_review_reason' => 'provider_refund', 'financial_review_detected_at' => now()->toAtomString()])])->save();
             } elseif ($review || $order->isApproved()
-                || (in_array($order->gateway_payment_status, ['failed', 'closed'], true) && in_array($status, ['0', '1'], true))) {
+                || (in_array($order->gateway_payment_status, ['failed', 'closed', 'expired'], true) && in_array($status, ['0', '1'], true))) {
                 $this->events->recordRecharge('ydpay.deposit.stale_status_ignored', $order, payload: $payload, processingResult: $source);
 
                 return $review ? 'refund_review' : $order->gateway_payment_status;
@@ -148,18 +151,31 @@ class YdPayRechargeService
                 if (! $order->isPending()) {
                     throw new RuntimeException('YDPAY local deposit is not pending.');
                 }
+                $meta = array_merge($order->gateway_meta ?? [], ['ydpay_status' => $status]);
+                if ($source === 'sync' && in_array($status, ['0', '1'], true)) {
+                    // Legacy orders use 60 minutes. New orders retain their snapshotted deadline.
+                    $expiresAt = Carbon::parse($meta['deposit_expires_at'] ?? $order->created_at->copy()->addMinutes(60));
+                    if (now()->gte($expiresAt)) {
+                        // Local expiry is not a provider close: keep reconciling for verified late payments.
+                        $state = 'expired';
+                        $meta['deposit_expires_at'] = $expiresAt->toAtomString();
+                        $meta['deposit_expired_at'] = now()->toAtomString();
+                    }
+                }
                 $order->forceFill([
                     'gateway_order_uid' => (string) $payload['payOrderId'],
                     'gateway_payment_status' => $state,
                     'gateway_completed_at' => $completed ? now() : null,
                     'gateway_final_amount' => $completed ? $order->amount : null,
-                    'gateway_meta' => array_merge($order->gateway_meta ?? [], ['ydpay_status' => $status]),
+                    'gateway_meta' => $meta,
                 ])->save();
                 if ($completed) {
                     $this->approval->approve($order, null, 'Verified YDPAY payment.', ['gateway_provider' => 'ydpay']);
                 }
             }
-            $this->events->recordRecharge('ydpay.deposit.'.$state, $order, payload: $payload, processingResult: $source);
+            $this->events->recordRecharge('ydpay.deposit.'.$state, $order,
+                reason: $state === 'expired' ? 'Local payment deadline elapsed; verified query still unpaid. Provider order not closed; reconciliation continues.' : null,
+                payload: $payload, processingResult: $source);
 
             return $state;
         });

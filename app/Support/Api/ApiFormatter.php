@@ -262,7 +262,7 @@ class ApiFormatter
             'gateway_status_label' => $request->gatewayStatusLabel(),
             'payment_confirmed' => $request->isPaymentConfirmed(),
             'requires_review' => $request->requiresGatewayReview(),
-            'payment_url' => $request->isGatewayDeposit() ? $request->gateway_payment_url : null,
+            'payment_url' => $request->isGatewayDeposit() && ! $request->isGatewayExpired() ? $request->gateway_payment_url : null,
             'reference_no' => $request->reference_no,
             'receipt_url' => $request->receipt_url,
             'payment_method_name' => $request->payment_method_name,

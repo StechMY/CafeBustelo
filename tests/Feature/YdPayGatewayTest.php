@@ -24,6 +24,7 @@ use App\Services\PaymentGateway\YdPayWithdrawalService;
 use App\Services\Recharge\YdPayRechargeService;
 use App\Services\RechargeApprovalService;
 use App\Services\Settings\YdPaySettings;
+use App\Support\Api\ApiFormatter;
 use Filament\Actions\Testing\TestAction;
 use Filament\Facades\Filament;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -31,6 +32,7 @@ use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Spatie\Permission\Models\Permission;
@@ -73,6 +75,7 @@ class YdPayGatewayTest extends TestCase
 
     public function test_deposit_uses_form_payload_and_waits_for_verified_callback(): void
     {
+        $this->freezeTime();
         Http::fake(['gateway.example/*' => Http::response($this->signed([
             'retCode' => '0', 'payOrderId' => '123456789012345', 'payJumpUrl' => 'https://cashier.example/pay',
         ]))]);
@@ -82,6 +85,7 @@ class YdPayGatewayTest extends TestCase
             && $request['notifyUrl'] === 'https://merchant.example/payment-gateway/ydpay/deposit/callback'
             && str_contains($request->header('Content-Type')[0], 'application/x-www-form-urlencoded'));
         $this->assertSame('pending', $order->status);
+        $this->assertSame(now()->addMinutes(60)->toAtomString(), $order->gateway_meta['deposit_expires_at']);
         $this->assertSame(0, WalletTransaction::query()->count());
         $this->actingAs($order->user)->withSession(['_old_input' => ['provider' => 'qc168']])
             ->get(route('recharge.create'))->assertOk()->assertViewHas('gatewayAvailable', false)
@@ -300,26 +304,29 @@ class YdPayGatewayTest extends TestCase
         $admin = AdminUser::query()->create(['username' => 'yd-admin', 'password' => bcrypt('password'), 'status' => 'active']);
         $settings = app(YdPaySettings::class);
         try {
-            $settings->save(['deposit_enabled' => false, 'withdraw_enabled' => false, 'withdraw_release_hours' => 48], $admin);
+            $settings->save(['deposit_enabled' => false, 'withdraw_enabled' => false, 'withdraw_release_hours' => 48, 'deposit_expiry_minutes' => 90], $admin);
             $this->fail('Unauthorized settings must be rejected.');
         } catch (HttpException $exception) {
             $this->assertSame(403, $exception->getStatusCode());
         }
         $admin->givePermissionTo(Permission::findOrCreate('ManagePaymentGateway:Settings', 'admin'));
-        $settings->save(['deposit_enabled' => false, 'withdraw_enabled' => false, 'withdraw_release_hours' => 48], $admin);
+        $this->assertSame(60, $settings->depositExpiryMinutes());
+        $settings->save(['deposit_enabled' => false, 'withdraw_enabled' => false, 'withdraw_release_hours' => 48, 'deposit_expiry_minutes' => 90], $admin);
         $this->assertFalse(app(YdPayGateway::class)->isAvailable());
         $this->assertFalse(app(YdPayGateway::class)->isAvailable('withdraw'));
         $this->assertSame(48, $settings->releaseHours());
+        $this->assertSame(90, $settings->depositExpiryMinutes());
         $this->assertDatabaseHas('payment_gateway_events', ['provider' => 'ydpay', 'event_type' => 'ydpay.settings.updated', 'actor_admin_user_id' => $admin->id]);
         Filament::setCurrentPanel(Filament::getPanel('admin'));
         $this->actingAs($admin, 'admin');
         Livewire::test(Dashboard::class)
             ->assertActionVisible('ydpaySettings')
             ->assertActionHidden('paymentGatewaySettings')
-            ->callAction('ydpaySettings', ['deposit_enabled' => true, 'withdraw_enabled' => false, 'withdraw_release_hours' => 12])
+            ->callAction('ydpaySettings', ['deposit_enabled' => true, 'withdraw_enabled' => false, 'withdraw_release_hours' => 12, 'deposit_expiry_minutes' => 60])
             ->assertHasNoActionErrors();
         $this->assertTrue(app(YdPayGateway::class)->isAvailable());
         $this->assertSame(12, $settings->releaseHours());
+        $this->assertSame(60, $settings->depositExpiryMinutes());
     }
 
     public function test_disabled_withdrawal_blocks_approval_in_backend(): void
@@ -451,6 +458,151 @@ class YdPayGatewayTest extends TestCase
         $order->update(['gateway_provider' => 'unknown']);
         $this->assertFalse(app(Qc168CallbackService::class)->sync($order)['accepted']);
         Http::assertSentCount(2);
+    }
+
+    public function test_unpaid_deposit_expires_at_sixty_minutes_once_and_is_visible_as_expired(): void
+    {
+        $this->freezeTime();
+        $order = $this->deposit();
+        $order->update(['gateway_payment_url' => 'https://cashier.example/pay']);
+        Http::fake(['gateway.example/api/pay/query_order' => Http::response($this->depositPayload($order, '1'))]);
+        $this->travel(59)->minutes();
+        $this->artisan('ydpay:process-orders deposit')->assertSuccessful();
+        $this->assertFalse($order->fresh()->isGatewayExpired());
+        $this->travel(1)->minutes();
+        $this->artisan('ydpay:process-orders deposit')->assertSuccessful();
+        $this->assertTrue($order->fresh()->isGatewayExpired());
+        $this->assertSame('1', $order->fresh()->gateway_meta['ydpay_status']);
+        $this->assertSame('pending', $order->fresh()->status);
+        $this->assertSame(now()->toAtomString(), $order->fresh()->gateway_meta['deposit_expired_at']);
+        $this->artisan('ydpay:process-orders deposit')->assertSuccessful();
+        app(YdPayRechargeService::class)->process($this->depositPayload($order, '0'), 'sync');
+        $this->assertTrue($order->fresh()->isGatewayExpired());
+        $this->assertSame(1, PaymentGatewayEvent::query()->where('event_type', 'ydpay.deposit.expired')->count());
+        $this->assertSame(0, WalletTransaction::query()->count());
+        $this->assertSame(0, Wallet::query()->count());
+        app()->setLocale('en');
+        $this->actingAs($order->user)->getJson(route('recharge.gateway.status', $order))
+            ->assertOk()->assertJsonPath('gateway_status', 'expired')->assertJsonPath('payment_confirmed', false)
+            ->assertJsonPath('gateway_status_label', 'Expired locally (unpaid)');
+        $this->get(route('recharge.gateway.return', $order))->assertOk()->assertSee(__('ydpay.deposit_expired_help'));
+        $this->assertNull(ApiFormatter::rechargeRequest($order->fresh())['payment_url']);
+        $this->loginAdmin();
+        Livewire::test(ListRechargeRequests::class)->assertSee('Expired locally (unpaid)');
+        Livewire::test(ViewRechargeRequest::class, ['record' => $order->getRouteKey()])->assertSee('Expired locally (unpaid)');
+    }
+
+    public function test_deposit_expiry_uses_the_creation_setting_snapshot(): void
+    {
+        $this->freezeTime();
+        Setting::setValue('ydpay_deposit_expiry_minutes', 90);
+        Http::fake(['gateway.example/api/pay/create_order' => Http::response($this->signed([
+            'retCode' => '0', 'payOrderId' => '123456789012345', 'payJumpUrl' => 'https://cashier.example/pay',
+        ]))]);
+        $order = app(YdPayRechargeService::class)->create($this->user(), '50000.00');
+        $this->assertSame(now()->addMinutes(90)->toAtomString(), $order->gateway_meta['deposit_expires_at']);
+        Setting::setValue('ydpay_deposit_expiry_minutes', 60);
+        $this->travel(61)->minutes();
+        $service = app(YdPayRechargeService::class);
+        $this->assertSame('pending', $service->process($this->depositPayload($order, '1'), 'sync'));
+        $this->travel(29)->minutes();
+        $this->assertSame('expired', $service->process($this->depositPayload($order, '1'), 'sync'));
+    }
+
+    #[DataProvider('invalidExpiryQueries')]
+    public function test_expiry_requires_a_successful_verified_query(string $error): void
+    {
+        $order = $this->deposit();
+        $order->forceFill(['created_at' => now()->subHours(2), 'gateway_payment_status' => 'pending'])->save();
+        $payload = $this->depositPayload($order, '1');
+        if ($error === 'signature') {
+            $payload['sign'] = 'INVALID';
+        } elseif ($error === 'amount') {
+            $payload = $this->signed([...$payload, 'amount' => '1']);
+        } elseif ($error === 'order') {
+            $payload = $this->signed([...$payload, 'mchOrderNo' => 'wrong-order']);
+        }
+        Http::fake(['gateway.example/api/pay/query_order' => fn () => $error === 'transport'
+            ? throw new ConnectionException('Query unavailable') : Http::response($payload)]);
+        $this->artisan('ydpay:process-orders deposit')->assertSuccessful();
+        $this->assertSame('pending', $order->fresh()->gateway_payment_status);
+        $this->assertSame(0, PaymentGatewayEvent::query()->where('event_type', 'ydpay.deposit.expired')->count());
+        $this->assertSame(0, WalletTransaction::query()->count());
+    }
+
+    public static function invalidExpiryQueries(): array
+    {
+        return [['transport'], ['signature'], ['amount'], ['order']];
+    }
+
+    #[DataProvider('latePaymentSources')]
+    public function test_expired_deposit_late_payment_is_reconciled_exactly_once(bool $callbackFirst): void
+    {
+        $order = $this->deposit();
+        $order->forceFill(['created_at' => now()->subHours(2)])->save();
+        $service = app(YdPayRechargeService::class);
+        $this->assertSame('expired', $service->process($this->depositPayload($order, '1'), 'sync'));
+        $callback = $this->signed([...$this->depositPayload($order, '2'), 'backType' => '2', 'income' => '5000000']);
+        Http::fake(['gateway.example/api/pay/query_order' => Http::response($this->depositPayload($order, '2'))]);
+        if ($callbackFirst) {
+            $this->post('/payment-gateway/ydpay/deposit/callback?'.http_build_query($callback))->assertOk();
+        }
+        $this->artisan('ydpay:process-orders deposit')->assertSuccessful();
+        $this->post('/payment-gateway/ydpay/deposit/callback?'.http_build_query($callback))->assertOk();
+        $service->process($this->depositPayload($order, '3'), 'sync');
+        // A stale unpaid response after the paid callback must not expire the order again.
+        $service->process($this->depositPayload($order, '1'), 'sync');
+        $this->assertSame('completed', $order->fresh()->gateway_payment_status);
+        $this->assertTrue($order->fresh()->isPaymentConfirmed());
+        $this->assertNotNull($order->fresh()->gateway_meta['deposit_expired_at']);
+        $this->assertSame(1, WalletTransaction::query()->count());
+        $this->assertSame('50000.00', Wallet::query()->sole()->balance);
+        $this->assertSame(1, PaymentGatewayEvent::query()->where('event_type', 'ydpay.deposit.expired')->count());
+    }
+
+    public static function latePaymentSources(): array
+    {
+        return ['callback first' => [true], 'query first' => [false]];
+    }
+
+    #[DataProvider('depositStates')]
+    public function test_overdue_deposit_only_expires_for_verified_unpaid_provider_states(string $status, string $state, bool $paid): void
+    {
+        $order = $this->deposit();
+        $order->forceFill(['created_at' => now()->subHours(2)])->save();
+        $result = app(YdPayRechargeService::class)->process($this->depositPayload($order, $status), 'sync');
+        $this->assertSame(in_array($status, ['0', '1'], true) ? 'expired' : $state, $result);
+        $this->assertSame($paid, $order->fresh()->isPaymentConfirmed());
+        $this->assertSame($paid ? 1 : 0, WalletTransaction::query()->count());
+    }
+
+    public function test_expiry_setting_validation_rejects_invalid_durations_without_saving(): void
+    {
+        $admin = $this->loginAdmin();
+        $settings = app(YdPaySettings::class);
+        foreach ([0, 1441, 1.5, null] as $minutes) {
+            try {
+                $settings->save(['deposit_enabled' => true, 'withdraw_enabled' => false,
+                    'withdraw_release_hours' => 24, 'deposit_expiry_minutes' => $minutes], $admin);
+                $this->fail('Invalid expiry duration must be rejected.');
+            } catch (ValidationException $exception) {
+                $this->assertArrayHasKey('deposit_expiry_minutes', $exception->errors());
+            }
+        }
+        $this->assertSame(60, $settings->depositExpiryMinutes());
+        $this->assertSame(0, PaymentGatewayEvent::query()->where('event_type', 'ydpay.settings.updated')->count());
+    }
+
+    public function test_ydpay_expiry_scheduler_does_not_touch_manual_or_qc168_deposits(): void
+    {
+        $order = $this->deposit();
+        $order->forceFill(['gateway_provider' => 'qc168', 'gateway_payment_status' => 'pending', 'created_at' => now()->subDays(2)])->save();
+        $manual = $order->replicate();
+        $manual->forceFill(['gateway_provider' => null, 'deposit_method' => 'manual', 'merchant_order_id' => null])->save();
+        $this->artisan('ydpay:process-orders deposit')->assertSuccessful();
+        $this->assertSame('pending', $order->fresh()->gateway_payment_status);
+        $this->assertSame('pending', $manual->fresh()->status);
+        Http::assertNothingSent();
     }
 
     public function test_sandbox_create_is_quarantined_and_cannot_later_credit(): void

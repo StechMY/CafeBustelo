@@ -103,7 +103,8 @@
                                 <span
                                     class="shrink-0 rounded-full px-2.5 py-1 text-[10px] font-black uppercase sm:px-3 sm:text-xs
                                     @class([
-                                        'bg-yellow-100 text-yellow-700' => $requestItem->status === 'pending' && ! $requestItem->requiresGatewayReview(),
+                                        'bg-yellow-100 text-yellow-700' => $requestItem->status === 'pending' && ! $requestItem->requiresGatewayReview() && ! $requestItem->isGatewayExpired(),
+                                        'bg-gray-100 text-gray-700' => $requestItem->isGatewayExpired(),
                                         'bg-green-100 text-green-700' => $requestItem->isPaymentConfirmed(),
                                         'bg-red-100 text-red-700' => $requestItem->status === 'rejected' || $requestItem->requiresGatewayReview(),
                                     ])"

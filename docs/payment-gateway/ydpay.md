@@ -78,6 +78,14 @@ Creation success is never payment evidence. Deposit callbacks accept only 2, -1 
 
 Only unresolved deposits are polled automatically. An already-credited deposit's later refund can be detected by an explicit admin sync; refunds do not automatically reverse wallet entries. The provider's documented deposit callback set does not include refund status 4.
 
+### Unpaid deposit expiry
+
+Dashboard → YDPAY → unpaid deposit expiry defaults to **60 minutes**, configurable from 1 to 1440. New orders snapshot their deadline in `gateway_meta.deposit_expires_at`; subsequent settings changes do not move that deadline. Existing orders without a snapshot use `created_at + 60 minutes`. No schema migration or additional environment variable is required.
+
+The existing minute scheduler queries the original YDPAY order. Only a verified status 0 or 1 received at or after the deadline marks `gateway_payment_status=expired`, records `deposit_expired_at`, and writes one immutable `ydpay.deposit.expired` event. Query errors, invalid signatures, mismatched evidence, sandbox/review states and paid orders never trigger expiry. Under load, expiry happens when the bounded reconciliation batch next reaches the order; the scheduler and `YDPAY_ENABLED` must be active.
+
+This is **local expiry**, not a YDPAY close request or proof that the upstream cashier cannot accept payment. Admin/customer screens display “Expired locally (unpaid)”; the API returns `gateway_status=expired` and no payment URL. The original provider status remains in `gateway_meta.ydpay_status`. The financial approval `status` remains `pending` so polling and verified late payments still work. Repeated unpaid responses cannot reopen an expired order. A valid late paid callback/query uses the normal exactly-once credit path; expiry itself never changes a wallet or rejects a paid order.
+
 ### Formal endpoint returning an upstream sandbox
 
 On 2026-11-09, production merchant 502002001 / deposit gateway 20 used the formal `https://gateway.ydpay.vip` endpoint, but its returned FluxPay checkout displayed **SANDBOX API TEST** and explicitly stated that no real payment or funds movement would occur. The saved create response had `payAction=GET`, `payMethod=formJump` and no `sandbox` flag; subsequent query responses likewise had no sandbox flag. The local deposits examined remained pending and uncredited.

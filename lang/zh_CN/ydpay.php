@@ -1,6 +1,10 @@
 <?php
 
 return [
+    'deposit_expiry_minutes' => '未付款充值过期时间',
+    'deposit_expiry_help' => '1–1440 分钟，默认 60。仅影响新订单；到期后查单确认未付款才标记本地过期，晚到账仍继续核对。',
+    'minutes' => '分钟',
+    'deposit_expired_help' => '付款时限已结束，请勿继续使用旧链接付款。如果你已经付款，请勿重复支付，系统会继续核对到账结果。',
     'approve_instant_confirmation' => '此操作审核通过提现并立即提交真实 YDPAY 付款。资金继续锁定，只有验证通过的 YDPAY 状态 2 才确认付款完成。',
     'deposit_statuses' => [
         '0' => '0 · 已初始化（未付款）',
@@ -16,6 +20,7 @@ return [
         'completed' => '已付款',
         'failed' => '支付失败',
         'closed' => '订单已关闭',
+        'expired' => '本地已过期（未付款）',
         'refund_review' => '已退款，需财务复核',
         'sandbox_review' => '检测到沙箱，需复核',
     ],

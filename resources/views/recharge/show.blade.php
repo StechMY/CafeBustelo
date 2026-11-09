@@ -23,7 +23,8 @@
                 <span
                       class="rounded-full px-3 py-1 text-xs font-black uppercase
                     @class([
-                        'bg-yellow-100 text-yellow-700' => $rechargeRequest->status === 'pending' && ! $rechargeRequest->requiresGatewayReview(),
+                        'bg-yellow-100 text-yellow-700' => $rechargeRequest->status === 'pending' && ! $rechargeRequest->requiresGatewayReview() && ! $rechargeRequest->isGatewayExpired(),
+                        'bg-gray-100 text-gray-700' => $rechargeRequest->isGatewayExpired(),
                         'bg-green-100 text-green-700' => $rechargeRequest->isPaymentConfirmed(),
                         'bg-red-100 text-red-700' => $rechargeRequest->status === 'rejected' || $rechargeRequest->requiresGatewayReview(),
                     ])">
@@ -32,6 +33,9 @@
             </div>
 
             <div class="grid gap-3">
+                @if ($rechargeRequest->isGatewayExpired())
+                    <p class="rounded-2xl bg-gray-100 p-4 text-sm font-bold text-[#003b7a]">{{ __('ydpay.deposit_expired_help') }}</p>
+                @endif
                 <div class="rounded-2xl bg-[#fff8c7] p-4">
                     <div class="text-xs font-black uppercase text-[#003b7a]/60">{{ __('recharge.deposit_method') }}</div>
                     <div class="mt-1 font-black text-[#003b7a]">

@@ -1,6 +1,10 @@
 <?php
 
 return [
+    'deposit_expiry_minutes' => 'Batas waktu deposit belum dibayar',
+    'deposit_expiry_help' => '1–1440 menit, default 60. Berlaku untuk pesanan baru. Setelah batas waktu, pesanan kedaluwarsa secara lokal hanya jika kueri terverifikasi menyatakan belum dibayar; pembayaran terlambat tetap diperiksa.',
+    'minutes' => 'menit',
+    'deposit_expired_help' => 'Batas waktu pembayaran telah berakhir. Jangan membayar melalui tautan lama. Jika sudah membayar, jangan membayar lagi; sistem akan terus memeriksa konfirmasi.',
     'approve_instant_confirmation' => 'Menyetujui penarikan dan langsung mengirim pembayaran YDPAY nyata. Dana tetap terkunci; hanya status YDPAY 2 terverifikasi yang mengonfirmasi pembayaran.',
     'deposit_statuses' => [
         '0' => '0 · Diinisialisasi (belum dibayar)',
@@ -16,6 +20,7 @@ return [
         'completed' => 'Sudah dibayar',
         'failed' => 'Gagal',
         'closed' => 'Ditutup',
+        'expired' => 'Kedaluwarsa lokal (belum dibayar)',
         'refund_review' => 'Dikembalikan — perlu ditinjau',
         'sandbox_review' => 'Pembayaran uji terdeteksi — perlu ditinjau',
     ],

@@ -7,6 +7,7 @@
         $failedStatuses = ['failed', 'reject', 'overdue', 'create_failed', 'closed'];
         $isSuccessful = $rechargeRequest->isPaymentConfirmed();
         $requiresReview = $rechargeRequest->requiresGatewayReview();
+        $isExpired = $rechargeRequest->isGatewayExpired();
         $isFailed = ! $isSuccessful
             && in_array($rechargeRequest->gateway_payment_status, $failedStatuses, true);
     @endphp
@@ -18,10 +19,11 @@
                 successful: @js($isSuccessful),
                 failed: @js($isFailed),
                 requiresReview: @js($requiresReview),
+                expired: @js($isExpired),
                 gatewayStatus: @js($rechargeRequest->gatewayStatusLabel()),
                 attempts: 0,
                 poll() {
-                    if (this.successful || this.failed || this.requiresReview || this.attempts >= 60) return;
+                    if (this.successful || this.failed || this.expired || this.requiresReview || this.attempts >= 60) return;
                     this.attempts++;
                     fetch(@js(route('recharge.gateway.status', $rechargeRequest)), { headers: { 'Accept': 'application/json' } })
                         .then(response => response.ok ? response.json() : Promise.reject())
@@ -29,8 +31,9 @@
                             this.gatewayStatus = data.gateway_status_label;
                             this.successful = data.payment_confirmed;
                             this.requiresReview = data.requires_review;
+                            this.expired = data.gateway_status === 'expired';
                             this.failed = ! data.payment_confirmed && ['failed', 'reject', 'overdue', 'create_failed', 'closed'].includes(data.gateway_status);
-                            if (! this.successful && ! this.failed && ! this.requiresReview) setTimeout(() => this.poll(), 5000);
+                            if (! this.successful && ! this.failed && ! this.expired && ! this.requiresReview) setTimeout(() => this.poll(), 5000);
                         })
                         .catch(() => setTimeout(() => this.poll(), 5000));
                 }
@@ -49,7 +52,11 @@
                 <div class="text-3xl font-black uppercase text-[#e4003a]">{{ __('ydpay.review_title') }}</div>
                 <p class="mt-3 font-bold text-[#003b7a]/70">{{ __('ydpay.review_help') }}</p>
             </div>
-            <div x-show="! successful && ! failed && ! requiresReview">
+            <div x-show="expired" x-cloak>
+                <div class="text-3xl font-black uppercase text-[#003b7a]">{{ __('ydpay.deposit_statuses.expired') }}</div>
+                <p class="mt-3 font-bold text-[#003b7a]/70">{{ __('ydpay.deposit_expired_help') }}</p>
+            </div>
+            <div x-show="! successful && ! failed && ! expired && ! requiresReview">
                 <div class="text-3xl font-black uppercase text-[#003b7a]">{{ __('recharge.payment_processing') }}</div>
                 <p class="mt-3 font-bold text-[#003b7a]/70">{{ __('recharge.waiting_for_payment_confirmation') }}</p>
             </div>

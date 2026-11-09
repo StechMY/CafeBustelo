@@ -26,6 +26,9 @@ class YdPaySettingsAction
             ->fillForm(fn (): array => app(YdPaySettings::class)->formData())
             ->form([
                 Toggle::make('deposit_enabled')->label(__('filament.qc168_automatic_deposit'))->required(),
+                TextInput::make('deposit_expiry_minutes')->label(__('ydpay.deposit_expiry_minutes'))
+                    ->helperText(__('ydpay.deposit_expiry_help'))
+                    ->suffix(__('ydpay.minutes'))->numeric()->integer()->minValue(1)->maxValue(1440)->required(),
                 Toggle::make('withdraw_enabled')->label(__('filament.qc168_automatic_withdrawal'))->required(),
                 TextInput::make('withdraw_release_hours')->label(__('filament.qc168_withdraw_release_hours'))
                     ->helperText(str_replace('QC168', 'YDPAY', __('filament.qc168_withdraw_release_hours_help')))

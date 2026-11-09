@@ -876,7 +876,7 @@ class RechargeRequestsTable
         if ($record->gateway_provider === 'ydpay') {
             return $record->requiresGatewayReview() ? 'danger' : match ($record->gateway_payment_status) {
                 'completed' => 'success', 'failed', 'closed' => 'danger',
-                'create_pending' => 'warning', default => 'info',
+                'expired' => 'gray', 'create_pending' => 'warning', default => 'info',
             };
         }
         if (

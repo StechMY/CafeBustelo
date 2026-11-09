@@ -1,6 +1,10 @@
 <?php
 
 return [
+    'deposit_expiry_minutes' => 'Unpaid deposit expiry',
+    'deposit_expiry_help' => '1–1440 minutes; default 60. Applies to new orders. A verified unpaid query after the deadline marks the order locally expired; late payments are still reconciled.',
+    'minutes' => 'minutes',
+    'deposit_expired_help' => 'The payment window has ended. Please do not pay using the old link. If you already paid, do not pay again; we will continue checking for confirmation.',
     'approve_instant_confirmation' => 'This approves the withdrawal and sends a real YDPAY payout immediately. Funds stay locked; only verified YDPAY status 2 confirms payment.',
     'deposit_statuses' => [
         '0' => '0 · Initialized (unpaid)',
@@ -16,6 +20,7 @@ return [
         'completed' => 'Paid',
         'failed' => 'Failed',
         'closed' => 'Closed',
+        'expired' => 'Expired locally (unpaid)',
         'refund_review' => 'Refund reported — review required',
         'sandbox_review' => 'Sandbox detected — review required',
     ],
