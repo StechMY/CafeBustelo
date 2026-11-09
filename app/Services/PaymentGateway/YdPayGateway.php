@@ -123,12 +123,27 @@ class YdPayGateway
         return $this->request('/api/agentpay/query_balance', []);
     }
 
+    public function isSandboxResponse(array $payload): bool
+    {
+        if (array_key_exists('sandbox', $payload)) {
+            return true;
+        }
+        foreach (['payAction', 'payMethod', 'payUrl', 'payJumpUrl'] as $field) {
+            if (is_string($payload[$field] ?? null) && str_contains(strtolower($payload[$field]), 'sandbox')) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private function request(string $endpoint, array $payload): array
     {
         $proxy = $this->outboundProxy();
         $baseUrl = rtrim((string) config('services.ydpay.base_url'), '/');
         if (! config('services.ydpay.enabled') || ! filled(config('services.ydpay.merchant_id'))
-            || ! filter_var($baseUrl, FILTER_VALIDATE_URL) || parse_url($baseUrl, PHP_URL_SCHEME) !== 'https') {
+            || ! filter_var($baseUrl, FILTER_VALIDATE_URL) || parse_url($baseUrl, PHP_URL_SCHEME) !== 'https'
+            || str_contains(strtolower($baseUrl), 'sandbox')) {
             throw new RuntimeException('YDPAY is disabled or incompletely configured.');
         }
         $payload = array_merge($payload, [

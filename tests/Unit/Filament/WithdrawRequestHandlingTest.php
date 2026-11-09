@@ -108,9 +108,9 @@ class WithdrawRequestHandlingTest extends TestCase
         $this->assertNull($table->getColumn('platform_handling'));
         $this->assertNull($table->getColumn('gateway_last_synced_at'));
         $this->assertSame([
-            'user.username', 'amount', 'bank_name', 'withdrawal_summary_status',
+            'user.username', 'amount', 'bank_name', 'gateway_provider', 'withdrawal_summary_status',
             'admin_remark', 'gateway_release_at', 'created_at',
-        ], array_slice(array_keys($table->getColumns()), 0, 7));
+        ], array_slice(array_keys($table->getColumns()), 0, 8));
         $this->assertTrue($table->getColumn('gateway_release_at')->isSortable());
         $this->assertFalse($table->getColumn('gateway_release_at')->isToggleable());
     }

@@ -23,11 +23,11 @@
                 <span
                       class="rounded-full px-3 py-1 text-xs font-black uppercase
                     @class([
-                        'bg-yellow-100 text-yellow-700' => $rechargeRequest->status === 'pending',
-                        'bg-green-100 text-green-700' => $rechargeRequest->status === 'approved',
-                        'bg-red-100 text-red-700' => $rechargeRequest->status === 'rejected',
+                        'bg-yellow-100 text-yellow-700' => $rechargeRequest->status === 'pending' && ! $rechargeRequest->requiresGatewayReview(),
+                        'bg-green-100 text-green-700' => $rechargeRequest->isPaymentConfirmed(),
+                        'bg-red-100 text-red-700' => $rechargeRequest->status === 'rejected' || $rechargeRequest->requiresGatewayReview(),
                     ])">
-                    {{ __('status.' . $rechargeRequest->status) }}
+                    {{ $rechargeRequest->gateway_provider === 'ydpay' ? $rechargeRequest->gatewayStatusLabel() : __('status.' . $rechargeRequest->status) }}
                 </span>
             </div>
 
@@ -35,7 +35,7 @@
                 <div class="rounded-2xl bg-[#fff8c7] p-4">
                     <div class="text-xs font-black uppercase text-[#003b7a]/60">{{ __('recharge.deposit_method') }}</div>
                     <div class="mt-1 font-black text-[#003b7a]">
-                        {{ $rechargeRequest->isGatewayDeposit() ? __('recharge.payment_gateway') : __('recharge.manual_deposit') }}
+                        {{ $rechargeRequest->isGatewayDeposit() ? $rechargeRequest->gatewayProviderLabel() : __('recharge.manual_deposit') }}
                     </div>
                 </div>
 
@@ -47,7 +47,7 @@
                         </div>
                         <div class="rounded-2xl bg-[#fff8c7] p-4">
                             <div class="text-xs font-black uppercase text-[#003b7a]/60">{{ __('recharge.gateway_status') }}</div>
-                            <div class="mt-1 font-black uppercase text-[#003b7a]">{{ $rechargeRequest->gateway_payment_status ?: '-' }}</div>
+                            <div class="mt-1 font-black uppercase text-[#003b7a]">{{ $rechargeRequest->gatewayStatusLabel() }}</div>
                         </div>
                     </div>
                 @else

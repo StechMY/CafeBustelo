@@ -36,6 +36,11 @@ class RechargeApprovalService
             if (! $lockedRequest->isPending()) {
                 throw new RuntimeException('Only pending recharge requests can be approved.');
             }
+            if ($lockedRequest->gateway_provider === 'ydpay'
+                && ($adminUser !== null || $lockedRequest->gateway_payment_status !== 'completed'
+                    || ($meta['gateway_provider'] ?? null) !== 'ydpay')) {
+                throw new RuntimeException('YDPAY deposits require verified provider completion.');
+            }
 
             $user = $lockedRequest->user()
                 ->lockForUpdate()

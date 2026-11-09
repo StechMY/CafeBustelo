@@ -127,6 +127,12 @@ class WithdrawRequestsTable
                 | ⚠ Provider rejected payout.
                 |
                 */
+                TextColumn::make('gateway_provider')
+                    ->label(__('withdraw.gateway_provider'))
+                    ->formatStateUsing(fn (WithdrawRequest $record): string => $record->gatewayProviderLabel())
+                    ->badge()
+                    ->placeholder('-'),
+
                 TextColumn::make('withdrawal_summary_status')
                     ->extraCellAttributes(['class' => 'withdraw-status-cell'])
                     ->label(__('filament.status'))
@@ -332,6 +338,9 @@ class WithdrawRequestsTable
             ->defaultSort('created_at', 'desc')
 
             ->filters([
+                SelectFilter::make('gateway_provider')
+                    ->label(__('filament.gateway_provider'))
+                    ->options(['qc168' => 'QC168', 'ydpay' => 'YDPAY']),
                 Filter::make('has_admin_remark')
                     ->label(__('withdraw.has_admin_remark'))
                     ->query(fn (Builder $query): Builder => $query->whereRaw(
@@ -624,13 +633,7 @@ class WithdrawRequestsTable
                 |
                 */
                 Action::make('sync_gateway_attention')
-                    ->label(
-                        self::ui(
-                            'withdraw.sync_gateway',
-                            'Sync Status',
-                            '同步状态'
-                        )
-                    )
+                    ->label(fn (WithdrawRequest $record): string => $record->gatewayProviderLabel().' · '.__('withdraw.sync_gateway'))
                     ->icon('heroicon-o-arrow-path')
                     ->color('warning')
                     ->visible(
@@ -701,23 +704,8 @@ class WithdrawRequestsTable
                 |--------------------------------------------------------------------------
                 */
                 ActionGroup::make([
-                    Action::make('approve_ydpay')
-                        ->label(fn (): string => 'YDPAY · '.app(\App\Services\Settings\YdPaySettings::class)->releaseHours().'h')
-                        ->icon('heroicon-o-clock')
-                        ->visible(fn (WithdrawRequest $record): bool => $record->isPending() && (bool) config('services.ydpay.enabled'))
-                        ->disabled(fn (): bool => ! app(\App\Services\PaymentGateway\YdPayGateway::class)->isAvailable('withdraw'))
-                        ->tooltip(fn (): ?string => app(\App\Services\PaymentGateway\YdPayGateway::class)->isAvailable('withdraw') ? null : str_replace('QC168', 'YDPAY', __('withdraw.gateway_unavailable')))
-                        ->authorize(fn (WithdrawRequest $record): bool => Gate::allows('approveScheduledGateway', $record))
-                        ->requiresConfirmation()
-                        ->modalDescription(fn (): string => str_replace('QC168', 'YDPAY', __('filament.qc168_withdraw_release_hours_help')))
-                        ->action(function (WithdrawRequest $record): void {
-                            try {
-                                app(\App\Services\PaymentGateway\YdPayWithdrawalService::class)->approve($record, Filament::auth()->user());
-                                Notification::make()->title('YDPAY: waiting release')->success()->send();
-                            } catch (Throwable $exception) {
-                                Notification::make()->title($exception->getMessage())->danger()->send();
-                            }
-                        }),
+                    \App\Filament\Resources\WithdrawRequests\Actions\ApproveYdPayWithdrawalAction::make(),
+                    \App\Filament\Resources\WithdrawRequests\Actions\ApproveYdPayWithdrawalAction::make(instant: true),
                     /*
                     |--------------------------------------------------------------------------
                     | Approve Manually
@@ -1138,7 +1126,7 @@ class WithdrawRequestsTable
                     MarkFailedPayoutPaidAction::make(usePreloadedCancellationState: true),
                     RevertManualApprovalAction::make(),
                     Action::make('retry_payout')
-                        ->label(__('withdraw.retry_payout'))
+                        ->label(fn (WithdrawRequest $record): string => $record->gatewayProviderLabel().' · '.__('withdraw.retry_payout'))
                         ->icon('heroicon-o-arrow-path')
                         ->color('warning')
                         ->visible(
@@ -1210,7 +1198,7 @@ class WithdrawRequestsTable
                     |--------------------------------------------------------------------------
                     */
                     Action::make('cancel_payout')
-                        ->label(__('withdraw.cancel_payout'))
+                        ->label(fn (WithdrawRequest $record): string => $record->gatewayProviderLabel().' · '.__('withdraw.cancel_payout'))
                         ->icon('heroicon-o-no-symbol')
                         ->color('danger')
                         ->visible(
@@ -1286,7 +1274,7 @@ class WithdrawRequestsTable
                     |
                     */
                     Action::make('sync_gateway')
-                        ->label(__('withdraw.sync_gateway'))
+                        ->label(fn (WithdrawRequest $record): string => $record->gatewayProviderLabel().' · '.__('withdraw.sync_gateway'))
                         ->icon(
                             'heroicon-o-arrow-path-rounded-square'
                         )
@@ -1475,7 +1463,11 @@ class WithdrawRequestsTable
             $parts[] = __('withdraw.latest_gateway_error').': '.Str::limit($reason, 140);
         }
 
-        return implode(' · ', $parts);
+        if ($record->gateway_provider === 'ydpay' && filled($record->gateway_payment_status)) {
+            $parts[] = 'YDPAY: '.$record->gatewayStatusLabel();
+        }
+
+        return str_replace('QC168', $record->gatewayProviderLabel(), implode(' · ', $parts));
     }
 
     /*
@@ -1690,7 +1682,13 @@ class WithdrawRequestsTable
     | Friendly Gateway Alert
     |--------------------------------------------------------------------------
     */
-    private static function gatewayFriendlyAlert(
+    private static function gatewayFriendlyAlert(WithdrawRequest $record): ?string
+    {
+        $text = self::gatewayFriendlyAlertText($record);
+        return $text === null ? null : str_replace('QC168', $record->gatewayProviderLabel(), $text);
+    }
+
+    private static function gatewayFriendlyAlertText(
         WithdrawRequest $record
     ): ?string {
         if (! self::hasGatewayAttention($record)

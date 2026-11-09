@@ -14,6 +14,35 @@ class RechargeRequest extends Model
 
     public const GATEWAY_QC168 = 'qc168';
 
+    public function gatewayProviderLabel(): string
+    {
+        return strtoupper($this->gateway_provider ?: '-');
+    }
+
+    public function requiresGatewayReview(): bool
+    {
+        return $this->isGatewayDeposit() && in_array($this->gateway_payment_status, ['refund', 'refund_review', 'sandbox_review'], true);
+    }
+
+    public function isPaymentConfirmed(): bool
+    {
+        return $this->isApproved() && ! $this->requiresGatewayReview()
+            && ($this->gateway_provider !== 'ydpay' || $this->gateway_payment_status === 'completed');
+    }
+
+    public function gatewayStatusLabel(): string
+    {
+        if ($this->gateway_provider === 'ydpay') {
+            $raw = data_get($this->gateway_meta, 'ydpay_status');
+            $key = 'ydpay.deposit_statuses.'.($this->requiresGatewayReview() ? $this->gateway_payment_status : ($raw ?? $this->gateway_payment_status));
+            if (__($key) !== $key) {
+                return __($key);
+            }
+        }
+
+        return $this->gateway_payment_status ?: '-';
+    }
+
     protected $fillable = [
         'user_id',
         'recharge_method_id',

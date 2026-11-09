@@ -130,6 +130,7 @@ class WithdrawRequestInfolist
                         Grid::make(3)
                             ->schema([
                                 TextEntry::make('gateway_provider')
+                                    ->formatStateUsing(fn (WithdrawRequest $record): string => $record->gatewayProviderLabel())
                                     ->label(__('withdraw.gateway_provider'))
                                     ->placeholder('-'),
                                 TextEntry::make('payout_status')
@@ -138,6 +139,7 @@ class WithdrawRequestInfolist
                                     ->badge(),
                                 TextEntry::make('gateway_payment_status')
                                     ->label(__('withdraw.gateway_status'))
+                                    ->formatStateUsing(fn (WithdrawRequest $record): string => $record->gatewayStatusLabel())
                                     ->badge()
                                     ->placeholder('-'),
                                 TextEntry::make('gateway_release_at')
@@ -196,6 +198,9 @@ class WithdrawRequestInfolist
                             ->schema([
                                 TextEntry::make('attempt_no')
                                     ->label(__('withdraw.attempt')),
+                                TextEntry::make('provider')
+                                    ->label(__('withdraw.gateway_provider'))
+                                    ->formatStateUsing(fn (?string $state): string => strtoupper($state ?? '-')),
                                 TextEntry::make('merchant_order_id')
                                     ->label(__('withdraw.merchant_order_id'))
                                     ->copyable(),
@@ -206,6 +211,8 @@ class WithdrawRequestInfolist
                                     ->label(__('withdraw.bank_code')),
                                 TextEntry::make('gateway_status')
                                     ->label(__('withdraw.gateway_status'))
+                                    ->formatStateUsing(fn ($record, ?string $state): string => $record->provider === 'ydpay' && data_get($record->provider_response, 'status') !== null
+                                        ? __('ydpay.payout_statuses.'.data_get($record->provider_response, 'status')) : ($state ?? '-'))
                                     ->badge(),
                                 TextEntry::make('submitted_at')
                                     ->label(__('withdraw.gateway_submitted_at'))

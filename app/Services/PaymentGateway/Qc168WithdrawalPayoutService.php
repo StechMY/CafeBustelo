@@ -134,6 +134,12 @@ class Qc168WithdrawalPayoutService
             throw new RuntimeException(__('withdraw.no_payout_attempt'));
         }
 
+        if ($withdrawRequest->gateway_provider !== WithdrawRequest::GATEWAY_QC168
+            || $attempt->provider !== WithdrawRequest::GATEWAY_QC168
+            || $attempt->merchant_order_id !== $withdrawRequest->gateway_current_merchant_order_id) {
+            throw new RuntimeException('QC168 sync requires the current QC168 payout attempt.');
+        }
+
         return $this->syncAttempt($attempt, $source, $adminUser, $reason, $ip);
     }
 
@@ -267,6 +273,9 @@ class Qc168WithdrawalPayoutService
         ?string $reason = null,
         ?string $ip = null,
     ): array {
+        if ($attempt->provider !== WithdrawRequest::GATEWAY_QC168) {
+            throw new RuntimeException('QC168 sync requires a QC168 payout attempt.');
+        }
         $response = $this->gateway->getOrder($attempt->merchant_order_id);
         $payload = data_get($response, 'data');
         if (! is_array($payload)) {

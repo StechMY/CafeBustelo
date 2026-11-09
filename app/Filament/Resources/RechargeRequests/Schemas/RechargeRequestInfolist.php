@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\RechargeRequests\Schemas;
 
+use App\Models\RechargeRequest;
 use Filament\Infolists\Components\ImageEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Grid;
@@ -38,8 +39,9 @@ class RechargeRequestInfolist
 
                                 TextEntry::make('status')
                                     ->label(__('filament.status'))
+                                    ->formatStateUsing(fn (RechargeRequest $record, ?string $state): string => $record->gateway_provider === 'ydpay' ? $record->gatewayStatusLabel() : ($state ?? '-'))
                                     ->badge()
-                                    ->color(fn(?string $state): string => match ($state) {
+                                    ->color(fn(RechargeRequest $record, ?string $state): string => $record->requiresGatewayReview() ? 'danger' : match ($state) {
                                         'pending' => 'warning',
                                         'approved' => 'success',
                                         'rejected' => 'danger',
@@ -80,9 +82,11 @@ class RechargeRequestInfolist
                     ->schema([
                         Grid::make(3)
                             ->schema([
-                                TextEntry::make('gateway_provider')->label(__('filament.gateway_provider'))->placeholder('-'),
+                                TextEntry::make('gateway_provider')
+                                    ->formatStateUsing(fn (RechargeRequest $record): string => $record->gatewayProviderLabel())->label(__('filament.gateway_provider'))->placeholder('-'),
                                 TextEntry::make('merchant_order_id')->label(__('filament.merchant_order_id'))->copyable()->placeholder('-'),
-                                TextEntry::make('gateway_payment_status')->label(__('filament.gateway_status'))->badge()->placeholder('-'),
+                                TextEntry::make('gateway_payment_status')->label(__('filament.gateway_status'))
+                                    ->formatStateUsing(fn (RechargeRequest $record): string => $record->gatewayStatusLabel())->badge()->placeholder('-'),
                                 TextEntry::make('gateway_order_uid')->label(__('filament.gateway_order_uid'))->copyable()->placeholder('-'),
                                 TextEntry::make('gateway_payment_uid')->label(__('filament.gateway_payment_uid'))->copyable()->placeholder('-'),
                                 TextEntry::make('gateway_final_amount')->label(__('filament.gateway_final_amount'))->placeholder('-'),

@@ -38,7 +38,7 @@ class ProcessYdPayOrders extends Command
             }
             $order->update(['gateway_last_synced_at' => now()]);
             try {
-                $deposits->process($gateway->query($order->merchant_order_id, 'deposit'), 'sync');
+                $deposits->sync($order);
             } catch (Throwable) {
                 $this->warn("YDPAY deposit {$order->id}: query unresolved.");
             }

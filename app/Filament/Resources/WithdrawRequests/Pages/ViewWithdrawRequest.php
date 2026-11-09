@@ -38,6 +38,8 @@ class ViewWithdrawRequest extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
+            \App\Filament\Resources\WithdrawRequests\Actions\ApproveYdPayWithdrawalAction::make(),
+            \App\Filament\Resources\WithdrawRequests\Actions\ApproveYdPayWithdrawalAction::make(instant: true),
             Action::make('approve_manual')
                 ->label(__('withdraw.approve_manual'))
                 ->icon('heroicon-o-check-circle')
@@ -258,7 +260,7 @@ class ViewWithdrawRequest extends ViewRecord
             MarkFailedPayoutPaidAction::make(),
             RevertManualApprovalAction::make(),
             Action::make('retry_payout')
-                ->label(__('withdraw.retry_payout'))
+                ->label(fn (WithdrawRequest $record): string => $record->gatewayProviderLabel().' · '.__('withdraw.retry_payout'))
                 ->icon('heroicon-o-arrow-path')
                 ->color('warning')
                 ->visible(fn (WithdrawRequest $record): bool => $record->canRetryPayout())
@@ -298,7 +300,7 @@ class ViewWithdrawRequest extends ViewRecord
                 }),
 
             Action::make('cancel_payout')
-                ->label(__('withdraw.cancel_payout'))
+                ->label(fn (WithdrawRequest $record): string => $record->gatewayProviderLabel().' · '.__('withdraw.cancel_payout'))
                 ->icon('heroicon-o-no-symbol')
                 ->color('danger')
                 ->visible(fn (WithdrawRequest $record): bool => $record->canCancelPayout())
@@ -338,7 +340,7 @@ class ViewWithdrawRequest extends ViewRecord
                 }),
 
             Action::make('sync_gateway')
-                ->label(__('withdraw.sync_gateway'))
+                ->label(fn (WithdrawRequest $record): string => $record->gatewayProviderLabel().' · '.__('withdraw.sync_gateway'))
                 ->icon('heroicon-o-arrow-path-rounded-square')
                 ->color('info')
                 ->visible(fn (WithdrawRequest $record): bool => $record->canSyncPayout())

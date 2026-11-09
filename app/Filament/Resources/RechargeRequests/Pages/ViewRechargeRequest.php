@@ -37,7 +37,7 @@ class ViewRechargeRequest extends ViewRecord
             // EditAction::make(),
 
             Action::make('syncGateway')
-                ->label(__('filament.sync_gateway_status'))
+                ->label(fn (RechargeRequest $record): string => $record->gatewayProviderLabel().' · '.__('filament.sync_gateway_status'))
                 ->icon('heroicon-o-arrow-path')
                 ->color('info')
                 ->visible(fn (RechargeRequest $record): bool => $record->isGatewayDeposit())

@@ -63,6 +63,9 @@ class GatewayRechargeController extends Controller
             'status' => $rechargeRequest->status,
             'gateway_status' => $rechargeRequest->gateway_payment_status,
             'approved' => $rechargeRequest->isApproved(),
+            'payment_confirmed' => $rechargeRequest->isPaymentConfirmed(),
+            'requires_review' => $rechargeRequest->requiresGatewayReview(),
+            'gateway_status_label' => $rechargeRequest->gatewayStatusLabel(),
         ]);
     }
 

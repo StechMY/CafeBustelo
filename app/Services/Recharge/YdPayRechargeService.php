@@ -44,6 +44,15 @@ class YdPayRechargeService
                 'notifyUrl' => $notifyUrl,
                 'returnUrl' => $this->gateway->publicUrl('recharge.gateway.return', $order), 'clientIp' => $clientIp,
             ], fn ($value) => $value !== null));
+            if ($this->gateway->isSandboxResponse($response)) {
+                DB::transaction(function () use ($order, $response): void {
+                    $locked = RechargeRequest::query()->whereKey($order->id)->lockForUpdate()->firstOrFail();
+                    $locked->forceFill(['gateway_payment_status' => 'sandbox_review',
+                        'gateway_meta' => array_merge($locked->gateway_meta ?? [], ['environment_review' => 'sandbox_response'])])->save();
+                    $this->events->recordRecharge('ydpay.deposit.sandbox_review', $locked, payload: $response);
+                });
+                throw new RuntimeException('YDPAY returned a sandbox payment. Financial review required.');
+            }
             $url = $response['payJumpUrl'] ?? $response['payUrl'] ?? null;
             if (! is_string($url) || ! filter_var($url, FILTER_VALIDATE_URL)
                 || parse_url($url, PHP_URL_SCHEME) !== 'https' || empty($response['payOrderId'])) {
@@ -54,7 +63,12 @@ class YdPayRechargeService
                 if ($locked->gateway_order_uid && $locked->gateway_order_uid !== (string) $response['payOrderId']) {
                     throw new RuntimeException('YDPAY platform order mismatch.');
                 }
-                $locked->forceFill(['gateway_order_uid' => (string) $response['payOrderId'], 'gateway_payment_url' => $url])->save();
+                $updates = ['gateway_order_uid' => (string) $response['payOrderId'], 'gateway_payment_url' => $url];
+                // A successful create only means payment can begin, never that money was received.
+                if ($locked->gateway_payment_status === 'create_pending') {
+                    $updates['gateway_payment_status'] = 'pending';
+                }
+                $locked->forceFill($updates)->save();
                 $this->events->recordRecharge('ydpay.deposit.submitted', $locked, payload: $response);
             });
         } catch (Throwable $exception) {
@@ -66,9 +80,24 @@ class YdPayRechargeService
         return $order->fresh();
     }
 
+    public function sync(RechargeRequest $order): array
+    {
+        if ($order->gateway_provider !== 'ydpay') {
+            throw new RuntimeException('YDPAY sync requires a YDPAY deposit.');
+        }
+
+        $payload = $this->gateway->query($order->merchant_order_id, 'deposit');
+        if (($payload['mchOrderNo'] ?? null) !== $order->merchant_order_id) {
+            throw new RuntimeException('YDPAY query returned a different deposit order.');
+        }
+
+        return ['accepted' => true, 'result' => $this->process($payload, 'sync')];
+    }
+
     public function process(array $payload, string $source): string
     {
-        if (! $this->gateway->verify($payload)) {
+        if (! in_array($source, ['callback', 'sync'], true) || ! $this->gateway->verify($payload)
+            || $this->gateway->isSandboxResponse($payload)) {
             throw new RuntimeException('Invalid YDPAY signature.');
         }
 
@@ -76,7 +105,11 @@ class YdPayRechargeService
             $order = RechargeRequest::query()->where('gateway_provider', 'ydpay')
                 ->where('merchant_order_id', $payload['mchOrderNo'] ?? '')->lockForUpdate()->firstOrFail();
             $status = (string) ($payload['status'] ?? '');
-            if (($payload['mchId'] ?? null) !== (string) config('services.ydpay.merchant_id')
+            if (data_get($order->gateway_meta, 'environment_review')) {
+                throw new RuntimeException('YDPAY deposit environment requires financial review.');
+            }
+            if (! $order->isGatewayDeposit() || $order->gateway_currency !== 'vnd'
+                || ($payload['mchId'] ?? null) !== (string) config('services.ydpay.merchant_id')
                 || (string) ($payload['gatewayId'] ?? '') !== $order->gateway_channel
                 || (string) ($payload['amount'] ?? '') !== $this->gateway->minorAmount($order->amount)
                 || ! is_scalar($payload['payOrderId'] ?? null) || (string) $payload['payOrderId'] === ''
@@ -85,23 +118,42 @@ class YdPayRechargeService
                 || ! in_array($status, $source === 'callback' ? ['2', '-1', '-2'] : ['0', '1', '2', '3', '4', '-1', '-2'], true)
                 || isset($payload['sandbox'])
                 || ($source === 'callback' && (string) ($payload['backType'] ?? '') !== '2')
+                || ($source === 'sync' && ((string) ($payload['retCode'] ?? '') !== '0'
+                    || strtoupper((string) ($payload['currency'] ?? '')) !== 'VND'))
+                || ($source === 'callback' && $status === '2' && ! isset($payload['income']))
                 || (in_array($status, ['2', '3'], true) && isset($payload['income'])
                     && (string) $payload['income'] !== $this->gateway->minorAmount($order->amount))) {
                 throw new RuntimeException('YDPAY deposit evidence does not match the local order.');
             }
             $completed = in_array($status, ['2', '3'], true);
             $state = match ($status) {
-                '2', '3' => 'completed', '4' => 'refund_review', '-1', '-2' => 'failed', default => 'processing'
+                '0' => 'processing', '1' => 'pending', '2', '3' => 'completed',
+                '4' => 'refund_review', '-1' => 'failed', '-2' => 'closed',
             };
-            if (! $order->isApproved()) {
+            $timeField = $source === 'callback' ? 'gateway_last_callback_at' : 'gateway_last_synced_at';
+            $order->forceFill([$timeField => now()])->save();
+
+            // Refund/review is sticky; stale pending/failure messages cannot undo a paid order.
+            $review = $order->gateway_payment_status === 'refund_review';
+            if ($state === 'refund_review') {
+                $order->forceFill(['gateway_payment_status' => 'refund_review', 'gateway_order_uid' => (string) $payload['payOrderId'],
+                    'gateway_meta' => array_merge($order->gateway_meta ?? [], ['ydpay_status' => $status,
+                        'financial_review_reason' => 'provider_refund', 'financial_review_detected_at' => now()->toAtomString()])])->save();
+            } elseif ($review || $order->isApproved()
+                || (in_array($order->gateway_payment_status, ['failed', 'closed'], true) && in_array($status, ['0', '1'], true))) {
+                $this->events->recordRecharge('ydpay.deposit.stale_status_ignored', $order, payload: $payload, processingResult: $source);
+
+                return $review ? 'refund_review' : $order->gateway_payment_status;
+            } else {
                 if (! $order->isPending()) {
                     throw new RuntimeException('YDPAY local deposit is not pending.');
                 }
                 $order->forceFill([
                     'gateway_order_uid' => (string) $payload['payOrderId'],
                     'gateway_payment_status' => $state,
-                    $source === 'callback' ? 'gateway_last_callback_at' : 'gateway_last_synced_at' => now(),
                     'gateway_completed_at' => $completed ? now() : null,
+                    'gateway_final_amount' => $completed ? $order->amount : null,
+                    'gateway_meta' => array_merge($order->gateway_meta ?? [], ['ydpay_status' => $status]),
                 ])->save();
                 if ($completed) {
                     $this->approval->approve($order, null, 'Verified YDPAY payment.', ['gateway_provider' => 'ydpay']);

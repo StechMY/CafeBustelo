@@ -18,7 +18,7 @@ class ConfirmGatewayUnpaidAction
     public static function make(bool $usePreloadedCancellationState = false): Action
     {
         return Action::make('confirm_gateway_unpaid')
-            ->label(__('withdraw.confirm_gateway_unpaid'))
+            ->label('QC168 · '.__('withdraw.confirm_gateway_unpaid'))
             ->icon('heroicon-o-shield-check')
             ->color('warning')
             ->visible(fn (WithdrawRequest $record): bool => $record->canConfirmGatewayUnpaid($usePreloadedCancellationState))

@@ -87,9 +87,9 @@
                                     </div>
 
                                     <div class="mt-1 text-[10px] font-black uppercase text-[#003b7a]/70 sm:text-xs">
-                                        {{ $requestItem->isGatewayDeposit() ? __('recharge.payment_gateway') : __('recharge.manual_deposit') }}
+                                        {{ $requestItem->isGatewayDeposit() ? $requestItem->gatewayProviderLabel() : __('recharge.manual_deposit') }}
                                         @if ($requestItem->isGatewayDeposit() && $requestItem->gateway_payment_status)
-                                            · {{ __('recharge.gateway_status') }}: {{ $requestItem->gateway_payment_status }}
+                                            · {{ __('recharge.gateway_status') }}: {{ $requestItem->gatewayStatusLabel() }}
                                         @endif
                                     </div>
 
@@ -103,12 +103,12 @@
                                 <span
                                     class="shrink-0 rounded-full px-2.5 py-1 text-[10px] font-black uppercase sm:px-3 sm:text-xs
                                     @class([
-                                        'bg-yellow-100 text-yellow-700' => $requestItem->status === 'pending',
-                                        'bg-green-100 text-green-700' => $requestItem->status === 'approved',
-                                        'bg-red-100 text-red-700' => $requestItem->status === 'rejected',
+                                        'bg-yellow-100 text-yellow-700' => $requestItem->status === 'pending' && ! $requestItem->requiresGatewayReview(),
+                                        'bg-green-100 text-green-700' => $requestItem->isPaymentConfirmed(),
+                                        'bg-red-100 text-red-700' => $requestItem->status === 'rejected' || $requestItem->requiresGatewayReview(),
                                     ])"
                                 >
-                                    {{ __('status.' . $requestItem->status) }}
+                                    {{ $requestItem->gateway_provider === 'ydpay' ? $requestItem->gatewayStatusLabel() : __('status.' . $requestItem->status) }}
                                 </span>
                             </div>
                         </a>

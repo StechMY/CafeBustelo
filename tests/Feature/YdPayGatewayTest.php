@@ -3,23 +3,34 @@
 namespace Tests\Feature;
 
 use App\Filament\Pages\Dashboard;
+use App\Filament\Resources\RechargeRequests\Pages\ListRechargeRequests;
+use App\Filament\Resources\RechargeRequests\Pages\ViewRechargeRequest;
+use App\Filament\Resources\WithdrawRequests\Pages\ListWithdrawRequests;
+use App\Filament\Resources\WithdrawRequests\Pages\ViewWithdrawRequest;
 use App\Models\AdminUser;
+use App\Models\PaymentGatewayEvent;
 use App\Models\RechargeRequest;
 use App\Models\Setting;
 use App\Models\User;
 use App\Models\Wallet;
 use App\Models\WalletTransaction;
 use App\Models\WithdrawRequest;
+use App\Services\PaymentGateway\Qc168CallbackService;
+use App\Services\PaymentGateway\Qc168Gateway;
 use App\Services\PaymentGateway\Qc168WithdrawalPayoutService;
 use App\Services\PaymentGateway\YdPayGateway;
 use App\Services\PaymentGateway\YdPayWithdrawalService;
 use App\Services\Recharge\YdPayRechargeService;
+use App\Services\RechargeApprovalService;
 use App\Services\Settings\YdPaySettings;
+use Filament\Actions\Testing\TestAction;
 use Filament\Facades\Filament;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Http;
 use Livewire\Livewire;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Spatie\Permission\Models\Permission;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Tests\TestCase;
@@ -147,7 +158,7 @@ class YdPayGatewayTest extends TestCase
     {
         $order = $this->deposit();
         $payload = ['mchId' => '502002001', 'gatewayId' => '19', 'mchOrderNo' => $order->merchant_order_id,
-            'payOrderId' => '123456789012345', 'amount' => '5000000', 'status' => '2', 'backType' => '2'];
+            'payOrderId' => '123456789012345', 'amount' => '5000000', 'income' => '5000000', 'status' => '2', 'backType' => '2'];
         foreach ([['amount' => '50000'], ['income' => '0'], ['backType' => '1'], ['mchId' => 'other'], ['gatewayId' => '20'], ['sandbox' => '1']] as $invalid) {
             $this->post('/payment-gateway/ydpay/deposit/callback?'.http_build_query($this->signed(array_merge($payload, $invalid))))->assertStatus(422);
         }
@@ -171,6 +182,7 @@ class YdPayGatewayTest extends TestCase
         $this->assertSame('18455.00', $wallet->balance);
         $this->assertSame('120000.00', $wallet->locked_balance);
         $this->assertSame(0, WalletTransaction::query()->count());
+        $this->assertSame(1, PaymentGatewayEvent::query()->where('event_type', 'withdrawal.gateway_completed')->count());
     }
 
     public function test_cancelled_failure_stays_cancelled_and_late_success_requires_review(): void
@@ -314,6 +326,363 @@ class YdPayGatewayTest extends TestCase
             $this->assertSame(0, $request->payoutAttempts()->count());
         }
         Http::assertNothingSent();
+    }
+
+    #[DataProvider('depositStates')]
+    public function test_every_deposit_query_status_has_ydpay_semantics(string $status, string $state, bool $paid): void
+    {
+        $order = $this->deposit();
+        $result = app(YdPayRechargeService::class)->process($this->depositPayload($order, $status), 'sync');
+        $this->assertSame($state, $result);
+        $this->assertSame($state, $order->fresh()->gateway_payment_status);
+        $this->assertSame($status, $order->fresh()->gateway_meta['ydpay_status']);
+        $this->assertSame($paid, $order->fresh()->isPaymentConfirmed());
+        $this->assertSame($paid ? 1 : 0, WalletTransaction::query()->count());
+        $this->assertSame($status === '4', $order->fresh()->requiresGatewayReview());
+    }
+
+    public static function depositStates(): array
+    {
+        return [['0', 'processing', false], ['1', 'pending', false], ['2', 'completed', true],
+            ['3', 'completed', true], ['4', 'refund_review', false], ['-1', 'failed', false], ['-2', 'closed', false]];
+    }
+
+    public function test_deposit_paid_query_and_callback_duplicates_cannot_double_credit_or_regress(): void
+    {
+        $order = $this->deposit();
+        $service = app(YdPayRechargeService::class);
+        foreach (['0', '1', '2', '3', '-1', '-2', '1'] as $status) {
+            $service->process($this->depositPayload($order, $status), 'sync');
+        }
+        $this->assertSame('completed', $order->fresh()->gateway_payment_status);
+        $this->assertSame(1, WalletTransaction::query()->count());
+        $this->assertSame('50000.00', Wallet::query()->sole()->balance);
+    }
+
+    #[DataProvider('refundHistories')]
+    public function test_refund_requires_review_without_automatic_credit_or_clawback(bool $paidFirst): void
+    {
+        $order = $this->deposit();
+        $service = app(YdPayRechargeService::class);
+        if ($paidFirst) {
+            $service->process($this->depositPayload($order, '2'), 'sync');
+        }
+        $service->process($this->depositPayload($order, '4'), 'sync');
+        $service->process($this->depositPayload($order, '2'), 'sync');
+        $this->assertSame('refund_review', $order->fresh()->gateway_payment_status);
+        $this->assertFalse($order->fresh()->isPaymentConfirmed());
+        $this->assertSame($paidFirst ? 1 : 0, WalletTransaction::query()->count());
+        $this->actingAs($order->user)->getJson(route('recharge.gateway.status', $order))
+            ->assertOk()->assertJsonPath('payment_confirmed', false)->assertJsonPath('requires_review', true);
+    }
+
+    public static function refundHistories(): array
+    {
+        return [[true], [false]];
+    }
+
+    public function test_closed_deposit_cannot_regress_to_unpaid_processing_and_manual_approval_is_blocked(): void
+    {
+        $order = $this->deposit();
+        $service = app(YdPayRechargeService::class);
+        foreach (['-2', '0', '1'] as $state) {
+            $service->process($this->depositPayload($order, $state), 'sync');
+        }
+        $this->assertSame('closed', $order->fresh()->gateway_payment_status);
+        try {
+            app(RechargeApprovalService::class)->approve($order, null);
+            $this->fail('An unpaid YDPAY deposit cannot be approved locally.');
+        } catch (\RuntimeException) {
+            $this->assertSame('pending', $order->fresh()->status);
+            $this->assertSame(0, WalletTransaction::query()->count());
+        }
+    }
+
+    public function test_callback_requires_paid_income_and_rejects_query_only_statuses(): void
+    {
+        $order = $this->deposit();
+        $base = [...$this->depositPayload($order, '2'), 'backType' => '2'];
+        foreach ([[], ['income' => '4999999'], ['status' => '3', 'income' => '5000000'],
+            ['status' => '4'], ['status' => '0'], ['status' => 'completed']] as $changes) {
+            $this->post('/payment-gateway/ydpay/deposit/callback?'.http_build_query($this->signed([...$base, ...$changes])))
+                ->assertStatus(422);
+        }
+        $this->assertSame(0, WalletTransaction::query()->count());
+    }
+
+    public function test_query_requires_currency_success_code_and_original_requested_identity(): void
+    {
+        $order = $this->deposit();
+        $base = $this->depositPayload($order, '2');
+        foreach ([['currency' => null], ['currency' => 'USD'], ['retCode' => null], ['retCode' => '9999']] as $changes) {
+            try {
+                app(YdPayRechargeService::class)->process($this->signed([...$base, ...$changes]), 'sync');
+                $this->fail('Mismatched query evidence must be rejected.');
+            } catch (\RuntimeException) {
+                $this->assertSame(0, WalletTransaction::query()->count());
+            }
+        }
+        Http::fake(['gateway.example/api/pay/query_order' => Http::response($this->signed([...$base, 'mchOrderNo' => 'different-order']))]);
+        $this->expectExceptionMessage('YDPAY query returned a different deposit order.');
+        app(YdPayRechargeService::class)->sync($order);
+    }
+
+    public function test_deposit_sync_and_scheduler_route_only_to_ydpay(): void
+    {
+        $order = $this->deposit();
+        Http::fake(['gateway.example/api/pay/query_order' => Http::response($this->depositPayload($order, '1'))]);
+        app(Qc168CallbackService::class)->sync($order);
+        $this->artisan('ydpay:process-orders deposit')->assertSuccessful();
+        Http::assertSentCount(2);
+        Http::assertSent(fn ($http) => str_ends_with($http->url(), '/api/pay/query_order')
+            && $http['mchOrderNo'] === $order->merchant_order_id && $http['executeNotify'] === 'false');
+        $this->assertSame('pending', $order->fresh()->gateway_payment_status);
+        $this->assertNotNull($order->fresh()->gateway_last_synced_at);
+        $order->update(['gateway_provider' => 'unknown']);
+        $this->assertFalse(app(Qc168CallbackService::class)->sync($order)['accepted']);
+        Http::assertSentCount(2);
+    }
+
+    public function test_sandbox_create_is_quarantined_and_cannot_later_credit(): void
+    {
+        Http::fake(['gateway.example/api/pay/create_order' => Http::response($this->signed([
+            'retCode' => '0', 'payOrderId' => '123456789012345', 'payJumpUrl' => 'https://cashier.example/pay', 'sandbox' => 1,
+        ]))]);
+        try {
+            app(YdPayRechargeService::class)->create($this->user(), '50000');
+            $this->fail('Sandbox order must not reach a real cashier redirect.');
+        } catch (\RuntimeException) {
+            $order = RechargeRequest::query()->sole();
+            $this->assertSame('sandbox_review', $order->gateway_payment_status);
+            $this->assertNull($order->gateway_payment_url);
+        }
+        try {
+            app(YdPayRechargeService::class)->process($this->depositPayload($order, '2'), 'sync');
+            $this->fail('Quarantined sandbox order must never credit.');
+        } catch (\RuntimeException) {
+            $this->assertSame(0, WalletTransaction::query()->count());
+        }
+    }
+
+    #[DataProvider('payoutStates')]
+    public function test_every_payout_query_status_uses_ydpay_semantics_and_keeps_unpaid_funds_locked(string $status, string $state): void
+    {
+        [$request, $attempt] = $this->payout();
+        $payload = $this->signed([...$this->payoutPayload($attempt->merchant_order_id, $status), 'retCode' => '0']);
+        app(YdPayWithdrawalService::class)->process($payload, 'sync');
+        $this->assertSame($state, $request->fresh()->payout_status);
+        $this->assertSame($status === '2' ? '120000.00' : '420000.00', Wallet::query()->sole()->locked_balance);
+        $this->assertSame('18455.00', Wallet::query()->sole()->balance);
+        $this->assertSame(0, WalletTransaction::query()->count());
+        $this->assertSame($status === '3', $request->fresh()->canCancelPayout());
+        $this->assertNotNull($request->fresh()->gateway_last_synced_at);
+    }
+
+    public static function payoutStates(): array
+    {
+        return [['0', 'processing'], ['1', 'processing'], ['2', 'completed'], ['3', 'failed'],
+            ['4', 'processing'], ['5', 'processing'], ['6', 'refund_review']];
+    }
+
+    public function test_failed_payout_cannot_regress_and_old_attempt_sync_is_never_sent_to_qc168(): void
+    {
+        [$request, $attempt] = $this->payout();
+        foreach (['3', '1', '4', '5'] as $status) {
+            app(YdPayWithdrawalService::class)->process($this->signed([...$this->payoutPayload($attempt->merchant_order_id, $status), 'retCode' => '0']), 'sync');
+        }
+        $this->assertSame('failed', $attempt->fresh()->gateway_status);
+        $this->assertSame('failed', $request->fresh()->payout_status);
+        try {
+            app(Qc168WithdrawalPayoutService::class)->syncAttempt($attempt, 'sync');
+            $this->fail('A YDPAY attempt cannot be sent to QC168.');
+        } catch (\RuntimeException) {
+            Http::assertNothingSent();
+        }
+    }
+
+    public function test_instant_approval_dispatches_ydpay_with_zero_delay_and_one_attempt(): void
+    {
+        [$request] = $this->payout(false);
+        $admin = AdminUser::query()->create(['username' => 'yd-admin', 'password' => bcrypt('password'), 'status' => 'active']);
+        Gate::before(fn () => true);
+        Http::fake(function ($http) {
+            if (str_ends_with($http->url(), '/api/agentpay/apply')) {
+                return Http::response($this->signed(['retCode' => '0', 'agentpayOrderId' => '123456789012346', 'gatewayId' => '22']));
+            }
+
+            return Http::response($this->signed([...$this->payoutPayload($http['mchOrderNo'], '5'), 'retCode' => '0']));
+        });
+        $approved = app(YdPayWithdrawalService::class)->approve($request, $admin, 'Instant YDPAY approval', true);
+        $this->assertSame('gateway_instant', $approved->approval_mode);
+        $this->assertSame(0, $approved->gateway_release_delay_hours_snapshot);
+        $this->assertTrue($approved->reviewed_at->equalTo($approved->gateway_release_at));
+        $this->assertSame('processing', $approved->payout_status);
+        $this->assertSame('5', $approved->gateway_meta['ydpay_status']);
+        $this->assertSame(1, $approved->payoutAttempts()->count());
+        $this->assertSame('420000.00', Wallet::query()->sole()->locked_balance);
+        Http::assertSentCount(2);
+        $this->assertDatabaseHas('payment_gateway_events', ['provider' => 'ydpay', 'event_type' => 'withdrawal.approved_gateway_instant']);
+    }
+
+    public function test_retry_and_cancel_require_fresh_failure_even_when_local_failure_is_preserved(): void
+    {
+        [$request, $attempt] = $this->payout();
+        $admin = $this->loginAdmin();
+        $service = app(YdPayWithdrawalService::class);
+        $service->process($this->payoutPayload($attempt->merchant_order_id, '3'), 'callback');
+        Http::fake(['gateway.example/api/agentpay/query_order' => Http::response($this->signed([
+            ...$this->payoutPayload($attempt->merchant_order_id, '1'), 'retCode' => '0',
+        ]))]);
+        foreach (['retry', 'cancel'] as $operation) {
+            try {
+                $service->{$operation}($request->fresh(), $admin, 'Verify fresh state');
+                $this->fail('A fresh processing result cannot authorize a new payout or refund.');
+            } catch (\RuntimeException) {
+                $this->assertSame('failed', $request->fresh()->payout_status);
+                $this->assertSame('420000.00', Wallet::query()->sole()->locked_balance);
+                $this->assertSame(1, $request->payoutAttempts()->count());
+                $this->assertSame(0, WalletTransaction::query()->count());
+            }
+        }
+        Http::assertSentCount(2);
+    }
+
+    public function test_uncertain_retry_never_displays_the_previous_attempt_as_current_failure(): void
+    {
+        [$request, $attempt] = $this->payout();
+        $admin = $this->loginAdmin();
+        $failure = $this->signed([...$this->payoutPayload($attempt->merchant_order_id, '3'), 'retCode' => '0']);
+        Http::fake(function ($http) use ($failure) {
+            if (str_ends_with($http->url(), '/api/agentpay/query_order')) {
+                return Http::response($failure);
+            }
+            throw new ConnectionException('Create timeout');
+        });
+        try {
+            app(YdPayWithdrawalService::class)->retry($request, $admin, 'Retry confirmed failure');
+            $this->fail('Ambiguous submission must be reported.');
+        } catch (\RuntimeException) {
+            $this->assertSame('create_pending', $request->fresh()->gateway_payment_status);
+            $this->assertArrayNotHasKey('ydpay_status', $request->fresh()->gateway_meta);
+            $this->assertSame('failed', $attempt->fresh()->gateway_status);
+            $this->assertSame(2, $request->payoutAttempts()->count());
+            $this->assertSame('420000.00', Wallet::query()->sole()->locked_balance);
+        }
+    }
+
+    private function depositPayload(RechargeRequest $order, string $status): array
+    {
+        return $this->signed(['retCode' => '0', 'mchId' => '502002001', 'gatewayId' => $order->gateway_channel,
+            'mchOrderNo' => $order->merchant_order_id, 'payOrderId' => '123456789012345',
+            'amount' => '5000000', 'currency' => 'VND', 'status' => $status]);
+    }
+
+    public function test_admin_recharge_list_and_detail_identify_provider_and_sync_ydpay(): void
+    {
+        $order = $this->deposit();
+        $other = $order->replicate();
+        $other->forceFill(['gateway_provider' => 'qc168', 'merchant_order_id' => 'QC-OTHER'])->save();
+        $this->loginAdmin();
+        app()->setLocale('en');
+        Http::fake(['gateway.example/api/pay/query_order' => Http::response($this->depositPayload($order, '1'))]);
+        Livewire::test(ListRechargeRequests::class)
+            ->assertCanSeeTableRecords([$order, $other])
+            ->filterTable('gateway_provider', 'ydpay')->assertCanSeeTableRecords([$order])->assertCanNotSeeTableRecords([$other]);
+        Livewire::test(ViewRechargeRequest::class, ['record' => $order->getRouteKey()])
+            ->assertSee('YDPAY')->assertActionVisible('syncGateway')->callAction('syncGateway')->assertHasNoActionErrors()
+            ->assertRedirect();
+        Livewire::test(ViewRechargeRequest::class, ['record' => $order->getRouteKey()])
+            ->assertSee('Awaiting payment');
+        Http::assertSentCount(1);
+        $this->assertSame('pending', $order->fresh()->gateway_payment_status);
+        $this->assertSame(0, WalletTransaction::query()->count());
+    }
+
+    public function test_admin_withdrawal_list_and_detail_offer_separate_provider_modes_and_obey_toggle(): void
+    {
+        [$request] = $this->payout(false);
+        $this->loginAdmin();
+        app()->setLocale('en');
+        config(['services.qc168.enabled' => true]);
+        $this->mock(Qc168Gateway::class)->shouldReceive('isWithdrawalAvailable')->andReturn(true);
+        $view = Livewire::test(ViewWithdrawRequest::class, ['record' => $request->getRouteKey()])
+            ->assertActionEnabled('approve_ydpay')->assertActionEnabled('approve_ydpay_instant')
+            ->assertSee('YDPAY · Approve')->assertSee('QC168 · Approve');
+        Livewire::test(ListWithdrawRequests::class)
+            ->assertActionEnabled(TestAction::make('approve_ydpay')->table($request))
+            ->assertActionEnabled(TestAction::make('approve_ydpay_instant')->table($request));
+        Setting::setValue('ydpay_withdraw_enabled', false);
+        $view->assertActionDisabled('approve_ydpay')->assertActionDisabled('approve_ydpay_instant')->assertActionEnabled('reject');
+        Http::assertNothingSent();
+    }
+
+    public function test_payout_sandbox_or_mismatched_query_evidence_never_finalizes(): void
+    {
+        [$request, $attempt] = $this->payout();
+        foreach ([['sandbox' => '1'], ['amount' => '30000000'], ['gatewayId' => '19'], ['status' => 'completed'], ['retCode' => '9999']] as $changes) {
+            try {
+                app(YdPayWithdrawalService::class)->process($this->signed([
+                    ...$this->payoutPayload($attempt->merchant_order_id, '2'), 'retCode' => '0', ...$changes,
+                ]), 'sync');
+                $this->fail('Mismatched payout evidence must not finalize.');
+            } catch (\RuntimeException) {
+                $this->assertSame('submitted', $request->fresh()->payout_status);
+                $this->assertSame('420000.00', Wallet::query()->sole()->locked_balance);
+            }
+        }
+    }
+
+    public function test_sandbox_payout_creation_stops_before_query_or_finalization(): void
+    {
+        [$request] = $this->payout(false);
+        $admin = $this->loginAdmin();
+        Http::fake(['gateway.example/api/agentpay/apply' => Http::response($this->signed([
+            'retCode' => '0', 'agentpayOrderId' => '123456789012346', 'gatewayId' => '22', 'sandbox' => '1',
+        ]))]);
+        try {
+            app(YdPayWithdrawalService::class)->approve($request, $admin, instant: true);
+            $this->fail('A sandbox payout cannot finalize a real withdrawal.');
+        } catch (\RuntimeException) {
+            $this->assertSame('refund_review', $request->fresh()->payout_status);
+            $this->assertSame('sandbox_response', $request->fresh()->gateway_meta['environment_review']);
+            $this->assertSame('420000.00', Wallet::query()->sole()->locked_balance);
+            $this->assertSame(0, WalletTransaction::query()->count());
+            Http::assertSentCount(1);
+        }
+    }
+
+    public function test_instant_approval_permission_is_enforced_and_transport_failure_keeps_reserve(): void
+    {
+        [$request] = $this->payout(false);
+        $admin = AdminUser::query()->create(['username' => 'yd-admin', 'password' => bcrypt('password'), 'status' => 'active']);
+        $admin->givePermissionTo(Permission::findOrCreate('ApproveScheduledGateway:Withdrawal', 'admin'));
+        try {
+            app(YdPayWithdrawalService::class)->approve($request, $admin, instant: true);
+            $this->fail('Scheduled permission cannot authorize instant payout.');
+        } catch (AuthorizationException) {
+            $this->assertSame('pending', $request->fresh()->status);
+        }
+        $admin->givePermissionTo(Permission::findOrCreate('ApproveInstantGateway:Withdrawal', 'admin'));
+        Http::fake(fn () => throw new ConnectionException('Timeout'));
+        try {
+            app(YdPayWithdrawalService::class)->approve($request, $admin, instant: true);
+            $this->fail('Transport failure should be reported.');
+        } catch (\RuntimeException) {
+            $this->assertSame('submitted', $request->fresh()->payout_status);
+            $this->assertSame('420000.00', Wallet::query()->sole()->locked_balance);
+            $this->assertSame(1, $request->payoutAttempts()->count());
+            $this->assertNull(app(YdPayWithdrawalService::class)->dispatch($request->fresh()));
+        }
+    }
+
+    private function loginAdmin(): AdminUser
+    {
+        $admin = AdminUser::query()->create(['username' => 'yd-admin', 'password' => bcrypt('password'), 'status' => 'active']);
+        Gate::before(fn () => true);
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+        $this->actingAs($admin, 'admin');
+
+        return $admin;
     }
 
     private function signed(array $payload): array

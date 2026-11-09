@@ -92,7 +92,7 @@ class RechargeRequestsTable
                         RechargeRequest $record
                     ): ?string {
                         if ($record->isGatewayDeposit()) {
-                            return 'QC168';
+                            return $record->gatewayProviderLabel();
                         }
 
                         return filled($record->payment_method_name)
@@ -145,7 +145,7 @@ class RechargeRequestsTable
                         RechargeRequest $record
                     ): string {
                         if ($record->isGatewayDeposit()) {
-                            return 'QC168';
+                            return $record->gatewayProviderLabel();
                         }
 
                         return $record->payment_bank_name
@@ -230,8 +230,8 @@ class RechargeRequestsTable
                 TextColumn::make('gateway_payment_status')
                     ->label(__('filament.gateway_status'))
                     ->formatStateUsing(
-                        fn (?string $state): string =>
-                            self::humanizeStatus($state)
+                        fn (?string $state, RechargeRequest $record): string =>
+                            $record->gateway_provider === 'ydpay' ? $record->gatewayStatusLabel() : self::humanizeStatus($state)
                     )
                     ->badge()
                     ->color(fn (?string $state): string => match ($state) {
@@ -240,6 +240,9 @@ class RechargeRequestsTable
                         'failed',
                         'reject',
                         'refund',
+                        'refund_review',
+                        'sandbox_review',
+                        'closed',
                         'overdue',
                         'create_failed' => 'danger',
 
@@ -330,6 +333,9 @@ class RechargeRequestsTable
             ->defaultSort('created_at', 'desc')
 
             ->filters([
+                SelectFilter::make('gateway_provider')
+                    ->label(__('filament.gateway_provider'))
+                    ->options(['qc168' => 'QC168', 'ydpay' => 'YDPAY']),
                 Filter::make('approved_at')
                     ->label(__('request-summary.approval_date'))
                     ->form([
@@ -394,6 +400,9 @@ class RechargeRequestsTable
                                     'failed',
                                     'reject',
                                     'refund',
+                                    'refund_review',
+                                    'sandbox_review',
+                                    'closed',
                                     'overdue',
                                     'create_failed',
                                     'create_pending',
@@ -475,13 +484,7 @@ class RechargeRequestsTable
                 |--------------------------------------------------------------------------
                 */
                 Action::make('syncGatewayAttention')
-                    ->label(
-                        self::ui(
-                            'filament.sync_gateway_status',
-                            'Sync Status',
-                            '同步状态'
-                        )
-                    )
+                    ->label(fn (RechargeRequest $record): string => $record->gatewayProviderLabel().' · '.__('filament.sync_gateway_status'))
                     ->icon('heroicon-o-arrow-path')
                     ->color('warning')
                     ->visible(
@@ -562,9 +565,7 @@ class RechargeRequestsTable
                     |--------------------------------------------------------------------------
                     */
                     Action::make('syncGateway')
-                        ->label(
-                            __('filament.sync_gateway_status')
-                        )
+                        ->label(fn (RechargeRequest $record): string => $record->gatewayProviderLabel().' · '.__('filament.sync_gateway_status'))
                         ->icon('heroicon-o-arrow-path')
                         ->color('info')
                         ->visible(
@@ -799,6 +800,9 @@ class RechargeRequestsTable
     private static function statusLabel(
         RechargeRequest $record
     ): string {
+        if ($record->gateway_provider === 'ydpay') {
+            return $record->gatewayStatusLabel();
+        }
         if (
             $record->isGatewayDeposit()
             && self::hasUnknownGatewayStatus($record)
@@ -867,6 +871,12 @@ class RechargeRequestsTable
     private static function statusColor(
         RechargeRequest $record
     ): string {
+        if ($record->gateway_provider === 'ydpay') {
+            return $record->requiresGatewayReview() ? 'danger' : match ($record->gateway_payment_status) {
+                'completed' => 'success', 'failed', 'closed' => 'danger',
+                'create_pending' => 'warning', default => 'info',
+            };
+        }
         if (
             $record->isGatewayDeposit()
             && self::hasUnknownGatewayStatus($record)
@@ -913,6 +923,9 @@ class RechargeRequestsTable
     private static function statusDescription(
         RechargeRequest $record
     ): ?string {
+        if ($record->gateway_provider === 'ydpay') {
+            return $record->gatewayProviderLabel().': '.$record->gatewayStatusLabel();
+        }
         if (! $record->isGatewayDeposit()) {
             return null;
         }
@@ -946,6 +959,9 @@ class RechargeRequestsTable
     private static function hasGatewayAttention(
         RechargeRequest $record
     ): bool {
+        if ($record->requiresGatewayReview()) {
+            return true;
+        }
         if (! $record->isGatewayDeposit()) {
             return false;
         }
@@ -1024,6 +1040,7 @@ class RechargeRequestsTable
                 'refund',
                 'overdue',
                 'create_failed',
+                'closed',
             ],
             true
         );
@@ -1034,7 +1051,16 @@ class RechargeRequestsTable
     | Friendly Alert
     |--------------------------------------------------------------------------
     */
-    private static function gatewayFriendlyAlert(
+    private static function gatewayFriendlyAlert(RechargeRequest $record): ?string
+    {
+        if ($record->requiresGatewayReview()) {
+            return $record->gatewayStatusLabel();
+        }
+        $text = self::gatewayFriendlyAlertText($record);
+        return $text === null ? null : str_replace('QC168', $record->gatewayProviderLabel(), $text);
+    }
+
+    private static function gatewayFriendlyAlertText(
         RechargeRequest $record
     ): ?string {
         if (! self::hasGatewayAttention($record)

@@ -259,7 +259,33 @@ class WithdrawRequest extends Model
             $mode = self::APPROVAL_MODE_MANUAL;
         }
 
-        return __('withdraw.approval_modes.'.($mode ?: 'legacy'));
+        $label = __('withdraw.approval_modes.'.($mode ?: 'legacy'));
+        if (in_array($mode, [self::APPROVAL_MODE_GATEWAY_SCHEDULED, self::APPROVAL_MODE_GATEWAY_INSTANT], true)) {
+            $label = $this->gatewayProviderLabel().' · '.$label;
+            if ($mode === self::APPROVAL_MODE_GATEWAY_SCHEDULED && $this->gateway_release_delay_hours_snapshot !== null) {
+                $label .= ' · '.$this->gateway_release_delay_hours_snapshot.'h';
+            }
+        }
+
+        return $label;
+    }
+
+    public function gatewayProviderLabel(): string
+    {
+        return strtoupper($this->gateway_provider ?: '-');
+    }
+
+    public function gatewayStatusLabel(): string
+    {
+        if ($this->gateway_provider === 'ydpay') {
+            $raw = data_get($this->gateway_meta, 'ydpay_status');
+            $key = 'ydpay.payout_statuses.'.($raw ?? $this->gateway_payment_status);
+            if (__($key) !== $key) {
+                return __($key);
+            }
+        }
+
+        return $this->gateway_payment_status ?: '-';
     }
 
     public function scopePaid(Builder $query): Builder

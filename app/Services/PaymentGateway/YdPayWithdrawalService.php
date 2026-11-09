@@ -21,10 +21,10 @@ class YdPayWithdrawalService
         private readonly WithdrawService $withdrawals,
     ) {}
 
-    public function approve(WithdrawRequest $request, AdminUser $admin, ?string $reason = null): void
+    public function approve(WithdrawRequest $request, AdminUser $admin, ?string $reason = null, bool $instant = false, ?string $ip = null): WithdrawRequest
     {
-        Gate::forUser($admin)->authorize('approveScheduledGateway', $request);
-        DB::transaction(function () use ($request, $admin, $reason): void {
+        Gate::forUser($admin)->authorize($instant ? 'approveInstantGateway' : 'approveScheduledGateway', $request);
+        $approved = DB::transaction(function () use ($request, $admin, $reason, $instant, $ip): WithdrawRequest {
             $request = WithdrawRequest::query()->whereKey($request->id)->lockForUpdate()->firstOrFail();
             if (! $request->isPending() || ! $this->gateway->isAvailable('withdraw')) {
                 throw new RuntimeException('YDPAY withdrawal unavailable or request already reviewed.');
@@ -36,17 +36,28 @@ class YdPayWithdrawalService
                 'bank_account_name' => ['required', 'string', 'max:128'],
                 'bank_account_no' => ['required', 'string', 'max:64'],
             ])->validate();
-            $hours = app(YdPaySettings::class)->releaseHours();
+            $hours = $instant ? 0 : app(YdPaySettings::class)->releaseHours();
             $approvedAt = now();
             $request->forceFill([
-                'status' => 'approved', 'approval_mode' => WithdrawRequest::APPROVAL_MODE_GATEWAY_SCHEDULED,
+                'status' => 'approved', 'approval_mode' => $instant ? WithdrawRequest::APPROVAL_MODE_GATEWAY_INSTANT : WithdrawRequest::APPROVAL_MODE_GATEWAY_SCHEDULED,
                 'gateway_provider' => 'ydpay', 'payout_status' => WithdrawRequest::PAYOUT_WAITING_RELEASE,
                 'reviewed_by' => $admin->id, 'reviewed_at' => $approvedAt, 'admin_remark' => $reason,
                 'gateway_release_at' => $approvedAt->copy()->addHours($hours), 'gateway_release_delay_hours_snapshot' => $hours,
             ])->save();
+            $payload = array_filter(['delay_hours' => $hours, 'approval_mode' => $request->approval_mode, 'ip' => $ip], fn ($value) => $value !== null);
+            $this->events->recordWithdrawal($instant ? 'withdrawal.approved_gateway_instant' : 'withdrawal.approved_gateway_scheduled',
+                $request, actor: $admin, source: 'filament', reason: $reason, payload: $payload);
             $this->events->recordWithdrawal('withdrawal.gateway_waiting_release', $request, actor: $admin,
-                source: 'filament', reason: $reason, payload: ['delay_hours' => $hours]);
+                source: 'filament', reason: $reason, payload: $payload);
+
+            return $request;
         });
+
+        if ($instant && ! $this->dispatch($approved, actor: $admin, reason: $reason)) {
+            throw new RuntimeException(str_replace('QC168', 'YDPAY', __('withdraw.instant_submission_not_created')));
+        }
+
+        return $approved->fresh();
     }
 
     public function dispatch(WithdrawRequest $request, bool $retry = false, ?AdminUser $actor = null, ?string $reason = null): ?WithdrawalPayoutAttempt
@@ -80,6 +91,8 @@ class YdPayWithdrawalService
                 'bank_account_no_snapshot' => $request->bank_account_no, 'gateway_status' => 'create_pending',
             ]);
             $request->forceFill(['payout_status' => 'submitted', 'gateway_payment_status' => 'create_pending',
+                'gateway_meta' => array_diff_key($request->gateway_meta ?? [], ['ydpay_status' => true]),
+                'gateway_fail_reason' => null, 'gateway_submitted_at' => null,
                 'gateway_current_merchant_order_id' => $attempt->merchant_order_id])->save();
             $this->events->recordWithdrawal($retry ? 'withdrawal.gateway_retry' : 'withdrawal.gateway_submitted',
                 $request, $attempt, actor: $actor, source: 'ydpay_dispatch', reason: $reason);
@@ -97,6 +110,16 @@ class YdPayWithdrawalService
                 'accountName' => $attempt->bank_account_name_snapshot, 'accountNo' => $attempt->bank_account_no_snapshot,
                 'accountAttr' => '0', 'notifyUrl' => $this->gateway->publicUrl('payment-gateway.ydpay.withdraw.callback'),
             ]);
+            if ($this->gateway->isSandboxResponse($response)) {
+                DB::transaction(function () use ($request, $attempt, $response): void {
+                    $locked = WithdrawRequest::query()->whereKey($request->id)->lockForUpdate()->firstOrFail();
+                    $locked->forceFill(['payout_status' => 'refund_review',
+                        'gateway_meta' => array_merge($locked->gateway_meta ?? [], ['environment_review' => 'sandbox_response'])])->save();
+                    $this->events->recordWithdrawal('ydpay.payout.sandbox_review', $locked, $attempt,
+                        source: 'ydpay_dispatch', payload: $response);
+                });
+                throw new RuntimeException('YDPAY returned a sandbox payout. Financial review required.');
+            }
             // Creation responses omit amount/order identity. Query the original order for finalization evidence.
             if (! is_scalar($response['agentpayOrderId'] ?? null) || (string) $response['agentpayOrderId'] === ''
                 || (string) ($response['gatewayId'] ?? '') !== $attempt->payment_channel) {
@@ -109,10 +132,11 @@ class YdPayWithdrawalService
                     throw new RuntimeException('YDPAY platform order mismatch.');
                 }
                 $lockedAttempt->forceFill(['gateway_order_uid' => (string) $response['agentpayOrderId'], 'submitted_at' => now()])->save();
+                $lockedRequest->forceFill(['gateway_submitted_at' => $lockedRequest->gateway_submitted_at ?? now()])->save();
                 $this->events->recordWithdrawal('ydpay.payout.create_response', $lockedRequest, $lockedAttempt,
                     source: 'ydpay_dispatch', payload: $response);
             });
-            $this->sync($request);
+            $this->sync($request->fresh());
         } catch (Throwable $exception) {
             $this->events->recordWithdrawal('ydpay.payout.submission_uncertain', $request, $attempt,
                 source: 'ydpay_dispatch', processingResult: 'query_required');
@@ -124,18 +148,29 @@ class YdPayWithdrawalService
 
     public function sync(WithdrawRequest $request, string $source = 'sync', ?AdminUser $actor = null, ?string $reason = null, ?string $ip = null): array
     {
-        $attempt = $request->payoutAttempts()->where('provider', 'ydpay')->latest('attempt_no')->firstOrFail();
-        $result = $this->process($this->gateway->query($attempt->merchant_order_id, 'withdraw'), 'sync');
+        if ($request->gateway_provider !== 'ydpay') {
+            throw new RuntimeException('YDPAY sync requires a YDPAY withdrawal.');
+        }
+        $attempt = $request->payoutAttempts()->where('provider', 'ydpay')
+            ->where('merchant_order_id', $request->gateway_current_merchant_order_id)->firstOrFail();
+        $payload = $this->gateway->query($attempt->merchant_order_id, 'withdraw');
+        if (($payload['mchOrderNo'] ?? null) !== $attempt->merchant_order_id) {
+            throw new RuntimeException('YDPAY query returned a different payout attempt.');
+        }
+        $result = $this->process($payload, 'sync');
         $this->events->recordWithdrawal('withdrawal.gateway_sync', $request->fresh(), $attempt->fresh(),
             actor: $actor, source: $source, reason: $reason, payload: array_filter(['ip' => $ip]), processingResult: $result);
 
-        return ['accepted' => true, 'result' => $result];
+        return ['accepted' => true, 'result' => $result, 'payment_status' => (string) $payload['status']];
     }
 
     public function retry(WithdrawRequest $request, AdminUser $admin, string $reason, ?string $ip = null): ?WithdrawalPayoutAttempt
     {
         Gate::forUser($admin)->authorize('retryGateway', $request);
-        $this->sync($request, 'filament_retry_check', $admin, $reason, $ip);
+        $result = $this->sync($request, 'filament_retry_check', $admin, $reason, $ip);
+        if ($result['payment_status'] !== '3') {
+            throw new RuntimeException('YDPAY retry requires the latest query to confirm status 3 (failed).');
+        }
 
         return $this->dispatch($request->fresh(), true, $admin, $reason);
     }
@@ -143,14 +178,18 @@ class YdPayWithdrawalService
     public function cancel(WithdrawRequest $request, AdminUser $admin, string $reason, ?string $ip = null): WithdrawRequest
     {
         Gate::forUser($admin)->authorize('cancelGateway', $request);
-        $this->sync($request, 'filament_cancel_check', $admin, $reason, $ip);
+        $result = $this->sync($request, 'filament_cancel_check', $admin, $reason, $ip);
+        if ($result['payment_status'] !== '3') {
+            throw new RuntimeException('YDPAY cancellation requires the latest query to confirm status 3 (failed).');
+        }
 
         return $this->withdrawals->cancelPayout($request->fresh(), $request->payoutAttempts()->latest('attempt_no')->firstOrFail(), $admin, $reason, $ip);
     }
 
     public function process(array $payload, string $source): string
     {
-        if (! $this->gateway->verify($payload) || isset($payload['sandbox'])) {
+        if (! in_array($source, ['callback', 'sync'], true) || ! $this->gateway->verify($payload)
+            || $this->gateway->isSandboxResponse($payload)) {
             throw new RuntimeException('Invalid YDPAY payout signature or environment.');
         }
         $attempt = WithdrawalPayoutAttempt::query()->where('provider', 'ydpay')
@@ -160,11 +199,15 @@ class YdPayWithdrawalService
             $request = WithdrawRequest::query()->whereKey($attempt->withdraw_request_id)->lockForUpdate()->firstOrFail();
             $attempt = WithdrawalPayoutAttempt::query()->whereKey($attempt->id)->lockForUpdate()->firstOrFail();
             $status = (string) ($payload['status'] ?? '');
+            if (data_get($request->gateway_meta, 'environment_review')) {
+                throw new RuntimeException('YDPAY payout environment requires financial review.');
+            }
             if ($request->gateway_provider !== 'ydpay' || $attempt->currency !== 'vnd'
                 || (string) ($payload['amount'] ?? '') !== $this->gateway->minorAmount($attempt->amount)
                 || ! is_scalar($payload['agentpayOrderId'] ?? null) || (string) $payload['agentpayOrderId'] === ''
                 || ($attempt->gateway_order_uid && $attempt->gateway_order_uid !== (string) $payload['agentpayOrderId'])
                 || (string) ($payload['gatewayId'] ?? '') !== $attempt->payment_channel
+                || ($source === 'sync' && (string) ($payload['retCode'] ?? '') !== '0')
                 || ! in_array($status, $source === 'callback' ? ['2', '3'] : ['0', '1', '2', '3', '4', '5', '6'], true)) {
                 throw new RuntimeException('YDPAY payout evidence does not match the original attempt.');
             }
@@ -173,11 +216,20 @@ class YdPayWithdrawalService
             };
             $cancelled = $request->payout_status === 'cancelled' || $request->hasGatewayCancellationLedger();
             $current = $request->gateway_current_merchant_order_id === $attempt->merchant_order_id;
+            $request->forceFill([$source === 'callback' ? 'gateway_last_callback_at' : 'gateway_last_synced_at' => now()])->save();
+            // Out-of-order processing updates cannot undo a verified final failure.
+            if ($attempt->gateway_status === 'failed' && $state === 'processing') {
+                $this->events->recordWithdrawal('ydpay.payout.stale_status_ignored', $request, $attempt,
+                    source: 'ydpay_'.$source, payload: $payload, signatureValid: true);
+
+                return 'failed';
+            }
             $conflict = $state === 'completed' && ($cancelled || ! $current || $request->isManuallySettledPayout());
             if (! $attempt->isCompleted()) {
                 $attempt->forceFill(['gateway_order_uid' => (string) $payload['agentpayOrderId'],
                     'gateway_status' => $state === 'refund_review' ? 'refund' : $state,
                     'completed_at' => $state === 'completed' ? now() : null,
+                    'failed_at' => $state === 'failed' ? ($attempt->failed_at ?? now()) : $attempt->failed_at,
                     'failure_reason' => is_string($payload['transMsg'] ?? null) ? $payload['transMsg'] : null,
                     'provider_response' => $payload])->save();
             }
@@ -187,12 +239,14 @@ class YdPayWithdrawalService
                         ? str_replace('QC168', 'YDPAY', __('withdraw.gateway_completed_after_cancel_review'))
                         : 'YDPAY financial review required.',
                     'gateway_meta' => array_merge($request->gateway_meta ?? [], [
+                        'ydpay_status' => $status,
                         'financial_review_reason' => $cancelled ? 'provider_completed_after_cancel' : 'ydpay_provider_conflict',
                         'financial_review_detected_at' => now()->toAtomString(),
                         'financial_review_attempt_id' => $attempt->id,
                         'financial_review_merchant_order_id' => $attempt->merchant_order_id,
                     ])])->save();
             } elseif (! $cancelled && $current && ! $request->isPayoutCompleted() && $request->payout_status !== 'refund_review') {
+                $request->forceFill(['gateway_meta' => array_merge($request->gateway_meta ?? [], ['ydpay_status' => $status])])->save();
                 if ($state === 'completed') {
                     $this->withdrawals->finalizePayout($request, $attempt, 'ydpay_'.$source);
                 } else {
