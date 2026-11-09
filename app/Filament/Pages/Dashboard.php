@@ -152,7 +152,7 @@ class Dashboard extends BaseDashboard
                 }),
             \App\Filament\Actions\YdPaySettingsAction::make(),
             Action::make('paymentGatewaySettings')
-                ->label(__('filament.payment_gateway_settings'))
+                ->label('QC168')
                 ->icon('heroicon-o-banknotes')
                 ->color('info')
                 ->visible(fn (): bool => Filament::auth()->user()?->can(Qc168Settings::MANAGE_PERMISSION) ?? false)
