@@ -1,6 +1,8 @@
 <?php
 
 return [
+    'submission_error' => 'YDPay 原始提交错误（仅诊断，不代表付款结果）',
+    'latest_request_error' => 'YDPay 最近请求错误（含 HTTP、错误码及验签结果）',
     'deposit_expiry_minutes' => '未付款充值过期时间',
     'deposit_expiry_help' => '1–1440 分钟，默认 60。仅影响新订单；到期后查单确认未付款才标记本地过期，晚到账仍继续核对。',
     'minutes' => '分钟',

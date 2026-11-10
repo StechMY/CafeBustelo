@@ -926,7 +926,8 @@ class RechargeRequestsTable
         RechargeRequest $record
     ): ?string {
         if ($record->gateway_provider === 'ydpay') {
-            return $record->gatewayProviderLabel().': '.$record->gatewayStatusLabel();
+            return $record->gatewayProviderLabel().': '.$record->gatewayStatusLabel()
+                .(filled($record->gateway_fail_reason) ? ' · '.$record->gateway_fail_reason : '');
         }
         if (! $record->isGatewayDeposit()) {
             return null;

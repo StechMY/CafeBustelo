@@ -165,6 +165,7 @@ class YdPayRechargeService
                 $order->forceFill([
                     'gateway_order_uid' => (string) $payload['payOrderId'],
                     'gateway_payment_status' => $state,
+                    'gateway_fail_reason' => null,
                     'gateway_completed_at' => $completed ? now() : null,
                     'gateway_final_amount' => $completed ? $order->amount : null,
                     'gateway_meta' => $meta,

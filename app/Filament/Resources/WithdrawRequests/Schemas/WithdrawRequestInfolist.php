@@ -171,6 +171,12 @@ class WithdrawRequestInfolist
                                     ->helperText(__('withdraw.latest_gateway_error_help'))
                                     ->placeholder('-')
                                     ->columnSpanFull(),
+                                TextEntry::make('gateway_meta.ydpay_submission_error.message')
+                                    ->label(__('ydpay.submission_error'))->placeholder('-')->columnSpanFull()
+                                    ->visible(fn (WithdrawRequest $record): bool => $record->gateway_provider === 'ydpay'),
+                                TextEntry::make('gateway_meta.ydpay_last_error.message')
+                                    ->label(__('ydpay.latest_request_error'))->placeholder('-')->columnSpanFull()
+                                    ->visible(fn (WithdrawRequest $record): bool => $record->gateway_provider === 'ydpay'),
                             ]),
                     ]),
 

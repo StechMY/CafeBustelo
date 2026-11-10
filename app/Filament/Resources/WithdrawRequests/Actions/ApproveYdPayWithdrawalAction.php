@@ -47,7 +47,7 @@ class ApproveYdPayWithdrawalAction
                     if ($instant && $fresh?->isApproved() && $fresh->gateway_provider === 'ydpay'
                         && $fresh->approval_mode === WithdrawRequest::APPROVAL_MODE_GATEWAY_INSTANT) {
                         Notification::make()->title(self::text('instant_submission_failed_after_approval'))
-                            ->body(self::text('instant_submission_failed_after_approval_help'))->warning()->send();
+                            ->body(e($fresh->gateway_fail_reason ?: self::text('instant_submission_failed_after_approval_help')))->warning()->send();
                     } else {
                         Notification::make()->title(__('filament.approve_failed'))->body($exception->getMessage())->danger()->send();
                     }

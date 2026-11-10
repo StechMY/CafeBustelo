@@ -96,6 +96,12 @@ class RechargeRequestInfolist
                                     ->label(__('filament.latest_gateway_error'))
                                     ->helperText(__('filament.latest_gateway_error_help'))
                                     ->placeholder('-'),
+                                TextEntry::make('gateway_meta.ydpay_submission_error.message')
+                                    ->label(__('ydpay.submission_error'))->placeholder('-')
+                                    ->visible(fn (RechargeRequest $record): bool => $record->gateway_provider === 'ydpay'),
+                                TextEntry::make('gateway_meta.ydpay_last_error.message')
+                                    ->label(__('ydpay.latest_request_error'))->placeholder('-')
+                                    ->visible(fn (RechargeRequest $record): bool => $record->gateway_provider === 'ydpay'),
                                 TextEntry::make('gateway_completed_at')->label(__('filament.gateway_completed_at'))->dateTime()->placeholder('-'),
                                 TextEntry::make('gateway_last_callback_at')->label(__('filament.gateway_last_callback_at'))->dateTime()->placeholder('-'),
                                 TextEntry::make('gateway_last_synced_at')->label(__('filament.gateway_last_synced_at'))->dateTime()->placeholder('-'),

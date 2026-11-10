@@ -1,6 +1,8 @@
 <?php
 
 return [
+    'submission_error' => 'YDPay original submission error (diagnostic, not payment status)',
+    'latest_request_error' => 'YDPay latest request error (HTTP, error code and signature check)',
     'deposit_expiry_minutes' => 'Unpaid deposit expiry',
     'deposit_expiry_help' => '1–1440 minutes; default 60. Applies to new orders. A verified unpaid query after the deadline marks the order locally expired; late payments are still reconciled.',
     'minutes' => 'minutes',

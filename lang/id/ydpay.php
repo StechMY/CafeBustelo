@@ -1,6 +1,8 @@
 <?php
 
 return [
+    'submission_error' => 'Kesalahan pengiriman awal YDPay (diagnostik, bukan status pembayaran)',
+    'latest_request_error' => 'Kesalahan permintaan YDPay terbaru (HTTP, kode dan verifikasi tanda tangan)',
     'deposit_expiry_minutes' => 'Batas waktu deposit belum dibayar',
     'deposit_expiry_help' => '1–1440 menit, default 60. Berlaku untuk pesanan baru. Setelah batas waktu, pesanan kedaluwarsa secara lokal hanya jika kueri terverifikasi menyatakan belum dibayar; pembayaran terlambat tetap diperiksa.',
     'minutes' => 'menit',

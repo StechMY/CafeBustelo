@@ -161,13 +161,49 @@ class YdPayGateway
                 ->post($baseUrl.$endpoint, $payload);
         } catch (Throwable) {
             // Transport exceptions may contain proxy credentials. Never retry directly.
-            throw new RuntimeException('YDPAY transport failed; query the original order through the configured proxy.');
+            $message = 'YDPAY transport failed; query the original order through the configured proxy.';
+            app(YdPayDiagnostics::class)->record($payload['mchOrderNo'] ?? null, [
+                'endpoint' => $endpoint, 'kind' => 'transport_error', 'http_status' => null,
+                'retCode' => null, 'retMsg' => null, 'signature_valid' => null,
+                'message' => $message, 'occurred_at' => now()->toAtomString(),
+            ]);
+            throw new RuntimeException($message);
         }
         $data = $response->json();
+        $signatureValid = is_array($data) && $this->verify($data);
         if (! $response->successful() || ! is_array($data)
-            || (string) ($data['retCode'] ?? '') !== '0' || ! $this->verify($data)) {
-            // Do not log response bodies, request signatures or credentials.
-            throw new RuntimeException('YDPAY result is unconfirmed; query the original order.');
+            || ! is_scalar($data['retCode'] ?? null) || (string) $data['retCode'] !== '0' || ! $signatureValid) {
+            // Only these diagnostic fields are persisted, never raw bodies or request credentials.
+            $redactions = [(string) config('services.ydpay.secret'), $proxy, $payload['sign'], $data['sign'] ?? null];
+            foreach (['user', 'pass'] as $part) {
+                $value = parse_url($proxy, $part === 'user' ? PHP_URL_USER : PHP_URL_PASS);
+                if (is_string($value)) {
+                    $redactions[] = $value;
+                    $redactions[] = rawurldecode($value);
+                }
+            }
+            $clean = static function (mixed $value, int $limit) use ($redactions): ?string {
+                if (! is_scalar($value)) {
+                    return null;
+                }
+                $text = strip_tags(html_entity_decode(mb_scrub((string) $value), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+                $text = str_replace(array_filter($redactions, fn ($item) => is_string($item) && $item !== ''), '[redacted]', $text);
+                $text = preg_replace('/\b(sign|secret|oc[-_]key|authorization|password|token)["\x27]?\s*[=:]\s*["\x27]?[^\s,;]+/i', '$1=[redacted]', $text);
+
+                return mb_substr(trim(preg_replace('/[\x00-\x1F\x7F]+/', ' ', $text)), 0, $limit);
+            };
+            $code = $clean($data['retCode'] ?? null, 64);
+            $reason = $clean($data['retMsg'] ?? null, 1000);
+            $kind = ! is_array($data) ? 'invalid_json' : (! $response->successful() ? 'http_error'
+                : ($code !== '0' ? 'provider_error' : 'invalid_signature'));
+            $message = 'YDPAY ['.$kind.'; HTTP '.$response->status().'; retCode='.($code ?? 'missing')
+                .'; signature='.($signatureValid ? 'verified' : 'unverified').'] '.($reason ?: 'No provider error message.');
+            app(YdPayDiagnostics::class)->record($payload['mchOrderNo'] ?? null, [
+                'endpoint' => $endpoint, 'kind' => $kind, 'http_status' => $response->status(),
+                'retCode' => $code, 'retMsg' => $reason, 'signature_valid' => $signatureValid,
+                'message' => $message, 'occurred_at' => now()->toAtomString(),
+            ]);
+            throw new RuntimeException($message);
         }
 
         return $data;

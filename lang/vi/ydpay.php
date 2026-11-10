@@ -1,6 +1,8 @@
 <?php
 
 return [
+    'submission_error' => 'Lỗi gửi ban đầu YDPay (chẩn đoán, không phải trạng thái thanh toán)',
+    'latest_request_error' => 'Lỗi yêu cầu YDPay gần nhất (HTTP, mã lỗi và xác minh chữ ký)',
     'deposit_expiry_minutes' => 'Thời hạn nạp tiền chưa thanh toán',
     'deposit_expiry_help' => '1–1440 phút, mặc định 60. Áp dụng cho đơn mới. Sau thời hạn, chỉ đánh dấu hết hạn tại hệ thống khi truy vấn xác nhận chưa thanh toán; vẫn đối soát tiền đến muộn.',
     'minutes' => 'phút',

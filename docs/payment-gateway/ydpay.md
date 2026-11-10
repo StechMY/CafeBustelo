@@ -61,6 +61,10 @@ Each run is bounded. Submission errors retain the original order and reserve and
 
 ## Verification
 
+Failed create/query requests retain sanitized diagnostics in immutable `ydpay.request.error` events, linked to the original recharge or payout attempt: endpoint, HTTP status, `retCode`, `retMsg`, signature verification and timestamp. No raw error body, request signature, API secret or proxy credential is stored. Transport errors use a safe local explanation without logging the underlying exception. Balance lookups retain their existing cache/log behavior.
+
+Admin lists show the latest order error; order details show both the original submission error and latest request error. Subsequent query errors do not erase the original submission diagnostic, and a retry starts fresh diagnostics for its new attempt while immutable events preserve all previous attempts. Diagnostics alone never change payment status, enable retry/cancellation, credit wallets or release reserves. Missing/unverified signatures are explicitly labelled; a provider error such as `9999` is not evidence of a final payment failure. Historical errors that were never stored cannot be reconstructed; a later sync can only record its current response.
+
 YDPay status numbers are interpreted separately from QC168:
 
 | Business | Provider status | Local meaning / financial action |

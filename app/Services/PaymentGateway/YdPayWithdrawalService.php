@@ -91,7 +91,8 @@ class YdPayWithdrawalService
                 'bank_account_no_snapshot' => $request->bank_account_no, 'gateway_status' => 'create_pending',
             ]);
             $request->forceFill(['payout_status' => 'submitted', 'gateway_payment_status' => 'create_pending',
-                'gateway_meta' => array_diff_key($request->gateway_meta ?? [], ['ydpay_status' => true]),
+                'gateway_meta' => array_diff_key($request->gateway_meta ?? [], ['ydpay_status' => true,
+                    'ydpay_submission_error' => true, 'ydpay_last_error' => true]),
                 'gateway_fail_reason' => null, 'gateway_submitted_at' => null,
                 'gateway_current_merchant_order_id' => $attempt->merchant_order_id])->save();
             $this->events->recordWithdrawal($retry ? 'withdrawal.gateway_retry' : 'withdrawal.gateway_submitted',

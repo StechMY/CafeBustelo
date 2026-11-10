@@ -844,6 +844,127 @@ class YdPayGatewayTest extends TestCase
         }
     }
 
+    public function test_payout_submission_and_query_errors_are_audited_and_visible_without_releasing_funds(): void
+    {
+        [$request] = $this->payout(false);
+        $this->loginAdmin();
+        app()->setLocale('en');
+        config(['third_party.outbound_proxy' => 'http://sensitive-user:sensitive-password@proxy.example:3128']);
+        Http::fake(function ($http) {
+            if (str_ends_with($http->url(), '/apply')) {
+                return Http::response(['retCode' => 'AMOUNT_INVALID',
+                    'retMsg' => 'Amount rejected <script>bad()</script> DOC_DEMO_KEY_ONLY sensitive-user sensitive-password '.$http['sign'],
+                    'secret' => 'NEVER_STORE_BODY', 'sign' => str_repeat('a', 32)]);
+            }
+
+            return Http::response(['retCode' => '9999', 'retMsg' => 'Payout order not found']);
+        });
+        Livewire::test(ListWithdrawRequests::class)
+            ->callAction(TestAction::make('approve_ydpay_instant')->table($request), ['admin_remark' => 'Diagnostic test'])
+            ->assertNotified();
+        $attempt = $request->payoutAttempts()->sole();
+        $this->assertStringContainsString('AMOUNT_INVALID', $attempt->failure_reason);
+        try {
+            app(YdPayWithdrawalService::class)->sync($request->fresh());
+            $this->fail('An unsigned provider error cannot be payment evidence.');
+        } catch (\RuntimeException $exception) {
+            $this->assertStringContainsString('9999', $exception->getMessage());
+        }
+        $request->refresh();
+        $this->assertSame('AMOUNT_INVALID', $request->gateway_meta['ydpay_submission_error']['retCode']);
+        $this->assertSame('9999', $request->gateway_meta['ydpay_last_error']['retCode']);
+        $this->assertSame('submitted', $request->payout_status);
+        $this->assertSame('create_pending', $request->gateway_payment_status);
+        $this->assertSame(1, $request->payoutAttempts()->count());
+        $this->assertSame('420000.00', Wallet::query()->sole()->locked_balance);
+        $this->assertSame(0, WalletTransaction::query()->count());
+        $events = PaymentGatewayEvent::query()->where('event_type', 'ydpay.request.error')->get();
+        $this->assertCount(2, $events);
+        $this->assertFalse($events->first()->signature_valid);
+        $this->assertSame($attempt->id, $events->first()->withdrawal_payout_attempt_id);
+        $stored = $events->toJson().$request->toJson().$attempt->fresh()->toJson();
+        foreach (['DOC_DEMO_KEY_ONLY', 'sensitive-user', 'sensitive-password', 'NEVER_STORE_BODY', str_repeat('a', 32), '<script>'] as $secret) {
+            $this->assertStringNotContainsString($secret, $stored);
+        }
+        Livewire::test(ListWithdrawRequests::class)->assertSee('Payout order not found');
+        Livewire::test(ViewWithdrawRequest::class, ['record' => $request->getRouteKey()])
+            ->assertSee('AMOUNT_INVALID')->assertSee('Payout order not found');
+        Http::assertSentCount(2);
+    }
+
+    public function test_deposit_errors_preserve_original_reason_and_show_in_admin(): void
+    {
+        Http::fake(['gateway.example/*' => Http::response(['retCode' => 'LIMIT', 'retMsg' => 'Deposit limit exceeded'])]);
+        try {
+            app(YdPayRechargeService::class)->create($this->user(), '50000');
+            $this->fail('Provider rejection must be reported.');
+        } catch (\RuntimeException $exception) {
+            $this->assertStringContainsString('Deposit limit exceeded', $exception->getMessage());
+        }
+        $order = RechargeRequest::query()->sole();
+        $this->assertSame('LIMIT', $order->gateway_meta['ydpay_submission_error']['retCode']);
+        $this->assertSame('pending', $order->status);
+        $event = PaymentGatewayEvent::query()->where('event_type', 'ydpay.request.error')->sole();
+        $this->assertSame($order->id, $event->recharge_request_id);
+        $this->assertSame(0, WalletTransaction::query()->count());
+        $this->loginAdmin();
+        Livewire::test(ListRechargeRequests::class)->assertSee('Deposit limit exceeded');
+        Livewire::test(ViewRechargeRequest::class, ['record' => $order->getRouteKey()])->assertSee('Deposit limit exceeded');
+        app(YdPayRechargeService::class)->process($this->depositPayload($order, '2'), 'sync');
+        $this->assertTrue($order->fresh()->isPaymentConfirmed());
+        $this->assertNull($order->fresh()->gateway_fail_reason);
+        $this->assertSame('LIMIT', $order->fresh()->gateway_meta['ydpay_submission_error']['retCode']);
+    }
+
+    #[DataProvider('diagnosticResponses')]
+    public function test_non_payment_http_errors_are_diagnostic_only(mixed $body, int $httpStatus, string $kind): void
+    {
+        [$request, $attempt] = $this->payout();
+        Http::fake(['gateway.example/*' => Http::response($body, $httpStatus)]);
+        try {
+            app(YdPayWithdrawalService::class)->sync($request);
+            $this->fail('Invalid evidence must not update financial status.');
+        } catch (\RuntimeException) {
+            $event = PaymentGatewayEvent::query()->where('event_type', 'ydpay.request.error')->sole();
+            $this->assertSame($kind, $event->payload['kind']);
+            $this->assertSame($httpStatus, $event->payload['http_status']);
+            $this->assertSame('create_pending', $attempt->fresh()->gateway_status);
+            $this->assertSame('submitted', $request->fresh()->payout_status);
+            $this->assertSame('420000.00', Wallet::query()->sole()->locked_balance);
+        }
+    }
+
+    public static function diagnosticResponses(): array
+    {
+        return [
+            ['<html>DO_NOT_STORE_BODY</html>', 502, 'invalid_json'],
+            [['retCode' => '0', 'sign' => 'invalid'], 200, 'invalid_signature'],
+            [['retCode' => 'DENIED', 'retMsg' => 'Access denied'], 403, 'http_error'],
+            [['retCode' => ['malformed'], 'retMsg' => ['malformed']], 200, 'provider_error'],
+        ];
+    }
+
+    public function test_query_error_after_completed_callback_cannot_regress_or_overwrite_the_financial_result(): void
+    {
+        [$request, $attempt] = $this->payout();
+        Http::fake(function () use ($attempt) {
+            app(YdPayWithdrawalService::class)->process($this->payoutPayload($attempt->merchant_order_id, '2'), 'callback');
+
+            return Http::response(['retCode' => '9999', 'retMsg' => 'Order not found']);
+        });
+        try {
+            app(YdPayWithdrawalService::class)->sync($request);
+            $this->fail('Query error must be reported separately.');
+        } catch (\RuntimeException) {
+            $this->assertSame('completed', $request->fresh()->payout_status);
+            $this->assertSame('completed', $attempt->fresh()->gateway_status);
+            $this->assertNull($request->fresh()->gateway_fail_reason);
+            $this->assertSame('120000.00', Wallet::query()->sole()->locked_balance);
+            $this->assertSame(0, WalletTransaction::query()->count());
+            $this->assertSame(1, PaymentGatewayEvent::query()->where('event_type', 'ydpay.request.error')->count());
+        }
+    }
+
     private function loginAdmin(): AdminUser
     {
         $admin = AdminUser::query()->create(['username' => 'yd-admin', 'password' => bcrypt('password'), 'status' => 'active']);

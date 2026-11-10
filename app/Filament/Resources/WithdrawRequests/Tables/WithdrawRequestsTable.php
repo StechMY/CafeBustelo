@@ -1701,6 +1701,9 @@ class WithdrawRequestsTable
     private static function gatewayFriendlyAlertText(
         WithdrawRequest $record
     ): ?string {
+        if ($record->gateway_provider === 'ydpay' && filled($record->gateway_fail_reason)) {
+            return $record->gateway_fail_reason;
+        }
         if (! self::hasGatewayAttention($record)
             && ! self::hasGatewayWarning($record)) {
             return null;
