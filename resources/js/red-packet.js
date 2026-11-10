@@ -1,4 +1,5 @@
 import '../css/red-packet.css';
+import { gsap } from 'gsap';
 
 const root = document.querySelector('[data-red-packet]');
 if (root) {
@@ -12,6 +13,37 @@ if (root) {
     let busy = false;
     let pending = null;
     let trigger = buttons[0];
+    let resultTimeline;
+    const packet = root.querySelector('.rp-packet');
+    const closedFrame = root.querySelector('[data-rp-closed-frame]');
+    const openFrame = root.querySelector('[data-rp-open-frame]');
+    const glow = root.querySelector('[data-rp-glow]');
+    const rain = [...root.querySelectorAll('.rp-rain span')];
+    const openingTimeline = gsap.timeline({ paused: true, defaults: { ease: 'power2.out' } });
+    openingTimeline
+        .to(packet, { scale: .95, rotation: -5, duration: .2 }, 0)
+        .to(packet, { rotation: 5, duration: .12, repeat: 3, yoyo: true, ease: 'sine.inOut' }, .2)
+        .to(packet, { rotation: 0, scale: 1.04, y: -8, duration: .5 }, .68)
+        .to(closedFrame, { autoAlpha: 0, duration: .32 }, .7)
+        .to(openFrame, { autoAlpha: 1, duration: .42 }, .76)
+        .fromTo(glow, { autoAlpha: 0, scale: .65 }, { autoAlpha: .8, scale: 1.25, duration: .6 }, .65)
+        .fromTo(rain, {
+            autoAlpha: 0, y: 0, rotation: i => i % 2 ? -22 : 18, scale: i => .55 + (i % 3) * .12,
+        }, {
+            autoAlpha: .85, y: 440, x: i => i % 2 ? 30 : -25, rotation: i => i % 2 ? 40 : -35,
+            duration: 1.3, stagger: { each: .035, from: 'edges' }, ease: 'power1.in',
+        }, .1)
+        .to(rain, { autoAlpha: 0, duration: .25, stagger: .015 }, 1.4)
+        .to(glow, { autoAlpha: .25, scale: 1.4, duration: .4 }, 1.35);
+    const animateOpening = () => new Promise(resolve => {
+        packet.style.willChange = 'transform';
+        openingTimeline.eventCallback('onComplete', resolve);
+        openingTimeline.restart();
+    });
+    const resetOpening = () => {
+        openingTimeline.pause(0);
+        gsap.set([packet, closedFrame, openFrame, glow, ...rain], { clearProps: 'transform,opacity,visibility,willChange' });
+    };
     try {
         const saved = sessionStorage.getItem(storageKey);
         if (/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(saved || '')) pending = saved;
@@ -43,7 +75,7 @@ if (root) {
         busy = true; updateControls();
         status.textContent = config.labels.opening;
         root.classList.add('is-opening');
-        const animation = new Promise(resolve => setTimeout(resolve, 1100));
+        const animation = animateOpening();
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 20000);
         try {
@@ -67,13 +99,21 @@ if (root) {
             const prize = payload.data.prize;
             root.querySelector('[data-rp-prize]').textContent = prize.prize_name;
             root.querySelector('[data-rp-reward-note]').textContent = config.labels[`${prize.prize_type}_received`];
+            const resultArt = root.querySelector('[data-rp-result-art]');
+            const art = config.prize_artwork[prize.prize_name] || ({ cash: 'cash', coupon: 'coupon' }[prize.prize_type] || 'gift');
+            resultArt.className = `rp-art rp-art--${art}`;
             result.showModal();
+            resultTimeline?.kill();
+            resultTimeline = gsap.timeline({ defaults: { ease: 'power3.out' } })
+                .fromTo(result.querySelector('.rp-result-inner'), { autoAlpha: 0, y: 22 }, { autoAlpha: 1, y: 0, duration: .38 })
+                .fromTo(resultArt, { scale: .65, rotation: -8 }, { scale: 1, rotation: 0, duration: .7, ease: 'back.out(1.4)' }, 0);
             status.textContent = '';
         } catch (error) {
             status.textContent = error.name === 'AbortError' || error instanceof TypeError || error instanceof SyntaxError ? config.labels.retry : error.message;
         } finally {
             clearTimeout(timeout); busy = false;
             root.classList.remove('is-opening');
+            resetOpening();
             const message = status.textContent;
             updateControls();
             if (message) status.textContent = message;
@@ -82,7 +122,7 @@ if (root) {
     buttons.forEach(button => button.addEventListener('click', openPacket));
     retry.addEventListener('click', openPacket);
     root.querySelector('[data-rp-close]').addEventListener('click', () => result.close());
-    result.addEventListener('close', () => trigger?.focus());
+    result.addEventListener('close', () => { resultTimeline?.kill(); trigger?.focus(); });
     root.querySelector('[data-rp-copy]').addEventListener('click', async () => {
         const input = root.querySelector('#rp-invite-link');
         const feedback = root.querySelector('[data-rp-copy-status]');
@@ -92,4 +132,40 @@ if (root) {
     updateControls();
     if (pending) status.textContent = config.labels.retry;
     document.addEventListener('visibilitychange', () => { if (!document.hidden && !busy) updateControls(); });
+}
+
+const ledger = document.querySelector('[data-rp-history]');
+if (ledger) {
+    const tabs = [...ledger.querySelectorAll('[data-rp-tab]')];
+    const panels = [...ledger.querySelectorAll('[data-rp-panel]')];
+    ledger.querySelector('.rp-history-tabs').setAttribute('role', 'tablist');
+    tabs.forEach(tab => {
+        tab.setAttribute('role', 'tab');
+        tab.setAttribute('aria-controls', tab.hash.slice(1));
+    });
+    panels.forEach(panel => { panel.setAttribute('role', 'tabpanel'); panel.tabIndex = 0; });
+    function selectTab(tab, updateHash = false) {
+        tabs.forEach(item => {
+            const selected = item === tab;
+            item.setAttribute('aria-selected', String(selected));
+            item.tabIndex = selected ? 0 : -1;
+        });
+        panels.forEach(panel => { panel.hidden = `#${panel.id}` !== tab.hash; });
+        if (updateHash) history.replaceState(null, '', tab.hash);
+    }
+    tabs.forEach((tab, index) => {
+        tab.addEventListener('click', event => { event.preventDefault(); selectTab(tab, true); });
+        tab.addEventListener('keydown', event => {
+            let target;
+            if (event.key === 'ArrowRight') target = tabs[(index + 1) % tabs.length];
+            if (event.key === 'ArrowLeft') target = tabs[(index + tabs.length - 1) % tabs.length];
+            if (event.key === 'Home') target = tabs[0];
+            if (event.key === 'End') target = tabs.at(-1);
+            if (!target) return;
+            event.preventDefault(); selectTab(target, true); target.focus();
+        });
+    });
+    const syncTab = () => selectTab(tabs.find(tab => tab.hash === location.hash) || tabs[0]);
+    window.addEventListener('hashchange', syncTab);
+    syncTab();
 }

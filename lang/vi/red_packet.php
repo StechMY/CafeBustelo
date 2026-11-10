@@ -67,4 +67,11 @@ return [
     'copy_manual' => 'Hãy chọn và sao chép liên kết mời.',
     'member' => 'Thành viên',
     'product' => 'Sản phẩm',
+    'history_intro' => 'Mỗi bất ngờ, mỗi phần thưởng đều được lưu tại đây.',
+    'back_to_event' => 'Trở lại sự kiện',
+    'empty_wins' => 'Phần quà đầu tiên đang chờ bạn',
+    'empty_entries' => 'Bắt đầu bằng lời mời đầu tiên',
+    'ready' => 'Có thể dùng',
+    'used' => 'Đã dùng',
+    'recorded' => 'Đã ghi nhận',
 ];

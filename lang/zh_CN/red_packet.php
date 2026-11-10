@@ -67,4 +67,11 @@ return [
     'copy_manual' => '请选择并复制邀请链接。',
     'member' => '会员',
     'product' => '产品',
+    'history_intro' => '每一次惊喜，每一份收获，都记录在这里。',
+    'back_to_event' => '返回红包雨',
+    'empty_wins' => '期待你的第一份惊喜',
+    'empty_entries' => '从邀请第一位好友开始',
+    'ready' => '待使用',
+    'used' => '已使用',
+    'recorded' => '已记录',
 ];

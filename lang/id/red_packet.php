@@ -67,4 +67,11 @@ return [
     'copy_manual' => 'Pilih dan salin tautan undangan Anda.',
     'member' => 'Anggota',
     'product' => 'Produk',
+    'history_intro' => 'Setiap kejutan dan hadiah, tersimpan di satu tempat.',
+    'back_to_event' => 'Kembali ke acara',
+    'empty_wins' => 'Kejutan pertamamu menanti',
+    'empty_entries' => 'Mulai dengan undangan pertama',
+    'ready' => 'Siap digunakan',
+    'used' => 'Terpakai',
+    'recorded' => 'Tercatat',
 ];

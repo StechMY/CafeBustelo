@@ -67,4 +67,11 @@ return [
     'copy_manual' => 'Select and copy your invitation link.',
     'member' => 'Member',
     'product' => 'Product',
+    'history_intro' => 'Every surprise, every step. Your rewards in one place.',
+    'back_to_event' => 'Back to the event',
+    'empty_wins' => 'Your first surprise is waiting',
+    'empty_entries' => 'Make your first invitation',
+    'ready' => 'Ready to use',
+    'used' => 'Used',
+    'recorded' => 'Recorded',
 ];
