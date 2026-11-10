@@ -18,8 +18,8 @@ class RedPacketSettingsAction extends Action
     {
         parent::setUp();
         $this->label(__('red_packet.title'))->icon('heroicon-o-envelope')->color('danger')
-            ->visible(fn (): bool => Filament::auth()->user()?->can('Manage:RedPacket') ?? false)
-            ->authorize(fn (): bool => Filament::auth()->user()?->can('Manage:RedPacket') ?? false)
+            ->visible(fn (): bool => $this->canManageActivity())
+            ->authorize(fn (): bool => $this->canManageActivity())
             ->modalDescription(__('red_packet.admin_help', ['timezone' => config('app.timezone')]))
             ->fillForm(fn (): array => [
                 'enabled' => Setting::bool(RedPacketService::SETTING_ENABLED),
@@ -42,5 +42,12 @@ class RedPacketSettingsAction extends Action
                 });
                 Notification::make()->title(__('red_packet.settings_saved'))->success()->send();
             });
+    }
+
+    private function canManageActivity(): bool
+    {
+        $admin = Filament::auth()->user();
+
+        return $admin && ($admin->isSuperAdmin() || $admin->can('Manage:RedPacket'));
     }
 }

@@ -10,12 +10,13 @@ class RedPacketDrawPolicy
 {
     public function viewAny(AdminUser $admin): bool
     {
-        return $admin->can('ViewAny:RedPacketDraw');
+        return $admin->isSuperAdmin() || $admin->can('ViewAny:RedPacketDraw');
     }
 
     public function view(AdminUser $admin, RedPacketDraw $draw): bool
     {
-        return $admin->can('View:RedPacketDraw') && FilamentSupportScope::canAccessUserId($draw->user_id);
+        return $admin->isSuperAdmin()
+            || ($admin->can('View:RedPacketDraw') && FilamentSupportScope::canAccessUserId($draw->user_id));
     }
 
     public function create(AdminUser $admin): bool { return false; }

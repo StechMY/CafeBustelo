@@ -25,6 +25,7 @@ use Laravel\Sanctum\Sanctum;
 use Livewire\Livewire;
 use PDO;
 use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class RedPacketActivityTest extends TestCase
@@ -43,6 +44,7 @@ class RedPacketActivityTest extends TestCase
         $this->beforeApplicationDestroyed(fn () => date_default_timezone_set($timezone));
         config(['app.timezone' => 'Asia/Ho_Chi_Minh']);
         \Illuminate\Support\Facades\Storage::fake('do_spaces');
+        \Illuminate\Support\Facades\Http::fake(fn () => \Illuminate\Support\Facades\Http::response([], 503));
         app()->setLocale('en');
         $this->travelTo(Carbon::parse('2026-11-15 12:00:00', 'Asia/Ho_Chi_Minh'));
     }
@@ -264,6 +266,58 @@ class RedPacketActivityTest extends TestCase
         $this->assertTrue(Setting::bool(RedPacketService::SETTING_ENABLED));
         $admin->revokePermissionTo('Manage:RedPacket');
         Livewire::test(Dashboard::class)->assertActionHidden('redPacketSettings');
+        $this->assertFalse(\App\Filament\Actions\RedPacketSettingsAction::make('settings')->isAuthorized());
+        $this->get('/admin/red-packet-draws')->assertForbidden();
+    }
+
+    public function test_existing_super_admin_can_manage_activity_without_explicit_new_permissions(): void
+    {
+        $admin = AdminUser::create(['username' => 'rain-super-admin', 'password' => 'password', 'status' => 'active']);
+        $admin->assignRole(Role::findOrCreate('super_admin', 'admin'));
+        $this->assertFalse($admin->can('Manage:RedPacket'));
+        $this->assertFalse($admin->can('ViewAny:RedPacketDraw'));
+        $this->actingAs($admin, 'admin');
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+
+        Livewire::test(Dashboard::class)->assertActionVisible('redPacketSettings')
+            ->callAction('redPacketSettings', data: [
+                'enabled' => true, 'starts_at' => '2026-11-15 00:00:00', 'ends_at' => '2026-11-30 00:00:00',
+            ])->assertHasNoActionErrors();
+        $this->assertTrue(Setting::bool(RedPacketService::SETTING_ENABLED));
+        Livewire::test(ManageRedPacketPrizes::class)->assertActionVisible('activity_settings');
+        $this->get('/admin/red-packet-draws')->assertOk();
+        $policy = new \App\Policies\RedPacketDrawPolicy();
+        $draw = new RedPacketDraw(['user_id' => 1]);
+        $this->assertTrue($policy->view($admin, $draw));
+        $this->assertFalse($policy->update($admin, $draw));
+        $this->assertFalse($policy->delete($admin, $draw));
+    }
+
+    public function test_role_editor_lists_and_can_assign_red_packet_permissions(): void
+    {
+        $admin = AdminUser::create(['username' => 'role-editor', 'password' => 'password', 'status' => 'active']);
+        foreach (['ViewAny:Role', 'View:Role', 'Update:Role'] as $permission) {
+            $admin->givePermissionTo(Permission::findOrCreate($permission, 'admin'));
+        }
+        $role = Role::findOrCreate('rain-operator', 'admin');
+        $this->actingAs($admin, 'admin');
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+        $prizePermissions = ['ViewAny:RedPacketPrize', 'View:RedPacketPrize', 'Update:RedPacketPrize'];
+        $drawPermissions = ['ViewAny:RedPacketDraw', 'View:RedPacketDraw'];
+
+        Livewire::test(\BezhanSalleh\FilamentShield\Resources\Roles\Pages\EditRole::class, ['record' => $role->id])
+            ->assertSee('Manage Red Packet Activity')->assertSee('RedPacketPrize')->assertSee('RedPacketDraw')
+            ->fillForm([
+                'custom_permissions_tab' => ['Manage:RedPacket'],
+                \App\Filament\Resources\RedPacketPrizes\RedPacketPrizeResource::class => $prizePermissions,
+                \App\Filament\Resources\RedPacketDraws\RedPacketDrawResource::class => $drawPermissions,
+            ])->call('save')->assertHasNoFormErrors();
+        $this->assertEqualsCanonicalizing(['Manage:RedPacket', ...$prizePermissions, ...$drawPermissions], $role->fresh()->permissions->pluck('name')->all());
+        $admin->assignRole($role);
+        $admin->unsetRelation('roles')->unsetRelation('permissions');
+        Livewire::test(Dashboard::class)->assertActionVisible('redPacketSettings');
+        Livewire::test(ManageRedPacketPrizes::class)->assertActionVisible('activity_settings');
+        $this->get('/admin/red-packet-draws')->assertOk();
     }
 
     private function open(): void { Setting::setValue(RedPacketService::SETTING_ENABLED, true); }

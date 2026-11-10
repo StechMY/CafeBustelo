@@ -3,6 +3,8 @@
 declare(strict_types=1);
 use App\Filament\Resources\BankAccountReviewRequests\BankAccountReviewRequestResource;
 use App\Filament\Resources\GoldenEggDraws\GoldenEggDrawResource;
+use App\Filament\Resources\RedPacketDraws\RedPacketDrawResource;
+use App\Filament\Resources\RedPacketPrizes\RedPacketPrizeResource;
 use App\Filament\Resources\UserProducts\UserProductResource;
 use BezhanSalleh\FilamentShield\Resources\Roles\RoleResource;
 use Filament\Pages\Dashboard;
@@ -197,6 +199,15 @@ return [
                 'viewAny',
                 'view',
             ],
+            RedPacketDrawResource::class => [
+                'viewAny',
+                'view',
+            ],
+            RedPacketPrizeResource::class => [
+                'viewAny',
+                'view',
+                'update',
+            ],
             BankAccountReviewRequestResource::class => [
                 'viewAny',
                 'view',
@@ -260,6 +271,7 @@ return [
 
     'custom_permissions' => [
         'Manage:GoldenEgg' => 'Manage Golden Egg Activity',
+        'Manage:RedPacket' => 'Manage Red Packet Activity',
         'Audit:Recharge' => 'Audit Recharge',
         'ReverseApproval:Recharge' => 'Reverse Manual Recharge Approval',
         'Audit:Withdraw' => 'Audit Withdraw',
