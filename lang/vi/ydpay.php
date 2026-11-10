@@ -2,7 +2,8 @@
 
 return [
     'retry_not_accepted' => 'YDPAY · Xác nhận chưa tiếp nhận và thử lại',
-    'not_accepted_description' => 'Chỉ tiếp tục khi YDPay xác nhận đơn cũ chưa được tiếp nhận, chưa trừ tiền, chưa chi trả và sẽ không thực hiện sau này. Tra cứu mới cũng phải báo không tìm thấy đơn. Tạo đơn mới một lần và giữ lịch sử cũ. Làm tròn lên VND nguyên, nền tảng chịu chênh lệch; tiền giữ của người dùng không đổi.',
+    'not_accepted_description' => 'Chỉ tiếp tục khi YDPay xác nhận đơn cũ chưa được tiếp nhận, chưa trừ tiền, chưa chi trả và sẽ không thực hiện sau này. Tra cứu mới cũng phải báo không tìm thấy đơn. Tạo đơn mới một lần và giữ lịch sử cũ. Làm tròn đến VND nguyên gần nhất (.50 làm tròn lên). Nền tảng chịu phần tăng; làm tròn xuống giảm số tiền nhận dưới 0.50 VND. Tiền giữ của người dùng không đổi.',
+    'rounding_adjustment' => 'Chênh lệch làm tròn: thực trả trừ số tiền ròng gốc (VND)',
     'not_accepted_evidence' => 'Nhập mã yêu cầu hỗ trợ YDPay, thời gian và nội dung xác nhận rõ ràng cho mã đơn này.',
     'not_accepted_acknowledgement' => 'YDPay xác nhận đơn chưa được tiếp nhận, chưa trừ tiền, chưa chi trả và không thể thực hiện sau này. Tôi xác nhận tạo đơn chi trả mới.',
     'not_accepted_changed' => 'Đơn không còn đủ điều kiện hoặc mã đơn đã thay đổi. Làm mới và đồng bộ đơn hiện tại; không gửi lại.',

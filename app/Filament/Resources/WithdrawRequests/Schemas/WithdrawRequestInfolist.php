@@ -219,6 +219,8 @@ class WithdrawRequestInfolist
                                     ->label(__('ydpay.original_net_amount'))->placeholder('-'),
                                 TextEntry::make('provider_meta.rounding_subsidy')
                                     ->label(__('ydpay.rounding_subsidy'))->placeholder('-'),
+                                TextEntry::make('provider_meta.rounding_adjustment')
+                                    ->label(__('ydpay.rounding_adjustment'))->placeholder('-'),
                                 TextEntry::make('provider_meta.not_accepted_confirmation.provider_confirmation')
                                     ->label(__('ydpay.not_accepted_evidence'))->placeholder('-'),
                                 TextEntry::make('provider_meta.not_accepted_confirmation.reason')

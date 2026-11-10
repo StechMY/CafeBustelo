@@ -976,7 +976,7 @@ class YdPayGatewayTest extends TestCase
     }
 
     #[DataProvider('roundedPayouts')]
-    public function test_new_payouts_round_up_at_platform_expense_and_finalize_original_reserve(string $net, string $rounded, string $subsidy, string $mode): void
+    public function test_new_payouts_round_half_up_and_finalize_original_reserve(string $net, string $rounded, string $adjustment, string $mode): void
     {
         [$request, $old] = $this->payout($mode === 'retry');
         $request->update(['net_amount' => $net]);
@@ -1008,7 +1008,8 @@ class YdPayGatewayTest extends TestCase
         $attempt = $request->payoutAttempts()->latest('attempt_no')->firstOrFail();
         $this->assertSame($rounded, $attempt->amount);
         $this->assertSame($net, $attempt->provider_meta['original_net_amount']);
-        $this->assertSame($subsidy, $attempt->provider_meta['rounding_subsidy']);
+        $this->assertSame($adjustment, $attempt->provider_meta['rounding_adjustment']);
+        $this->assertSame('half_up_vnd', $attempt->provider_meta['rounding_policy']);
         $this->assertSame($net, $request->fresh()->net_amount);
         $service->process($this->signed([...$this->payoutPayload($attempt->merchant_order_id, '2'), 'amount' => app(YdPayGateway::class)->minorAmount($rounded)]), 'callback');
         $this->assertSame('completed', $request->fresh()->payout_status);
@@ -1022,12 +1023,52 @@ class YdPayGatewayTest extends TestCase
     {
         return [
             ['279000.00', '279000.00', '0.00', 'instant'],
-            ['279000.01', '279001.00', '0.99', 'instant'],
+            ['279000.01', '279000.00', '-0.01', 'instant'],
+            ['279000.49', '279000.00', '-0.49', 'instant'],
             ['279000.50', '279001.00', '0.50', 'instant'],
+            ['279000.51', '279001.00', '0.49', 'instant'],
             ['279000.99', '279001.00', '0.01', 'instant'],
+            ['279000.49', '279000.00', '-0.49', 'scheduled'],
+            ['279000.50', '279001.00', '0.50', 'scheduled'],
             ['279000.51', '279001.00', '0.49', 'scheduled'],
+            ['279000.49', '279000.00', '-0.49', 'retry'],
+            ['279000.50', '279001.00', '0.50', 'retry'],
             ['279000.51', '279001.00', '0.49', 'retry'],
         ];
+    }
+
+    public function test_previously_rounded_up_attempt_keeps_its_amount_and_metadata_on_completion(): void
+    {
+        [$request, $attempt] = $this->payout();
+        $request->update(['net_amount' => '278999.01']);
+        $meta = ['original_net_amount' => '278999.01', 'rounding_subsidy' => '0.99', 'rounding_policy' => 'ceil_vnd_merchant_cost'];
+        $attempt->update(['provider_meta' => $meta]);
+        app(YdPayWithdrawalService::class)->process($this->payoutPayload($attempt->merchant_order_id, '2'), 'callback');
+        $this->assertSame('279000.00', $attempt->fresh()->amount);
+        $this->assertSame($meta, $attempt->fresh()->provider_meta);
+        $this->assertSame('278999.01', $request->fresh()->net_amount);
+        $this->assertSame('completed', $request->fresh()->payout_status);
+        $this->assertSame('120000.00', Wallet::query()->sole()->locked_balance);
+        $this->assertSame('18455.00', Wallet::query()->sole()->balance);
+        $this->assertSame(0, WalletTransaction::query()->count());
+        Http::assertNothingSent();
+    }
+
+    public function test_rounding_to_zero_does_not_create_or_submit_a_payout_attempt(): void
+    {
+        [$request] = $this->payout(false);
+        $request->update(['net_amount' => '0.49']);
+        try {
+            app(YdPayWithdrawalService::class)->approve($request, $this->loginAdmin(), instant: true);
+            $this->fail('A zero payout must be blocked before submission.');
+        } catch (\RuntimeException $exception) {
+            $this->assertSame('YDPAY rounded payout amount must be at least 1 VND.', $exception->getMessage());
+            $this->assertSame(0, $request->payoutAttempts()->count());
+            $this->assertSame('420000.00', Wallet::query()->sole()->locked_balance);
+            $this->assertSame('18455.00', Wallet::query()->sole()->balance);
+            $this->assertSame(0, WalletTransaction::query()->count());
+        }
+        Http::assertNothingSent();
     }
 
     public function test_confirmed_not_accepted_retry_preserves_old_attempt_and_repeated_click_cannot_resubmit(): void
@@ -1041,7 +1082,7 @@ class YdPayGatewayTest extends TestCase
         $this->assertNotSame($old->merchant_order_id, $new->merchant_order_id);
         $this->assertSame(2, $new->attempt_no);
         $this->assertSame('279001.00', $new->amount);
-        $this->assertSame('0.49', $new->provider_meta['rounding_subsidy']);
+        $this->assertSame('0.49', $new->provider_meta['rounding_adjustment']);
         foreach (['merchant_order_id', 'amount', 'gateway_status', 'failure_reason', 'provider_response'] as $field) {
             $this->assertSame($before[$field] ?? null, $old->fresh()->getAttributes()[$field] ?? null, $field);
         }

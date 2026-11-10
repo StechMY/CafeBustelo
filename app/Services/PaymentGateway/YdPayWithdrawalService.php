@@ -99,17 +99,20 @@ class YdPayWithdrawalService
                 return null;
             }
             $bankCode = $this->bankCode($request->bank_code);
-            // VND payouts require whole dong; the platform pays the rounding difference.
+            // Round half up to whole VND without floating-point arithmetic.
             $minor = (int) $this->gateway->minorAmount($request->net_amount);
-            $whole = intdiv($minor, 100) + ($minor % 100 === 0 ? 0 : 1);
-            $subsidy = $whole * 100 - $minor;
+            $whole = intdiv($minor + 50, 100);
+            if ($whole < 1) {
+                throw new RuntimeException('YDPAY rounded payout amount must be at least 1 VND.');
+            }
+            $adjustment = $whole * 100 - $minor;
             $attempt = $request->payoutAttempts()->create([
                 'attempt_no' => ($latest?->attempt_no ?? 0) + 1, 'provider' => 'ydpay',
                 'merchant_order_id' => now()->format('YmdHis').random_int(100000000000, 999999999999),
                 'amount' => (string) $whole, 'currency' => 'vnd',
                 'provider_meta' => ['original_net_amount' => $request->net_amount,
-                    'rounding_subsidy' => '0.'.str_pad((string) $subsidy, 2, '0', STR_PAD_LEFT),
-                    'rounding_policy' => 'ceil_vnd_merchant_cost'],
+                    'rounding_adjustment' => ($adjustment < 0 ? '-' : '').'0.'.str_pad((string) abs($adjustment), 2, '0', STR_PAD_LEFT),
+                    'rounding_policy' => 'half_up_vnd'],
                 'payment_channel' => (string) config('services.ydpay.withdraw_gateway_id'),
                 'bank_name_snapshot' => $request->bank_name, 'bank_code_snapshot' => $bankCode,
                 'bank_account_name_snapshot' => $request->bank_account_name,
