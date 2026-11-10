@@ -40,6 +40,7 @@ class ViewWithdrawRequest extends ViewRecord
         return [
             \App\Filament\Resources\WithdrawRequests\Actions\ApproveYdPayWithdrawalAction::make(),
             \App\Filament\Resources\WithdrawRequests\Actions\ApproveYdPayWithdrawalAction::make(instant: true),
+            \App\Filament\Resources\WithdrawRequests\Actions\RetryYdPayNotAcceptedAction::make(),
             Action::make('approve_manual')
                 ->label(__('withdraw.approve_manual'))
                 ->icon('heroicon-o-check-circle')

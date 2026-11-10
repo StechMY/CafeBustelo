@@ -1,6 +1,15 @@
 <?php
 
 return [
+    'retry_not_accepted' => 'YDPAY · Konfirmasi belum diterima dan coba lagi',
+    'not_accepted_description' => 'Lanjutkan hanya setelah YDPay memastikan pesanan lama belum diterima, belum didebit, belum dibayar dan tidak akan diproses nanti. Pemeriksaan terbaru juga harus menyatakan pesanan tidak ditemukan. Pesanan baru dikirim sekali dan riwayat lama dipertahankan. Pembayaran dibulatkan ke atas ke VND utuh, selisih ditanggung platform; dana pengguna yang dikunci tetap sama.',
+    'not_accepted_evidence' => 'Masukkan referensi tiket YDPay, waktu dan konfirmasi eksplisit untuk nomor pesanan ini.',
+    'not_accepted_acknowledgement' => 'YDPay memastikan pesanan belum diterima, didebit atau dibayar dan tidak dapat diproses nanti. Saya mengizinkan pesanan pembayaran baru.',
+    'not_accepted_changed' => 'Pembayaran tidak lagi memenuhi syarat atau pesanan berubah. Muat ulang dan sinkronkan pesanan saat ini; jangan kirim ulang.',
+    'not_accepted_found' => 'Pesanan lama ada. Gunakan status tersinkron dan alur normal; tidak ada pembayaran baru dibuat.',
+    'not_accepted_retry_attention' => 'Periksa pesanan saat ini sebelum tindakan selanjutnya',
+    'original_net_amount' => 'Jumlah bersih awal (VND)',
+    'rounding_subsidy' => 'Subsidi pembulatan platform (VND)',
     'submission_error' => 'Kesalahan pengiriman awal YDPay (diagnostik, bukan status pembayaran)',
     'latest_request_error' => 'Kesalahan permintaan YDPay terbaru (HTTP, kode dan verifikasi tanda tangan)',
     'deposit_expiry_minutes' => 'Batas waktu deposit belum dibayar',

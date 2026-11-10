@@ -1,6 +1,15 @@
 <?php
 
 return [
+    'retry_not_accepted' => 'YDPAY · Confirm not accepted and retry',
+    'not_accepted_description' => 'Only proceed after YDPay confirms that this original order was never accepted, debited, or paid and cannot execute later. A fresh query must also report order not found. A new order is submitted once; the original attempt remains unchanged. The payout is rounded UP to whole VND at platform expense; the user reserve is unchanged.',
+    'not_accepted_evidence' => 'Enter the YDPay support ticket/reference, confirmation time and explicit confirmation for this merchant order.',
+    'not_accepted_acknowledgement' => 'YDPay confirmed this order was not accepted, no funds were debited or paid, and it cannot execute later. I authorize a new payout.',
+    'not_accepted_changed' => 'This payout is no longer eligible or the original order changed. Refresh and synchronize the current order; do not resubmit.',
+    'not_accepted_found' => 'The original order exists. Use its synchronized status and the normal workflow; no new payout was created.',
+    'not_accepted_retry_attention' => 'Retry requires attention — check the current order before any further action',
+    'original_net_amount' => 'Original net amount (VND)',
+    'rounding_subsidy' => 'Platform rounding subsidy (VND)',
     'submission_error' => 'YDPay original submission error (diagnostic, not payment status)',
     'latest_request_error' => 'YDPay latest request error (HTTP, error code and signature check)',
     'deposit_expiry_minutes' => 'Unpaid deposit expiry',

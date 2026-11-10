@@ -1,6 +1,15 @@
 <?php
 
 return [
+    'retry_not_accepted' => 'YDPAY · 确认未受理后重试',
+    'not_accepted_description' => '仅在 YDPay 明确确认原订单未受理、未扣款、未出款且不会后续执行后使用。系统还会重新查原单，必须返回订单不存在。新商户订单只提交一次，旧记录保留。出款金额向上取整至整数越南盾，差额平台承担，用户原预留金额不变。',
+    'not_accepted_evidence' => '填写 YDPay 客服工单/凭据、确认时间，以及针对该商户订单号的明确确认内容。',
+    'not_accepted_acknowledgement' => 'YDPay 已确认该原单未受理、未扣款、未出款且不会后续执行。我确认创建新的出款订单。',
+    'not_accepted_changed' => '该提现已不符合条件或原订单已变更。请刷新并同步当前订单，不要重复提交。',
+    'not_accepted_found' => '原订单已存在。请按同步后的状态使用正常流程，本次未创建新出款。',
+    'not_accepted_retry_attention' => '重试需要核对，请先查看当前订单再操作',
+    'original_net_amount' => '原净出款金额（VND）',
+    'rounding_subsidy' => '平台取整补差（VND）',
     'submission_error' => 'YDPay 原始提交错误（仅诊断，不代表付款结果）',
     'latest_request_error' => 'YDPay 最近请求错误（含 HTTP、错误码及验签结果）',
     'deposit_expiry_minutes' => '未付款充值过期时间',

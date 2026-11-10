@@ -708,6 +708,7 @@ class WithdrawRequestsTable
                 ActionGroup::make([
                     \App\Filament\Resources\WithdrawRequests\Actions\ApproveYdPayWithdrawalAction::make(),
                     \App\Filament\Resources\WithdrawRequests\Actions\ApproveYdPayWithdrawalAction::make(instant: true),
+                    \App\Filament\Resources\WithdrawRequests\Actions\RetryYdPayNotAcceptedAction::make(),
                     /*
                     |--------------------------------------------------------------------------
                     | Approve Manually

@@ -975,6 +975,333 @@ class YdPayGatewayTest extends TestCase
         return $admin;
     }
 
+    #[DataProvider('roundedPayouts')]
+    public function test_new_payouts_round_up_at_platform_expense_and_finalize_original_reserve(string $net, string $rounded, string $subsidy, string $mode): void
+    {
+        [$request, $old] = $this->payout($mode === 'retry');
+        $request->update(['net_amount' => $net]);
+        $admin = $this->loginAdmin();
+        Http::fake(function ($http) use ($old, $rounded) {
+            if (str_ends_with($http->url(), '/apply')) {
+                $this->assertSame(app(YdPayGateway::class)->minorAmount($rounded), $http['amount']);
+
+                return Http::response($this->signed(['retCode' => '0', 'agentpayOrderId' => '123456789012346', 'gatewayId' => '22']));
+            }
+
+            return Http::response($this->signed([...$this->payoutPayload($http['mchOrderNo'], $http['mchOrderNo'] === $old?->merchant_order_id ? '3' : '2'),
+                'retCode' => '0', 'amount' => app(YdPayGateway::class)->minorAmount($http['mchOrderNo'] === $old?->merchant_order_id ? $old->amount : $rounded)]));
+        });
+        $service = app(YdPayWithdrawalService::class);
+        if ($mode === 'retry') {
+            $service->retry($request, $admin, 'Verified failure');
+        } else {
+            $service->approve($request, $admin, instant: $mode === 'instant');
+            if ($mode === 'scheduled') {
+                $this->travel(25)->hours();
+                try {
+                    $service->dispatch($request->fresh());
+                } finally {
+                    $this->travelBack();
+                }
+            }
+        }
+        $attempt = $request->payoutAttempts()->latest('attempt_no')->firstOrFail();
+        $this->assertSame($rounded, $attempt->amount);
+        $this->assertSame($net, $attempt->provider_meta['original_net_amount']);
+        $this->assertSame($subsidy, $attempt->provider_meta['rounding_subsidy']);
+        $this->assertSame($net, $request->fresh()->net_amount);
+        $service->process($this->signed([...$this->payoutPayload($attempt->merchant_order_id, '2'), 'amount' => app(YdPayGateway::class)->minorAmount($rounded)]), 'callback');
+        $this->assertSame('completed', $request->fresh()->payout_status);
+        $this->assertSame('18455.00', Wallet::query()->sole()->balance);
+        $this->assertSame('120000.00', Wallet::query()->sole()->locked_balance);
+        $this->assertSame(0, WalletTransaction::query()->count());
+        $this->assertSame(1, PaymentGatewayEvent::where('event_type', 'withdrawal.gateway_completed')->count());
+    }
+
+    public static function roundedPayouts(): array
+    {
+        return [
+            ['279000.00', '279000.00', '0.00', 'instant'],
+            ['279000.01', '279001.00', '0.99', 'instant'],
+            ['279000.50', '279001.00', '0.50', 'instant'],
+            ['279000.99', '279001.00', '0.01', 'instant'],
+            ['279000.51', '279001.00', '0.49', 'scheduled'],
+            ['279000.51', '279001.00', '0.49', 'retry'],
+        ];
+    }
+
+    public function test_confirmed_not_accepted_retry_preserves_old_attempt_and_repeated_click_cannot_resubmit(): void
+    {
+        [$request, $old] = $this->uncertainFractionalPayout();
+        $admin = $this->loginAdmin();
+        $this->fakeNotAcceptedRetry($old->merchant_order_id);
+        $before = $old->fresh()->getAttributes();
+        $service = app(YdPayWithdrawalService::class);
+        $new = $service->retryNotAccepted($request, $admin, $old->merchant_order_id, 'Ticket 123: never accepted, debited, paid; cannot execute later', 'Integer VND correction', true);
+        $this->assertNotSame($old->merchant_order_id, $new->merchant_order_id);
+        $this->assertSame(2, $new->attempt_no);
+        $this->assertSame('279001.00', $new->amount);
+        $this->assertSame('0.49', $new->provider_meta['rounding_subsidy']);
+        foreach (['merchant_order_id', 'amount', 'gateway_status', 'failure_reason', 'provider_response'] as $field) {
+            $this->assertSame($before[$field] ?? null, $old->fresh()->getAttributes()[$field] ?? null, $field);
+        }
+        $this->assertSame($admin->id, data_get($old->fresh()->provider_meta, 'not_accepted_confirmation.admin_user_id'));
+        $event = PaymentGatewayEvent::where('event_type', 'ydpay.payout.not_accepted_confirmed')->sole();
+        $this->assertSame($old->id, $event->withdrawal_payout_attempt_id);
+        $this->assertSame('代付订单不存在', data_get($event->payload, 'query_diagnostic.retMsg'));
+        try {
+            $service->retryNotAccepted($request, $admin, $old->merchant_order_id, 'Ticket 123', 'Double click', true);
+            $this->fail('A stale form must not create another attempt.');
+        } catch (\RuntimeException) {
+            $this->assertSame(2, $request->payoutAttempts()->count());
+        }
+        $paid = $this->signed([...$this->payoutPayload($new->merchant_order_id, '2'), 'amount' => '27900100']);
+        $service->process($paid, 'callback');
+        $service->process($paid, 'callback');
+        $this->assertSame('completed', $request->fresh()->payout_status);
+        $this->assertSame('120000.00', Wallet::query()->sole()->locked_balance);
+        $this->assertSame('18455.00', Wallet::query()->sole()->balance);
+        $this->assertSame(0, WalletTransaction::query()->count());
+        $this->assertSame(1, PaymentGatewayEvent::where('event_type', 'withdrawal.gateway_completed')->count());
+        Http::assertSentCount(3);
+    }
+
+    #[DataProvider('notAcceptedBlockingQueries')]
+    public function test_not_accepted_retry_blocks_every_query_except_exact_not_found(string $result): void
+    {
+        [$request, $old] = $this->uncertainFractionalPayout();
+        $admin = $this->loginAdmin();
+        Http::fake(function ($http) use ($result, $old) {
+            $this->assertStringEndsWith('/query_order', $http->url());
+            if ($result === 'timeout') {
+                throw new ConnectionException('Timeout');
+            }
+            if (in_array($result, ['0', '1', '2', '3', '4', '5', '6'], true)) {
+                return Http::response($this->signed([...$this->payoutPayload($old->merchant_order_id, $result), 'retCode' => '0', 'amount' => '27900051']));
+            }
+
+            return match ($result) {
+                'http500' => Http::response(['retCode' => '9999', 'retMsg' => '代付订单不存在'], 500),
+                'other_code' => Http::response(['retCode' => '0112', 'retMsg' => '代付订单不存在']),
+                'other_reason' => Http::response(['retCode' => '9999', 'retMsg' => '平台暂未完成本次请求']),
+                'invalid_json' => Http::response('not json'),
+                default => Http::response(['retCode' => '0', 'status' => '3']),
+            };
+        });
+        try {
+            app(YdPayWithdrawalService::class)->retryNotAccepted($request, $admin, $old->merchant_order_id, 'Ticket 123', 'Retry', true);
+            $this->fail('Unsafe query evidence must block a new payout.');
+        } catch (\RuntimeException) {
+            $this->assertSame(1, $request->payoutAttempts()->count());
+            $this->assertNull(data_get($old->fresh()->provider_meta, 'not_accepted_confirmation'));
+            $this->assertSame('18455.00', Wallet::query()->sole()->balance);
+            $this->assertSame($result === '2' ? '120000.00' : '420000.00', Wallet::query()->sole()->locked_balance);
+        }
+        Http::assertSentCount($result === 'timeout' ? 0 : 1);
+    }
+
+    public static function notAcceptedBlockingQueries(): array
+    {
+        return array_map(fn ($value) => [$value], ['0', '1', '2', '3', '4', '5', '6', 'timeout', 'http500', 'other_code', 'other_reason', 'invalid_json', 'unsigned_success']);
+    }
+
+    public function test_overlapping_not_accepted_retries_recheck_current_attempt_after_query(): void
+    {
+        [$request, $old] = $this->uncertainFractionalPayout();
+        $admin = $this->loginAdmin();
+        $service = app(YdPayWithdrawalService::class);
+        $overlap = false;
+        Http::fake(function ($http) use ($request, $old, $admin, $service, &$overlap) {
+            if (str_ends_with($http->url(), '/apply')) {
+                return Http::response($this->signed(['retCode' => '0', 'agentpayOrderId' => '123456789012346', 'gatewayId' => '22']));
+            }
+            if ($http['mchOrderNo'] !== $old->merchant_order_id) {
+                return Http::response($this->signed([...$this->payoutPayload($http['mchOrderNo'], '1'), 'retCode' => '0', 'amount' => '27900100']));
+            }
+            if (! $overlap) {
+                $overlap = true;
+                $service->retryNotAccepted($request, $admin, $old->merchant_order_id, 'Ticket 123', 'Overlapping operator', true);
+            }
+
+            return Http::response(['retCode' => '9999', 'retMsg' => '代付订单不存在']);
+        });
+        try {
+            $service->retryNotAccepted($request, $admin, $old->merchant_order_id, 'Ticket 123', 'First operator', true);
+            $this->fail('Stale eligibility must be rejected under the lock.');
+        } catch (\RuntimeException) {
+            $this->assertSame(2, $request->payoutAttempts()->count());
+            $this->assertSame(1, PaymentGatewayEvent::where('event_type', 'ydpay.payout.not_accepted_confirmed')->count());
+            $this->assertSame('420000.00', Wallet::query()->sole()->locked_balance);
+            $this->assertSame(0, WalletTransaction::query()->count());
+        }
+        $this->assertCount(1, Http::recorded(fn ($http) => str_ends_with($http->url(), '/apply')));
+    }
+
+    #[DataProvider('lateOldPayoutStates')]
+    public function test_old_attempt_activity_after_retry_cannot_double_finalize(string $oldStatus, bool $newAlreadyPaid): void
+    {
+        [$request, $old] = $this->uncertainFractionalPayout();
+        $admin = $this->loginAdmin();
+        $service = app(YdPayWithdrawalService::class);
+        $this->fakeNotAcceptedRetry($old->merchant_order_id);
+        $new = $service->retryNotAccepted($request, $admin, $old->merchant_order_id, 'Ticket 123', 'Retry', true);
+        $paid = $this->signed([...$this->payoutPayload($new->merchant_order_id, '2'), 'amount' => '27900100']);
+        if ($newAlreadyPaid) {
+            $service->process($paid, 'callback');
+        }
+        $service->process($this->signed([...$this->payoutPayload($old->merchant_order_id, $oldStatus), 'retCode' => '0', 'amount' => '27900051']), 'sync');
+        $service->process($paid, 'callback');
+        $service->process($paid, 'callback');
+        $this->assertSame('refund_review', $request->fresh()->payout_status);
+        $this->assertSame($newAlreadyPaid ? '120000.00' : '420000.00', Wallet::query()->sole()->locked_balance);
+        $this->assertSame($newAlreadyPaid ? 1 : 0, PaymentGatewayEvent::where('event_type', 'withdrawal.gateway_completed')->count());
+        $this->assertSame('18455.00', Wallet::query()->sole()->balance);
+        $this->assertSame(0, WalletTransaction::query()->count());
+        Http::assertSentCount(3);
+    }
+
+    public static function lateOldPayoutStates(): array
+    {
+        return [['2', false], ['2', true], ['1', false]];
+    }
+
+    public function test_not_accepted_retry_requires_confirmation_and_both_permissions(): void
+    {
+        [$request, $old] = $this->uncertainFractionalPayout();
+        $admin = AdminUser::query()->create(['username' => 'recovery-admin', 'password' => bcrypt('password'), 'status' => 'active']);
+        $denied = 'retryGateway';
+        Gate::before(function ($user, $ability) use (&$denied) {
+            return $ability !== $denied;
+        });
+        $service = app(YdPayWithdrawalService::class);
+        foreach (['retryGateway', 'confirmGatewayUnpaid'] as $denied) {
+            try {
+                $service->retryNotAccepted($request, $admin, $old->merchant_order_id, 'Ticket 123', 'Retry', true);
+                $this->fail('Both permissions are mandatory.');
+            } catch (AuthorizationException) {
+                $this->assertSame(1, $request->payoutAttempts()->count());
+            }
+        }
+        $denied = '';
+        foreach ([['', 'Retry', true], ['Ticket 123', '', true], ['Ticket 123', 'Retry', false]] as [$evidence, $reason, $confirmed]) {
+            try {
+                $service->retryNotAccepted($request, $admin, $old->merchant_order_id, $evidence, $reason, $confirmed);
+                $this->fail('Explicit evidence and acknowledgement are mandatory.');
+            } catch (ValidationException) {
+                $this->assertSame(1, $request->payoutAttempts()->count());
+            }
+        }
+        Http::assertNothingSent();
+    }
+
+    public function test_not_accepted_action_is_available_on_list_and_detail_but_hidden_after_acceptance(): void
+    {
+        [$request, $old] = $this->uncertainFractionalPayout();
+        $this->loginAdmin();
+        Livewire::test(ListWithdrawRequests::class)->assertActionVisible(TestAction::make('retry_ydpay_not_accepted')->table($request));
+        Livewire::test(ViewWithdrawRequest::class, ['record' => $request->getRouteKey()])->assertActionVisible('retry_ydpay_not_accepted');
+        $old->update(['gateway_order_uid' => 'accepted-order']);
+        Livewire::test(ListWithdrawRequests::class)->assertActionHidden(TestAction::make('retry_ydpay_not_accepted')->table($request));
+        Livewire::test(ViewWithdrawRequest::class, ['record' => $request->getRouteKey()])->assertActionHidden('retry_ydpay_not_accepted');
+        Http::assertNothingSent();
+    }
+
+    public function test_uncertain_recovery_submission_is_sent_once_and_never_automatically_retried(): void
+    {
+        [$request, $old] = $this->uncertainFractionalPayout();
+        $admin = $this->loginAdmin();
+        $creates = 0;
+        Http::fake(function ($http) use (&$creates) {
+            if (str_ends_with($http->url(), '/apply')) {
+                $creates++;
+                throw new ConnectionException('Lost create response');
+            }
+
+            return Http::response(['retCode' => '9999', 'retMsg' => '代付订单不存在']);
+        });
+        $service = app(YdPayWithdrawalService::class);
+        for ($click = 0; $click < 2; $click++) {
+            try {
+                $service->retryNotAccepted($request, $admin, $old->merchant_order_id, 'Ticket 123', 'Retry', true);
+                $this->fail('Submission uncertainty or stale form must be reported.');
+            } catch (\RuntimeException) {
+                $this->assertSame(2, $request->payoutAttempts()->count());
+            }
+        }
+        $this->assertNull($service->dispatch($request->fresh()));
+        $this->assertSame('create_pending', $request->payoutAttempts()->latest('attempt_no')->firstOrFail()->gateway_status);
+        $this->assertSame('420000.00', Wallet::query()->sole()->locked_balance);
+        $this->assertSame('18455.00', Wallet::query()->sole()->balance);
+        $this->assertSame(0, WalletTransaction::query()->count());
+        $this->assertSame(1, $creates);
+    }
+
+    public function test_late_old_completion_during_recovery_query_blocks_new_attempt(): void
+    {
+        [$request, $old] = $this->uncertainFractionalPayout();
+        $admin = $this->loginAdmin();
+        $service = app(YdPayWithdrawalService::class);
+        Http::fake(function () use ($service, $old) {
+            $service->process($this->signed([...$this->payoutPayload($old->merchant_order_id, '2'), 'amount' => '27900051']), 'callback');
+
+            return Http::response(['retCode' => '9999', 'retMsg' => '代付订单不存在']);
+        });
+        try {
+            $service->retryNotAccepted($request, $admin, $old->merchant_order_id, 'Ticket 123', 'Retry', true);
+            $this->fail('Concurrent completion must block recovery.');
+        } catch (\RuntimeException) {
+            $this->assertSame(1, $request->payoutAttempts()->count());
+            $this->assertSame('completed', $request->fresh()->payout_status);
+            $this->assertSame('120000.00', Wallet::query()->sole()->locked_balance);
+            $this->assertSame(0, PaymentGatewayEvent::where('event_type', 'ydpay.payout.not_accepted_confirmed')->count());
+        }
+        Http::assertSentCount(1);
+    }
+
+    public function test_recovery_confirmation_and_new_attempt_are_rolled_back_together_on_invalid_bank(): void
+    {
+        [$request, $old] = $this->uncertainFractionalPayout();
+        $request->update(['bank_code' => null]);
+        $admin = $this->loginAdmin();
+        $this->fakeNotAcceptedRetry($old->merchant_order_id);
+        try {
+            app(YdPayWithdrawalService::class)->retryNotAccepted($request, $admin, $old->merchant_order_id, 'Ticket 123', 'Retry', true);
+            $this->fail('Invalid bank must block and roll back recovery.');
+        } catch (\RuntimeException) {
+            $this->assertSame(1, $request->payoutAttempts()->count());
+            $this->assertSame($old->merchant_order_id, $request->fresh()->gateway_current_merchant_order_id);
+            $this->assertNull(data_get($old->fresh()->provider_meta, 'not_accepted_confirmation'));
+            $this->assertSame(0, PaymentGatewayEvent::where('event_type', 'ydpay.payout.not_accepted_confirmed')->count());
+            $this->assertSame('420000.00', Wallet::query()->sole()->locked_balance);
+        }
+        Http::assertSentCount(1);
+    }
+
+    private function uncertainFractionalPayout(): array
+    {
+        [$request, $attempt] = $this->payout();
+        $request->update(['net_amount' => '279000.51', 'gateway_meta' => [
+            'ydpay_submission_error' => ['message' => 'Original create error', 'retCode' => '9999'],
+        ]]);
+        $attempt->update(['amount' => '279000.51', 'failure_reason' => 'Original create error', 'provider_response' => ['retCode' => '9999']]);
+
+        return [$request, $attempt];
+    }
+
+    private function fakeNotAcceptedRetry(string $oldMerchantOrder): void
+    {
+        Http::fake(function ($http) use ($oldMerchantOrder) {
+            if (str_ends_with($http->url(), '/apply')) {
+                return Http::response($this->signed(['retCode' => '0', 'agentpayOrderId' => '123456789012346', 'gatewayId' => '22']));
+            }
+            if ($http['mchOrderNo'] === $oldMerchantOrder) {
+                return Http::response(['retCode' => '9999', 'retMsg' => '代付订单不存在']);
+            }
+
+            return Http::response($this->signed([...$this->payoutPayload($http['mchOrderNo'], '1'), 'retCode' => '0', 'amount' => '27900100']));
+        });
+    }
+
     private function signed(array $payload): array
     {
         return [...$payload, 'sign' => app(YdPayGateway::class)->sign($payload)];

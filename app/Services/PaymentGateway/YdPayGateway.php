@@ -198,12 +198,13 @@ class YdPayGateway
                 : ($code !== '0' ? 'provider_error' : 'invalid_signature'));
             $message = 'YDPAY ['.$kind.'; HTTP '.$response->status().'; retCode='.($code ?? 'missing')
                 .'; signature='.($signatureValid ? 'verified' : 'unverified').'] '.($reason ?: 'No provider error message.');
-            app(YdPayDiagnostics::class)->record($payload['mchOrderNo'] ?? null, [
+            $diagnostic = [
                 'endpoint' => $endpoint, 'kind' => $kind, 'http_status' => $response->status(),
                 'retCode' => $code, 'retMsg' => $reason, 'signature_valid' => $signatureValid,
                 'message' => $message, 'occurred_at' => now()->toAtomString(),
-            ]);
-            throw new RuntimeException($message);
+            ];
+            app(YdPayDiagnostics::class)->record($payload['mchOrderNo'] ?? null, $diagnostic);
+            throw new YdPayGatewayException($diagnostic);
         }
 
         return $data;

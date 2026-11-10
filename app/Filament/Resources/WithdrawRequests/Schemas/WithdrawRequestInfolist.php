@@ -215,6 +215,18 @@ class WithdrawRequestInfolist
                                     ->prefix(config('app.currency') . ' '),
                                 TextEntry::make('bank_code_snapshot')
                                     ->label(__('withdraw.bank_code')),
+                                TextEntry::make('provider_meta.original_net_amount')
+                                    ->label(__('ydpay.original_net_amount'))->placeholder('-'),
+                                TextEntry::make('provider_meta.rounding_subsidy')
+                                    ->label(__('ydpay.rounding_subsidy'))->placeholder('-'),
+                                TextEntry::make('provider_meta.not_accepted_confirmation.provider_confirmation')
+                                    ->label(__('ydpay.not_accepted_evidence'))->placeholder('-'),
+                                TextEntry::make('provider_meta.not_accepted_confirmation.reason')
+                                    ->label(__('withdraw.manual_resolution_reason'))->placeholder('-'),
+                                TextEntry::make('provider_meta.not_accepted_confirmation.admin_user_id')
+                                    ->label(__('filament.reviewed_by'))->placeholder('-'),
+                                TextEntry::make('provider_meta.not_accepted_confirmation.confirmed_at')
+                                    ->label(__('withdraw.manually_confirmed_at'))->dateTime()->placeholder('-'),
                                 TextEntry::make('gateway_status')
                                     ->label(__('withdraw.gateway_status'))
                                     ->formatStateUsing(fn ($record, ?string $state): string => $record->provider === 'ydpay' && data_get($record->provider_response, 'status') !== null

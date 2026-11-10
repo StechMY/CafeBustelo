@@ -1,6 +1,15 @@
 <?php
 
 return [
+    'retry_not_accepted' => 'YDPAY · Xác nhận chưa tiếp nhận và thử lại',
+    'not_accepted_description' => 'Chỉ tiếp tục khi YDPay xác nhận đơn cũ chưa được tiếp nhận, chưa trừ tiền, chưa chi trả và sẽ không thực hiện sau này. Tra cứu mới cũng phải báo không tìm thấy đơn. Tạo đơn mới một lần và giữ lịch sử cũ. Làm tròn lên VND nguyên, nền tảng chịu chênh lệch; tiền giữ của người dùng không đổi.',
+    'not_accepted_evidence' => 'Nhập mã yêu cầu hỗ trợ YDPay, thời gian và nội dung xác nhận rõ ràng cho mã đơn này.',
+    'not_accepted_acknowledgement' => 'YDPay xác nhận đơn chưa được tiếp nhận, chưa trừ tiền, chưa chi trả và không thể thực hiện sau này. Tôi xác nhận tạo đơn chi trả mới.',
+    'not_accepted_changed' => 'Đơn không còn đủ điều kiện hoặc mã đơn đã thay đổi. Làm mới và đồng bộ đơn hiện tại; không gửi lại.',
+    'not_accepted_found' => 'Đơn cũ tồn tại. Sử dụng trạng thái đã đồng bộ và quy trình thông thường; chưa tạo đơn mới.',
+    'not_accepted_retry_attention' => 'Cần kiểm tra đơn hiện tại trước khi thao tác tiếp',
+    'original_net_amount' => 'Số tiền ròng ban đầu (VND)',
+    'rounding_subsidy' => 'Chênh lệch làm tròn do nền tảng chịu (VND)',
     'submission_error' => 'Lỗi gửi ban đầu YDPay (chẩn đoán, không phải trạng thái thanh toán)',
     'latest_request_error' => 'Lỗi yêu cầu YDPay gần nhất (HTTP, mã lỗi và xác minh chữ ký)',
     'deposit_expiry_minutes' => 'Thời hạn nạp tiền chưa thanh toán',
