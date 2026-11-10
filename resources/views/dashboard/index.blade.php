@@ -6,6 +6,8 @@
     @php
         $now = now();
         $inviteUrl = url('/register?ref=' . $user->referral_code);
+        $showTreasureChest = app(\App\Services\TreasureChestService::class)->isActiveAt($now);
+        $showGoldenEgg = \App\Models\Setting::bool(\App\Services\GoldenEggService::SETTING_ENABLED);
     @endphp
 
     <section class="dashboard-welcome overflow-hidden bg-[#ffd900]">
@@ -99,16 +101,22 @@
                     </div>
                 </div>
             </div>
+            @if ($showTreasureChest || $showGoldenEgg)
             <div class="dashboard-activities">
+                @if ($showTreasureChest)
                 <a href="{{ route('treasure-chest.index') }}" class="tc-dashboard-entry">
                     <img src="{{ asset('images/treasure-chest/invitation-banner.png') }}" alt="" width="1536" height="512">
                     <div class="tc-dashboard-copy"><strong>{{ __('treasure_chest.title') }}</strong><small>{{ __('treasure_chest.intro') }}</small><span>{{ __('treasure_chest.open_activity') }} <i class="ph-thin ph-arrow-right" aria-hidden="true"></i></span></div>
                 </a>
+                @endif
+                @if ($showGoldenEgg)
                 <a href="{{ route('golden-egg.index') }}" class="ge-dashboard-entry">
                     <div class="ge-dashboard-entry-copy"><strong>{{ __('golden_egg.title') }}</strong><small>{{ __('golden_egg.dashboard_intro') }}</small><span>{{ __('golden_egg.open_game') }} <i class="ph-thin ph-arrow-right" aria-hidden="true"></i></span></div>
                     <img src="{{ asset('images/golden-egg/vault-egg.webp') }}" alt="" width="1086" height="1448">
                 </a>
+                @endif
             </div>
+            @endif
         </div>
     </section>
     @if ($dashboardMarquees->isNotEmpty())

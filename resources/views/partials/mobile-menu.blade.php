@@ -22,7 +22,9 @@
                 ['label' => __('navigation.team'), 'route' => 'my-team.index', 'icon' => 'team'],
                 ['label' => __('navigation.salary'), 'route' => 'salary.index', 'icon' => 'salary'],
                 ['label' => __('navigation.bonus_code'), 'route' => 'bonus-codes.index', 'icon' => 'bonus'],
-                ['label' => __('golden_egg.title'), 'route' => 'golden-egg.index', 'icon' => 'golden-egg'],
+                ...(\App\Models\Setting::bool(\App\Services\GoldenEggService::SETTING_ENABLED) ? [
+                    ['label' => __('golden_egg.title'), 'route' => 'golden-egg.index', 'icon' => 'golden-egg'],
+                ] : []),
             ],
         ],
         [
