@@ -50,6 +50,7 @@ return [
     'types' => [
         'treasure_chest' => 'Treasure Chest Reward',
         'recharge_reversed' => 'Recharge Approval Reversed',
+        'red_packet' => 'Red packet reward',
         'golden_egg' => 'Golden Egg Reward',
         'recharge_approved' => 'Recharge Approved',
         'product_purchase' => 'Product Purchase',

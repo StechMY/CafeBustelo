@@ -6,6 +6,9 @@
         // ['label' => __('navigation.check_in'), 'route' => 'check-in.index', 'icon' => 'check-in'],
         // ['label' => __('navigation.contact'), 'route' => 'contact.index', 'icon' => 'contact'],
         ['label' => __('navigation.team'), 'route' => 'my-team.index', 'icon' => 'team'],
+        ...(app(\App\Services\RedPacketService::class)->isActiveAt() ? [
+            ['label' => __('red_packet.title'), 'route' => 'red-packet.index', 'icon' => 'email'],
+        ] : []),
         ...(\App\Models\Setting::bool(\App\Services\GoldenEggService::SETTING_ENABLED) ? [
             ['label' => __('golden_egg.title'), 'route' => 'golden-egg.index', 'icon' => 'golden-egg'],
         ] : []),

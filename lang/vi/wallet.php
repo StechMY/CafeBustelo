@@ -50,6 +50,7 @@ return [
     'types' => [
         'treasure_chest' => 'Thưởng rương kho báu',
         'recharge_reversed' => 'Hoàn tác phê duyệt nạp tiền',
+        'red_packet' => 'Thưởng lì xì',
         'golden_egg' => 'Thưởng trứng vàng',
         'recharge_approved' => 'Nạp tiền đã duyệt',
         'product_purchase' => 'Mua sản phẩm',

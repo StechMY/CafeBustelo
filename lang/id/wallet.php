@@ -40,6 +40,7 @@ return [
     'types' => [
         'treasure_chest' => 'Hadiah Peti',
         'recharge_reversed' => 'Pembatalan Persetujuan Deposit',
+        'red_packet' => 'Hadiah angpau',
         'golden_egg' => 'Hadiah Telur Emas',
         'recharge_approved' => 'Isi Saldo Disetujui',
         'product_purchase' => 'Pembelian Produk',

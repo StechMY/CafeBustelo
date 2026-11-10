@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class PurchaseCoupon extends Model
 {
-    protected $fillable = ['user_id', 'golden_egg_draw_id', 'treasure_chest_claim_id', 'discount_percent', 'used_at', 'user_product_id'];
+    protected $fillable = ['user_id', 'golden_egg_draw_id', 'treasure_chest_claim_id', 'red_packet_draw_id', 'discount_percent', 'used_at', 'user_product_id'];
 
     protected function casts(): array
     {

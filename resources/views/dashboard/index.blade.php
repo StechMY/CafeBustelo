@@ -7,6 +7,7 @@
         $now = now();
         $inviteUrl = url('/register?ref=' . $user->referral_code);
         $showTreasureChest = app(\App\Services\TreasureChestService::class)->isActiveAt($now);
+        $showRedPacket = app(\App\Services\RedPacketService::class)->isActiveAt($now);
         $showGoldenEgg = \App\Models\Setting::bool(\App\Services\GoldenEggService::SETTING_ENABLED);
     @endphp
 
@@ -101,8 +102,11 @@
                     </div>
                 </div>
             </div>
-            @if ($showTreasureChest || $showGoldenEgg)
+            @if ($showTreasureChest || $showGoldenEgg || $showRedPacket)
             <div class="dashboard-activities">
+                @if ($showRedPacket)
+                <a href="{{ route('red-packet.index') }}" class="rp-dashboard-entry"><strong>{{ __('red_packet.title') }}</strong><small>{{ __('red_packet.intro') }}</small><span>{{ __('red_packet.open') }}</span></a>
+                @endif
                 @if ($showTreasureChest)
                 <a href="{{ route('treasure-chest.index') }}" class="tc-dashboard-entry">
                     <img src="{{ asset('images/treasure-chest/invitation-banner.png') }}" alt="" width="1536" height="512">

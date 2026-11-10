@@ -17,6 +17,7 @@ use App\Http\Controllers\DownlineProductController;
 use App\Http\Controllers\GatewayRechargeController;
 use App\Http\Controllers\GoldenEggController;
 use App\Http\Controllers\TreasureChestController;
+use App\Http\Controllers\RedPacketController;
 use App\Http\Controllers\HumanGateController;
 use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\MyTeamController;
@@ -128,6 +129,9 @@ Route::middleware(['auth', 'customer.not-suspended'])->group(function (): void {
 
     Route::get('/golden-egg', [GoldenEggController::class, 'index'])->name('golden-egg.index');
     Route::get('/treasure-chest', [TreasureChestController::class, 'index'])->name('treasure-chest.index');
+    Route::get('/red-packet', [RedPacketController::class, 'index'])->name('red-packet.index');
+    Route::get('/red-packet/history', [RedPacketController::class, 'history'])->name('red-packet.history');
+    Route::post('/red-packet/draw', [RedPacketController::class, 'draw'])->middleware('throttle:30,1')->name('red-packet.draw');
     Route::get('/treasure-chest/history', [TreasureChestController::class, 'history'])->name('treasure-chest.history');
     Route::post('/treasure-chest/claim', [TreasureChestController::class, 'claim'])
         ->middleware('throttle:30,1')->name('treasure-chest.claim');

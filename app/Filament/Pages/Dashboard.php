@@ -257,6 +257,7 @@ class Dashboard extends BaseDashboard
         ];
 
         $activityActions = [
+            \App\Filament\Actions\RedPacketSettingsAction::make('redPacketSettings'),
             TreasureChestSettingsAction::make('treasureChestSettings'),
             Action::make('goldenEggSettings')
                 ->label(__('golden_egg.admin_title'))

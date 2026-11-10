@@ -39,6 +39,7 @@ class AppConfigController extends Controller
                 'dashboard' => true,
                 'golden_egg' => true,
                 'treasure_chest' => true,
+                'red_packet' => true,
                 'products' => true,
                 'wallet' => true,
                 'recharge' => true,

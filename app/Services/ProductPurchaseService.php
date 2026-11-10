@@ -18,6 +18,7 @@ class ProductPurchaseService
         private readonly InviteDayBonusService $inviteDayBonusService,
         private readonly GoldenEggService $goldenEggService,
         private readonly TreasureChestService $treasureChestService,
+        private readonly RedPacketService $redPacketService,
     ) {
     }
 
@@ -172,6 +173,7 @@ class ProductPurchaseService
             $this->goldenEggService->qualifyFirstPurchase($user, $userProduct);
             $this->goldenEggService->givePurchaseChance($user, $userProduct);
             $this->treasureChestService->givePurchaseKeys($user, $userProduct);
+            $this->redPacketService->handlePurchase($user, $userProduct);
 
             return $userProduct;
         }, 3);

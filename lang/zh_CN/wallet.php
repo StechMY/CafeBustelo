@@ -50,6 +50,7 @@ return [
     'types' => [
         'treasure_chest' => '宝箱奖励',
         'recharge_reversed' => '充值误批冲正',
+        'red_packet' => '红包雨奖励',
         'golden_egg' => '敲金蛋奖励',
         'recharge_approved' => '充值通过',
         'product_purchase' => '购买产品',
