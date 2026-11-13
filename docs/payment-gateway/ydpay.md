@@ -73,6 +73,12 @@ For historical `create_pending` attempts with no acceptance evidence, use **YDPA
 
 Old-attempt paid responses, or acceptance activity after a non-acceptance confirmation, enter sticky financial review. They never consume the reserve a second time or silently finalize the replacement. Local row locks and order checks prevent overlapping operator actions from issuing two replacement attempts; they cannot prevent a provider from paying an old order contrary to its explicit confirmation, which must be investigated as a financial incident. No historical production retries run during deployment.
 
+### Bank account boundary whitespace
+
+New YDPay attempts trim leading/trailing whitespace (spaces, tabs, line breaks, Unicode separators such as non-breaking/full-width spaces, and copied BOM characters) from the withdrawal's account-number snapshot. This applies to instant/scheduled submissions, verified-failure retries and confirmed-non-acceptance retries. Leading zeroes and internal characters are preserved. The cleaned value must be nonempty and at most 64 characters, and is saved in the new attempt before signing/submission. The new attempt and its submission/retry audit event record `bank_account_no_trimmed`.
+
+Original withdrawal snapshots, user bank records and previously submitted attempt account numbers are not rewritten. Cleanup does not authorize a retry: existing fresh-query, confirmation, row-lock and finalization guards still apply. Deployment does not resubmit historical orders or alter wallets. A pending attempt with the old whitespace error still requires the existing confirmed-non-acceptance workflow before a new, cleaned attempt can be submitted. No migration or additional configuration is needed.
+
 ## Verification
 
 Failed create/query requests retain sanitized diagnostics in immutable `ydpay.request.error` events, linked to the original recharge or payout attempt: endpoint, HTTP status, `retCode`, `retMsg`, signature verification and timestamp. No raw error body, request signature, API secret or proxy credential is stored. Transport errors use a safe local explanation without logging the underlying exception. Balance lookups retain their existing cache/log behavior.

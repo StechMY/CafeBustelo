@@ -31,10 +31,10 @@ class YdPayWithdrawalService
             }
             $this->bankCode($request->bank_code);
             $this->gateway->publicUrl('payment-gateway.ydpay.withdraw.callback');
-            Validator::make($request->only(['bank_name', 'bank_account_name', 'bank_account_no']), [
+            $this->bankAccountNumber($request->bank_account_no);
+            Validator::make($request->only(['bank_name', 'bank_account_name']), [
                 'bank_name' => ['required', 'string', 'max:128'],
                 'bank_account_name' => ['required', 'string', 'max:128'],
-                'bank_account_no' => ['required', 'string', 'max:64'],
             ])->validate();
             $hours = $instant ? 0 : app(YdPaySettings::class)->releaseHours();
             $approvedAt = now();
@@ -99,6 +99,7 @@ class YdPayWithdrawalService
                 return null;
             }
             $bankCode = $this->bankCode($request->bank_code);
+            $bankAccountNo = $this->bankAccountNumber($request->bank_account_no);
             // Round half up to whole VND without floating-point arithmetic.
             $minor = (int) $this->gateway->minorAmount($request->net_amount);
             $whole = intdiv($minor + 50, 100);
@@ -111,12 +112,13 @@ class YdPayWithdrawalService
                 'merchant_order_id' => now()->format('YmdHis').random_int(100000000000, 999999999999),
                 'amount' => (string) $whole, 'currency' => 'vnd',
                 'provider_meta' => ['original_net_amount' => $request->net_amount,
+                    'bank_account_no_trimmed' => $bankAccountNo !== $request->bank_account_no,
                     'rounding_adjustment' => ($adjustment < 0 ? '-' : '').'0.'.str_pad((string) abs($adjustment), 2, '0', STR_PAD_LEFT),
                     'rounding_policy' => 'half_up_vnd'],
                 'payment_channel' => (string) config('services.ydpay.withdraw_gateway_id'),
                 'bank_name_snapshot' => $request->bank_name, 'bank_code_snapshot' => $bankCode,
                 'bank_account_name_snapshot' => $request->bank_account_name,
-                'bank_account_no_snapshot' => $request->bank_account_no, 'gateway_status' => 'create_pending',
+                'bank_account_no_snapshot' => $bankAccountNo, 'gateway_status' => 'create_pending',
             ]);
             $request->forceFill(['payout_status' => 'submitted', 'gateway_payment_status' => 'create_pending',
                 'gateway_meta' => array_diff_key($request->gateway_meta ?? [], ['ydpay_status' => true,
@@ -351,6 +353,17 @@ class YdPayWithdrawalService
 
             return $conflict ? 'financial_review' : $state;
         });
+    }
+
+    private function bankAccountNumber(?string $number): string
+    {
+        // Clean only new attempt snapshots; retain original request/attempt history and leading zeroes.
+        $number = preg_replace('/\A[\s\p{Z}\x{FEFF}]+|[\s\p{Z}\x{FEFF}]+\z/u', '', (string) $number);
+        Validator::make(['bank_account_no' => $number], [
+            'bank_account_no' => ['required', 'string', 'max:64'],
+        ])->validate();
+
+        return $number;
     }
 
     private function bankCode(?string $bin): string

@@ -975,6 +975,107 @@ class YdPayGatewayTest extends TestCase
         return $admin;
     }
 
+    #[DataProvider('payoutAccountWhitespace')]
+    public function test_new_attempts_trim_account_boundaries_without_rewriting_history_or_double_paying(string $mode, string $raw, string $clean): void
+    {
+        $retry = in_array($mode, ['retry', 'not_accepted'], true);
+        [$request, $old] = $this->payout($retry);
+        $request->update(['bank_account_no' => $raw]);
+        $old?->update(['bank_account_no_snapshot' => $raw]);
+        $oldOrder = $old?->merchant_order_id;
+        $admin = $this->loginAdmin();
+        $service = app(YdPayWithdrawalService::class);
+        Http::fake(function ($http) use ($mode, $oldOrder, $clean) {
+            if (str_ends_with($http->url(), '/apply')) {
+                $this->assertSame($clean, $http['accountNo']);
+                $this->assertTrue(app(YdPayGateway::class)->verify($http->data()));
+
+                return Http::response($this->signed(['retCode' => '0', 'agentpayOrderId' => '123456789012346', 'gatewayId' => '22']));
+            }
+            if ($mode === 'not_accepted' && $http['mchOrderNo'] === $oldOrder) {
+                return Http::response(['retCode' => '9999', 'retMsg' => '代付订单不存在']);
+            }
+
+            return Http::response($this->signed([...$this->payoutPayload($http['mchOrderNo'], $http['mchOrderNo'] === $oldOrder ? '3' : '1'), 'retCode' => '0']));
+        });
+        if ($mode === 'not_accepted') {
+            $service->retryNotAccepted($request, $admin, $oldOrder, 'Support confirmed never accepted or paid; cannot execute later', 'Trim account boundary whitespace', true);
+        } elseif ($mode === 'retry') {
+            $service->retry($request, $admin, 'Trim account boundary whitespace');
+        } else {
+            $service->approve($request, $admin, instant: $mode === 'instant');
+            if ($mode === 'scheduled') {
+                $this->travel(25)->hours();
+                try {
+                    $service->dispatch($request->fresh());
+                } finally {
+                    $this->travelBack();
+                }
+            }
+        }
+        $new = $request->payoutAttempts()->latest('attempt_no')->firstOrFail();
+        $this->assertSame($clean, $new->bank_account_no_snapshot);
+        $this->assertSame($raw !== $clean, $new->provider_meta['bank_account_no_trimmed']);
+        $this->assertSame($raw, $request->fresh()->bank_account_no);
+        if ($old) {
+            $this->assertSame($raw, $old->fresh()->bank_account_no_snapshot);
+            $this->assertSame($oldOrder, $old->fresh()->merchant_order_id);
+            $this->assertNotSame($oldOrder, $new->merchant_order_id);
+        }
+        $event = PaymentGatewayEvent::where('withdrawal_payout_attempt_id', $new->id)
+            ->where('event_type', $retry ? 'withdrawal.gateway_retry' : 'withdrawal.gateway_submitted')->sole();
+        $this->assertSame($raw !== $clean, $event->payload['bank_account_no_trimmed']);
+        $this->assertSame('420000.00', Wallet::query()->sole()->locked_balance);
+        $this->assertSame('18455.00', Wallet::query()->sole()->balance);
+        $this->assertNull($service->dispatch($request->fresh()));
+        $paid = $this->payoutPayload($new->merchant_order_id, '2');
+        $service->process($paid, 'callback');
+        $service->process($paid, 'callback');
+        $this->assertSame('120000.00', Wallet::query()->sole()->locked_balance);
+        $this->assertSame('18455.00', Wallet::query()->sole()->balance);
+        $this->assertSame(0, WalletTransaction::query()->count());
+        $this->assertSame(1, PaymentGatewayEvent::where('event_type', 'withdrawal.gateway_completed')->count());
+        $this->assertSame($retry ? 2 : 1, $request->payoutAttempts()->count());
+        $this->assertCount(1, Http::recorded(fn ($http) => str_ends_with($http->url(), '/apply')));
+    }
+
+    public static function payoutAccountWhitespace(): array
+    {
+        return [
+            'plain' => ['instant', '00012345678', '00012345678'],
+            'ASCII' => ['instant', " \t\r\n00012345678\r\n\t ", '00012345678'],
+            'Unicode separators' => ['instant', "\u{00A0}\u{2009}\u{3000}00012345678\u{3000}\u{00A0}", '00012345678'],
+            'BOM' => ['instant', "\u{FEFF} 00012345678 \u{FEFF}", '00012345678'],
+            'internal characters retained' => ['instant', ' 000 12345678 ', '000 12345678'],
+            'scheduled' => ['scheduled', "\u{00A0}00012345678\r\n", '00012345678'],
+            'verified failure retry' => ['retry', "\u{00A0}00012345678\r\n", '00012345678'],
+            'confirmed non-acceptance retry' => ['not_accepted', "\u{00A0}00012345678\r\n", '00012345678'],
+        ];
+    }
+
+    #[DataProvider('invalidPayoutAccounts')]
+    public function test_invalid_cleaned_account_is_blocked_before_approval_or_submission(string $raw): void
+    {
+        [$request] = $this->payout(false);
+        $request->update(['bank_account_no' => $raw]);
+        try {
+            app(YdPayWithdrawalService::class)->approve($request, $this->loginAdmin(), instant: true);
+            $this->fail('Invalid cleaned accounts must not be approved or submitted.');
+        } catch (ValidationException $exception) {
+            $this->assertArrayHasKey('bank_account_no', $exception->errors());
+            $this->assertSame('pending', $request->fresh()->status);
+            $this->assertSame(0, $request->payoutAttempts()->count());
+            $this->assertSame('420000.00', Wallet::query()->sole()->locked_balance);
+            $this->assertSame(0, WalletTransaction::query()->count());
+        }
+        Http::assertNothingSent();
+    }
+
+    public static function invalidPayoutAccounts(): array
+    {
+        return [[" \t\r\n"], ["\u{00A0}\u{3000}\u{FEFF}"], [' '.str_repeat('1', 65).' ']];
+    }
+
     #[DataProvider('roundedPayouts')]
     public function test_new_payouts_round_half_up_and_finalize_original_reserve(string $net, string $rounded, string $adjustment, string $mode): void
     {
