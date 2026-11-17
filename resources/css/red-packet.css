@@ -7,7 +7,7 @@
 .rp-envelope-closed { background-position:0 0; }
 .rp-envelope-open { background-position:100% 0; }
 .rp-art { display:block; aspect-ratio:1; background-image:url('/images/red-packet/prize-atlas-v2.png'); background-repeat:no-repeat; background-size:300% 200%; }
-.rp-art--phone { background-position:0 0; }.rp-art--washer { background-position:50% 0; }.rp-art--earbuds { background-position:100% 0; }
+.rp-art--phone { background-image:url('/images/red-packet/iphone-18-pro-max-blue.png'); background-size:contain; background-position:center; }.rp-art--washer { background-position:50% 0; }.rp-art--earbuds { background-position:100% 0; }
 .rp-art--cash { background-position:0 100%; }.rp-art--coupon { background-position:50% 100%; }.rp-art--gift { background-position:100% 100%; }
 .rp-hero { position:relative; overflow:hidden; isolation:isolate; color:#fff1d9; background:radial-gradient(ellipse at 50% 36%,#d52c4e88,transparent 60%),linear-gradient(140deg,#68142c,#a61739 55%,#580e28); }
 .rp-hero::before { content:''; position:absolute; inset:0; z-index:-1; background:url('/images/red-packet/atmosphere.png') center/cover; opacity:.16; }
