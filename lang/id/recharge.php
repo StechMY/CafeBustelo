@@ -1,6 +1,14 @@
 <?php
 
 return [
+    'reapprove' => 'Setujui ulang dan kreditkan',
+    'reapproval_description' => 'Setujui ulang setoran manual yang ditolak dan tambahkan ke dompet isi ulang serta total isi ulang.',
+    'reapproval_reason' => 'Alasan persetujuan ulang',
+    'confirm_reapproval' => 'Saya telah memverifikasi pembayaran dan menyetujui pengkreditan setoran ini.',
+    'reapproval_success' => 'Setoran disetujui ulang dan dikreditkan',
+    'reapproval_failed' => 'Tidak dapat menyetujui ulang setoran',
+    'reapproval_not_rejected' => 'Hanya setoran yang ditolak dapat disetujui ulang. Muat ulang dan periksa statusnya.',
+    'reapproval_inconsistent' => 'Ditemukan kredit yang sudah ada atau pembalikan yang tidak sesuai. Rekonsiliasi setoran ini terlebih dahulu.',
     'recharge' => 'Isi Saldo',
     'recharge_center' => 'Pusat Isi Saldo',
     'hero_title' => 'Top Up Dompet Anda',

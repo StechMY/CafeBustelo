@@ -4,6 +4,7 @@ namespace App\Filament\Resources\RechargeRequests\Pages;
 
 use App\Filament\Resources\RechargeRequests\RechargeRequestResource;
 use App\Filament\Resources\RechargeRequests\Actions\ReverseManualRechargeAction;
+use App\Filament\Resources\RechargeRequests\Actions\ReapproveManualRechargeAction;
 use App\Models\RechargeRequest;
 use App\Services\PaymentGateway\Qc168CallbackService;
 use App\Services\RechargeApprovalService;
@@ -117,6 +118,7 @@ class ViewRechargeRequest extends ViewRecord
                     }
                 }),
             ReverseManualRechargeAction::make(),
+            ReapproveManualRechargeAction::make(),
 
             Action::make('reject')
                 ->label(__('filament.reject'))

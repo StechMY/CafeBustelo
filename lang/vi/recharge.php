@@ -1,6 +1,14 @@
 <?php
 
 return [
+    'reapprove' => 'Duyệt lại và cộng tiền',
+    'reapproval_description' => 'Duyệt lại khoản nạp thủ công đã bị từ chối và cộng vào ví nạp cùng tổng nạp tích lũy.',
+    'reapproval_reason' => 'Lý do duyệt lại',
+    'confirm_reapproval' => 'Tôi đã xác minh thanh toán và đồng ý cộng khoản nạp này.',
+    'reapproval_success' => 'Đã duyệt lại và cộng tiền',
+    'reapproval_failed' => 'Không thể duyệt lại khoản nạp',
+    'reapproval_not_rejected' => 'Chỉ có thể duyệt lại khoản nạp đã bị từ chối. Hãy tải lại và kiểm tra trạng thái.',
+    'reapproval_inconsistent' => 'Có khoản tiền đã được cộng hoặc bút toán hoàn không khớp. Vui lòng đối soát trước khi duyệt lại.',
     'recharge' => 'Nạp tiền',
     'recharge_center' => 'Trung tâm nạp tiền',
     'hero_title' => 'Nạp tiền vào ví của bạn',

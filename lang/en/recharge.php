@@ -1,6 +1,14 @@
 <?php
 
 return [
+    'reapprove' => 'Reapprove and credit',
+    'reapproval_description' => 'Approve this rejected manual deposit and credit its amount to the recharge wallet and accumulated recharge.',
+    'reapproval_reason' => 'Reason for reapproval',
+    'confirm_reapproval' => 'I verified the payment and authorize crediting this deposit.',
+    'reapproval_success' => 'Deposit reapproved and credited',
+    'reapproval_failed' => 'Unable to reapprove this deposit',
+    'reapproval_not_rejected' => 'Only rejected deposits can be reapproved. Refresh and check the current status.',
+    'reapproval_inconsistent' => 'An existing credit or inconsistent reversal was found. Reconcile this deposit before reapproval.',
     'recharge' => 'Recharge',
     'recharge_center' => 'Recharge Center',
     'hero_title' => 'Top Up Your Wallet',

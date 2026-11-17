@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\RechargeRequests\Tables;
 
 use App\Filament\Resources\RechargeRequests\Actions\ReverseManualRechargeAction;
+use App\Filament\Resources\RechargeRequests\Actions\ReapproveManualRechargeAction;
 use App\Models\RechargeRequest;
 use App\Services\PaymentGateway\Qc168CallbackService;
 use App\Services\RechargeApprovalService;
@@ -705,6 +706,7 @@ class RechargeRequestsTable
                             }
                         }),
                     ReverseManualRechargeAction::make(),
+                    ReapproveManualRechargeAction::make(),
 
                     /*
                     |--------------------------------------------------------------------------

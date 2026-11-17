@@ -73,6 +73,59 @@ class RechargeApprovalService
         });
     }
 
+    public function reapproveManual(
+        RechargeRequest $request,
+        AdminUser $admin,
+        string $confirmedAmount,
+        bool $confirmed,
+        string $reason,
+        ?string $ip = null,
+    ): RechargeRequest {
+        return DB::transaction(function () use ($request, $admin, $confirmedAmount, $confirmed, $reason, $ip): RechargeRequest {
+            $request = RechargeRequest::query()->whereKey($request->id)->lockForUpdate()->firstOrFail();
+            Gate::forUser($admin)->authorize('audit', $request);
+            abort_unless($admin->canAccessUserRecord($request->user), 403);
+            $this->ensureManual($request);
+            $this->validateConfirmation($request, $confirmedAmount, $confirmed);
+            $reason = trim($reason);
+            Validator::make(['reason' => $reason], ['reason' => ['required', 'string', 'max:1000']])->validate();
+            if (! $request->isRejected()) {
+                throw new RuntimeException(__('recharge.reapproval_not_rejected'));
+            }
+
+            $entries = WalletTransaction::query()->where('reference_type', RechargeRequest::class)
+                ->where('reference_id', $request->id)->orderBy('id')->lockForUpdate()->get();
+            // A rejected request may have a fully reversed original approval.
+            if ($entries->isNotEmpty()) {
+                $credit = $entries->first();
+                $reversal = $entries->last();
+                if ($entries->count() !== 2 || $credit->type !== 'recharge_approved'
+                    || $credit->direction !== WalletTransaction::DIRECTION_CREDIT
+                    || $reversal->type !== 'recharge_reversed' || $reversal->direction !== WalletTransaction::DIRECTION_DEBIT
+                    || (int) ($reversal->meta['original_transaction_id'] ?? 0) !== $credit->id
+                    || $credit->wallet_id !== $reversal->wallet_id
+                    || $entries->contains(fn ($entry) => $entry->user_id !== $request->user_id
+                        || $entry->wallet_type !== Wallet::TYPE_RECHARGE || $entry->amount !== $request->amount)
+                    || round((float) $credit->balance_after - (float) $credit->balance_before, 2) !== (float) $request->amount
+                    || round((float) $reversal->balance_before - (float) $reversal->balance_after, 2) !== (float) $request->amount) {
+                    throw new RuntimeException(__('recharge.reapproval_inconsistent'));
+                }
+            }
+            $meta = [
+                'reapproved' => true,
+                'previous_reviewed_by' => $request->reviewed_by,
+                'previous_reviewed_at' => $request->reviewed_at?->toIso8601String(),
+                'previous_admin_remark' => $request->admin_remark,
+                'reason' => $reason,
+                'ip' => $ip,
+            ];
+            // Reuse the normal credit and accumulated-recharge update atomically.
+            $request->forceFill(['status' => 'pending'])->save();
+
+            return $this->approve($request, $admin, $reason, $meta);
+        });
+    }
+
     public function reverseManualApproval(
         RechargeRequest $request,
         AdminUser $admin,

@@ -1,6 +1,14 @@
 <?php
 
 return [
+    'reapprove' => '重新批准并入款',
+    'reapproval_description' => '将这笔已拒绝的手动充值重新批准，金额计入充值钱包及累计充值。',
+    'reapproval_reason' => '重新批准原因',
+    'confirm_reapproval' => '我已核实到账，并确认批准这笔充值入款。',
+    'reapproval_success' => '已重新批准并入款',
+    'reapproval_failed' => '重新批准失败',
+    'reapproval_not_rejected' => '仅可重新批准已拒绝的充值申请，请刷新并检查状态。',
+    'reapproval_inconsistent' => '发现已有入账或不一致的冲销流水，请先核对该笔充值。',
     'recharge' => '充值',
     'recharge_center' => '充值中心',
     'hero_title' => '充值你的钱包',
