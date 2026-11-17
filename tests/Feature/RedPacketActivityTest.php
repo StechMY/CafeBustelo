@@ -4,18 +4,21 @@ namespace Tests\Feature;
 
 use App\Filament\Pages\Dashboard;
 use App\Filament\Resources\RedPacketPrizes\Pages\ManageRedPacketPrizes;
+use App\Filament\Resources\Users\Pages\ListUsers;
 use App\Models\AdminUser;
 use App\Models\Product;
 use App\Models\PurchaseCoupon;
 use App\Models\RedPacketDraw;
 use App\Models\RedPacketEntry;
 use App\Models\RedPacketPrize;
+use App\Models\RedPacketPrizeOverride;
 use App\Models\Setting;
 use App\Models\User;
 use App\Models\UserProduct;
 use App\Models\Wallet;
 use App\Services\ProductPurchaseService;
 use App\Services\RedPacketService;
+use App\Services\TreasureChestService;
 use Filament\Actions\Testing\TestAction;
 use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -318,6 +321,196 @@ class RedPacketActivityTest extends TestCase
         Livewire::test(Dashboard::class)->assertActionVisible('redPacketSettings');
         Livewire::test(ManageRedPacketPrizes::class)->assertActionVisible('activity_settings');
         $this->get('/admin/red-packet-draws')->assertOk();
+    }
+
+    public function test_virtual_next_prize_bypasses_zero_limits_once_and_keeps_assignment_audit(): void
+    {
+        $this->open();
+        $admin = $this->assignmentAdmin();
+        $virtual = $this->user(['is_virtual' => true]);
+        $cash = $this->onlyPrize('cash', 20);
+        $iphone = RedPacketPrize::where('slot', 1)->sole();
+        Livewire::test(ListUsers::class)
+            ->callAction(TestAction::make('setNextRedPacketPrize')->table($virtual), ['prize_id' => $iphone->id])
+            ->assertHasNoActionErrors();
+        $assignment = RedPacketPrizeOverride::sole();
+        $request = (string) Str::uuid();
+        $service = app(RedPacketService::class);
+        $draw = $service->draw($virtual, $request);
+        $this->assertSame($iphone->id, $draw->prize_id);
+        $this->assertSame(0, $iphone->fresh()->stock);
+        $this->assertSame($draw->id, $assignment->fresh()->draw_id);
+        $this->assertNotNull($assignment->fresh()->used_at);
+        $this->assertSame($admin->id, $draw->prizeOverride->admin->id);
+        $this->assertSame($cash->id, $service->draw($virtual, (string) Str::uuid())->prize_id);
+        $this->assertSame(20, $cash->fresh()->stock);
+
+        $service->setNextPrize($admin, $virtual, $iphone->id);
+        $this->assertSame($draw->id, $service->draw($virtual, $request)->id);
+        $this->assertSame(1, RedPacketPrizeOverride::pending()->count());
+        $this->assertSame($iphone->id, $service->draw($virtual, (string) Str::uuid())->prize_id);
+        $this->assertSame(0, RedPacketPrizeOverride::pending()->count());
+    }
+
+    public function test_virtual_assignment_can_be_replaced_cancelled_and_validated(): void
+    {
+        $this->open();
+        $admin = $this->assignmentAdmin();
+        $virtual = $this->user(['is_virtual' => true]);
+        $prizes = RedPacketPrize::orderBy('slot')->get();
+        $service = app(RedPacketService::class);
+        $service->setNextPrize($admin, $virtual, $prizes[0]->id);
+        $service->setNextPrize($admin, $virtual, $prizes[1]->id);
+        $this->assertSame($prizes[1]->id, RedPacketPrizeOverride::pending()->sole()->prize_id);
+        $this->assertNotNull(RedPacketPrizeOverride::first()->cancelled_at);
+        try {
+            $service->setNextPrize($admin, $virtual, 999999);
+            $this->fail('An unknown prize must be rejected.');
+        } catch (\Illuminate\Validation\ValidationException $exception) {
+            $this->assertArrayHasKey('prize_id', $exception->errors());
+        }
+        Livewire::test(ListUsers::class)
+            ->mountAction(TestAction::make('setNextRedPacketPrize')->table($virtual))
+            ->assertActionDataSet(['prize_id' => $prizes[1]->id])
+            ->setActionData(['prize_id' => null])->callMountedAction()->assertHasNoActionErrors();
+        $this->assertSame(0, RedPacketPrizeOverride::pending()->count());
+        $this->assertSame(2, RedPacketPrizeOverride::whereNotNull('cancelled_at')->count());
+    }
+
+    public function test_assignments_use_normal_cash_and_coupon_fulfilment_and_rollback_on_failure(): void
+    {
+        $this->open();
+        $admin = $this->assignmentAdmin();
+        $virtual = $this->user(['is_virtual' => true]);
+        RedPacketPrize::query()->update(['weight' => 0, 'stock' => 0]);
+        $cash = RedPacketPrize::where('type', 'cash')->firstOrFail();
+        $coupon = RedPacketPrize::where('type', 'coupon')->sole();
+        $service = app(RedPacketService::class);
+        $service->setNextPrize($admin, $virtual, $cash->id);
+        $walletService = \Mockery::mock(\App\Services\WalletService::class);
+        $walletService->shouldReceive('credit')->once()->andThrow(new \RuntimeException('Simulated wallet failure'));
+        try {
+            (new RedPacketService($walletService))->draw($virtual, (string) Str::uuid());
+            $this->fail('A failed payout must roll back.');
+        } catch (\RuntimeException $exception) {
+            $this->assertSame('Simulated wallet failure', $exception->getMessage());
+        }
+        $this->assertDatabaseCount('red_packet_draws', 0);
+        $this->assertSame(1, RedPacketPrizeOverride::pending()->count());
+        $service->draw($virtual, (string) Str::uuid());
+        $this->assertEquals($cash->amount, $virtual->wallets()->where('type', Wallet::TYPE_WITHDRAWABLE)->value('balance'));
+        $service->setNextPrize($admin, $virtual, $coupon->id);
+        $draw = $service->draw($virtual, (string) Str::uuid());
+        $this->assertDatabaseHas('purchase_coupons', ['user_id' => $virtual->id, 'red_packet_draw_id' => $draw->id, 'discount_percent' => $coupon->discount_percent]);
+        $this->assertSame(0, $cash->fresh()->stock);
+        $this->assertSame(0, $coupon->fresh()->stock);
+    }
+
+    public function test_virtual_user_actions_follow_their_own_dashboard_switches(): void
+    {
+        $admin = $this->assignmentAdmin();
+        $virtual = $this->user(['is_virtual' => true]);
+        $real = $this->user();
+        foreach ([false, true] as $rain) {
+            foreach ([false, true] as $chests) {
+                Setting::setValue(RedPacketService::SETTING_ENABLED, $rain);
+                Setting::setValue(TreasureChestService::SETTING_ENABLED, $chests);
+                $page = Livewire::test(ListUsers::class);
+                foreach (['setNextRedPacketPrize' => $rain, 'addTreasureKeys' => $chests] as $action => $enabled) {
+                    $page->{$enabled ? 'assertActionVisible' : 'assertActionHidden'}(TestAction::make($action)->table($virtual));
+                    $page->assertActionHidden(TestAction::make($action)->table($real));
+                }
+            }
+        }
+        Setting::setValue(RedPacketService::SETTING_START, '2026-11-16 00:00:00');
+        Livewire::test(ListUsers::class)->assertActionVisible(TestAction::make('setNextRedPacketPrize')->table($virtual));
+        $service = app(RedPacketService::class);
+        $service->setNextPrize($admin, $virtual, RedPacketPrize::first()->id);
+        try {
+            $service->draw($virtual, (string) Str::uuid());
+            $this->fail('A pending assignment must not bypass activity dates.');
+        } catch (\DomainException $exception) {
+            $this->assertSame(__('red_packet.closed'), $exception->getMessage());
+        }
+        $this->assertSame(1, RedPacketPrizeOverride::pending()->count());
+    }
+
+    public function test_assignment_rechecks_permissions_scope_switch_and_virtual_status(): void
+    {
+        $this->open();
+        $admin = $this->assignmentAdmin();
+        $virtual = $this->user(['is_virtual' => true]);
+        $service = app(RedPacketService::class);
+        $prize = RedPacketPrize::first();
+        $reject = function () use ($service, $admin, $virtual, $prize): void {
+            try {
+                $service->setNextPrize($admin, $virtual, $prize->id);
+                $this->fail('Unauthorized prize assignment must be rejected.');
+            } catch (\Symfony\Component\HttpKernel\Exception\HttpException $exception) {
+                $this->assertSame(403, $exception->getStatusCode());
+            }
+        };
+        foreach (['Manage:RedPacket', 'Update:User'] as $permission) {
+            $admin->revokePermissionTo($permission);
+            Livewire::test(ListUsers::class)->assertActionHidden(TestAction::make('setNextRedPacketPrize')->table($virtual));
+            $reject();
+            $admin->givePermissionTo($permission);
+        }
+        Setting::setValue(RedPacketService::SETTING_ENABLED, false);
+        $reject();
+        $this->open();
+        User::whereKey($virtual->id)->update(['is_virtual' => false]);
+        $reject();
+        User::whereKey($virtual->id)->update(['is_virtual' => true]);
+        $root = $this->user();
+        $admin->update(['managed_user_id' => $root->id]);
+        $admin->assignRole(Role::findOrCreate('Support', 'admin'));
+        $reject();
+        $this->assertDatabaseCount('red_packet_prize_overrides', 0);
+    }
+
+    public function test_pending_assignment_is_not_used_for_a_real_user_or_changed_by_customer_input(): void
+    {
+        $this->open();
+        $admin = $this->assignmentAdmin();
+        $user = $this->user(['is_virtual' => true]);
+        $cash = $this->onlyPrize('cash', 20);
+        $iphone = RedPacketPrize::where('slot', 1)->sole();
+        app(RedPacketService::class)->setNextPrize($admin, $user, $iphone->id);
+        $user->update(['is_virtual' => false]);
+        $this->entry($user);
+        Sanctum::actingAs($user);
+        $this->postJson('/api/v1/red-packet/draw', ['request_id' => (string) Str::uuid(), 'prize_id' => $iphone->id])
+            ->assertOk()->assertJsonPath('data.prize.prize_name', $cash->name)
+            ->assertJsonMissingPath('data.prize.prize_override')->assertJsonMissingPath('data.prize.admin_user_id');
+        $this->assertSame(19, $cash->fresh()->stock);
+        $this->assertSame(1, RedPacketPrizeOverride::pending()->count());
+        $this->assertNull(RedPacketDraw::sole()->prizeOverride);
+    }
+
+    public function test_assignment_form_cannot_submit_after_dashboard_switch_is_turned_off(): void
+    {
+        $this->open();
+        $this->assignmentAdmin();
+        $virtual = $this->user(['is_virtual' => true]);
+        $page = Livewire::test(ListUsers::class)
+            ->mountAction(TestAction::make('setNextRedPacketPrize')->table($virtual))
+            ->setActionData(['prize_id' => RedPacketPrize::first()->id]);
+        Setting::setValue(RedPacketService::SETTING_ENABLED, false);
+        $page->callMountedAction();
+        $this->assertDatabaseCount('red_packet_prize_overrides', 0);
+    }
+
+    private function assignmentAdmin(): AdminUser
+    {
+        $admin = AdminUser::create(['username' => 'prize-operator', 'password' => 'password', 'status' => 'active']);
+        foreach (['ViewAny:User', 'Update:User', 'Manage:RedPacket', 'Manage:TreasureChest'] as $permission) {
+            $admin->givePermissionTo(Permission::findOrCreate($permission, 'admin'));
+        }
+        $this->actingAs($admin, 'admin');
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+
+        return $admin;
     }
 
     private function open(): void { Setting::setValue(RedPacketService::SETTING_ENABLED, true); }

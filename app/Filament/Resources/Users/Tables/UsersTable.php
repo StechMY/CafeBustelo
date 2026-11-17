@@ -2,9 +2,11 @@
 
 namespace App\Filament\Resources\Users\Tables;
 
+use App\Filament\Actions\SetVirtualRedPacketPrizeAction;
 use App\Filament\Resources\TreasureChestClaims\TreasureChestClaimResource;
 use App\Filament\Resources\Users\UserResource;
 use App\Models\TreasureKeyEntry;
+use App\Models\Setting;
 use App\Models\User;
 use App\Models\Wallet;
 use App\Services\AdminTopUpService;
@@ -446,8 +448,10 @@ class UsersTable
                     ->label(__('treasure_chest.add_keys'))
                     ->icon('heroicon-o-key')
                     ->color('warning')
-                    ->visible(fn(?User $record): bool => $record?->is_virtual === true)
+                    ->visible(fn(?User $record): bool => $record?->is_virtual === true
+                        && Setting::bool(TreasureChestService::SETTING_ENABLED))
                     ->authorize(fn(?User $record): bool => $record?->is_virtual === true
+                        && Setting::bool(TreasureChestService::SETTING_ENABLED)
                         && TreasureChestClaimResource::canViewAny()
                         && UserResource::canEdit($record)
                         && FilamentSupportScope::canAccessUser($record))
@@ -465,6 +469,7 @@ class UsersTable
                         DB::transaction(function () use ($record, $data): void {
                             $user = User::query()->whereKey($record->id)->lockForUpdate()->firstOrFail();
                             abort_unless($user->is_virtual && TreasureChestClaimResource::canViewAny()
+                                && Setting::bool(TreasureChestService::SETTING_ENABLED)
                                 && UserResource::canEdit($user) && FilamentSupportScope::canAccessUser($user), 403);
                             TreasureKeyEntry::query()->create([
                                 'user_id' => $user->id, 'keys' => $data['keys'],
@@ -475,6 +480,8 @@ class UsersTable
                             ->body(__('treasure_chest.key_count', ['count' => app(TreasureChestService::class)->totalKeys($record)]))
                             ->success()->send();
                     }),
+
+                SetVirtualRedPacketPrizeAction::make('setNextRedPacketPrize'),
 
                 Action::make('viewTeam')
                     ->label(__('filament.team'))

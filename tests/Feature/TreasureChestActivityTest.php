@@ -347,7 +347,6 @@ class TreasureChestActivityTest extends TestCase
         $this->keys($virtual, 1);
         $this->open();
         app(TreasureChestService::class)->claim($virtual, 1);
-        Setting::setValue(TreasureChestService::SETTING_ENABLED, false);
         Livewire::test(ListUsers::class)
             ->assertActionVisible(TestAction::make('addTreasureKeys')->table($virtual))
             ->mountAction(TestAction::make('addTreasureKeys')->table($virtual))
@@ -359,8 +358,7 @@ class TreasureChestActivityTest extends TestCase
             'remarks' => 'Demo account setup', 'user_product_id' => null,
         ]);
         $this->assertSame(40, app(TreasureChestService::class)->totalKeys($virtual));
-        $this->assertFalse(app(TreasureChestService::class)->activity($virtual)['enabled']);
-        $this->open();
+        $this->assertTrue(app(TreasureChestService::class)->activity($virtual)['enabled']);
         $activity = app(TreasureChestService::class)->activity($virtual);
         $this->assertTrue($activity['chests'][0]['claimed']);
         $this->assertTrue($activity['chests'][8]['claimable']);
@@ -373,6 +371,7 @@ class TreasureChestActivityTest extends TestCase
 
     public function test_manual_keys_reject_invalid_quantities_and_require_remarks(): void
     {
+        $this->open();
         $this->keyAdmin();
         $virtual = $this->user(['is_virtual' => true]);
         foreach ([0, -1, 1.5, 'abc', 4294967296] as $keys) {
@@ -388,6 +387,7 @@ class TreasureChestActivityTest extends TestCase
 
     public function test_manual_keys_reject_regular_users_and_missing_permissions(): void
     {
+        $this->open();
         $admin = $this->keyAdmin();
         $real = $this->user();
         $virtual = $this->user(['is_virtual' => true]);
@@ -408,6 +408,7 @@ class TreasureChestActivityTest extends TestCase
 
     public function test_manual_keys_respect_support_user_scope(): void
     {
+        $this->open();
         $admin = $this->keyAdmin();
         $root = $this->user();
         $own = $this->user(['is_virtual' => true, 'referrer_id' => $root->id]);
@@ -417,6 +418,23 @@ class TreasureChestActivityTest extends TestCase
         Livewire::test(ListUsers::class)->assertCanSeeTableRecords([$own])->assertCanNotSeeTableRecords([$other])
             ->mountAction(TestAction::make('addTreasureKeys')->table($other))->assertActionNotMounted('addTreasureKeys');
         $this->assertDatabaseCount('treasure_key_entries', 0);
+    }
+
+    public function test_manual_keys_cannot_be_submitted_after_dashboard_switch_is_turned_off(): void
+    {
+        $this->open();
+        $this->keyAdmin();
+        $virtual = $this->user(['is_virtual' => true]);
+        $page = Livewire::test(ListUsers::class)
+            ->mountAction(TestAction::make('addTreasureKeys')->table($virtual))
+            ->setActionData(['keys' => 40, 'remarks' => 'Demo']);
+        Setting::setValue(TreasureChestService::SETTING_ENABLED, false);
+        $page->callMountedAction();
+        $this->assertDatabaseCount('treasure_key_entries', 0);
+        Livewire::test(ListUsers::class)
+            ->assertActionHidden(TestAction::make('addTreasureKeys')->table($virtual))
+            ->mountAction(TestAction::make('addTreasureKeys')->table($virtual))
+            ->assertActionNotMounted('addTreasureKeys');
     }
 
     public function test_configuration_page_loads_defaults_and_saves_custom_rewards_and_product_rules(): void

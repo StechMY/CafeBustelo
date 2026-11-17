@@ -24,4 +24,9 @@ class RedPacketDraw extends Model
     {
         return $this->hasOne(PurchaseCoupon::class);
     }
+
+    public function prizeOverride(): HasOne
+    {
+        return $this->hasOne(RedPacketPrizeOverride::class, 'draw_id');
+    }
 }

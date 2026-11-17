@@ -1,6 +1,12 @@
 <?php
 
 return [
+    'set_next_prize' => 'Chọn quà lì xì lượt tới',
+    'next_prize_help' => 'Chỉ dành cho tài khoản ảo. Quà đã chọn áp dụng một lần, kể cả trọng số hoặc tồn kho bằng 0, không trừ kho thật. Vẫn áp dụng thời gian sự kiện. Để trống để hủy và quay lại rút ngẫu nhiên.',
+    'random_prize' => 'Ngẫu nhiên (hủy chỉ định)',
+    'next_prize_saved' => 'Đã lưu quà cho lượt tới',
+    'assigned_prize' => 'Quà chỉ định',
+    'assigned_by' => 'Quản trị viên chỉ định',
     'title' => 'Mưa lì xì',
     'admin_title' => 'Quỹ thưởng lì xì',
     'intro' => 'Mời bạn mới. Đón những điều bất ngờ.',
@@ -39,8 +45,8 @@ return [
     'milestone_5_source' => 'Thưởng 5 bạn mỗi ngày',
     'enable_activity' => 'Bật mưa lì xì',
     'manage_prizes' => 'Cấu hình quỹ thưởng',
-    'admin_help' => 'Múi giờ: :timezone. Tiến độ mời đặt lại hàng ngày; giữ lượt chưa dùng. Không cộng đơn cũ. Đổi ngày hoặc mở lại không đặt lại thưởng, lượt hay kho. Tài khoản ảo không giới hạn lượt, theo trọng số và quà khả dụng, không trừ kho.',
-    'weight_help' => 'Xác suất theo trọng số quà còn. Trọng số 0 hoặc kho 0 không trúng, kể cả tài khoản ảo.',
+    'admin_help' => 'Múi giờ: :timezone. Tiến độ mời đặt lại hàng ngày; giữ lượt chưa dùng. Không cộng đơn cũ. Đổi ngày hoặc mở lại không đặt lại thưởng, lượt hay kho. Tài khoản ảo không giới hạn lượt, không trừ kho. Rút ngẫu nhiên theo trọng số và kho; quà chỉ định bỏ qua giới hạn một lần.',
+    'weight_help' => 'Xác suất theo trọng số quà còn. Trọng số hoặc kho bằng 0 không trúng ngẫu nhiên. Quà chỉ định cho tài khoản ảo bỏ qua giới hạn này một lần.',
     'close' => 'Đóng',
     'invite_title' => 'Mời bạn bè. Chia sẻ may mắn.',
     'back' => 'Về trang chủ',

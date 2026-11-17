@@ -15,7 +15,15 @@ Open **Dashboard → Activities and rewards → Red packet rain** for the switch
 | Cash 100,000 VND | 75 | Unlimited |
 | 10% purchase coupon | 8 | 20 |
 
-Weights are relative to available prizes. Either weight 0 or stock 0 excludes a prize, including for virtual users. Unlimited stock is `NULL`, controlled by a separate toggle. Ordinary draws reduce finite stock in the same transaction as the reward and chance consumption.
+Weights are relative to available prizes. Either weight 0 or stock 0 excludes a prize from random draws, including for virtual users. Unlimited stock is `NULL`, controlled by a separate toggle. Ordinary draws reduce finite stock in the same transaction as the reward and chance consumption.
+
+### Virtual-account demonstrations
+
+In **Users → Set next red packet prize**, choose a prize for a virtual account. The next successful opening receives it once, even if its weight or stock is zero, without reducing real stock. Subsequent openings use the normal random pool. Reopening the action shows the pending choice; saving another prize replaces it, and saving an empty choice cancels it. Cash and coupons use the existing virtual-account reward flow. The assignment and its administrator are retained; the winning-record table shows whether the result was assigned and by whom. Only administrators with `Manage:RedPacket` (or `super_admin`) and `Update:User` can assign prizes, within their permitted user scope.
+
+This action and **Add treasure keys** are visible only for virtual users while their respective Dashboard activity switches are enabled. The switch is checked again on submission. Visibility follows the switch, allowing advance setup; the actual draw still requires the activity to be within its start/end dates. Closing an activity preserves pending assignments for reopening. Run `php artisan migrate --force` when deploying this feature to create `red_packet_prize_overrides`.
+
+Validation for this addition: the full red-packet and treasure-chest suites passed 63 tests / 1,031 assertions. Coverage includes one-use zero-stock assignments, replacement/cancellation, duplicate requests, payout rollback, cash/coupons, real-user exclusion, permissions/support scope, independent switches and forms submitted after closure.
 
 Permissions: `Manage:RedPacket`, `ViewAny:RedPacketPrize`, `View:RedPacketPrize`, `Update:RedPacketPrize`, `ViewAny:RedPacketDraw`, `View:RedPacketDraw`. Winning records honour support staff's existing downline restrictions.
 
@@ -27,7 +35,7 @@ In the role editor, **Custom → Manage Red Packet Activity** grants switch/sche
 - Invitation progress is grouped by the purchase date in the configured timezone. Three qualifying members on the same day earn one extra chance; five earn two further chances. Each milestone is awarded once per day. Five members therefore earn eight chances; a sixth earns only one more.
 - Progress resets at 00:00 by querying the new local date. No cron task or deletion is required. Unused chances remain available until the event closes. A member registering yesterday and first purchasing today counts today.
 - A personal purchase earns one separate upgrade chance when its original price exceeds the immediately previous non-weekend purchase's original price. T1 and weekend purchases earn no upgrade chance. T1 can serve as the previous purchase. A first purchase above T1 qualifies. Discounts do not change the comparison. Upgrading is compared with the previous purchase, not the historical maximum.
-- Virtual accounts draw without consuming chances and display a changing random count from 1–10. They respect activity dates, weights and prize availability, do not consume real stock, and retain their own cash/coupon/winning records. Virtual purchases do not earn invitation rewards for real users.
+- Virtual accounts draw without consuming chances and display a changing random count from 1–10. They respect activity dates, do not consume real stock, and retain their own cash/coupon/winning records. Their random draws respect weights and prize availability; an administrator-assigned next prize bypasses those two limits once. Virtual purchases do not earn invitation rewards for real users.
 - Changing dates, toggling or reopening does not reset existing awards, chances, wins or stock. Past purchases are not backfilled.
 
 Every award has a unique source key. Draw requests use UUIDs and are idempotent per user. Lost responses can be retried with the same UUID, including after closure. A failed or empty-pool draw consumes neither a chance nor stock. Cash credits the withdrawable wallet; coupons use existing eligibility and checkout rules. Customers can inspect both chance and winning histories at `/red-packet/history`.

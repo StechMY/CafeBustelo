@@ -1,6 +1,12 @@
 <?php
 
 return [
+    'set_next_prize' => 'Set next red packet prize',
+    'next_prize_help' => 'Virtual accounts only. The selected prize applies once, even with weight 0 or stock 0, without consuming real stock. Activity dates still apply. Leave empty to cancel and resume random draws.',
+    'random_prize' => 'Random draw (clear assignment)',
+    'next_prize_saved' => 'Next prize setting saved',
+    'assigned_prize' => 'Assigned prize',
+    'assigned_by' => 'Assigned by',
     'title' => 'Red packet rain',
     'admin_title' => 'Red packet prize pool',
     'intro' => 'A little invitation. A shower of surprises.',
@@ -39,8 +45,8 @@ return [
     'milestone_5_source' => 'Daily 5-friend bonus',
     'enable_activity' => 'Enable red packet rain',
     'manage_prizes' => 'Configure prize pool',
-    'admin_help' => 'Timezone: :timezone. Invitation progress resets daily; unused chances carry over. Only future purchases are processed. Changing dates or reopening does not reset awards, chances or stock. Virtual accounts have unlimited attempts but respect prize weights and availability; they do not consume stock.',
-    'weight_help' => 'Relative probability among available prizes. Weight 0 or stock 0 prevents winning, including virtual accounts.',
+    'admin_help' => 'Timezone: :timezone. Invitation progress resets daily; unused chances carry over. Only future purchases are processed. Changing dates or reopening does not reset awards, chances or stock. Virtual accounts have unlimited attempts without consuming stock. Random draws respect weights and availability; an assigned next prize bypasses these limits once.',
+    'weight_help' => 'Relative probability among available prizes. Weight 0 or stock 0 prevents random wins. A prize assigned to a virtual account bypasses these limits once.',
     'close' => 'Close',
     'invite_title' => 'Invite friends. Share the luck.',
     'back' => 'Back to home',

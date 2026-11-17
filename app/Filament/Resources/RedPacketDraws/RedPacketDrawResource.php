@@ -26,7 +26,7 @@ class RedPacketDrawResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return FilamentSupportScope::applyToUserOwnedQuery(parent::getEloquentQuery()->with(['user', 'coupon']), 'user_id');
+        return FilamentSupportScope::applyToUserOwnedQuery(parent::getEloquentQuery()->with(['user', 'coupon', 'prizeOverride.admin']), 'user_id');
     }
 
     public static function table(Table $table): Table
@@ -41,6 +41,9 @@ class RedPacketDrawResource extends Resource
             TextColumn::make('coupon.used_at')->label(__('filament.used_at'))->dateTime()->placeholder('—'),
             TextColumn::make('coupon.user_product_id')->label(__('red_packet.used_order'))->placeholder('—'),
             IconColumn::make('is_virtual')->label(__('filament.virtual'))->boolean(),
+            IconColumn::make('assigned')->label(__('red_packet.assigned_prize'))->boolean()
+                ->state(fn (RedPacketDraw $record): bool => $record->prizeOverride !== null),
+            TextColumn::make('prizeOverride.admin.username')->label(__('red_packet.assigned_by'))->placeholder('—'),
             TextColumn::make('created_at')->label(__('red_packet.drawn_at'))->dateTime()->sortable(),
         ])->defaultSort('id', 'desc')->filters([
             SelectFilter::make('prize_type')->label(__('red_packet.prize_type'))->options([

@@ -1,6 +1,12 @@
 <?php
 
 return [
+    'set_next_prize' => 'Atur hadiah angpau berikutnya',
+    'next_prize_help' => 'Khusus akun virtual. Hadiah berlaku sekali, termasuk bobot 0 atau stok 0, tanpa mengurangi stok nyata. Jadwal acara tetap berlaku. Kosongkan untuk membatalkan dan kembali ke undian acak.',
+    'random_prize' => 'Undian acak (hapus pilihan)',
+    'next_prize_saved' => 'Hadiah berikutnya disimpan',
+    'assigned_prize' => 'Hadiah ditentukan',
+    'assigned_by' => 'Ditentukan oleh',
     'title' => 'Hujan angpau',
     'admin_title' => 'Hadiah angpau',
     'intro' => 'Undang teman. Sambut kejutan istimewa.',
@@ -39,8 +45,8 @@ return [
     'milestone_5_source' => 'Bonus harian 5 teman',
     'enable_activity' => 'Aktifkan hujan angpau',
     'manage_prizes' => 'Atur hadiah',
-    'admin_help' => 'Zona waktu: :timezone. Progres undangan direset harian, kesempatan disimpan. Pesanan lama tidak diproses ulang. Mengubah tanggal atau membuka kembali tidak mereset hadiah, kesempatan, atau stok. Akun virtual tak terbatas, mengikuti bobot dan ketersediaan tanpa mengurangi stok.',
-    'weight_help' => 'Peluang relatif dari hadiah tersedia. Bobot 0 atau stok 0 tidak dapat menang, termasuk akun virtual.',
+    'admin_help' => 'Zona waktu: :timezone. Progres undangan direset harian, kesempatan disimpan. Pesanan lama tidak diproses ulang. Mengubah tanggal atau membuka kembali tidak mereset hadiah, kesempatan, atau stok. Akun virtual tak terbatas tanpa mengurangi stok. Undian acak mengikuti bobot dan stok; hadiah yang ditentukan melewati batas sekali.',
+    'weight_help' => 'Peluang relatif dari hadiah tersedia. Bobot 0 atau stok 0 tidak menang secara acak. Hadiah yang ditentukan untuk akun virtual melewati batas ini sekali.',
     'close' => 'Tutup',
     'invite_title' => 'Undang teman. Bagikan keberuntungan.',
     'back' => 'Kembali ke beranda',

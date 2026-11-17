@@ -2,11 +2,13 @@
 
 namespace App\Services;
 
+use App\Models\AdminUser;
 use App\Models\Product;
 use App\Models\PurchaseCoupon;
 use App\Models\RedPacketDraw;
 use App\Models\RedPacketEntry;
 use App\Models\RedPacketPrize;
+use App\Models\RedPacketPrizeOverride;
 use App\Models\Setting;
 use App\Models\User;
 use App\Models\UserProduct;
@@ -15,6 +17,7 @@ use Carbon\CarbonInterface;
 use DomainException;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class RedPacketService
 {
@@ -88,6 +91,28 @@ class RedPacketService
         return $user->is_virtual ? null : RedPacketEntry::query()->where('user_id', $user->id)->whereNull('used_at')->count();
     }
 
+    public function canSetNextPrize(AdminUser $admin, User $user): bool
+    {
+        return $user->is_virtual && Setting::bool(self::SETTING_ENABLED)
+            && ($admin->isSuperAdmin() || $admin->can('Manage:RedPacket'))
+            && $admin->can('update', $user) && $admin->canAccessUserRecord($user);
+    }
+
+    public function setNextPrize(AdminUser $admin, User $user, ?int $prizeId): void
+    {
+        DB::transaction(function () use ($admin, $user, $prizeId): void {
+            $user = User::query()->whereKey($user->id)->lockForUpdate()->firstOrFail();
+            abort_unless($this->canSetNextPrize($admin, $user), 403);
+            if ($prizeId !== null && ! RedPacketPrize::whereKey($prizeId)->exists()) {
+                throw ValidationException::withMessages(['prize_id' => __('validation.exists', ['attribute' => __('red_packet.prize')])]);
+            }
+            RedPacketPrizeOverride::where('user_id', $user->id)->pending()->update(['cancelled_at' => now()]);
+            if ($prizeId !== null) {
+                RedPacketPrizeOverride::create(['user_id' => $user->id, 'prize_id' => $prizeId, 'admin_user_id' => $admin->id]);
+            }
+        }, 3);
+    }
+
     public function activity(User $user): array
     {
         return [
@@ -117,14 +142,21 @@ class RedPacketService
                 $entry = RedPacketEntry::query()->where('user_id', $user->id)->whereNull('used_at')->orderBy('id')->lockForUpdate()->first();
                 if (! $entry) throw new DomainException(__('red_packet.no_chances'));
             }
-            $prizes = RedPacketPrize::query()->orderBy('id')->lockForUpdate()->get()
-                ->filter(fn (RedPacketPrize $prize): bool => $prize->weight > 0 && ($prize->stock === null || $prize->stock > 0));
-            $total = (int) $prizes->sum('weight');
-            if ($total < 1) throw new DomainException(__('red_packet.sold_out'));
-            $ticket = random_int(1, $total);
-            foreach ($prizes as $prize) {
-                $ticket -= $prize->weight;
-                if ($ticket <= 0) break;
+            $override = $user->is_virtual
+                ? RedPacketPrizeOverride::where('user_id', $user->id)->pending()->lockForUpdate()->first()
+                : null;
+            $prizes = RedPacketPrize::query()->orderBy('id')->lockForUpdate()->get();
+            if ($override) {
+                $prize = $prizes->firstWhere('id', $override->prize_id);
+            } else {
+                $prizes = $prizes->filter(fn (RedPacketPrize $prize): bool => $prize->weight > 0 && ($prize->stock === null || $prize->stock > 0));
+                $total = (int) $prizes->sum('weight');
+                if ($total < 1) throw new DomainException(__('red_packet.sold_out'));
+                $ticket = random_int(1, $total);
+                foreach ($prizes as $prize) {
+                    $ticket -= $prize->weight;
+                    if ($ticket <= 0) break;
+                }
             }
             $draw = RedPacketDraw::query()->create([
                 'user_id' => $user->id, 'prize_id' => $prize->id, 'entry_id' => $entry?->id,
@@ -140,6 +172,7 @@ class RedPacketService
             }
             if (! $user->is_virtual && $prize->stock !== null) $prize->decrement('stock');
             $entry?->update(['used_at' => now()]);
+            $override?->update(['used_at' => now(), 'draw_id' => $draw->id]);
 
             return $draw;
         }, 3);
