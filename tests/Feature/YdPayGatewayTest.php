@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Filament\Pages\Dashboard;
 use App\Filament\Resources\RechargeRequests\Pages\ListRechargeRequests;
 use App\Filament\Resources\RechargeRequests\Pages\ViewRechargeRequest;
+use App\Filament\Resources\RechargeRequests\RechargeRequestResource;
 use App\Filament\Resources\WithdrawRequests\Pages\ListWithdrawRequests;
 use App\Filament\Resources\WithdrawRequests\Pages\ViewWithdrawRequest;
 use App\Http\Controllers\Api\RechargeController;
@@ -465,15 +466,19 @@ class YdPayGatewayTest extends TestCase
         $this->freezeTime();
         $order = $this->deposit();
         $order->update(['gateway_payment_url' => 'https://cashier.example/pay']);
+        RechargeRequest::query()->create(['user_id' => $order->user_id, 'amount' => '50000.00',
+            'deposit_method' => RechargeRequest::METHOD_MANUAL, 'status' => 'pending']);
         Http::fake(['gateway.example/api/pay/query_order' => Http::response($this->depositPayload($order, '1'))]);
         $this->travel(59)->minutes();
         $this->artisan('ydpay:process-orders deposit')->assertSuccessful();
         $this->assertFalse($order->fresh()->isGatewayExpired());
+        $this->assertSame('2', RechargeRequestResource::getNavigationBadge());
         $this->travel(1)->minutes();
         $this->artisan('ydpay:process-orders deposit')->assertSuccessful();
         $this->assertTrue($order->fresh()->isGatewayExpired());
         $this->assertSame('1', $order->fresh()->gateway_meta['ydpay_status']);
         $this->assertSame('pending', $order->fresh()->status);
+        $this->assertSame('1', RechargeRequestResource::getNavigationBadge());
         $this->assertSame(now()->toAtomString(), $order->fresh()->gateway_meta['deposit_expired_at']);
         $this->artisan('ydpay:process-orders deposit')->assertSuccessful();
         app(YdPayRechargeService::class)->process($this->depositPayload($order, '0'), 'sync');

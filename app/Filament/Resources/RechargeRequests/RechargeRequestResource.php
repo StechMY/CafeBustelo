@@ -85,6 +85,8 @@ class RechargeRequestResource extends Resource
             'user_id'
         )
             ->where('status', 'pending')
+            ->where(fn (Builder $query) => $query->whereNull('gateway_payment_status')
+                ->orWhere('gateway_payment_status', '!=', 'expired'))
             ->count();
     }
 
