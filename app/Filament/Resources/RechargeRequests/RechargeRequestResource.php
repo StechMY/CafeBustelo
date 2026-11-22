@@ -80,14 +80,7 @@ class RechargeRequestResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        return (string) FilamentSupportScope::applyToUserOwnedQuery(
-            RechargeRequest::query(),
-            'user_id'
-        )
-            ->where('status', 'pending')
-            ->where(fn (Builder $query) => $query->whereNull('gateway_payment_status')
-                ->orWhere('gateway_payment_status', '!=', 'expired'))
-            ->count();
+        return (string) static::getEloquentQuery()->pendingUnexpired()->count();
     }
 
     public static function getNavigationBadgeColor(): string|array|null

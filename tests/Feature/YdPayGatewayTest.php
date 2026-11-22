@@ -466,7 +466,7 @@ class YdPayGatewayTest extends TestCase
         $this->freezeTime();
         $order = $this->deposit();
         $order->update(['gateway_payment_url' => 'https://cashier.example/pay']);
-        RechargeRequest::query()->create(['user_id' => $order->user_id, 'amount' => '50000.00',
+        $manual = RechargeRequest::query()->create(['user_id' => $order->user_id, 'amount' => '50000.00',
             'deposit_method' => RechargeRequest::METHOD_MANUAL, 'status' => 'pending']);
         Http::fake(['gateway.example/api/pay/query_order' => Http::response($this->depositPayload($order, '1'))]);
         $this->travel(59)->minutes();
@@ -493,7 +493,18 @@ class YdPayGatewayTest extends TestCase
         $this->get(route('recharge.gateway.return', $order))->assertOk()->assertSee(__('ydpay.deposit_expired_help'));
         $this->assertNull(ApiFormatter::rechargeRequest($order->fresh())['payment_url']);
         $this->loginAdmin();
-        Livewire::test(ListRechargeRequests::class)->assertSee('Expired locally (unpaid)');
+        $waiting = $order->replicate()->fill(['merchant_order_id' => '20261109003',
+            'gateway_payment_status' => 'pending', 'gateway_order_uid' => null, 'gateway_meta' => null]);
+        $waiting->save();
+        Livewire::test(ListRechargeRequests::class)
+            ->assertSee('Expired locally (unpaid)')
+            ->assertCanSeeTableRecords([$order, $manual, $waiting])
+            ->filterTable('status', 'pending')
+            ->assertCanSeeTableRecords([$manual, $waiting])
+            ->assertCanNotSeeTableRecords([$order])
+            ->filterTable('status', 'expired')
+            ->assertCanSeeTableRecords([$order])
+            ->assertCanNotSeeTableRecords([$manual, $waiting]);
         Livewire::test(ViewRechargeRequest::class, ['record' => $order->getRouteKey()])->assertSee('Expired locally (unpaid)');
     }
 

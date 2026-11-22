@@ -360,11 +360,19 @@ class RechargeRequestsTable
                     ])),
 
                 SelectFilter::make('status')
+                    ->label(__('filament.status'))
                     ->options([
                         'pending' => __('filament.pending'),
+                        'expired' => __('ydpay.deposit_statuses.expired'),
                         'approved' => __('filament.approved'),
                         'rejected' => __('filament.rejected'),
-                    ]),
+                    ])
+                    ->query(fn (Builder $query, array $data): Builder => match ($data['value'] ?? null) {
+                        'pending' => $query->pendingUnexpired(),
+                        'expired' => $query->where('gateway_payment_status', 'expired'),
+                        'approved', 'rejected' => $query->where('status', $data['value']),
+                        default => $query,
+                    }),
 
                 SelectFilter::make('deposit_method')
                     ->label(__('filament.deposit_method'))

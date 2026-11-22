@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\Storage;
@@ -130,6 +131,13 @@ class RechargeRequest extends Model
     public function isPending(): bool
     {
         return $this->status === 'pending';
+    }
+
+    public function scopePendingUnexpired(Builder $query): Builder
+    {
+        return $query->where('status', 'pending')
+            ->where(fn (Builder $query) => $query->whereNull('gateway_payment_status')
+                ->orWhere('gateway_payment_status', '!=', 'expired'));
     }
 
     public function isApproved(): bool
