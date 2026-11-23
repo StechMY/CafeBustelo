@@ -168,6 +168,7 @@ class YdPayRechargeService
                     'gateway_fail_reason' => null,
                     'gateway_completed_at' => $completed ? now() : null,
                     'gateway_final_amount' => $completed ? $order->amount : null,
+                    'ydpay_deposit_vnd_per_usd' => $completed ? app(YdPaySettings::class)->depositVndPerUsd() : null,
                     'gateway_meta' => $meta,
                 ])->save();
                 if ($completed) {

@@ -94,6 +94,7 @@ class RechargeRequest extends Model
         return [
             'amount' => 'decimal:2',
             'gateway_final_amount' => 'decimal:2',
+            'ydpay_deposit_vnd_per_usd' => 'integer',
             'gateway_completed_at' => 'datetime',
             'gateway_last_callback_at' => 'datetime',
             'gateway_last_synced_at' => 'datetime',

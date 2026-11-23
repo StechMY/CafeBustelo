@@ -2,9 +2,9 @@
 
 return [
     'deposit_vnd_per_usd' => '充值折算汇率',
-    'deposit_vnd_per_usd_help' => '填写 1 美元等于多少越南盾。仪表板按此汇率估算所选日期的美元金额，历史日期也按当前汇率计算。',
+    'deposit_vnd_per_usd_help' => '填写 1 美元等于多少越南盾。每笔 YDPAY 充值确认到账时会保存当时的汇率。',
     'deposit_usd_estimate' => 'YDPAY 充值折合美元（估算）',
-    'deposit_usd_estimate_detail' => '已到账 :amount VND · 1 USD = :rate VND',
+    'deposit_usd_estimate_detail' => '已到账 :amount VND · 按每笔到账时保存的汇率折算',
     'retry_not_accepted' => 'YDPAY · 确认未受理后重试',
     'not_accepted_description' => '仅在 YDPay 明确确认原订单未受理、未扣款、未出款且不会后续执行后使用。系统还会重新查原单，必须返回订单不存在。新商户订单只提交一次，旧记录保留。出款金额按整数越南盾四舍五入（小于 .50 舍去，.50 及以上进位）。进位差额由平台承担；舍去时实收比原净额少不到 0.50 VND。用户原预留金额不变。',
     'rounding_adjustment' => '取整差额：实付减原净额（VND）',

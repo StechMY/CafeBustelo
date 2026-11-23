@@ -2,9 +2,9 @@
 
 return [
     'deposit_vnd_per_usd' => 'Kurs konversi setoran',
-    'deposit_vnd_per_usd_help' => 'Masukkan jumlah VND yang setara dengan 1 USD. Dasbor memakai kurs ini untuk semua tanggal yang dipilih, termasuk tanggal lampau.',
+    'deposit_vnd_per_usd_help' => 'Masukkan jumlah VND yang setara dengan 1 USD. Setiap setoran YDPAY menyimpan kurs saat pembayaran dikonfirmasi.',
     'deposit_usd_estimate' => 'Setoran YDPAY dalam USD (perkiraan)',
-    'deposit_usd_estimate_detail' => ':amount VND diterima · 1 USD = :rate VND',
+    'deposit_usd_estimate_detail' => ':amount VND diterima · Dikonversi dengan kurs yang disimpan untuk setiap pembayaran',
     'retry_not_accepted' => 'YDPAY · Konfirmasi belum diterima dan coba lagi',
     'not_accepted_description' => 'Lanjutkan hanya setelah YDPay memastikan pesanan lama belum diterima, belum didebit, belum dibayar dan tidak akan diproses nanti. Pemeriksaan terbaru juga harus menyatakan pesanan tidak ditemukan. Pesanan baru dikirim sekali dan riwayat lama dipertahankan. Pembayaran dibulatkan ke VND utuh terdekat (.50 dibulatkan naik). Selisih naik ditanggung platform; pembulatan turun mengurangi pembayaran kurang dari 0.50 VND. Dana pengguna yang dikunci tetap sama.',
     'rounding_adjustment' => 'Selisih pembulatan: pembayaran aktual dikurangi jumlah bersih awal (VND)',

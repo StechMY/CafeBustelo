@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Validator;
 
 class YdPaySettings
 {
-    private const DEFAULT_DEPOSIT_VND_PER_USD = 27300;
+    public const DEFAULT_DEPOSIT_VND_PER_USD = 27300;
 
     public function enabled(string $business): bool
     {

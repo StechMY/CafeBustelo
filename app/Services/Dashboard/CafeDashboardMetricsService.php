@@ -13,6 +13,7 @@ use App\Models\User;
 use App\Models\UserProduct;
 use App\Models\Wallet;
 use App\Models\WithdrawRequest;
+use App\Services\Settings\YdPaySettings;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
@@ -278,11 +279,11 @@ class CafeDashboardMetricsService
         ];
     }
 
-    public function ydpayCompletedRechargeAmount(
+    public function ydpayCompletedRechargeTotals(
         DashboardFilterData $filters,
         ?array $visibleUserIds = null,
-    ): float {
-        return $this->money(RechargeRequest::query()
+    ): array {
+        $totalsByRate = RechargeRequest::query()
             ->where('deposit_method', RechargeRequest::METHOD_GATEWAY)
             ->where('gateway_provider', 'ydpay')
             ->where('gateway_currency', 'vnd')
@@ -295,7 +296,17 @@ class CafeDashboardMetricsService
                 'user',
                 $visibleUserIds,
             ))
-            ->sum('amount'));
+            ->select('ydpay_deposit_vnd_per_usd')
+            ->selectRaw('SUM(amount) AS total_vnd')
+            ->groupBy('ydpay_deposit_vnd_per_usd')
+            ->toBase()
+            ->get();
+
+        return [
+            'vnd' => $this->money($totalsByRate->sum('total_vnd')),
+            'usd' => $this->money($totalsByRate->sum(fn (object $total): float =>
+                (float) $total->total_vnd / ($total->ydpay_deposit_vnd_per_usd ?? YdPaySettings::DEFAULT_DEPOSIT_VND_PER_USD))),
+        ];
     }
 
     public function financeOverview(

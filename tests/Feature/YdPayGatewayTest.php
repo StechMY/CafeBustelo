@@ -20,6 +20,7 @@ use App\Models\Wallet;
 use App\Models\WalletTransaction;
 use App\Models\WithdrawRequest;
 use App\Services\Dashboard\CafeDashboardMetricsService;
+use App\Services\PaymentGateway\PaymentGatewayEventRecorder;
 use App\Services\PaymentGateway\Qc168CallbackService;
 use App\Services\PaymentGateway\Qc168Gateway;
 use App\Services\PaymentGateway\Qc168WithdrawalPayoutService;
@@ -335,8 +336,7 @@ class YdPayGatewayTest extends TestCase
             ->assertHasActionErrors(['deposit_vnd_per_usd'])
             ->setActionData([...$form, 'deposit_vnd_per_usd' => 27500])
             ->callMountedAction()
-            ->assertHasNoActionErrors()
-            ->assertDispatched('ydpay-settings-updated');
+            ->assertHasNoActionErrors();
         $this->assertTrue(app(YdPayGateway::class)->isAvailable());
         $this->assertSame(12, $settings->releaseHours());
         $this->assertSame(60, $settings->depositExpiryMinutes());
@@ -346,18 +346,30 @@ class YdPayGatewayTest extends TestCase
         $this->assertSame(27300, $event->payload['old']['deposit_vnd_per_usd']);
     }
 
-    public function test_dashboard_estimates_usd_from_confirmed_ydpay_deposits_in_the_selected_range(): void
+    public function test_dashboard_uses_the_rate_saved_when_each_ydpay_deposit_is_confirmed(): void
     {
         $this->freezeTime();
         $paid = $this->deposit();
-        $paid->forceFill(['amount' => '100000.00', 'status' => 'approved', 'gateway_payment_status' => 'completed',
-            'created_at' => now()->subDay(), 'gateway_completed_at' => now()])->save();
+        $paid->forceFill(['created_at' => now()->subDay()])->save();
+        $waiting = $paid->replicate()->fill(['merchant_order_id' => 'test-dashboard-second']);
+        $waiting->save();
+        $service = app(YdPayRechargeService::class);
+        $service->process($this->depositPayload($paid, '2'), 'sync');
+        $this->assertSame(27300, $paid->refresh()->ydpay_deposit_vnd_per_usd);
+        $this->assertNull($waiting->fresh()->ydpay_deposit_vnd_per_usd);
+
+        Setting::setValue('ydpay_deposit_vnd_per_usd', 30000);
+        $service->process($this->depositPayload($waiting, '2'), 'sync');
+        $this->assertSame(30000, $waiting->fresh()->ydpay_deposit_vnd_per_usd);
+        $service->process($this->depositPayload($paid, '3'), 'sync');
+        $this->assertSame(27300, $paid->fresh()->ydpay_deposit_vnd_per_usd);
+        $this->assertSame(2, WalletTransaction::query()->where('type', 'recharge_approved')->count());
+
         $virtualUser = User::query()->create(['name' => 'Virtual User', 'username' => 'virtual_user',
             'password' => bcrypt('password'), 'status' => 'active', 'is_virtual' => true]);
         $outOfScopeUser = User::query()->create(['name' => 'Other User', 'username' => 'other_user',
             'password' => bcrypt('password'), 'status' => 'active']);
         foreach ([
-            ['amount' => '173000.00'],
             ['gateway_completed_at' => now()->subDay()],
             ['status' => 'pending', 'gateway_payment_status' => 'expired', 'gateway_completed_at' => null],
             ['gateway_payment_status' => 'refund_review'],
@@ -371,7 +383,7 @@ class YdPayGatewayTest extends TestCase
 
         $day = now()->toDateString();
         $filters = ['startDate' => $day, 'endDate' => $day];
-        $this->assertSame(273000.0, app(CafeDashboardMetricsService::class)->ydpayCompletedRechargeAmount(
+        $this->assertSame(['vnd' => 100000.0, 'usd' => 3.50], app(CafeDashboardMetricsService::class)->ydpayCompletedRechargeTotals(
             DashboardFilterData::fromFilamentFilters($filters),
             [$paid->user_id],
         ));
@@ -379,15 +391,56 @@ class YdPayGatewayTest extends TestCase
         app()->setLocale('en');
         $widget = Livewire::withoutLazyLoading()->test(PlatformOverviewStats::class, ['pageFilters' => $filters])
             ->assertSee('YDPAY deposits in USD (estimated)')
-            ->assertSee('373,000.00 VND received')
-            ->assertSee('USD 13.66')
-            ->assertSee('1 USD = 27,300 VND');
+            ->assertSee('150,000.00 VND received')
+            ->assertSee('USD 5.33');
 
-        Setting::setValue('ydpay_deposit_vnd_per_usd', 30000);
-        $widget->dispatch('ydpay-settings-updated')
-            ->assertSee('373,000.00 VND received')
-            ->assertSee('USD 12.43')
-            ->assertSee('1 USD = 30,000 VND');
+        Setting::setValue('ydpay_deposit_vnd_per_usd', 32000);
+        $widget->call('$refresh')
+            ->assertSee('150,000.00 VND received')
+            ->assertSee('USD 5.33');
+    }
+
+    public function test_existing_ydpay_deposit_rates_are_backfilled_from_the_setting_audit(): void
+    {
+        $this->freezeTime();
+        $migration = require database_path('migrations/2026_11_23_000001_snapshot_ydpay_deposit_exchange_rates.php');
+        $migration->down();
+
+        $early = $this->deposit();
+        $early->update(['status' => 'approved', 'gateway_payment_status' => 'completed', 'gateway_completed_at' => now()->subHour()]);
+        $before = $early->replicate()->fill(['merchant_order_id' => 'same-second-before', 'gateway_completed_at' => now()]);
+        $before->save();
+        $recorder = app(PaymentGatewayEventRecorder::class);
+        $recorder->recordRecharge('ydpay.deposit.completed', $before);
+
+        // The settings audit did not always include an exchange rate.
+        PaymentGatewayEvent::query()->create([
+            'provider' => 'ydpay', 'event_type' => 'ydpay.settings.updated', 'source' => 'filament',
+            'received_at' => now()->subHour(), 'processed_at' => now()->subHour(),
+            'payload' => ['new' => ['deposit_enabled' => true]],
+        ]);
+        $settings = app(YdPaySettings::class);
+        $admin = $this->loginAdmin();
+        $settings->save([...$settings->formData(), 'deposit_vnd_per_usd' => 28000], $admin);
+
+        $after = $before->replicate()->fill(['merchant_order_id' => 'same-second-after']);
+        $after->save();
+        $recorder->recordRecharge('ydpay.deposit.completed', $after);
+        $this->travel(1)->minutes();
+        $settings->save([...$settings->formData(), 'deposit_vnd_per_usd' => 30000], $admin);
+        $latest = $before->replicate()->fill(['merchant_order_id' => 'after-second-change', 'gateway_completed_at' => now()]);
+        $latest->save();
+        $pending = $before->replicate()->fill(['merchant_order_id' => 'still-pending',
+            'status' => 'pending', 'gateway_payment_status' => 'pending', 'gateway_completed_at' => null]);
+        $pending->save();
+
+        $migration->up();
+
+        $this->assertSame(27300, $early->fresh()->ydpay_deposit_vnd_per_usd);
+        $this->assertSame(27300, $before->fresh()->ydpay_deposit_vnd_per_usd);
+        $this->assertSame(28000, $after->fresh()->ydpay_deposit_vnd_per_usd);
+        $this->assertSame(30000, $latest->fresh()->ydpay_deposit_vnd_per_usd);
+        $this->assertNull($pending->fresh()->ydpay_deposit_vnd_per_usd);
     }
 
     public function test_disabled_withdrawal_blocks_approval_in_backend(): void

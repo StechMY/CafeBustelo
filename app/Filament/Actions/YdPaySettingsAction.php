@@ -11,7 +11,6 @@ use Filament\Facades\Filament;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
-use Livewire\Component;
 
 class YdPaySettingsAction
 {
@@ -38,11 +37,10 @@ class YdPaySettingsAction
                     ->helperText(str_replace('QC168', 'YDPAY', __('filament.qc168_withdraw_release_hours_help')))
                     ->suffix(__('filament.hours'))->numeric()->integer()->minValue(1)->maxValue(720)->required(),
             ])
-            ->action(function (array $data, Component $livewire): void {
+            ->action(function (array $data): void {
                 $admin = Filament::auth()->user();
                 abort_unless($admin instanceof AdminUser, 403);
                 app(YdPaySettings::class)->save($data, $admin, request()->ip());
-                $livewire->dispatch('ydpay-settings-updated');
                 Notification::make()->title(__('filament.payment_gateway_settings_saved'))->success()->send();
             });
     }
