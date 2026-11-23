@@ -1,6 +1,10 @@
 <?php
 
 return [
+    'deposit_vnd_per_usd' => 'Deposit exchange rate',
+    'deposit_vnd_per_usd_help' => 'Enter how many VND equal 1 USD. The dashboard uses this rate for every selected date, including past dates.',
+    'deposit_usd_estimate' => 'YDPAY deposits in USD (estimated)',
+    'deposit_usd_estimate_detail' => ':amount VND received · 1 USD = :rate VND',
     'retry_not_accepted' => 'YDPAY · Confirm not accepted and retry',
     'not_accepted_description' => 'Only proceed after YDPay confirms that this original order was never accepted, debited, or paid and cannot execute later. A fresh query must also report order not found. A new order is submitted once; the original attempt remains unchanged. The payout is rounded to the nearest whole VND (.50 rounds up). Positive differences are paid by the platform; rounding down reduces the payout by less than 0.50 VND. The user reserve is unchanged.',
     'rounding_adjustment' => 'Rounding adjustment: actual minus original net (VND)',

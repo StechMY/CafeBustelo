@@ -278,6 +278,26 @@ class CafeDashboardMetricsService
         ];
     }
 
+    public function ydpayCompletedRechargeAmount(
+        DashboardFilterData $filters,
+        ?array $visibleUserIds = null,
+    ): float {
+        return $this->money(RechargeRequest::query()
+            ->where('deposit_method', RechargeRequest::METHOD_GATEWAY)
+            ->where('gateway_provider', 'ydpay')
+            ->where('gateway_currency', 'vnd')
+            ->where('status', 'approved')
+            ->where('gateway_payment_status', 'completed')
+            ->whereBetween('gateway_completed_at', [$filters->dateFrom, $filters->dateTo])
+            ->tap(fn (Builder $query) => $this->applyRelatedUserScope(
+                $query,
+                $filters->virtualMode,
+                'user',
+                $visibleUserIds,
+            ))
+            ->sum('amount'));
+    }
+
     public function financeOverview(
         DashboardFilterData $filters,
         ?array $visibleUserIds = null,

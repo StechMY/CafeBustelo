@@ -2,12 +2,14 @@
 
 namespace Tests\Feature;
 
+use App\Data\Dashboard\DashboardFilterData;
 use App\Filament\Pages\Dashboard;
 use App\Filament\Resources\RechargeRequests\Pages\ListRechargeRequests;
 use App\Filament\Resources\RechargeRequests\Pages\ViewRechargeRequest;
 use App\Filament\Resources\RechargeRequests\RechargeRequestResource;
 use App\Filament\Resources\WithdrawRequests\Pages\ListWithdrawRequests;
 use App\Filament\Resources\WithdrawRequests\Pages\ViewWithdrawRequest;
+use App\Filament\Widgets\PlatformOverviewStats;
 use App\Http\Controllers\Api\RechargeController;
 use App\Models\AdminUser;
 use App\Models\PaymentGatewayEvent;
@@ -17,6 +19,7 @@ use App\Models\User;
 use App\Models\Wallet;
 use App\Models\WalletTransaction;
 use App\Models\WithdrawRequest;
+use App\Services\Dashboard\CafeDashboardMetricsService;
 use App\Services\PaymentGateway\Qc168CallbackService;
 use App\Services\PaymentGateway\Qc168Gateway;
 use App\Services\PaymentGateway\Qc168WithdrawalPayoutService;
@@ -312,6 +315,7 @@ class YdPayGatewayTest extends TestCase
         }
         $admin->givePermissionTo(Permission::findOrCreate('ManagePaymentGateway:Settings', 'admin'));
         $this->assertSame(60, $settings->depositExpiryMinutes());
+        $this->assertSame(27300, $settings->depositVndPerUsd());
         $settings->save(['deposit_enabled' => false, 'withdraw_enabled' => false, 'withdraw_release_hours' => 48, 'deposit_expiry_minutes' => 90], $admin);
         $this->assertFalse(app(YdPayGateway::class)->isAvailable());
         $this->assertFalse(app(YdPayGateway::class)->isAvailable('withdraw'));
@@ -320,14 +324,70 @@ class YdPayGatewayTest extends TestCase
         $this->assertDatabaseHas('payment_gateway_events', ['provider' => 'ydpay', 'event_type' => 'ydpay.settings.updated', 'actor_admin_user_id' => $admin->id]);
         Filament::setCurrentPanel(Filament::getPanel('admin'));
         $this->actingAs($admin, 'admin');
+        $form = ['deposit_enabled' => true, 'withdraw_enabled' => false, 'withdraw_release_hours' => 12, 'deposit_expiry_minutes' => 60];
         Livewire::test(Dashboard::class)
             ->assertActionVisible('ydpaySettings')
             ->assertActionHidden('paymentGatewaySettings')
-            ->callAction('ydpaySettings', ['deposit_enabled' => true, 'withdraw_enabled' => false, 'withdraw_release_hours' => 12, 'deposit_expiry_minutes' => 60])
-            ->assertHasNoActionErrors();
+            ->mountAction('ydpaySettings')
+            ->assertActionDataSet(['deposit_vnd_per_usd' => 27300])
+            ->setActionData([...$form, 'deposit_vnd_per_usd' => 0])
+            ->callMountedAction()
+            ->assertHasActionErrors(['deposit_vnd_per_usd'])
+            ->setActionData([...$form, 'deposit_vnd_per_usd' => 27500])
+            ->callMountedAction()
+            ->assertHasNoActionErrors()
+            ->assertDispatched('ydpay-settings-updated');
         $this->assertTrue(app(YdPayGateway::class)->isAvailable());
         $this->assertSame(12, $settings->releaseHours());
         $this->assertSame(60, $settings->depositExpiryMinutes());
+        $this->assertSame(27500, $settings->depositVndPerUsd());
+        $event = PaymentGatewayEvent::query()->where('event_type', 'ydpay.settings.updated')->latest('id')->firstOrFail();
+        $this->assertEquals(27500, $event->payload['new']['deposit_vnd_per_usd']);
+        $this->assertSame(27300, $event->payload['old']['deposit_vnd_per_usd']);
+    }
+
+    public function test_dashboard_estimates_usd_from_confirmed_ydpay_deposits_in_the_selected_range(): void
+    {
+        $this->freezeTime();
+        $paid = $this->deposit();
+        $paid->forceFill(['amount' => '100000.00', 'status' => 'approved', 'gateway_payment_status' => 'completed',
+            'created_at' => now()->subDay(), 'gateway_completed_at' => now()])->save();
+        $virtualUser = User::query()->create(['name' => 'Virtual User', 'username' => 'virtual_user',
+            'password' => bcrypt('password'), 'status' => 'active', 'is_virtual' => true]);
+        $outOfScopeUser = User::query()->create(['name' => 'Other User', 'username' => 'other_user',
+            'password' => bcrypt('password'), 'status' => 'active']);
+        foreach ([
+            ['amount' => '173000.00'],
+            ['gateway_completed_at' => now()->subDay()],
+            ['status' => 'pending', 'gateway_payment_status' => 'expired', 'gateway_completed_at' => null],
+            ['gateway_payment_status' => 'refund_review'],
+            ['deposit_method' => 'manual', 'gateway_provider' => null],
+            ['gateway_provider' => 'qc168'],
+            ['user_id' => $virtualUser->id],
+            ['user_id' => $outOfScopeUser->id],
+        ] as $index => $attributes) {
+            $paid->replicate()->fill(['merchant_order_id' => 'test-dashboard-'.($index + 1), ...$attributes])->save();
+        }
+
+        $day = now()->toDateString();
+        $filters = ['startDate' => $day, 'endDate' => $day];
+        $this->assertSame(273000.0, app(CafeDashboardMetricsService::class)->ydpayCompletedRechargeAmount(
+            DashboardFilterData::fromFilamentFilters($filters),
+            [$paid->user_id],
+        ));
+        $this->loginAdmin();
+        app()->setLocale('en');
+        $widget = Livewire::withoutLazyLoading()->test(PlatformOverviewStats::class, ['pageFilters' => $filters])
+            ->assertSee('YDPAY deposits in USD (estimated)')
+            ->assertSee('373,000.00 VND received')
+            ->assertSee('USD 13.66')
+            ->assertSee('1 USD = 27,300 VND');
+
+        Setting::setValue('ydpay_deposit_vnd_per_usd', 30000);
+        $widget->dispatch('ydpay-settings-updated')
+            ->assertSee('373,000.00 VND received')
+            ->assertSee('USD 12.43')
+            ->assertSee('1 USD = 30,000 VND');
     }
 
     public function test_disabled_withdrawal_blocks_approval_in_backend(): void

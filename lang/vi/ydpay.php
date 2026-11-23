@@ -1,6 +1,10 @@
 <?php
 
 return [
+    'deposit_vnd_per_usd' => 'Tỷ giá quy đổi tiền nạp',
+    'deposit_vnd_per_usd_help' => 'Nhập số VND tương đương 1 USD. Bảng điều khiển dùng tỷ giá này cho tất cả các ngày đã chọn, kể cả ngày trong quá khứ.',
+    'deposit_usd_estimate' => 'Tiền nạp YDPAY quy đổi sang USD (ước tính)',
+    'deposit_usd_estimate_detail' => 'Đã nhận :amount VND · 1 USD = :rate VND',
     'retry_not_accepted' => 'YDPAY · Xác nhận chưa tiếp nhận và thử lại',
     'not_accepted_description' => 'Chỉ tiếp tục khi YDPay xác nhận đơn cũ chưa được tiếp nhận, chưa trừ tiền, chưa chi trả và sẽ không thực hiện sau này. Tra cứu mới cũng phải báo không tìm thấy đơn. Tạo đơn mới một lần và giữ lịch sử cũ. Làm tròn đến VND nguyên gần nhất (.50 làm tròn lên). Nền tảng chịu phần tăng; làm tròn xuống giảm số tiền nhận dưới 0.50 VND. Tiền giữ của người dùng không đổi.',
     'rounding_adjustment' => 'Chênh lệch làm tròn: thực trả trừ số tiền ròng gốc (VND)',

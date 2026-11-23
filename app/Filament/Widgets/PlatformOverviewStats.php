@@ -4,6 +4,7 @@ namespace App\Filament\Widgets;
 
 use App\Data\Dashboard\DashboardFilterData;
 use App\Services\Dashboard\CafeDashboardMetricsService;
+use App\Services\Settings\YdPaySettings;
 use App\Support\Filament\Dashboard\PlatformDashboardQuery;
 use Filament\Widgets\Concerns\InteractsWithPageFilters;
 use Filament\Widgets\StatsOverviewWidget;
@@ -24,17 +25,29 @@ class PlatformOverviewStats extends StatsOverviewWidget
 
     protected int|string|array $columnSpan = 'full';
 
+    protected $listeners = ['ydpay-settings-updated' => '$refresh'];
+
     protected function getStats(): array
     {
-        $metrics = app(CafeDashboardMetricsService::class)->financeOverview(
-            DashboardFilterData::fromFilamentFilters($this->pageFilters),
-            PlatformDashboardQuery::supportDownlineUserIds(),
-        );
+        $filters = DashboardFilterData::fromFilamentFilters($this->pageFilters);
+        $visibleUserIds = PlatformDashboardQuery::supportDownlineUserIds();
+        $service = app(CafeDashboardMetricsService::class);
+        $metrics = $service->financeOverview($filters, $visibleUserIds);
         $netRevenue = $metrics['revenue_cash_gap'];
+        $ydpayVnd = $service->ydpayCompletedRechargeAmount($filters, $visibleUserIds);
+        $vndPerUsd = app(YdPaySettings::class)->depositVndPerUsd();
 
         return [
             Stat::make(__('filament.approved_recharge'), PlatformDashboardQuery::money($metrics['approved_recharge']))
                 ->description(__('filament.approved_deposits_in_selected_range'))
+                ->descriptionIcon('heroicon-m-arrow-down-tray')
+                ->color('success'),
+
+            Stat::make(__('ydpay.deposit_usd_estimate'), 'USD '.number_format($ydpayVnd / $vndPerUsd, 2))
+                ->description(__('ydpay.deposit_usd_estimate_detail', [
+                    'amount' => number_format($ydpayVnd, 2),
+                    'rate' => number_format($vndPerUsd),
+                ]))
                 ->descriptionIcon('heroicon-m-arrow-down-tray')
                 ->color('success'),
 

@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\Validator;
 
 class YdPaySettings
 {
+    private const DEFAULT_DEPOSIT_VND_PER_USD = 27300;
+
     public function enabled(string $business): bool
     {
         return Setting::bool('ydpay_'.$business.'_enabled', (bool) config("services.ydpay.{$business}_enabled", false));
@@ -29,10 +31,20 @@ class YdPaySettings
         return $minutes >= 1 && $minutes <= 1440 ? $minutes : 60;
     }
 
+    public function depositVndPerUsd(): int
+    {
+        $rate = filter_var(Setting::getValue('ydpay_deposit_vnd_per_usd'), FILTER_VALIDATE_INT, [
+            'options' => ['min_range' => 1],
+        ]);
+
+        return $rate === false ? self::DEFAULT_DEPOSIT_VND_PER_USD : $rate;
+    }
+
     public function formData(): array
     {
         return ['deposit_enabled' => $this->enabled('deposit'), 'withdraw_enabled' => $this->enabled('withdraw'),
-            'withdraw_release_hours' => $this->releaseHours(), 'deposit_expiry_minutes' => $this->depositExpiryMinutes()];
+            'withdraw_release_hours' => $this->releaseHours(), 'deposit_expiry_minutes' => $this->depositExpiryMinutes(),
+            'deposit_vnd_per_usd' => $this->depositVndPerUsd()];
     }
 
     public function save(array $data, AdminUser $actor, ?string $ip = null): void
@@ -40,7 +52,8 @@ class YdPaySettings
         abort_unless($actor->can(Qc168Settings::MANAGE_PERMISSION), 403);
         $values = Validator::make($data, ['deposit_enabled' => ['required', 'boolean'],
             'withdraw_enabled' => ['required', 'boolean'], 'withdraw_release_hours' => ['required', 'integer', 'between:1,720'],
-            'deposit_expiry_minutes' => ['required', 'integer', 'between:1,1440']])->validate();
+            'deposit_expiry_minutes' => ['required', 'integer', 'between:1,1440'],
+            'deposit_vnd_per_usd' => ['sometimes', 'required', 'integer', 'min:1']])->validate();
         DB::transaction(function () use ($values, $actor, $ip): void {
             $before = $this->formData();
             foreach ($values as $key => $value) {
