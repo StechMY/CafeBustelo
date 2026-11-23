@@ -570,6 +570,8 @@ return [
     'operation_transfer_referral_users_desc' => 'Referred users whose first successful product purchase is in the selected range.',
     'operation_valid_members' => 'Valid Members',
     'operation_valid_members_desc' => 'Active users with active products',
+    'operation_valid_members_in_range' => 'Valid Members in Range',
+    'operation_valid_members_in_range_desc' => 'Active users with an active product whose first successful purchase falls in the selected dates.',
     'operation_transfer_referral_rate' => 'Transfer Referral Rate',
     'operation_transfer_referral_rate_desc' => 'Transfer referrals / valid members',
     'operation_today_upgrade_amount' => 'Today Upgrade Amount',

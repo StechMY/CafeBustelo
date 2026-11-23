@@ -571,6 +571,8 @@ return [
     'operation_transfer_referral_users_desc' => '首次成功购买产品时间在筛选范围内的推荐用户人数',
     'operation_valid_members' => '有效会员',
     'operation_valid_members_desc' => '状态为启用并且当前拥有有效产品的用户',
+    'operation_valid_members_in_range' => '筛选期有效会员',
+    'operation_valid_members_in_range_desc' => '账号已启用、当前持有有效产品，且首次成功购入产品的日期落在所选范围内。',
     'operation_transfer_referral_rate' => '转介绍率',
     'operation_transfer_referral_rate_desc' => '转介绍人数 / 有效会员人数',
     'operation_today_upgrade_amount' => '当天加金',

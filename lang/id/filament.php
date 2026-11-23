@@ -95,6 +95,8 @@ return [
     'deposit_method' => 'Metode Deposit',
     'manual_deposit' => 'Deposit Manual',
     'payment_gateway' => 'Gerbang Pembayaran',
+    'operation_valid_members_in_range' => 'Anggota Valid dalam Periode',
+    'operation_valid_members_in_range_desc' => 'Akun aktif dengan produk aktif yang pembelian pertamanya berhasil dalam rentang tanggal yang dipilih.',
     'payment_gateway_settings' => 'Pengaturan Gerbang Pembayaran',
     'payment_gateway_settings_saved' => 'Pengaturan gerbang pembayaran disimpan.',
     'qc168_automatic_deposit' => 'Deposit Otomatis',

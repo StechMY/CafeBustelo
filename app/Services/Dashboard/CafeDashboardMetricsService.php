@@ -58,7 +58,10 @@ class CafeDashboardMetricsService
         ?array $visibleUserIds = null,
     ): array {
         return [
-            'selected' => $this->operationSelected($filters, $visibleUserIds),
+            'selected' => [
+                ...$this->operationSelected($filters, $visibleUserIds),
+                'valid_members_in_range' => $this->validMembersInRange($filters, $visibleUserIds),
+            ],
             'overview' => $this->operationOverview($filters, $visibleUserIds),
         ];
     }
@@ -767,15 +770,28 @@ class CafeDashboardMetricsService
         DashboardFilterData $filters,
         ?array $visibleUserIds = null,
     ): int {
+        return $this->validMembersQuery($filters, $visibleUserIds)->count();
+    }
+
+    private function validMembersInRange(DashboardFilterData $filters, ?array $visibleUserIds): int
+    {
+        return $this->validMembersQuery($filters, $visibleUserIds)
+            ->joinSub($this->firstSuccessfulProductPurchases()->withTrashed(), 'first_product_purchases',
+                'first_product_purchases.user_id', '=', 'users.id')
+            ->whereBetween('first_product_purchases.first_purchased_at', [$filters->dateFrom, $filters->dateTo])
+            ->count('users.id');
+    }
+
+    private function validMembersQuery(DashboardFilterData $filters, ?array $visibleUserIds): Builder
+    {
         return User::query()
-            ->where('status', 'active')
+            ->where('users.status', 'active')
             ->whereHas('activeProducts')
             ->tap(fn(Builder $query) => $this->applyDirectUserScope(
                 $query,
                 $filters->virtualMode,
                 $visibleUserIds,
-            ))
-            ->count();
+            ));
     }
 
     private function firstRechargeUsers(
@@ -808,16 +824,9 @@ class CafeDashboardMetricsService
         CarbonInterface $end,
         ?array $visibleUserIds = null,
     ): int {
-        $firstPurchaseSubQuery = UserProduct::query()
-            ->selectRaw('user_id, MIN(purchased_at) AS first_purchased_at')
-            ->whereIn('status', ['active', 'expired', 'completed'])
-            ->whereNotNull('purchased_at')
-            ->groupBy('user_id');
-
         return User::query()
-            ->joinSub($firstPurchaseSubQuery, 'first_product_purchases', function ($join): void {
-                $join->on('first_product_purchases.user_id', '=', 'users.id');
-            })
+            ->joinSub($this->firstSuccessfulProductPurchases(), 'first_product_purchases',
+                'first_product_purchases.user_id', '=', 'users.id')
             ->tap(fn(Builder $query) => $this->applyDirectUserScope(
                 $query,
                 $filters->virtualMode,
@@ -826,6 +835,15 @@ class CafeDashboardMetricsService
             ->whereNotNull('users.referrer_id')
             ->whereBetween('first_product_purchases.first_purchased_at', [$start, $end])
             ->count('users.id');
+    }
+
+    private function firstSuccessfulProductPurchases(): Builder
+    {
+        return UserProduct::query()
+            ->selectRaw('user_id, MIN(purchased_at) AS first_purchased_at')
+            ->whereIn('status', ['active', 'expired', 'completed'])
+            ->whereNotNull('purchased_at')
+            ->groupBy('user_id');
     }
 
     private function bcdUpgradePurchaseAmount(

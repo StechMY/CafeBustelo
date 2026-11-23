@@ -30,9 +30,9 @@
                 'tone' => 'purple',
             ],
             [
-                'label' => __('filament.operation_valid_members'),
-                'value' => number_format((int) $selected['valid_members']),
-                'desc' => __('filament.operation_valid_members_desc'),
+                'label' => __('filament.operation_valid_members_in_range'),
+                'value' => number_format((int) $selected['valid_members_in_range']),
+                'desc' => __('filament.operation_valid_members_in_range_desc'),
                 'icon' => 'users',
                 'tone' => 'green',
             ],

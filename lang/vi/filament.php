@@ -85,6 +85,8 @@ return [
     'wallet_decrease_completed' => 'Đã trừ số dư ví',
     'wallet_decrease_failed' => 'Không thể trừ số dư ví',
     'wallet' => 'Ví',
+    'operation_valid_members_in_range' => 'Thành viên hợp lệ trong kỳ',
+    'operation_valid_members_in_range_desc' => 'Tài khoản đang hoạt động, có sản phẩm còn hiệu lực và lần mua thành công đầu tiên nằm trong khoảng ngày đã chọn.',
     'remarks' => 'Ghi chú',
     'maintenance_notice_settings' => 'Cài đặt thông báo bảo trì',
     'maintenance_notice_settings_help' => 'Điều khiển thông báo bảo trì trên trang chính của người dùng. Cài đặt này không đưa trang web vào chế độ bảo trì.',
