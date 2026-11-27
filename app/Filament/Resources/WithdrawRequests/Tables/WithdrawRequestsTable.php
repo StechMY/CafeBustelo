@@ -711,6 +711,7 @@ class WithdrawRequestsTable
                     \App\Filament\Resources\WithdrawRequests\Actions\ApproveYdPayWithdrawalAction::make(instant: true),
                     \App\Filament\Resources\WithdrawRequests\Actions\RetryYdPayNotAcceptedAction::make(),
                     \App\Filament\Resources\WithdrawRequests\Actions\RefundYdPayReturnedPayoutAction::make(),
+                    \App\Filament\Resources\WithdrawRequests\Actions\ConfirmYdPayReturnAction::make(),
                     /*
                     |--------------------------------------------------------------------------
                     | Approve Manually

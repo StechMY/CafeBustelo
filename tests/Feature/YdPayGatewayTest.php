@@ -304,6 +304,9 @@ class YdPayGatewayTest extends TestCase
         unset($form['proof_file']);
 
         $this->assertTrue(Gate::forUser($admin)->allows('confirmYdPayReturn', $request));
+        Livewire::test(ListWithdrawRequests::class)
+            ->assertActionVisible(TestAction::make('confirm_ydpay_return')->table($request))
+            ->assertSee(__('ydpay.manual_return_action'));
         Livewire::test(ViewWithdrawRequest::class, ['record' => $request->id])
             ->assertStatus(200)
             ->assertActionVisible('confirm_ydpay_return')
@@ -399,6 +402,8 @@ class YdPayGatewayTest extends TestCase
         ]);
         Filament::setCurrentPanel(Filament::getPanel('admin'));
         $this->actingAs($admin, 'admin');
+        Livewire::test(ListWithdrawRequests::class)
+            ->assertActionHidden(TestAction::make('confirm_ydpay_return')->table($request));
         Livewire::test(ViewWithdrawRequest::class, ['record' => $request->id])->assertStatus(200)->assertActionHidden('confirm_ydpay_return');
         $this->get(route('admin.withdraw-requests.ydpay-return-evidence', $request))->assertForbidden();
 
@@ -418,9 +423,12 @@ class YdPayGatewayTest extends TestCase
         $paid = $this->signed([...$this->payoutPayload($attempt->merchant_order_id, '2'), 'retCode' => '0']);
         Http::fake(['gateway.example/api/agentpay/query_order' => Http::response($paid)]);
 
-        Livewire::test(ViewWithdrawRequest::class, ['record' => $request->id])
-            ->callAction('confirm_ydpay_return')
+        $rowRefundAction = TestAction::make('confirm_ydpay_return')->table($request);
+        Livewire::test(ListWithdrawRequests::class)
+            ->callAction($rowRefundAction)
             ->assertHasNoActionErrors()
+            ->assertActionHidden($rowRefundAction);
+        Livewire::test(ViewWithdrawRequest::class, ['record' => $request->id])
             ->assertActionHidden('confirm_ydpay_return')
             ->assertActionHidden('download_ydpay_return_evidence');
 
