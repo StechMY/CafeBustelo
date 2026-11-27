@@ -2,6 +2,7 @@
 
 namespace App\Filament\Actions;
 
+use App\Filament\Pages\RedPacketIssuanceRecords;
 use App\Filament\Resources\RedPacketPrizes\RedPacketPrizeResource;
 use App\Models\Setting;
 use App\Services\RedPacketService;
@@ -34,6 +35,8 @@ class RedPacketSettingsAction extends Action
             ])->extraModalFooterActions([
                 Action::make('prizes')->label(__('red_packet.manage_prizes'))->color('gray')
                     ->visible(fn (): bool => RedPacketPrizeResource::canViewAny())->url(fn (): string => RedPacketPrizeResource::getUrl()),
+                Action::make('issuanceRecords')->label(__('red_packet.issuance_records'))->color('gray')
+                    ->visible(fn (): bool => RedPacketIssuanceRecords::canAccess())->url(fn (): string => RedPacketIssuanceRecords::getUrl()),
             ])->action(function (array $data): void {
                 DB::transaction(function () use ($data): void {
                     Setting::setValue(RedPacketService::SETTING_START, $data['starts_at']);

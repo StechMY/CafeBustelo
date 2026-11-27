@@ -84,13 +84,13 @@ class RedPacketService
             DB::transaction(function () use ($purchase): void {
                 $buyer = User::query()->whereKey($purchase->user_id)->lockForUpdate()->first();
                 if ($buyer) {
-                    $this->awardFirstPurchaseInvitation($buyer, $purchase);
+                    $this->awardFirstPurchaseInvitation($buyer, $purchase, isBackfill: true);
                 }
             }, 3);
         }
     }
 
-    private function awardFirstPurchaseInvitation(User $buyer, UserProduct $purchase): void
+    private function awardFirstPurchaseInvitation(User $buyer, UserProduct $purchase, bool $isBackfill = false): void
     {
         if ($buyer->is_virtual || $purchase->product_type_snapshot === Product::TYPE_WEEKEND_SPECIAL) {
             return;
@@ -106,22 +106,23 @@ class RedPacketService
             return;
         }
         $day = $purchase->purchased_at->copy()->timezone(config('app.timezone'))->toDateString();
-        $this->award($referrer, 'invite:'.$buyer->id, 'invite', $day, $purchase, $buyer);
+        $this->award($referrer, 'invite:'.$buyer->id, 'invite', $day, $purchase, $buyer, $isBackfill);
         // Read the latest committed invites after acquiring the inviter lock.
         $count = RedPacketEntry::query()->where('user_id', $referrer->id)->where('source', 'invite')
             ->where('earned_on', $day)->limit(5)->lockForUpdate()->pluck('id')->count();
         foreach ([3 => 1, 5 => 2] as $threshold => $chances) {
             if ($count < $threshold) continue;
             for ($i = 1; $i <= $chances; $i++) {
-                $this->award($referrer, "milestone:{$day}:{$threshold}:{$i}", 'milestone_'.$threshold, $day);
+                $this->award($referrer, "milestone:{$day}:{$threshold}:{$i}", 'milestone_'.$threshold, $day, isBackfill: $isBackfill);
             }
         }
     }
 
-    private function award(User $user, string $key, string $source, string $day, ?UserProduct $purchase = null, ?User $invitee = null): void
+    private function award(User $user, string $key, string $source, string $day, ?UserProduct $purchase = null, ?User $invitee = null, bool $isBackfill = false): void
     {
         RedPacketEntry::query()->lockForUpdate()->firstOrCreate(['user_id' => $user->id, 'award_key' => $key], [
             'source' => $source, 'earned_on' => $day, 'user_product_id' => $purchase?->id, 'invited_user_id' => $invitee?->id,
+            'is_backfill' => $isBackfill,
         ]);
     }
 

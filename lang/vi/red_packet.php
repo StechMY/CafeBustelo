@@ -1,6 +1,17 @@
 <?php
 
 return [
+    'issuance_records' => 'Lịch sử cấp lượt lì xì',
+    'issuance_help' => 'Số lượt cấp bao gồm cả lượt đã dùng. Chọn Lịch sử chưa đánh dấu để xem lượt cũ. Có thể lọc theo thời gian cấp (:timezone). Trong cùng khoảng thời gian có thể có cả lượt cấp thông thường và cấp bù.',
+    'issued_total' => 'Tổng lượt cấp',
+    'invite_first_purchase' => 'Đơn đầu của người được mời',
+    'issuance_type' => 'Cách cấp lượt',
+    'confirmed_backfill' => 'Cấp bù đã xác nhận',
+    'live_issuance' => 'Cấp thông thường',
+    'legacy_issuance' => 'Lịch sử chưa đánh dấu',
+    'all_issuances' => 'Tất cả lượt cấp',
+    'issued_from' => 'Cấp từ',
+    'issued_until' => 'Cấp đến',
     'set_next_prize' => 'Chọn quà lì xì lượt tới',
     'next_prize_help' => 'Chỉ dành cho tài khoản ảo. Quà đã chọn áp dụng một lần, kể cả trọng số hoặc tồn kho bằng 0, không trừ kho thật. Vẫn áp dụng thời gian sự kiện. Để trống để hủy và quay lại rút ngẫu nhiên.',
     'random_prize' => 'Ngẫu nhiên (hủy chỉ định)',

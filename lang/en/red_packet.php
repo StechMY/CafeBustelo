@@ -1,6 +1,17 @@
 <?php
 
 return [
+    'issuance_records' => 'Red packet chance issuance',
+    'issuance_help' => 'Counts include spent chances. Select Unmarked history for older grants. Filter by issuance time (:timezone) to review a deployment window, which may include both regular grants and backfills.',
+    'issued_total' => 'Total granted',
+    'invite_first_purchase' => 'Invited first purchases',
+    'issuance_type' => 'Issuance method',
+    'confirmed_backfill' => 'Confirmed backfills',
+    'live_issuance' => 'Regular grants',
+    'legacy_issuance' => 'Unmarked history',
+    'all_issuances' => 'All grants',
+    'issued_from' => 'Issued from',
+    'issued_until' => 'Issued through',
     'set_next_prize' => 'Set next red packet prize',
     'next_prize_help' => 'Virtual accounts only. The selected prize applies once, even with weight 0 or stock 0, without consuming real stock. Activity dates still apply. Leave empty to cancel and resume random draws.',
     'random_prize' => 'Random draw (clear assignment)',

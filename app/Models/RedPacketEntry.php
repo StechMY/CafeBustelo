@@ -7,11 +7,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class RedPacketEntry extends Model
 {
-    protected $fillable = ['user_id', 'invited_user_id', 'user_product_id', 'source', 'award_key', 'earned_on', 'used_at'];
+    protected $fillable = ['user_id', 'invited_user_id', 'user_product_id', 'source', 'award_key', 'earned_on', 'used_at', 'is_backfill'];
 
     protected function casts(): array
     {
-        return ['used_at' => 'datetime'];
+        return ['used_at' => 'datetime', 'is_backfill' => 'boolean'];
     }
 
     public function invitee(): BelongsTo

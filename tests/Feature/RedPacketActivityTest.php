@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Filament\Pages\Dashboard;
+use App\Filament\Pages\RedPacketIssuanceRecords;
 use App\Filament\Resources\RedPacketPrizes\Pages\ManageRedPacketPrizes;
 use App\Filament\Resources\Users\Pages\ListUsers;
 use App\Models\AdminUser;
@@ -196,9 +197,50 @@ class RedPacketActivityTest extends TestCase
         $this->assertSame(2, (clone $entries)->where('source', 'milestone_3')->count());
         $this->assertSame(2, (clone $entries)->where('source', 'milestone_5')->count());
         $this->assertSame(11, $service->remainingChances($owner));
+        $this->assertSame(8, (clone $entries)->where('is_backfill', true)->count());
+        $this->assertSame(4, (clone $entries)->where('is_backfill', false)->count());
         $this->assertTrue($spent->used_at->equalTo($spent->fresh()->used_at));
         $this->assertSame(0, $service->remainingChances($other));
         $this->assertSame($upgrades, RedPacketEntry::where('source', 'upgrade')->count());
+    }
+
+    public function test_issuance_report_counts_granted_chances_by_user_method_and_source(): void
+    {
+        $admin = $this->assignmentAdmin();
+        $this->get(RedPacketIssuanceRecords::getUrl())->assertForbidden();
+        $admin->givePermissionTo(Permission::findOrCreate('ViewAny:RedPacketDraw', 'admin'));
+        $owner = $this->user(['username' => 'ledger-owner']);
+        $other = $this->user(['username' => 'second-recipient']);
+        foreach (['invite', 'milestone_3', 'milestone_5', 'milestone_5'] as $source) {
+            RedPacketEntry::create(['user_id' => $owner->id, 'source' => $source, 'award_key' => (string) Str::uuid(),
+                'earned_on' => today(), 'used_at' => now(), 'is_backfill' => true]);
+        }
+        $this->entry($owner); // Legacy row without an issuance marker.
+        RedPacketEntry::create(['user_id' => $owner->id, 'source' => 'invite', 'award_key' => 'invite:123',
+            'earned_on' => today(), 'is_backfill' => false]);
+        RedPacketEntry::create(['user_id' => $other->id, 'source' => 'invite', 'award_key' => 'invite:456',
+            'earned_on' => today(), 'is_backfill' => true]);
+
+        $page = Livewire::test(RedPacketIssuanceRecords::class)->assertOk()
+            ->assertCanSeeTableRecords([$owner, $other])->searchTable('ledger-owner')
+            ->assertCanSeeTableRecords([$owner])->assertCanNotSeeTableRecords([$other]);
+        $summary = $page->instance()->getTableRecords()->first();
+        foreach (['chances' => 4, 'invites' => 1, 'bonus_three' => 1, 'bonus_five' => 2] as $column => $count) {
+            $page->assertTableColumnStateSet($column, $count, $summary);
+        }
+        $page->filterTable('issuance', 'legacy');
+        $this->assertEquals(1, $page->instance()->getTableRecords()->first()->upgrades);
+        $page->filterTable('issuance', 'live');
+        $this->assertEquals(1, $page->instance()->getTableRecords()->first()->invites);
+        $page->filterTable('issued_at', ['from' => now()->addMinute()->toDateTimeString(), 'until' => null])
+            ->assertCanNotSeeTableRecords([$owner]);
+
+        $root = $this->user();
+        $owner->update(['referrer_id' => $root->id]);
+        $admin->update(['managed_user_id' => $root->id]);
+        $admin->assignRole(Role::findOrCreate('Support', 'admin'));
+        Livewire::test(RedPacketIssuanceRecords::class)->assertCanSeeTableRecords([$owner])
+            ->searchTable('second-recipient')->assertCanNotSeeTableRecords([$other]);
     }
 
     public function test_upgrades_compare_previous_non_weekend_original_price_not_highest_price(): void

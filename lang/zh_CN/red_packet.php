@@ -1,6 +1,17 @@
 <?php
 
 return [
+    'issuance_records' => '红包雨机会发放记录',
+    'issuance_help' => '每人一行，按发放次数统计，包含已用机会。旧版发放的机会请在「历史未标记」中核对。可按实际发放时间（:timezone）筛选，同一时段可能包含正常发放和补发。',
+    'issued_total' => '发放总次数',
+    'invite_first_purchase' => '邀请首购',
+    'issuance_type' => '发放方式',
+    'confirmed_backfill' => '已确认补发',
+    'live_issuance' => '正常发放',
+    'legacy_issuance' => '历史未标记',
+    'all_issuances' => '全部发放',
+    'issued_from' => '发放开始时间',
+    'issued_until' => '发放截止时间',
     'set_next_prize' => '指定下次红包雨奖品',
     'next_prize_help' => '仅限虚拟账号。指定奖品仅生效一次，可抽中权重0或库存0的奖品，不扣真实库存；抽奖仍受活动时间限制。留空保存即可取消指定，恢复随机抽奖。',
     'random_prize' => '随机抽奖（取消指定）',

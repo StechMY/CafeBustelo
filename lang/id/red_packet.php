@@ -1,6 +1,17 @@
 <?php
 
 return [
+    'issuance_records' => 'Riwayat pemberian kesempatan angpau',
+    'issuance_help' => 'Jumlah mencakup kesempatan yang sudah digunakan. Pilih Riwayat tanpa penanda untuk melihat catatan lama. Filter berdasarkan waktu pemberian (:timezone). Satu rentang waktu dapat memuat pemberian reguler dan susulan.',
+    'issued_total' => 'Total diberikan',
+    'invite_first_purchase' => 'Pembelian pertama undangan',
+    'issuance_type' => 'Cara pemberian',
+    'confirmed_backfill' => 'Susulan terkonfirmasi',
+    'live_issuance' => 'Pemberian reguler',
+    'legacy_issuance' => 'Riwayat tanpa penanda',
+    'all_issuances' => 'Semua pemberian',
+    'issued_from' => 'Diberikan mulai',
+    'issued_until' => 'Diberikan hingga',
     'set_next_prize' => 'Atur hadiah angpau berikutnya',
     'next_prize_help' => 'Khusus akun virtual. Hadiah berlaku sekali, termasuk bobot 0 atau stok 0, tanpa mengurangi stok nyata. Jadwal acara tetap berlaku. Kosongkan untuk membatalkan dan kembali ke undian acak.',
     'random_prize' => 'Undian acak (hapus pilihan)',
