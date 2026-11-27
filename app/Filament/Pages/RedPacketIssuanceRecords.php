@@ -44,7 +44,7 @@ class RedPacketIssuanceRecords extends Page implements HasTable
             'from' => 'nullable|date',
             'until' => 'nullable|date',
         ]);
-        $method = $filters['method'] ?? 'backfill';
+        $method = $filters['method'] ?? 'all';
         $this->tableFilters = [
             'issuance' => ['value' => $method === 'all' ? null : $method],
             'issued_at' => ['from' => $filters['from'] ?? null, 'until' => $filters['until'] ?? null],
@@ -162,7 +162,7 @@ class RedPacketIssuanceRecords extends Page implements HasTable
     {
         return $table->filters([
                 SelectFilter::make('issuance')->label(__('red_packet.issuance_type'))
-                    ->placeholder(__('red_packet.all_issuances'))->default('backfill')
+                    ->placeholder(__('red_packet.all_issuances'))
                     ->options([
                         'backfill' => __('red_packet.confirmed_backfill'),
                         'live' => __('red_packet.live_issuance'),

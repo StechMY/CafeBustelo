@@ -225,7 +225,7 @@ class RedPacketActivityTest extends TestCase
             ->assertCanSeeTableRecords([$owner, $other])->searchTable('ledger-owner')
             ->assertCanSeeTableRecords([$owner])->assertCanNotSeeTableRecords([$other]);
         $summary = $page->instance()->getTableRecords()->first();
-        foreach (['chances' => 4, 'invites' => 1, 'bonus_three' => 1, 'bonus_five' => 2] as $column => $count) {
+        foreach (['chances' => 6, 'invites' => 2, 'bonus_three' => 1, 'bonus_five' => 2, 'upgrades' => 1] as $column => $count) {
             $page->assertTableColumnStateSet($column, $count, $summary);
         }
         $page->filterTable('issuance', 'legacy');
@@ -268,10 +268,11 @@ class RedPacketActivityTest extends TestCase
         $from = '2026-11-17 08:30:00';
         $url = RedPacketIssuanceRecords::getUrl(['recipient' => $owner->id, 'method' => 'backfill', 'from' => $from]);
         Livewire::test(RedPacketIssuanceRecords::class)
+            ->filterTable('issuance', 'backfill')
             ->filterTable('issued_at', ['from' => $from, 'until' => null])->assertSeeHtml($url);
         $this->get($url)->assertOk()->assertSee($buyer->username)->assertSee('S1 · Original limited product')
             ->assertSee('2026-11-15 23:59:30')->assertDontSee('Renamed after purchase')->assertDontSee($liveBuyer->username);
-        $details = Livewire::withQueryParams(['recipient' => $owner->id, 'method' => 'all'])
+        $details = Livewire::withQueryParams(['recipient' => $owner->id])
             ->test(RedPacketIssuanceRecords::class)->assertSee($liveBuyer->username);
         $rows = $details->instance()->getTableRecords()->getCollection();
         $this->assertCount(6, $rows->where('source', 'invite'));
