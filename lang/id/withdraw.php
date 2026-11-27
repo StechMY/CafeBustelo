@@ -84,6 +84,7 @@ return [
         'completed' => 'Ditangani · Dibayar',
         'manual_completed' => 'Ditangani · Persetujuan manual',
         'cancelled' => 'Ditangani · Dibatalkan / Dikembalikan',
+        'refunded' => 'Ditangani · Dikembalikan ke dompet',
         'review' => 'Perlu pemeriksaan keuangan',
         'unknown' => 'Periksa catatan pembayaran',
     ],
@@ -100,6 +101,7 @@ return [
         'completed' => 'Gateway melaporkan pembayaran selesai.',
         'manual_completed' => 'Dicatat selesai melalui persetujuan manual; tidak menggunakan pembayaran gateway.',
         'cancelled' => 'Penarikan dibatalkan dan dana yang dikunci telah dikembalikan.',
+        'refunded' => 'Pembayaran yang dikembalikan telah dikreditkan ke saldo yang dapat ditarik oleh anggota.',
         'review' => 'Cocokkan catatan pembayaran dan pengembalian dana sebelum tindakan berikutnya.',
         'unknown' => 'Catatan saat ini belum memastikan tahap pembayaran. Periksa detail penarikan.',
     ],
@@ -178,5 +180,6 @@ return [
         'overdue' => 'Pembayaran Kedaluwarsa',
         'refund_review' => 'Pembayaran Perlu Ditinjau',
         'cancelled' => 'Dibatalkan / Dikembalikan',
+        'refunded' => 'Dikembalikan ke dompet',
     ],
 ];

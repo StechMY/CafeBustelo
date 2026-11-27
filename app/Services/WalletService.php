@@ -30,12 +30,13 @@ class WalletService
         ?Model $reference = null,
         ?string $remarks = null,
         array $meta = [],
+        ?string $idempotencyKey = null,
     ): WalletTransaction {
         if ((float) $amount <= 0) {
             throw new RuntimeException('Credit amount must be greater than zero.');
         }
 
-        return DB::transaction(function () use ($user, $walletType, $transactionType, $amount, $reference, $remarks, $meta, ): WalletTransaction {
+        return DB::transaction(function () use ($user, $walletType, $transactionType, $amount, $reference, $remarks, $meta, $idempotencyKey): WalletTransaction {
             $wallet = Wallet::query()
                 ->where('user_id', $user->id)
                 ->where('type', $walletType)
@@ -68,6 +69,7 @@ class WalletService
                 'wallet_id' => $wallet->id,
                 'wallet_type' => $walletType,
                 'type' => $transactionType,
+                'idempotency_key' => $idempotencyKey,
                 'direction' => WalletTransaction::DIRECTION_CREDIT,
                 'amount' => $amount,
                 'balance_before' => $balanceBefore,

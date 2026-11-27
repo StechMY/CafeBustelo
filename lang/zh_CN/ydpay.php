@@ -1,6 +1,11 @@
 <?php
 
 return [
+    'returned_payout_refund' => 'YDPAY · 退回会员钱包',
+    'returned_payout_refund_help' => '再次向 YDPAY 确认原订单已退回后，将原提现金额 :amount VND（含原手续费）退回会员的可提现钱包。',
+    'returned_payout_refund_confirm' => '确认退回钱包',
+    'returned_payout_refund_done' => '原提现金额已退回会员钱包。',
+    'returned_payout_refund_unavailable' => '暂无法退款，请核对原单的 YDPAY 退回状态和提现账务记录。',
     'deposit_vnd_per_usd' => '充值折算汇率',
     'deposit_vnd_per_usd_help' => '填写 1 美元等于多少越南盾。每笔 YDPAY 充值确认到账时会保存当时的汇率。',
     'deposit_usd_estimate' => 'YDPAY 充值折合美元（估算）',
@@ -47,7 +52,7 @@ return [
         '3' => '3 · 付款失败',
         '4' => '4 · 待平台审核',
         '5' => '5 · 待商户确认',
-        '6' => '6 · 已退回，需财务复核',
+        '6' => '6 · YDPAY 已退回',
     ],
     'review_title' => '支付需要复核',
     'review_help' => '支付平台报告退款或测试支付，请联系客服确认，当前不能视为付款成功。',

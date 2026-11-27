@@ -35,7 +35,7 @@ class YdPayDiagnostics
                 // Diagnostics never decide payment status, release reserves, or replace terminal reasons.
                 $unresolved = $order instanceof RechargeRequest
                     ? $order->isPending() && ! $order->requiresGatewayReview()
-                    : ! in_array($order->payout_status, ['completed', 'cancelled', 'failed', 'refund_review'], true);
+                    : ! in_array($order->payout_status, ['completed', 'cancelled', 'failed', 'refund_review', WithdrawRequest::PAYOUT_REFUNDED], true);
                 if ($unresolved) {
                     $updates['gateway_fail_reason'] = $diagnostic['message'];
                 }

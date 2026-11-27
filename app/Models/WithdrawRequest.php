@@ -47,6 +47,8 @@ class WithdrawRequest extends Model
 
     public const PAYOUT_REFUND_REVIEW = 'refund_review';
 
+    public const PAYOUT_REFUNDED = 'refunded';
+
     public const PAYOUT_CANCELLED = 'cancelled';
 
     protected $fillable = [
@@ -240,7 +242,21 @@ class WithdrawRequest extends Model
     {
         return $this->isApproved()
             && filled($this->gateway_current_merchant_order_id)
-            && ! in_array($this->payout_status, [self::PAYOUT_COMPLETED, self::PAYOUT_CANCELLED], true);
+            && ! in_array($this->payout_status, [self::PAYOUT_CANCELLED, self::PAYOUT_REFUNDED], true)
+            && (! $this->isPayoutCompleted() || $this->gateway_provider === 'ydpay');
+    }
+
+    public function canRefundReturnedYdPayPayout(): bool
+    {
+        return $this->isApproved()
+            && $this->gateway_provider === 'ydpay'
+            && $this->gateway_completed_at !== null
+            && $this->payout_status === self::PAYOUT_REFUND_REVIEW
+            && $this->gateway_payment_status === self::PAYOUT_REFUND_REVIEW
+            && data_get($this->gateway_meta, 'ydpay_status') === '6'
+            && filled($this->gateway_current_merchant_order_id)
+            && data_get($this->gateway_meta, 'financial_review_merchant_order_id') === $this->gateway_current_merchant_order_id
+            && ! $this->isManuallySettledPayout();
     }
 
     public function payoutStatusLabel(): string
@@ -307,7 +323,8 @@ class WithdrawRequest extends Model
                 $query->where('status', self::STATUS_PENDING)
                     ->orWhere(function (Builder $query): void {
                         $query->where('status', self::STATUS_APPROVED)
-                            ->whereNotIn('payout_status', [self::PAYOUT_COMPLETED, self::PAYOUT_CANCELLED]);
+                            ->whereNotIn('payout_status', [self::PAYOUT_COMPLETED, self::PAYOUT_CANCELLED, self::PAYOUT_REFUNDED])
+                            ->whereNull('gateway_completed_at');
                     });
             })
             ->whereNotExists(function ($query): void {

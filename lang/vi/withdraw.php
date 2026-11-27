@@ -85,6 +85,7 @@ return [
         'completed' => 'Đã xử lý · Đã thanh toán',
         'manual_completed' => 'Đã xử lý · Duyệt thủ công',
         'cancelled' => 'Đã xử lý · Đã hủy / Hoàn tiền',
+        'refunded' => 'Đã xử lý · Đã hoàn về ví',
         'review' => 'Cần đối soát tài chính',
         'unknown' => 'Cần kiểm tra hồ sơ chi trả',
     ],
@@ -101,6 +102,7 @@ return [
         'completed' => 'Cổng thanh toán đã báo thanh toán hoàn tất.',
         'manual_completed' => 'Được ghi nhận hoàn tất qua duyệt thủ công; không chi trả qua cổng.',
         'cancelled' => 'Yêu cầu đã bị hủy và tiền bị khóa đã được hoàn lại.',
+        'refunded' => 'Khoản chi trả bị trả lại đã được hoàn vào ví có thể rút của thành viên.',
         'review' => 'Đối soát hồ sơ chi trả và hoàn tiền trước khi xử lý tiếp.',
         'unknown' => 'Hồ sơ hiện tại chưa xác định được giai đoạn chi trả. Hãy xem chi tiết yêu cầu.',
     ],
@@ -179,5 +181,6 @@ return [
         'overdue' => 'Thanh toán quá hạn',
         'refund_review' => 'Cần xem xét thanh toán',
         'cancelled' => 'Đã hủy / Đã hoàn tiền',
+        'refunded' => 'Đã hoàn về ví',
     ],
 ];

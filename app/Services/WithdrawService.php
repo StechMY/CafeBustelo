@@ -524,7 +524,7 @@ class WithdrawService
                 ->lockForUpdate()
                 ->firstOrFail();
 
-            if ($lockedRequest->isPayoutCompleted()) {
+            if ($lockedRequest->isPayoutCompleted() || $lockedRequest->payout_status === WithdrawRequest::PAYOUT_REFUNDED) {
                 return false;
             }
 

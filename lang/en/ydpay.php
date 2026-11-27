@@ -1,6 +1,11 @@
 <?php
 
 return [
+    'returned_payout_refund' => 'YDPAY · Refund returned payout to wallet',
+    'returned_payout_refund_help' => 'After confirming the return with YDPAY, credit :amount VND, including the original fee, to the member’s withdrawable wallet.',
+    'returned_payout_refund_confirm' => 'Confirm wallet refund',
+    'returned_payout_refund_done' => 'The original withdrawal amount was refunded to the member’s wallet.',
+    'returned_payout_refund_unavailable' => 'Refund unavailable. Check the original YDPAY return and withdrawal records.',
     'deposit_vnd_per_usd' => 'Deposit exchange rate',
     'deposit_vnd_per_usd_help' => 'Enter how many VND equal 1 USD. Each YDPAY deposit keeps the rate in effect when payment is confirmed.',
     'deposit_usd_estimate' => 'YDPAY deposits in USD (estimated)',
@@ -47,7 +52,7 @@ return [
         '3' => '3 · Failed',
         '4' => '4 · Awaiting provider review',
         '5' => '5 · Awaiting merchant confirmation',
-        '6' => '6 · Refund reported — review required',
+        '6' => '6 · Returned by YDPAY',
     ],
     'review_title' => 'Payment requires review',
     'review_help' => 'The provider reported a refund or a test payment. Please contact support; this is not a confirmed payment.',

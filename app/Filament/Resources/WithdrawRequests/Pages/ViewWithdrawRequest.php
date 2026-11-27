@@ -4,6 +4,7 @@ namespace App\Filament\Resources\WithdrawRequests\Pages;
 
 use App\Filament\Resources\WithdrawRequests\Actions\ConfirmGatewayUnpaidAction;
 use App\Filament\Resources\WithdrawRequests\Actions\MarkFailedPayoutPaidAction;
+use App\Filament\Resources\WithdrawRequests\Actions\RefundYdPayReturnedPayoutAction;
 use App\Filament\Resources\WithdrawRequests\Actions\RevertManualApprovalAction;
 use App\Filament\Resources\WithdrawRequests\WithdrawRequestResource;
 use App\Models\WithdrawRequest;
@@ -41,6 +42,7 @@ class ViewWithdrawRequest extends ViewRecord
             \App\Filament\Resources\WithdrawRequests\Actions\ApproveYdPayWithdrawalAction::make(),
             \App\Filament\Resources\WithdrawRequests\Actions\ApproveYdPayWithdrawalAction::make(instant: true),
             \App\Filament\Resources\WithdrawRequests\Actions\RetryYdPayNotAcceptedAction::make(),
+            RefundYdPayReturnedPayoutAction::make(),
             Action::make('approve_manual')
                 ->label(__('withdraw.approve_manual'))
                 ->icon('heroicon-o-check-circle')

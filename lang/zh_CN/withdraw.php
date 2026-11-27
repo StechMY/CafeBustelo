@@ -85,6 +85,7 @@ return [
         'completed' => '已处理 · 已付款',
         'manual_completed' => '已处理 · 直接审核',
         'cancelled' => '已处理 · 已取消／退款',
+        'refunded' => '已处理 · 已退回会员钱包',
         'review' => '需要财务核对',
         'unknown' => '需要核对出款记录',
     ],
@@ -101,6 +102,7 @@ return [
         'completed' => '支付网关已报告付款完成。',
         'manual_completed' => '已通过直接审核记为完成，未使用支付网关出款。',
         'cancelled' => '提现已取消，锁定资金已退还。',
+        'refunded' => '退回的出款已退还至会员的可提现钱包。',
         'review' => '请先核对出款及退款记录，再进行后续处理。',
         'unknown' => '现有记录无法确认出款阶段，请查看提现详情。',
     ],
@@ -179,5 +181,6 @@ return [
         'overdue' => '付款已逾期',
         'refund_review' => '付款需要审核',
         'cancelled' => '已取消 / 已退款',
+        'refunded' => '已退回会员钱包',
     ],
 ];

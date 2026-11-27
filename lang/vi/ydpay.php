@@ -1,6 +1,11 @@
 <?php
 
 return [
+    'returned_payout_refund' => 'YDPAY · Hoàn khoản chi trả về ví',
+    'returned_payout_refund_help' => 'Sau khi YDPAY xác nhận đơn đã hoàn, cộng :amount VND kèm phí ban đầu vào ví có thể rút của thành viên.',
+    'returned_payout_refund_confirm' => 'Xác nhận hoàn về ví',
+    'returned_payout_refund_done' => 'Số tiền rút ban đầu đã được hoàn về ví của thành viên.',
+    'returned_payout_refund_unavailable' => 'Chưa thể hoàn tiền. Hãy đối soát khoản hoàn từ YDPAY và giao dịch rút gốc.',
     'deposit_vnd_per_usd' => 'Tỷ giá quy đổi tiền nạp',
     'deposit_vnd_per_usd_help' => 'Nhập số VND tương đương 1 USD. Mỗi khoản nạp YDPAY lưu tỷ giá tại thời điểm xác nhận thanh toán.',
     'deposit_usd_estimate' => 'Tiền nạp YDPAY quy đổi sang USD (ước tính)',
@@ -47,7 +52,7 @@ return [
         '3' => '3 · Thất bại',
         '4' => '4 · Chờ nền tảng duyệt',
         '5' => '5 · Chờ người bán xác nhận',
-        '6' => '6 · Đã hoàn tiền — cần đối soát',
+        '6' => '6 · YDPAY đã hoàn tiền',
     ],
     'review_title' => 'Thanh toán cần kiểm tra',
     'review_help' => 'Nhà cung cấp báo hoàn tiền hoặc thanh toán thử. Vui lòng liên hệ hỗ trợ; chưa thể xác nhận thanh toán.',

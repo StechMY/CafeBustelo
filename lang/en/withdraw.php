@@ -85,6 +85,7 @@ return [
         'completed' => 'Handled · Paid',
         'manual_completed' => 'Handled · Manual approval',
         'cancelled' => 'Handled · Cancelled / Refunded',
+        'refunded' => 'Handled · Refunded to wallet',
         'review' => 'Financial review required',
         'unknown' => 'Check payout records',
     ],
@@ -101,6 +102,7 @@ return [
         'completed' => 'The gateway reported payment completed.',
         'manual_completed' => 'Recorded as completed through manual approval; no gateway payout was used.',
         'cancelled' => 'The withdrawal was cancelled and the reserved funds were returned.',
+        'refunded' => 'The returned payout was refunded to the member’s withdrawable wallet.',
         'review' => 'Reconcile the payout and refund records before taking further action.',
         'unknown' => 'The current records do not establish the payout stage. Review the withdrawal details.',
     ],
@@ -179,5 +181,6 @@ return [
         'overdue' => 'Payout Overdue',
         'refund_review' => 'Payout Requires Review',
         'cancelled' => 'Cancelled / Refunded',
+        'refunded' => 'Refunded to wallet',
     ],
 ];

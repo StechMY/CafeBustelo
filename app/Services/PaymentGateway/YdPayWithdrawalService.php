@@ -3,9 +3,13 @@
 namespace App\Services\PaymentGateway;
 
 use App\Models\AdminUser;
+use App\Models\PaymentGatewayEvent;
+use App\Models\Wallet;
+use App\Models\WalletTransaction;
 use App\Models\WithdrawalPayoutAttempt;
 use App\Models\WithdrawRequest;
 use App\Services\Settings\YdPaySettings;
+use App\Services\WalletService;
 use App\Services\WithdrawService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -19,6 +23,7 @@ class YdPayWithdrawalService
         private readonly YdPayGateway $gateway,
         private readonly PaymentGatewayEventRecorder $events,
         private readonly WithdrawService $withdrawals,
+        private readonly WalletService $wallets,
     ) {}
 
     public function approve(WithdrawRequest $request, AdminUser $admin, ?string $reason = null, bool $instant = false, ?string $ip = null): WithdrawRequest
@@ -279,6 +284,83 @@ class YdPayWithdrawalService
         return $this->withdrawals->cancelPayout($request->fresh(), $request->payoutAttempts()->latest('attempt_no')->firstOrFail(), $admin, $reason, $ip);
     }
 
+    public function refundReturnedPayout(WithdrawRequest $request, AdminUser $admin, string $reason, ?string $ip = null): WalletTransaction
+    {
+        Gate::forUser($admin)->authorize('cancelGateway', $request);
+        Gate::forUser($admin)->authorize('syncGateway', $request);
+        $reason = trim($reason);
+        Validator::make(['reason' => $reason], ['reason' => ['required', 'string', 'max:1000']])->validate();
+
+        $request = $request->fresh();
+        if (! $request->canRefundReturnedYdPayPayout()) {
+            throw new RuntimeException(__('ydpay.returned_payout_refund_unavailable'));
+        }
+        $merchantOrder = $request->gateway_current_merchant_order_id;
+        $result = $this->sync($request, 'filament_returned_payout_refund_check', $admin, $reason, $ip);
+        if ($result['payment_status'] !== '6' || $result['result'] !== WithdrawRequest::PAYOUT_REFUND_REVIEW) {
+            throw new RuntimeException(__('ydpay.returned_payout_refund_unavailable'));
+        }
+
+        return DB::transaction(function () use ($request, $merchantOrder, $admin, $reason, $ip): WalletTransaction {
+            $locked = WithdrawRequest::query()->whereKey($request->id)->lockForUpdate()->firstOrFail();
+            if (! $locked->canRefundReturnedYdPayPayout() || $locked->gateway_current_merchant_order_id !== $merchantOrder
+                || $locked->hasGatewayCancellationLedger()) {
+                throw new RuntimeException(__('ydpay.returned_payout_refund_unavailable'));
+            }
+            $attempt = $locked->payoutAttempts()->latest('attempt_no')->lockForUpdate()->firstOrFail();
+            if ($attempt->provider !== 'ydpay' || $attempt->merchant_order_id !== $merchantOrder || ! $attempt->isCompleted()
+                || $locked->payoutAttempts()->whereKeyNot($attempt->id)->where('gateway_status', 'completed')->exists()) {
+                throw new RuntimeException(__('ydpay.returned_payout_refund_unavailable'));
+            }
+
+            $completed = PaymentGatewayEvent::query()->where('withdraw_request_id', $locked->id)
+                ->where('withdrawal_payout_attempt_id', $attempt->id)->where('provider', 'ydpay')
+                ->where('event_type', 'withdrawal.gateway_completed')->sole();
+            $returnEvidence = PaymentGatewayEvent::query()->where('withdraw_request_id', $locked->id)
+                ->where('withdrawal_payout_attempt_id', $attempt->id)->where('provider', 'ydpay')
+                ->where('source', 'ydpay_sync')
+                ->where('signature_valid', true)->latest('id')->firstOrFail();
+            $debit = WalletTransaction::query()->whereMorphedTo('reference', $locked)
+                ->where('type', 'withdraw_request_locked')->where('direction', WalletTransaction::DIRECTION_DEBIT)
+                ->where('user_id', $locked->user_id)->where('wallet_type', Wallet::TYPE_WITHDRAWABLE)->sole();
+            if ($debit->amount !== $locked->amount || data_get($completed->payload, 'reserved_amount_consumed') !== $locked->amount
+                || $returnEvidence->event_type !== 'ydpay.payout.refund_review'
+                || (string) data_get($returnEvidence->payload, 'status') !== '6') {
+                throw new RuntimeException(__('ydpay.returned_payout_refund_unavailable'));
+            }
+
+            $user = $locked->user()->lockForUpdate()->firstOrFail();
+            $meta = [
+                'withdrawal_payout_attempt_id' => $attempt->id,
+                'merchant_order_id' => $merchantOrder,
+                'original_debit_id' => $debit->id,
+                'provider_return_event_id' => $returnEvidence->id,
+                'admin_user_id' => $admin->id,
+                'reason' => $reason,
+                'ip' => $ip,
+            ];
+            $refund = $this->wallets->credit(
+                user: $user,
+                walletType: Wallet::TYPE_WITHDRAWABLE,
+                transactionType: 'withdraw_ydpay_returned_refund',
+                amount: $debit->amount,
+                reference: $locked,
+                remarks: 'Refund of a returned YDPAY payout',
+                meta: $meta,
+                idempotencyKey: 'withdraw_ydpay_returned_refund:'.$locked->id,
+            );
+            $locked->forceFill([
+                'payout_status' => WithdrawRequest::PAYOUT_REFUNDED,
+                'gateway_fail_reason' => null,
+            ])->save();
+            $this->events->recordWithdrawal('ydpay.payout.wallet_refunded', $locked, $attempt,
+                actor: $admin, source: 'filament', reason: $reason, paymentStatus: WithdrawRequest::PAYOUT_REFUNDED,
+                payload: [...$meta, 'wallet_transaction_id' => $refund->id, 'amount' => $refund->amount]);
+
+            return $refund;
+        });
+    }
+
     public function process(array $payload, string $source): string
     {
         if (! in_array($source, ['callback', 'sync'], true) || ! $this->gateway->verify($payload)
@@ -310,6 +392,12 @@ class YdPayWithdrawalService
             $cancelled = $request->payout_status === 'cancelled' || $request->hasGatewayCancellationLedger();
             $current = $request->gateway_current_merchant_order_id === $attempt->merchant_order_id;
             $request->forceFill([$source === 'callback' ? 'gateway_last_callback_at' : 'gateway_last_synced_at' => now()])->save();
+            if ($request->payout_status === WithdrawRequest::PAYOUT_REFUNDED) {
+                $this->events->recordWithdrawal('ydpay.payout.status_after_wallet_refund', $request, $attempt,
+                    source: 'ydpay_'.$source, paymentStatus: $state, payload: $payload, signatureValid: true);
+
+                return WithdrawRequest::PAYOUT_REFUNDED;
+            }
             // Out-of-order processing updates cannot undo a verified final failure.
             if ($attempt->gateway_status === 'failed' && $state === 'processing') {
                 $this->events->recordWithdrawal('ydpay.payout.stale_status_ignored', $request, $attempt,

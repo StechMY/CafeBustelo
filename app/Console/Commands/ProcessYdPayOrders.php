@@ -45,7 +45,7 @@ class ProcessYdPayOrders extends Command
             }
         }
         $requests = WithdrawRequest::query()->where('gateway_provider', 'ydpay')->where('status', 'approved')
-            ->whereNotIn('payout_status', ['completed', 'cancelled', 'refund_review'])
+            ->whereNotIn('payout_status', ['completed', 'cancelled', 'refund_review', WithdrawRequest::PAYOUT_REFUNDED])
             ->whereRaw($business === 'withdraw' ? '1 = 1' : '1 = 0')
             ->orderBy('gateway_last_synced_at')->limit($limit)->get();
         foreach ($requests as $request) {

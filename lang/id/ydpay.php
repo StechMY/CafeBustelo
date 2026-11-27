@@ -1,6 +1,11 @@
 <?php
 
 return [
+    'returned_payout_refund' => 'YDPAY · Kembalikan pembayaran ke dompet',
+    'returned_payout_refund_help' => 'Setelah YDPAY mengonfirmasi pengembalian, kreditkan :amount VND termasuk biaya awal ke saldo yang dapat ditarik oleh anggota.',
+    'returned_payout_refund_confirm' => 'Konfirmasi pengembalian ke dompet',
+    'returned_payout_refund_done' => 'Jumlah penarikan awal telah dikembalikan ke dompet anggota.',
+    'returned_payout_refund_unavailable' => 'Pengembalian belum dapat dilakukan. Periksa status pengembalian YDPAY dan catatan penarikan awal.',
     'deposit_vnd_per_usd' => 'Kurs konversi setoran',
     'deposit_vnd_per_usd_help' => 'Masukkan jumlah VND yang setara dengan 1 USD. Setiap setoran YDPAY menyimpan kurs saat pembayaran dikonfirmasi.',
     'deposit_usd_estimate' => 'Setoran YDPAY dalam USD (perkiraan)',
@@ -47,7 +52,7 @@ return [
         '3' => '3 · Gagal',
         '4' => '4 · Menunggu tinjauan penyedia',
         '5' => '5 · Menunggu konfirmasi merchant',
-        '6' => '6 · Dikembalikan — perlu ditinjau',
+        '6' => '6 · Dikembalikan oleh YDPAY',
     ],
     'review_title' => 'Pembayaran perlu ditinjau',
     'review_help' => 'Penyedia melaporkan pengembalian atau pembayaran uji. Hubungi dukungan; pembayaran belum dapat dikonfirmasi.',

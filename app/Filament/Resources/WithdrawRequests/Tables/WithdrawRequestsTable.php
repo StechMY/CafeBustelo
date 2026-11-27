@@ -254,7 +254,8 @@ class WithdrawRequestsTable
                         WithdrawRequest::PAYOUT_CREATE_FAILED,
                         WithdrawRequest::PAYOUT_REFUND_REVIEW => 'danger',
 
-                        WithdrawRequest::PAYOUT_CANCELLED => 'gray',
+                        WithdrawRequest::PAYOUT_CANCELLED,
+                        WithdrawRequest::PAYOUT_REFUNDED => 'gray',
 
                         default => 'warning',
                     })
@@ -709,6 +710,7 @@ class WithdrawRequestsTable
                     \App\Filament\Resources\WithdrawRequests\Actions\ApproveYdPayWithdrawalAction::make(),
                     \App\Filament\Resources\WithdrawRequests\Actions\ApproveYdPayWithdrawalAction::make(instant: true),
                     \App\Filament\Resources\WithdrawRequests\Actions\RetryYdPayNotAcceptedAction::make(),
+                    \App\Filament\Resources\WithdrawRequests\Actions\RefundYdPayReturnedPayoutAction::make(),
                     /*
                     |--------------------------------------------------------------------------
                     | Approve Manually
@@ -1402,6 +1404,10 @@ class WithdrawRequestsTable
 
     private static function handlingState(WithdrawRequest $record): string
     {
+        if ($record->payout_status === WithdrawRequest::PAYOUT_REFUNDED) {
+            return 'refunded';
+        }
+
         if ($record->payout_status === WithdrawRequest::PAYOUT_REFUND_REVIEW
             || data_get($record->gateway_meta, 'financial_review_reason') === 'provider_completed_after_manual_payout') {
             return 'review';
@@ -1598,7 +1604,8 @@ class WithdrawRequestsTable
             WithdrawRequest::PAYOUT_CREATE_FAILED,
             WithdrawRequest::PAYOUT_REFUND_REVIEW => 'danger',
 
-            WithdrawRequest::PAYOUT_CANCELLED => 'gray',
+            WithdrawRequest::PAYOUT_CANCELLED,
+            WithdrawRequest::PAYOUT_REFUNDED => 'gray',
 
             default => 'info',
         };
