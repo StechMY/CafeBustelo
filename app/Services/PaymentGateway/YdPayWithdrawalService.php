@@ -8,12 +8,15 @@ use App\Models\Wallet;
 use App\Models\WalletTransaction;
 use App\Models\WithdrawalPayoutAttempt;
 use App\Models\WithdrawRequest;
+use App\Models\YdPayPayoutReturnEvidence;
 use App\Services\Settings\YdPaySettings;
 use App\Services\WalletService;
 use App\Services\WithdrawService;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\ValidationException;
 use RuntimeException;
 use Throwable;
 
@@ -301,9 +304,47 @@ class YdPayWithdrawalService
             throw new RuntimeException(__('ydpay.returned_payout_refund_unavailable'));
         }
 
-        return DB::transaction(function () use ($request, $merchantOrder, $admin, $reason, $ip): WalletTransaction {
+        return $this->refundPayoutToWallet($request, $merchantOrder, $admin, $reason, $ip);
+    }
+
+    public function confirmReturnAndRefund(WithdrawRequest $request, AdminUser $admin, array $data, ?string $ip = null): WalletTransaction
+    {
+        Gate::forUser($admin)->authorize('confirmYdPayReturn', $request);
+        $proof = Validator::make($data, [
+            'provider_order_id' => ['nullable', 'string', 'max:128'],
+            'return_reference' => ['nullable', 'string', 'max:128', 'regex:/\A[A-Za-z0-9][A-Za-z0-9._:\/-]*\z/'],
+            'returned_amount' => ['nullable', 'numeric', 'min:0.01', 'regex:/\A[0-9]{1,16}(?:\.[0-9]{1,2})?\z/'],
+            'proof_file' => ['nullable', 'file', 'mimetypes:application/pdf,image/jpeg,image/png', 'max:4096'],
+            'reason' => ['nullable', 'string', 'max:1000'],
+        ])->validate();
+
+        $request = $request->fresh();
+        if (! $request->canConfirmYdPayReturn()) {
+            throw new RuntimeException(__('ydpay.returned_payout_refund_unavailable'));
+        }
+        $merchantOrder = $request->gateway_current_merchant_order_id;
+        $result = $this->sync($request, 'filament_manual_return_refund_check', $admin, ip: $ip);
+        if ($result['payment_status'] !== '2' || $result['result'] !== WithdrawRequest::PAYOUT_COMPLETED) {
+            throw new RuntimeException(__('ydpay.manual_return_requires_paid_status'));
+        }
+
+        $reason = trim($proof['reason'] ?? '');
+
+        return $this->refundPayoutToWallet($request, $merchantOrder, $admin, $reason === '' ? null : $reason, $ip, $proof);
+    }
+
+    private function refundPayoutToWallet(
+        WithdrawRequest $request,
+        string $merchantOrder,
+        AdminUser $admin,
+        ?string $reason,
+        ?string $ip,
+        ?array $proof = null,
+    ): WalletTransaction {
+        return DB::transaction(function () use ($request, $merchantOrder, $admin, $reason, $ip, $proof): WalletTransaction {
             $locked = WithdrawRequest::query()->whereKey($request->id)->lockForUpdate()->firstOrFail();
-            if (! $locked->canRefundReturnedYdPayPayout() || $locked->gateway_current_merchant_order_id !== $merchantOrder
+            $eligible = $proof === null ? $locked->canRefundReturnedYdPayPayout() : $locked->canConfirmYdPayReturn();
+            if (! $eligible || $locked->gateway_current_merchant_order_id !== $merchantOrder
                 || $locked->hasGatewayCancellationLedger()) {
                 throw new RuntimeException(__('ydpay.returned_payout_refund_unavailable'));
             }
@@ -316,16 +357,20 @@ class YdPayWithdrawalService
             $completed = PaymentGatewayEvent::query()->where('withdraw_request_id', $locked->id)
                 ->where('withdrawal_payout_attempt_id', $attempt->id)->where('provider', 'ydpay')
                 ->where('event_type', 'withdrawal.gateway_completed')->sole();
-            $returnEvidence = PaymentGatewayEvent::query()->where('withdraw_request_id', $locked->id)
+            $providerQuery = PaymentGatewayEvent::query()->where('withdraw_request_id', $locked->id)
                 ->where('withdrawal_payout_attempt_id', $attempt->id)->where('provider', 'ydpay')
                 ->where('source', 'ydpay_sync')
                 ->where('signature_valid', true)->latest('id')->firstOrFail();
             $debit = WalletTransaction::query()->whereMorphedTo('reference', $locked)
                 ->where('type', 'withdraw_request_locked')->where('direction', WalletTransaction::DIRECTION_DEBIT)
                 ->where('user_id', $locked->user_id)->where('wallet_type', Wallet::TYPE_WITHDRAWABLE)->sole();
+            $refundKey = 'withdraw_ydpay_returned_refund:'.$locked->id;
+            $expectedStatus = $proof === null ? '6' : '2';
+            $expectedEvent = $proof === null ? 'ydpay.payout.refund_review' : 'ydpay.payout.completed';
             if ($debit->amount !== $locked->amount || data_get($completed->payload, 'reserved_amount_consumed') !== $locked->amount
-                || $returnEvidence->event_type !== 'ydpay.payout.refund_review'
-                || (string) data_get($returnEvidence->payload, 'status') !== '6') {
+                || $providerQuery->event_type !== $expectedEvent
+                || (string) data_get($providerQuery->payload, 'status') !== $expectedStatus
+                || WalletTransaction::query()->where('idempotency_key', $refundKey)->exists()) {
                 throw new RuntimeException(__('ydpay.returned_payout_refund_unavailable'));
             }
 
@@ -334,11 +379,24 @@ class YdPayWithdrawalService
                 'withdrawal_payout_attempt_id' => $attempt->id,
                 'merchant_order_id' => $merchantOrder,
                 'original_debit_id' => $debit->id,
-                'provider_return_event_id' => $returnEvidence->id,
                 'admin_user_id' => $admin->id,
                 'reason' => $reason,
                 'ip' => $ip,
             ];
+            if ($proof === null) {
+                $meta['provider_return_event_id'] = $providerQuery->id;
+            } else {
+                $evidence = $this->recordManualReturnEvidence($locked, $attempt, $proof);
+                $meta += [
+                    'manual_return_evidence_id' => $evidence->id,
+                    'provider_order_id' => $attempt->gateway_order_uid,
+                    'provider_return_reference' => $evidence->return_reference,
+                    'provider_returned_amount' => $evidence->returned_amount,
+                    'provider_query_event_id' => $providerQuery->id,
+                    'provider_status_at_refund' => $expectedStatus,
+                ];
+            }
+
             $refund = $this->wallets->credit(
                 user: $user,
                 walletType: Wallet::TYPE_WITHDRAWABLE,
@@ -347,7 +405,7 @@ class YdPayWithdrawalService
                 reference: $locked,
                 remarks: 'Refund of a returned YDPAY payout',
                 meta: $meta,
-                idempotencyKey: 'withdraw_ydpay_returned_refund:'.$locked->id,
+                idempotencyKey: $refundKey,
             );
             $locked->forceFill([
                 'payout_status' => WithdrawRequest::PAYOUT_REFUNDED,
@@ -359,6 +417,39 @@ class YdPayWithdrawalService
 
             return $refund;
         });
+    }
+
+    private function recordManualReturnEvidence(
+        WithdrawRequest $request,
+        WithdrawalPayoutAttempt $attempt,
+        array $proof,
+    ): YdPayPayoutReturnEvidence {
+        $providerOrderId = $proof['provider_order_id'] ?? null;
+        if (filled($providerOrderId) && $providerOrderId !== $attempt->gateway_order_uid) {
+            throw ValidationException::withMessages(['provider_order_id' => __('ydpay.manual_return_order_mismatch')]);
+        }
+        $returnedAmount = $proof['returned_amount'] ?? null;
+        if (filled($returnedAmount) && $this->gateway->minorAmount((string) $returnedAmount) !== $this->gateway->minorAmount($attempt->amount)) {
+            throw ValidationException::withMessages(['returned_amount' => __('ydpay.manual_return_amount_mismatch')]);
+        }
+
+        $file = $proof['proof_file'] ?? null;
+        $contents = $file?->get();
+        if ($file !== null && (! is_string($contents) || $contents === '')) {
+            throw ValidationException::withMessages(['proof_file' => __('validation.uploaded', ['attribute' => __('ydpay.manual_return_file')])]);
+        }
+
+        try {
+            return $request->ydpayPayoutReturnEvidence()->create([
+                'return_reference' => filled($proof['return_reference'] ?? null) ? strtoupper($proof['return_reference']) : null,
+                'returned_amount' => filled($returnedAmount) ? $attempt->amount : null,
+                'document_mime' => $file?->getMimeType(),
+                'document_sha256' => $contents === null ? null : hash('sha256', $contents),
+                'document_base64' => $contents === null ? null : base64_encode($contents),
+            ]);
+        } catch (UniqueConstraintViolationException) {
+            throw ValidationException::withMessages(['return_reference' => __('ydpay.manual_return_duplicate_evidence')]);
+        }
     }
 
     public function process(array $payload, string $source): string

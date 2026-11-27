@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\WithdrawRequests\Pages;
 
 use App\Filament\Resources\WithdrawRequests\Actions\ConfirmGatewayUnpaidAction;
+use App\Filament\Resources\WithdrawRequests\Actions\ConfirmYdPayReturnAction;
 use App\Filament\Resources\WithdrawRequests\Actions\MarkFailedPayoutPaidAction;
 use App\Filament\Resources\WithdrawRequests\Actions\RefundYdPayReturnedPayoutAction;
 use App\Filament\Resources\WithdrawRequests\Actions\RevertManualApprovalAction;
@@ -43,6 +44,15 @@ class ViewWithdrawRequest extends ViewRecord
             \App\Filament\Resources\WithdrawRequests\Actions\ApproveYdPayWithdrawalAction::make(instant: true),
             \App\Filament\Resources\WithdrawRequests\Actions\RetryYdPayNotAcceptedAction::make(),
             RefundYdPayReturnedPayoutAction::make(),
+            ConfirmYdPayReturnAction::make(),
+            Action::make('download_ydpay_return_evidence')
+                ->label(__('ydpay.manual_return_download'))
+                ->icon('heroicon-o-arrow-down-tray')
+                ->color('gray')
+                ->authorize(fn (WithdrawRequest $record): bool => Gate::allows('confirmYdPayReturn', $record))
+                ->visible(fn (WithdrawRequest $record): bool => $record->payout_status === WithdrawRequest::PAYOUT_REFUNDED
+                    && $record->ydpayPayoutReturnEvidence()->whereNotNull('document_sha256')->exists())
+                ->url(fn (WithdrawRequest $record): string => route('admin.withdraw-requests.ydpay-return-evidence', $record)),
             Action::make('approve_manual')
                 ->label(__('withdraw.approve_manual'))
                 ->icon('heroicon-o-check-circle')

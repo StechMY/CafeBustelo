@@ -259,6 +259,22 @@ class WithdrawRequest extends Model
             && ! $this->isManuallySettledPayout();
     }
 
+    public function canConfirmYdPayReturn(): bool
+    {
+        return $this->isApproved()
+            && $this->gateway_provider === 'ydpay'
+            && $this->isPayoutCompleted()
+            && $this->gateway_completed_at !== null
+            && $this->gateway_payment_status === WithdrawalPayoutAttempt::STATUS_COMPLETED
+            && filled($this->gateway_current_merchant_order_id)
+            && ! $this->isManuallySettledPayout();
+    }
+
+    public function ydpayPayoutReturnEvidence(): HasOne
+    {
+        return $this->hasOne(YdPayPayoutReturnEvidence::class);
+    }
+
     public function payoutStatusLabel(): string
     {
         return __('withdraw.payout_statuses.'.($this->payout_status ?: 'legacy'));

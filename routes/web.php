@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AccountPasswordController;
 use App\Http\Controllers\Admin\ImpersonateUserController;
+use App\Http\Controllers\Admin\YdPayReturnEvidenceController;
 use App\Http\Controllers\Auth\CustomerAuthController;
 use App\Http\Controllers\Auth\RegisterOtpController;
 use App\Http\Controllers\BankAccountController;
@@ -271,3 +272,7 @@ Route::middleware(['web', 'auth:admin'])
     )
     ->whereNumber('photo')
     ->name('admin.bank-account-review-requests.id-photo');
+
+Route::middleware('auth:admin')
+    ->get('/admin/withdraw-requests/{withdrawRequest}/ydpay-return-evidence', YdPayReturnEvidenceController::class)
+    ->name('admin.withdraw-requests.ydpay-return-evidence');

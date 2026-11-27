@@ -35,6 +35,7 @@ use Filament\Facades\Filament;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Validation\ValidationException;
@@ -283,6 +284,175 @@ class YdPayGatewayTest extends TestCase
         $this->assertSame(1, PaymentGatewayEvent::query()->where('event_type', 'ydpay.payout.wallet_refunded')->count());
         $this->assertSame(1, PaymentGatewayEvent::query()->where('event_type', 'withdrawal.gateway_completed')->count());
         Http::assertSentCount(2);
+    }
+
+    public function test_manual_ydpay_return_saves_downloadable_proof_and_refunds_once_while_provider_status_is_paid(): void
+    {
+        [$request, $attempt] = $this->paidYdPayWithdrawal();
+        $admin = AdminUser::query()->create(['username' => 'finance-admin', 'password' => bcrypt('password'), 'status' => 'active']);
+        $admin->givePermissionTo([
+            Permission::findOrCreate('View:WithdrawRequest', 'admin'),
+            Permission::findOrCreate('ViewAny:WithdrawRequest', 'admin'),
+            Permission::findByName('ConfirmYdPayReturn:Withdrawal', 'admin'),
+        ]);
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+        $this->actingAs($admin, 'admin');
+        $paid = $this->signed([...$this->payoutPayload($attempt->merchant_order_id, '2'), 'retCode' => '0']);
+        Http::fake(['gateway.example/api/agentpay/query_order' => Http::response($paid)]);
+        $form = $this->manualReturnForm($attempt->gateway_order_uid);
+        $file = $form['proof_file'];
+        unset($form['proof_file']);
+
+        $this->assertTrue(Gate::forUser($admin)->allows('confirmYdPayReturn', $request));
+        Livewire::test(ViewWithdrawRequest::class, ['record' => $request->id])
+            ->assertStatus(200)
+            ->assertActionVisible('confirm_ydpay_return')
+            ->assertActionHidden('refund_ydpay_returned_payout')
+            ->mountAction('confirm_ydpay_return')
+            ->setActionData($form)
+            ->set('mountedActions.0.data.proof_file', $file)
+            ->callMountedAction()
+            ->assertHasNoActionErrors()
+            ->assertActionHidden('confirm_ydpay_return')
+            ->assertActionVisible('download_ydpay_return_evidence');
+
+        $proof = $request->ydpayPayoutReturnEvidence()->sole();
+        $this->assertSame('RETURN-001', $proof->return_reference);
+        $this->assertSame('279000.00', $proof->returned_amount);
+        $this->assertSame(hash('sha256', $file->get()), $proof->document_sha256);
+        $this->get(route('admin.withdraw-requests.ydpay-return-evidence', $request))
+            ->assertDownload('ydpay-return-'.$request->id.'.pdf')->assertContent($file->get());
+
+        $refund = WalletTransaction::query()->where('type', 'withdraw_ydpay_returned_refund')->sole();
+        $this->assertSame('300000.00', $refund->amount);
+        $this->assertSame('withdraw_ydpay_returned_refund:'.$request->id, $refund->idempotency_key);
+        $audit = PaymentGatewayEvent::query()->where('event_type', 'ydpay.payout.wallet_refunded')->sole();
+        $this->assertSame($admin->id, $audit->payload['admin_user_id']);
+        $this->assertSame($proof->id, $audit->payload['manual_return_evidence_id']);
+        $this->assertSame($attempt->gateway_order_uid, $audit->payload['provider_order_id']);
+        $query = PaymentGatewayEvent::query()->findOrFail($audit->payload['provider_query_event_id']);
+        $this->assertTrue($query->signature_valid);
+        $this->assertSame('2', $query->payload['status']);
+        $service = app(YdPayWithdrawalService::class);
+        $this->assertSame('refunded', $service->process($this->signed([...$paid, 'status' => '6']), 'sync'));
+        $this->assertSame('refunded', $request->fresh()->payout_status);
+        $this->assertSame('completed', $request->fresh()->gateway_payment_status);
+        $this->assertSame('2', $request->fresh()->gateway_meta['ydpay_status']);
+        $this->assertSame('completed', $attempt->fresh()->gateway_status);
+        $this->assertSame('318455.00', Wallet::query()->sole()->balance);
+        $this->assertSame('120000.00', Wallet::query()->sole()->locked_balance);
+
+        try {
+            $service->confirmReturnAndRefund($request, $admin, $this->manualReturnForm($attempt->gateway_order_uid));
+            $this->fail('A refunded withdrawal must reject another credit.');
+        } catch (\RuntimeException $exception) {
+            $this->assertSame(__('ydpay.returned_payout_refund_unavailable'), $exception->getMessage());
+        }
+        $this->assertSame(2, WalletTransaction::query()->count());
+        Http::assertSentCount(1);
+    }
+
+    public function test_manual_ydpay_return_rejects_mismatched_evidence_and_reused_receipts(): void
+    {
+        [$first, $firstAttempt] = $this->paidYdPayWithdrawal();
+        [$second, $secondAttempt] = $this->paidYdPayWithdrawal(order: '20261109003');
+        $admin = $this->loginAdmin();
+        $service = app(YdPayWithdrawalService::class);
+        Http::fake(function ($http) {
+            $this->assertStringEndsWith('/api/agentpay/query_order', $http->url());
+
+            return Http::response($this->signed([...$this->payoutPayload($http['mchOrderNo'], '2'), 'retCode' => '0']));
+        });
+        $service->confirmReturnAndRefund($first, $admin, $this->manualReturnForm($firstAttempt->gateway_order_uid));
+        $form = $this->manualReturnForm($secondAttempt->gateway_order_uid);
+        foreach ([
+            ['proof_file', ['proof_file' => UploadedFile::fake()->createWithContent('invalid.txt', 'Not a receipt')]],
+            ['provider_order_id', ['provider_order_id' => $firstAttempt->gateway_order_uid]],
+            ['returned_amount', ['returned_amount' => '300000.00']],
+            ['return_reference', ['return_reference' => 'RETURN-001', 'proof_file' => UploadedFile::fake()->createWithContent('other.pdf', "%PDF-1.4\nOther document\n%%EOF")]],
+            ['return_reference', ['return_reference' => 'RETURN-002']],
+        ] as [$field, $overrides]) {
+            try {
+                $service->confirmReturnAndRefund($second, $admin, [...$form, ...$overrides]);
+                $this->fail('Invalid manual return evidence must block the wallet credit.');
+            } catch (ValidationException $exception) {
+                $this->assertArrayHasKey($field, $exception->errors());
+            }
+        }
+
+        $this->assertSame('completed', $second->fresh()->payout_status);
+        $this->assertFalse($second->ydpayPayoutReturnEvidence()->exists());
+        $this->assertTrue($first->ydpayPayoutReturnEvidence()->exists());
+        $this->assertSame('18455.00', Wallet::query()->where('user_id', $second->user_id)->sole()->balance);
+        $this->assertSame(1, WalletTransaction::query()->where('type', 'withdraw_ydpay_returned_refund')->count());
+    }
+
+    public function test_manual_ydpay_return_requires_its_own_permission_for_refunds_and_downloads(): void
+    {
+        [$request, $attempt] = $this->paidYdPayWithdrawal();
+        $admin = AdminUser::query()->create(['username' => 'sync-admin', 'password' => bcrypt('password'), 'status' => 'active']);
+        $admin->givePermissionTo([
+            Permission::findOrCreate('View:WithdrawRequest', 'admin'),
+            Permission::findOrCreate('ViewAny:WithdrawRequest', 'admin'),
+            Permission::findOrCreate('CancelGateway:Withdrawal', 'admin'),
+            Permission::findOrCreate('SyncGateway:Withdrawal', 'admin'),
+        ]);
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+        $this->actingAs($admin, 'admin');
+        Livewire::test(ViewWithdrawRequest::class, ['record' => $request->id])->assertStatus(200)->assertActionHidden('confirm_ydpay_return');
+        $this->get(route('admin.withdraw-requests.ydpay-return-evidence', $request))->assertForbidden();
+
+        try {
+            app(YdPayWithdrawalService::class)->confirmReturnAndRefund($request, $admin, $this->manualReturnForm($attempt->gateway_order_uid));
+            $this->fail('Sync and cancel permissions must not grant manual refunds.');
+        } catch (AuthorizationException) {
+            $this->assertSame(1, WalletTransaction::query()->count());
+            Http::assertNothingSent();
+        }
+    }
+
+    public function test_manual_ydpay_return_allows_all_fields_to_be_blank_and_still_records_the_refund(): void
+    {
+        [$request, $attempt] = $this->paidYdPayWithdrawal();
+        $admin = $this->loginAdmin();
+        $paid = $this->signed([...$this->payoutPayload($attempt->merchant_order_id, '2'), 'retCode' => '0']);
+        Http::fake(['gateway.example/api/agentpay/query_order' => Http::response($paid)]);
+
+        Livewire::test(ViewWithdrawRequest::class, ['record' => $request->id])
+            ->callAction('confirm_ydpay_return')
+            ->assertHasNoActionErrors()
+            ->assertActionHidden('confirm_ydpay_return')
+            ->assertActionHidden('download_ydpay_return_evidence');
+
+        $refund = WalletTransaction::query()->where('type', 'withdraw_ydpay_returned_refund')->sole();
+        $evidence = $request->ydpayPayoutReturnEvidence()->sole();
+        $this->assertSame('300000.00', $refund->amount);
+        $this->assertSame($admin->id, $refund->meta['admin_user_id']);
+        $this->assertSame('2', $refund->meta['provider_status_at_refund']);
+        $this->assertSame($evidence->id, $refund->meta['manual_return_evidence_id']);
+        $this->assertNull($evidence->return_reference);
+        $this->assertNull($evidence->document_sha256);
+        $this->assertNull($evidence->returned_amount);
+        $this->get(route('admin.withdraw-requests.ydpay-return-evidence', $request))->assertNotFound();
+        Http::assertSentCount(1);
+    }
+
+    public function test_manual_ydpay_return_uses_no_credit_if_the_provider_now_reports_a_return(): void
+    {
+        [$request, $attempt] = $this->paidYdPayWithdrawal();
+        $admin = $this->loginAdmin();
+        $returned = $this->signed([...$this->payoutPayload($attempt->merchant_order_id, '6'), 'retCode' => '0']);
+        Http::fake(['gateway.example/api/agentpay/query_order' => Http::response($returned)]);
+
+        try {
+            app(YdPayWithdrawalService::class)->confirmReturnAndRefund($request, $admin, $this->manualReturnForm($attempt->gateway_order_uid));
+            $this->fail('A signed status 6 must use the existing provider-confirmed refund action.');
+        } catch (\RuntimeException $exception) {
+            $this->assertSame(__('ydpay.manual_return_requires_paid_status'), $exception->getMessage());
+        }
+        $this->assertTrue($request->fresh()->canRefundReturnedYdPayPayout());
+        $this->assertFalse($request->ydpayPayoutReturnEvidence()->exists());
+        $this->assertSame(1, WalletTransaction::query()->count());
     }
 
     #[DataProvider('returnedPayoutBlockingEvidence')]
@@ -1684,9 +1854,9 @@ class YdPayGatewayTest extends TestCase
         return [...$payload, 'sign' => app(YdPayGateway::class)->sign($payload)];
     }
 
-    private function user(): User
+    private function user(string $username = 'ydpay_user'): User
     {
-        return User::query()->create(['name' => 'YDPAY User', 'username' => 'ydpay_user', 'password' => bcrypt('password'), 'status' => 'active']);
+        return User::query()->create(['name' => 'YDPAY User', 'username' => $username, 'password' => bcrypt('password'), 'status' => 'active']);
     }
 
     private function deposit(): RechargeRequest
@@ -1696,20 +1866,20 @@ class YdPayGatewayTest extends TestCase
             'gateway_channel' => '19', 'gateway_currency' => 'vnd', 'status' => 'pending']);
     }
 
-    private function payout(bool $withAttempt = true): array
+    private function payout(bool $withAttempt = true, string $order = '20261109002'): array
     {
-        $user = $this->user();
+        $user = $this->user($order === '20261109002' ? 'ydpay_user' : 'ydpay_user_'.$order);
         Wallet::query()->create(['user_id' => $user->id, 'type' => Wallet::TYPE_WITHDRAWABLE, 'balance' => '18455.00', 'locked_balance' => '420000.00']);
         $request = WithdrawRequest::query()->create(['user_id' => $user->id, 'amount' => '300000.00', 'net_amount' => '279000.00',
             'fee_amount' => '21000.00', 'status' => $withAttempt ? 'approved' : 'pending', 'approval_mode' => $withAttempt ? 'gateway_scheduled' : null,
             'gateway_provider' => 'ydpay', 'payout_status' => $withAttempt ? 'submitted' : null, 'gateway_release_at' => now(),
-            'gateway_current_merchant_order_id' => $withAttempt ? '20261109002' : null, 'bank_name' => 'Vietcombank', 'bank_code' => '970436',
+            'gateway_current_merchant_order_id' => $withAttempt ? $order : null, 'bank_name' => 'Vietcombank', 'bank_code' => '970436',
             'bank_account_name' => 'Test User', 'bank_account_no' => '00012345678', 'vip_level_snapshot' => 1,
             'min_withdraw_amount_snapshot' => 1, 'withdraw_fee_percent_snapshot' => 7]);
         if (! $withAttempt) {
             return [$request, null];
         }
-        $attempt = $request->payoutAttempts()->create(['provider' => 'ydpay', 'attempt_no' => 1, 'merchant_order_id' => '20261109002',
+        $attempt = $request->payoutAttempts()->create(['provider' => 'ydpay', 'attempt_no' => 1, 'merchant_order_id' => $order,
             'amount' => '279000.00', 'currency' => 'vnd', 'payment_channel' => '22', 'bank_name_snapshot' => 'Vietcombank',
             'bank_code_snapshot' => '44', 'bank_account_name_snapshot' => 'Test User', 'bank_account_no_snapshot' => '00012345678',
             'gateway_status' => 'create_pending']);
@@ -1717,12 +1887,12 @@ class YdPayGatewayTest extends TestCase
         return [$request, $attempt];
     }
 
-    private function paidYdPayWithdrawal(bool $withDebit = true): array
+    private function paidYdPayWithdrawal(bool $withDebit = true, string $order = '20261109002'): array
     {
-        [$request, $attempt] = $this->payout();
+        [$request, $attempt] = $this->payout(order: $order);
         if ($withDebit) {
             WalletTransaction::query()->create([
-                'user_id' => $request->user_id, 'wallet_id' => Wallet::query()->sole()->id,
+                'user_id' => $request->user_id, 'wallet_id' => Wallet::query()->where('user_id', $request->user_id)->sole()->id,
                 'wallet_type' => Wallet::TYPE_WITHDRAWABLE, 'direction' => 'debit', 'type' => 'withdraw_request_locked',
                 'amount' => $request->amount, 'balance_before' => '318455.00', 'balance_after' => '18455.00',
                 'reference_type' => WithdrawRequest::class, 'reference_id' => $request->id,
@@ -1735,7 +1905,18 @@ class YdPayGatewayTest extends TestCase
 
     private function payoutPayload(string $merchantOrderId, string $status): array
     {
-        return $this->signed(['agentpayOrderId' => '123456789012346', 'mchOrderNo' => $merchantOrderId,
+        return $this->signed(['agentpayOrderId' => $merchantOrderId === '20261109003' ? '123456789012347' : '123456789012346', 'mchOrderNo' => $merchantOrderId,
             'gatewayId' => '22', 'amount' => '27900000', 'fee' => '390600', 'status' => $status]);
+    }
+
+    private function manualReturnForm(string $providerOrderId): array
+    {
+        return [
+            'provider_order_id' => $providerOrderId,
+            'return_reference' => 'return-001',
+            'returned_amount' => '279000',
+            'proof_file' => UploadedFile::fake()->createWithContent('receipt.pdf', "%PDF-1.4\nYDPay receipt\n%%EOF"),
+            'reason' => 'Provider confirmed the original payout was returned in full.',
+        ];
     }
 }

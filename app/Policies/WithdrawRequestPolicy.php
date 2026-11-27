@@ -65,6 +65,11 @@ class WithdrawRequestPolicy
         return $this->cancelGateway($user, $withdrawRequest);
     }
 
+    public function confirmYdPayReturn(AuthUser $user, WithdrawRequest $withdrawRequest): bool
+    {
+        return $user->can('ConfirmYdPayReturn:Withdrawal') && $this->view($user, $withdrawRequest);
+    }
+
     public function viewAny(AuthUser $authUser): bool
     {
         return $authUser->can('ViewAny:WithdrawRequest');

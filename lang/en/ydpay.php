@@ -1,6 +1,16 @@
 <?php
 
 return [
+    'manual_return_action' => 'YDPAY · Confirm return manually',
+    'manual_return_help' => 'Verify that YDPAY returned the full payout for merchant order :order and that the member has not already received a refund. The fields below are optional. Confirming credits :amount VND to the member’s withdrawable wallet.',
+    'manual_return_reference' => 'YDPAY return reference',
+    'manual_return_amount' => 'Amount returned by YDPAY',
+    'manual_return_file' => 'Return receipt (PDF, JPG or PNG, up to 4 MB)',
+    'manual_return_download' => 'Download YDPAY return receipt',
+    'manual_return_requires_paid_status' => 'The manual route is available only when the signed YDPAY query still reports paid. Refresh the withdrawal status.',
+    'manual_return_order_mismatch' => 'The YDPAY order number does not match the original payout.',
+    'manual_return_amount_mismatch' => 'The returned amount must match the amount originally sent through YDPAY.',
+    'manual_return_duplicate_evidence' => 'This return reference or document has already been used.',
     'returned_payout_refund' => 'YDPAY · Refund returned payout to wallet',
     'returned_payout_refund_help' => 'After confirming the return with YDPAY, credit :amount VND, including the original fee, to the member’s withdrawable wallet.',
     'returned_payout_refund_confirm' => 'Confirm wallet refund',

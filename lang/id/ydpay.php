@@ -1,6 +1,16 @@
 <?php
 
 return [
+    'manual_return_action' => 'YDPAY · Konfirmasi pengembalian secara manual',
+    'manual_return_help' => 'Pastikan YDPAY telah mengembalikan seluruh pembayaran untuk pesanan :order dan anggota belum menerima pengembalian dana. Kolom berikut opsional. Setelah dikonfirmasi, :amount VND dikreditkan ke saldo yang dapat ditarik anggota.',
+    'manual_return_reference' => 'Referensi pengembalian YDPAY',
+    'manual_return_amount' => 'Jumlah yang dikembalikan YDPAY',
+    'manual_return_file' => 'Bukti pengembalian (PDF, JPG, atau PNG, maksimal 4 MB)',
+    'manual_return_download' => 'Unduh bukti pengembalian YDPAY',
+    'manual_return_requires_paid_status' => 'Pengembalian manual tersedia jika hasil pengecekan bertanda tangan YDPAY masih menyatakan sudah dibayar. Perbarui status penarikan.',
+    'manual_return_order_mismatch' => 'Nomor pesanan YDPAY pada bukti tidak cocok dengan pembayaran awal.',
+    'manual_return_amount_mismatch' => 'Jumlah pengembalian harus sama dengan jumlah pembayaran awal melalui YDPAY.',
+    'manual_return_duplicate_evidence' => 'Referensi pengembalian atau berkas bukti ini sudah digunakan.',
     'returned_payout_refund' => 'YDPAY · Kembalikan pembayaran ke dompet',
     'returned_payout_refund_help' => 'Setelah YDPAY mengonfirmasi pengembalian, kreditkan :amount VND termasuk biaya awal ke saldo yang dapat ditarik oleh anggota.',
     'returned_payout_refund_confirm' => 'Konfirmasi pengembalian ke dompet',

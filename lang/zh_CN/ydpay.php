@@ -1,6 +1,16 @@
 <?php
 
 return [
+    'manual_return_action' => 'YDPAY · 凭退回流水人工退款',
+    'manual_return_help' => '请先核实 YDPAY 已全额退回商户订单 :order，并确认会员尚未收到退款。下方资料均可选填。确认后，原提现扣款 :amount VND 将退回会员的可提现钱包。',
+    'manual_return_reference' => 'YDPAY 退回流水号',
+    'manual_return_amount' => 'YDPAY 实际退回金额',
+    'manual_return_file' => '退回凭证（PDF、JPG 或 PNG，最多 4 MB）',
+    'manual_return_download' => '下载 YDPAY 退回凭证',
+    'manual_return_requires_paid_status' => '人工退款要求 YDPAY 验签查询仍显示已付款，请刷新提现状态。',
+    'manual_return_order_mismatch' => '凭证上的 YDPAY 订单号与原出款单不一致。',
+    'manual_return_amount_mismatch' => '实际退回金额必须等于原单通过 YDPAY 出款的金额。',
+    'manual_return_duplicate_evidence' => '这个退回流水号或凭证文件已被使用。',
     'returned_payout_refund' => 'YDPAY · 退回会员钱包',
     'returned_payout_refund_help' => '再次向 YDPAY 确认原订单已退回后，将原提现金额 :amount VND（含原手续费）退回会员的可提现钱包。',
     'returned_payout_refund_confirm' => '确认退回钱包',

@@ -1,6 +1,16 @@
 <?php
 
 return [
+    'manual_return_action' => 'YDPAY · Xác nhận hoàn tiền thủ công',
+    'manual_return_help' => 'Hãy xác minh YDPAY đã hoàn toàn bộ khoản chi trả của đơn :order và thành viên chưa nhận khoản hoàn. Các trường bên dưới là tùy chọn. Khi xác nhận, :amount VND sẽ được hoàn vào ví có thể rút của thành viên.',
+    'manual_return_reference' => 'Mã giao dịch hoàn tiền YDPAY',
+    'manual_return_amount' => 'Số tiền YDPAY đã hoàn',
+    'manual_return_file' => 'Chứng từ hoàn tiền (PDF, JPG hoặc PNG, tối đa 4 MB)',
+    'manual_return_download' => 'Tải chứng từ hoàn tiền YDPAY',
+    'manual_return_requires_paid_status' => 'Chỉ có thể hoàn thủ công khi kết quả tra cứu có chữ ký YDPAY vẫn báo đã thanh toán. Hãy cập nhật trạng thái.',
+    'manual_return_order_mismatch' => 'Mã đơn YDPAY trên chứng từ không khớp với khoản chi trả gốc.',
+    'manual_return_amount_mismatch' => 'Số tiền hoàn phải bằng số tiền YDPAY đã chi trả cho đơn gốc.',
+    'manual_return_duplicate_evidence' => 'Mã hoàn tiền hoặc tệp chứng từ này đã được sử dụng.',
     'returned_payout_refund' => 'YDPAY · Hoàn khoản chi trả về ví',
     'returned_payout_refund_help' => 'Sau khi YDPAY xác nhận đơn đã hoàn, cộng :amount VND kèm phí ban đầu vào ví có thể rút của thành viên.',
     'returned_payout_refund_confirm' => 'Xác nhận hoàn về ví',

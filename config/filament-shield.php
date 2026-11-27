@@ -283,6 +283,7 @@ return [
         'RetryGateway:Withdrawal' => 'Retry QC168 Withdrawal Payout',
         'CancelGateway:Withdrawal' => 'Cancel QC168 Withdrawal Payout',
         'SyncGateway:Withdrawal' => 'Sync QC168 Withdrawal Status',
+        'ConfirmYdPayReturn:Withdrawal' => 'Confirm YDPAY Payout Returns Manually',
         'ManagePaymentGateway:Settings' => 'Manage Payment Gateway Settings',
     ],
 
