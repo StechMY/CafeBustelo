@@ -1,6 +1,11 @@
 <?php
 
 return [
+    'issuance_details' => 'Rincian kesempatan angpau untuk :username',
+    'issuance_detail_help' => 'Tanggal acara mengikuti zona waktu :timezone. Waktu pembelian berasal dari pesanan. Filter waktu berlaku pada saat kesempatan diberikan.',
+    'activity_day' => 'Tanggal acara',
+    'grant_reason' => 'Sumber kesempatan',
+    'invited_member' => 'Pembeli yang diundang',
     'issuance_records' => 'Riwayat pemberian kesempatan angpau',
     'issuance_help' => 'Jumlah mencakup kesempatan yang sudah digunakan. Pilih Riwayat tanpa penanda untuk melihat catatan lama. Filter berdasarkan waktu pemberian (:timezone). Satu rentang waktu dapat memuat pemberian reguler dan susulan.',
     'issued_total' => 'Total diberikan',

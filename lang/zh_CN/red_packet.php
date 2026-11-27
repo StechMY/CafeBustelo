@@ -1,6 +1,11 @@
 <?php
 
 return [
+    'issuance_details' => ':username 的红包雨机会明细',
+    'issuance_detail_help' => '按活动日期（:timezone）列出机会来源。购买时间来自订单，发放时间筛选作用于机会入账时间。',
+    'activity_day' => '活动日期',
+    'grant_reason' => '机会来源',
+    'invited_member' => '首购下线',
     'issuance_records' => '红包雨机会发放记录',
     'issuance_help' => '每人一行，按发放次数统计，包含已用机会。旧版发放的机会请在「历史未标记」中核对。可按实际发放时间（:timezone）筛选，同一时段可能包含正常发放和补发。',
     'issued_total' => '发放总次数',

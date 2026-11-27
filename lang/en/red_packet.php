@@ -1,6 +1,11 @@
 <?php
 
 return [
+    'issuance_details' => 'Red packet chance details for :username',
+    'issuance_detail_help' => 'Activity dates use :timezone. Purchase time comes from the order. The issuance time filters apply to when chances were granted.',
+    'activity_day' => 'Activity date',
+    'grant_reason' => 'Reason',
+    'invited_member' => 'Invited buyer',
     'issuance_records' => 'Red packet chance issuance',
     'issuance_help' => 'Counts include spent chances. Select Unmarked history for older grants. Filter by issuance time (:timezone) to review a deployment window, which may include both regular grants and backfills.',
     'issued_total' => 'Total granted',

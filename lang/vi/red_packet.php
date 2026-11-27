@@ -1,6 +1,11 @@
 <?php
 
 return [
+    'issuance_details' => 'Chi tiết lượt lì xì của :username',
+    'issuance_detail_help' => 'Ngày sự kiện theo múi giờ :timezone. Thời gian mua lấy từ đơn hàng. Bộ lọc thời gian áp dụng cho thời điểm cấp lượt.',
+    'activity_day' => 'Ngày sự kiện',
+    'grant_reason' => 'Nguồn lượt',
+    'invited_member' => 'Người được mời mua lần đầu',
     'issuance_records' => 'Lịch sử cấp lượt lì xì',
     'issuance_help' => 'Số lượt cấp bao gồm cả lượt đã dùng. Chọn Lịch sử chưa đánh dấu để xem lượt cũ. Có thể lọc theo thời gian cấp (:timezone). Trong cùng khoảng thời gian có thể có cả lượt cấp thông thường và cấp bù.',
     'issued_total' => 'Tổng lượt cấp',

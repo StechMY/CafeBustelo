@@ -241,6 +241,46 @@ class RedPacketActivityTest extends TestCase
         $admin->assignRole(Role::findOrCreate('Support', 'admin'));
         Livewire::test(RedPacketIssuanceRecords::class)->assertCanSeeTableRecords([$owner])
             ->searchTable('second-recipient')->assertCanNotSeeTableRecords([$other]);
+        $this->get(RedPacketIssuanceRecords::getUrl(['recipient' => $other->id]))->assertNotFound();
+    }
+
+    public function test_recipient_link_shows_filtered_purchase_snapshots_and_actual_daily_bonus_counts(): void
+    {
+        $admin = $this->assignmentAdmin();
+        $owner = $this->user();
+        $this->get(RedPacketIssuanceRecords::getUrl(['recipient' => $owner->id]))->assertForbidden();
+        $admin->givePermissionTo(Permission::findOrCreate('ViewAny:RedPacketDraw', 'admin'));
+        $product = $this->product('S1', 3500000);
+        $product->update(['name' => 'Original limited product']);
+        $this->travelTo(Carbon::parse('2026-11-15 23:59:30'));
+        foreach (range(1, 5) as $index) {
+            $buyer = $this->user(['referrer_id' => $owner->id]);
+            $this->purchase($buyer, $product);
+        }
+        $this->travelTo(Carbon::parse('2026-11-16 00:01:00'));
+        $this->open();
+        $liveBuyer = $this->user(['referrer_id' => $owner->id]);
+        $this->purchase($liveBuyer, $product);
+        $this->travelTo(Carbon::parse('2026-11-17 08:30:00'));
+        app(RedPacketService::class)->backfillFirstPurchaseInvitations();
+        $product->update(['name' => 'Renamed after purchase']);
+        UserProduct::where('user_id', $buyer->id)->sole()->delete();
+        $from = '2026-11-17 08:30:00';
+        $url = RedPacketIssuanceRecords::getUrl(['recipient' => $owner->id, 'method' => 'backfill', 'from' => $from]);
+        Livewire::test(RedPacketIssuanceRecords::class)
+            ->filterTable('issued_at', ['from' => $from, 'until' => null])->assertSeeHtml($url);
+        $this->get($url)->assertOk()->assertSee($buyer->username)->assertSee('S1 · Original limited product')
+            ->assertSee('2026-11-15 23:59:30')->assertDontSee('Renamed after purchase')->assertDontSee($liveBuyer->username);
+        $details = Livewire::withQueryParams(['recipient' => $owner->id, 'method' => 'all'])
+            ->test(RedPacketIssuanceRecords::class)->assertSee($liveBuyer->username);
+        $rows = $details->instance()->getTableRecords()->getCollection();
+        $this->assertCount(6, $rows->where('source', 'invite'));
+        foreach (['milestone_3' => 1, 'milestone_5' => 2] as $source => $count) {
+            $row = $rows->where('source', $source)->sole();
+            $this->assertEquals($count, $row->chances);
+            $this->assertSame('2026-11-15', $row->earned_on);
+        }
+        $details->filterTable('issuance', 'live')->assertSee($liveBuyer->username)->assertDontSee($buyer->username);
     }
 
     public function test_upgrades_compare_previous_non_weekend_original_price_not_highest_price(): void
