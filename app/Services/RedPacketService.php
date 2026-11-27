@@ -59,29 +59,68 @@ class RedPacketService
                 $this->award($buyer, 'upgrade:'.$purchase->id, 'upgrade', $day, $purchase);
             }
 
-            $start = Carbon::parse(Setting::getValue(self::SETTING_START), config('app.timezone'));
-            if (! $buyer->referrer_id || $buyer->referrer_id === $buyer->id || $buyer->created_at->lt($start)
-                || UserProduct::withTrashed()->where('user_id', $buyer->id)->where('id', '<', $purchase->id)->exists()) {
-                return;
-            }
-            $referrer = User::query()->whereKey($buyer->referrer_id)->lockForUpdate()->first();
-            if (! $referrer || $referrer->is_virtual) {
-                return;
-            }
-            $this->award($referrer, 'invite:'.$buyer->id, 'invite', $day, $purchase, $buyer);
-            $count = RedPacketEntry::query()->where('user_id', $referrer->id)->where('source', 'invite')->where('earned_on', $day)->count();
-            foreach ([3 => 1, 5 => 2] as $threshold => $chances) {
-                if ($count < $threshold) continue;
-                for ($i = 1; $i <= $chances; $i++) {
-                    $this->award($referrer, "milestone:{$day}:{$threshold}:{$i}", 'milestone_'.$threshold, $day);
-                }
+            if (! UserProduct::withTrashed()->where('user_id', $buyer->id)->where('id', '<', $purchase->id)->exists()) {
+                $this->awardFirstPurchaseInvitation($buyer, $purchase);
             }
         }, 3);
     }
 
+    public function backfillFirstPurchaseInvitations(): void
+    {
+        $start = Setting::getValue(self::SETTING_START);
+        if (! $start) {
+            return;
+        }
+        $end = Setting::getValue(self::SETTING_END);
+        $purchases = UserProduct::withTrashed()
+            ->where('purchased_at', '>=', $start)
+            ->where('purchased_at', '<=', now())
+            ->when($end, fn ($query) => $query->where('purchased_at', '<', $end))
+            ->whereNotExists(fn ($query) => $query->selectRaw('1')->from('user_products as earlier')
+                ->whereColumn('earlier.user_id', 'user_products.user_id')
+                ->whereColumn('earlier.id', '<', 'user_products.id'));
+
+        foreach ($purchases->lazyById(500) as $purchase) {
+            DB::transaction(function () use ($purchase): void {
+                $buyer = User::query()->whereKey($purchase->user_id)->lockForUpdate()->first();
+                if ($buyer) {
+                    $this->awardFirstPurchaseInvitation($buyer, $purchase);
+                }
+            }, 3);
+        }
+    }
+
+    private function awardFirstPurchaseInvitation(User $buyer, UserProduct $purchase): void
+    {
+        if ($buyer->is_virtual || $purchase->product_type_snapshot === Product::TYPE_WEEKEND_SPECIAL) {
+            return;
+        }
+        // An administrator may have changed the referrer since the original award.
+        $original = RedPacketEntry::query()->where('invited_user_id', $buyer->id)->where('source', 'invite')->first();
+        $referrerId = $original?->user_id ?? $buyer->referrer_id;
+        if (! $referrerId || $referrerId === $buyer->id) {
+            return;
+        }
+        $referrer = User::query()->whereKey($referrerId)->lockForUpdate()->first();
+        if (! $referrer || $referrer->is_virtual) {
+            return;
+        }
+        $day = $purchase->purchased_at->copy()->timezone(config('app.timezone'))->toDateString();
+        $this->award($referrer, 'invite:'.$buyer->id, 'invite', $day, $purchase, $buyer);
+        // Read the latest committed invites after acquiring the inviter lock.
+        $count = RedPacketEntry::query()->where('user_id', $referrer->id)->where('source', 'invite')
+            ->where('earned_on', $day)->limit(5)->lockForUpdate()->pluck('id')->count();
+        foreach ([3 => 1, 5 => 2] as $threshold => $chances) {
+            if ($count < $threshold) continue;
+            for ($i = 1; $i <= $chances; $i++) {
+                $this->award($referrer, "milestone:{$day}:{$threshold}:{$i}", 'milestone_'.$threshold, $day);
+            }
+        }
+    }
+
     private function award(User $user, string $key, string $source, string $day, ?UserProduct $purchase = null, ?User $invitee = null): void
     {
-        RedPacketEntry::query()->firstOrCreate(['user_id' => $user->id, 'award_key' => $key], [
+        RedPacketEntry::query()->lockForUpdate()->firstOrCreate(['user_id' => $user->id, 'award_key' => $key], [
             'source' => $source, 'earned_on' => $day, 'user_product_id' => $purchase?->id, 'invited_user_id' => $invitee?->id,
         ]);
     }

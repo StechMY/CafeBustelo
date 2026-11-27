@@ -31,12 +31,12 @@ In the role editor, **Custom → Manage Red Packet Activity** grants switch/sche
 
 ## Chances
 
-- A directly invited member must register at or after the activity start and make their first successful purchase while the activity is open. Each qualifying member earns their inviter one chance. Weekend purchases are excluded. A first weekend purchase cannot later become a qualifying first purchase; deleted purchase history is also considered.
+- A directly invited member earns their inviter one chance when their first successful purchase falls during the event, regardless of registration date. Weekend purchases are excluded. A first weekend purchase cannot later become a qualifying first purchase; deleted purchase history is also considered.
 - Invitation progress is grouped by the purchase date in the configured timezone. Three qualifying members on the same day earn one extra chance; five earn two further chances. Each milestone is awarded once per day. Five members therefore earn eight chances; a sixth earns only one more.
 - Progress resets at 00:00 by querying the new local date. No cron task or deletion is required. Unused chances remain available until the event closes. A member registering yesterday and first purchasing today counts today.
 - A personal purchase earns one separate upgrade chance when its original price exceeds the immediately previous non-weekend purchase's original price. T1 and weekend purchases earn no upgrade chance. T1 can serve as the previous purchase. A first purchase above T1 qualifies. Discounts do not change the comparison. Upgrading is compared with the previous purchase, not the historical maximum.
 - Virtual accounts draw without consuming chances and display a changing random count from 1–10. They respect activity dates, do not consume real stock, and retain their own cash/coupon/winning records. Their random draws respect weights and prize availability; an administrator-assigned next prize bypasses those two limits once. Virtual purchases do not earn invitation rewards for real users.
-- Changing dates, toggling or reopening does not reset existing awards, chances, wins or stock. Past purchases are not backfilled.
+- The November 27 migration reconciles invitation and daily milestone chances for first purchases in the currently configured schedule, up to the migration time. It uses the purchase day in the activity timezone and keeps previously earned and spent entries. Changing the schedule later does not rerun this migration.
 
 Every award has a unique source key. Draw requests use UUIDs and are idempotent per user. Lost responses can be retried with the same UUID, including after closure. A failed or empty-pool draw consumes neither a chance nor stock. Cash credits the withdrawable wallet; coupons use existing eligibility and checkout rules. Customers can inspect both chance and winning histories at `/red-packet/history`.
 

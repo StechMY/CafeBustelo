@@ -131,7 +131,7 @@ class RedPacketActivityTest extends TestCase
         $this->assertSame(2, RedPacketEntry::whereNull('used_at')->count());
     }
 
-    public function test_only_new_direct_first_purchases_qualify_and_weekend_first_purchase_is_excluded(): void
+    public function test_direct_first_purchases_qualify_regardless_of_registration_and_weekend_first_purchase_is_excluded(): void
     {
         $this->open();
         $grandparent = $this->user();
@@ -146,8 +146,59 @@ class RedPacketActivityTest extends TestCase
         $first = $this->purchase($buyer, $normal);
         $first->delete();
         $this->purchase($buyer, $normal);
-        $this->assertSame(1, app(RedPacketService::class)->remainingChances($owner));
+        $this->assertSame(2, app(RedPacketService::class)->remainingChances($owner));
         $this->assertSame(0, app(RedPacketService::class)->remainingChances($grandparent));
+    }
+
+    public function test_backfill_restores_only_missing_invites_and_local_daily_bonuses_once(): void
+    {
+        $migration = require database_path('migrations/2026_11_27_000001_backfill_red_packet_first_purchase_invitations.php');
+        $service = app(RedPacketService::class);
+        $owner = $this->user();
+        $other = $this->user();
+        $member = fn () => $this->user(['referrer_id' => $owner->id, 'created_at' => now()->subYear()]);
+        $product = $this->product('S1', 3500000, Product::TYPE_LIMITED_TIME);
+        $this->travelTo(Carbon::parse('2026-11-14 23:59:59'));
+        $repeatBuyer = $member();
+        $this->purchase($repeatBuyer, $product)->delete();
+        $this->travelTo(Carbon::parse('2026-11-15 00:00:00'));
+        $this->open();
+        foreach (range(1, 3) as $i) {
+            $buyer = $member();
+            $this->purchase($buyer, $product);
+        }
+        $buyer->update(['referrer_id' => $other->id]);
+        $spent = RedPacketEntry::where('source', 'milestone_3')->sole();
+        $spent->update(['used_at' => now()]);
+        Setting::setValue(RedPacketService::SETTING_ENABLED, false);
+        $this->travelTo(Carbon::parse('2026-11-15 23:59:59'));
+        $this->purchase($repeatBuyer, $product);
+        $weekendBuyer = $member();
+        $this->purchase($weekendBuyer, $this->product('WP-1', 3600000, Product::TYPE_WEEKEND_SPECIAL));
+        $this->purchase($weekendBuyer, $product);
+        $this->purchase($this->user(['referrer_id' => $owner->id, 'is_virtual' => true]), $product);
+        $this->purchase($member(), $product)->delete();
+        $this->purchase($member(), $product);
+        $this->travelTo(Carbon::parse('2026-11-16 00:00:00'));
+        foreach (range(1, 3) as $i) {
+            $this->purchase($member(), $product);
+        }
+        Setting::setValue(RedPacketService::SETTING_END, '2026-11-16 00:00:01');
+        $this->travelTo(Carbon::parse('2026-11-16 00:00:01'));
+        $this->purchase($member(), $product);
+        $upgrades = RedPacketEntry::where('source', 'upgrade')->count();
+        $migration->up();
+        $migration->up();
+        $entries = RedPacketEntry::where('user_id', $owner->id);
+        $this->assertSame(8, (clone $entries)->where('earned_on', '2026-11-15')->count());
+        $this->assertSame(4, (clone $entries)->where('earned_on', '2026-11-16')->count());
+        $this->assertSame(8, (clone $entries)->where('source', 'invite')->count());
+        $this->assertSame(2, (clone $entries)->where('source', 'milestone_3')->count());
+        $this->assertSame(2, (clone $entries)->where('source', 'milestone_5')->count());
+        $this->assertSame(11, $service->remainingChances($owner));
+        $this->assertTrue($spent->used_at->equalTo($spent->fresh()->used_at));
+        $this->assertSame(0, $service->remainingChances($other));
+        $this->assertSame($upgrades, RedPacketEntry::where('source', 'upgrade')->count());
     }
 
     public function test_upgrades_compare_previous_non_weekend_original_price_not_highest_price(): void
